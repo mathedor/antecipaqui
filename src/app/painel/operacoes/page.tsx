@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentDbUser } from "@/lib/auth-user";
-import { getOperacoesByCorretor } from "@/lib/actions/operacoes";
+import {
+  getConstrutoraByOwnerId,
+  getOperacoesByConstrutora,
+  getOperacoesByCorretor,
+} from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { formatBRL } from "@/lib/format";
 
@@ -13,7 +17,44 @@ export default async function OperacoesPage() {
   const user = await getCurrentDbUser();
   if (!user) redirect("/entrar");
 
-  const operacoes = await getOperacoesByCorretor(user.id);
+  const isConstrutora = user.role === "construtora";
+
+  let operacoes: Array<{
+    id: string;
+    numero: string;
+    status: string;
+    valorComissao: string;
+    valorPresente: string;
+    counterpartyLabel: string | null;
+  }> = [];
+
+  if (isConstrutora) {
+    const c = await getConstrutoraByOwnerId(user.id);
+    if (c) {
+      const rows = await getOperacoesByConstrutora(c.id);
+      operacoes = rows.map((r) => ({
+        id: r.id,
+        numero: r.numero,
+        status: r.status,
+        valorComissao: r.valorComissao,
+        valorPresente: r.valorPresente,
+        counterpartyLabel: r.corretorNome,
+      }));
+    }
+  } else {
+    const rows = await getOperacoesByCorretor(user.id);
+    operacoes = rows.map((r) => ({
+      id: r.id,
+      numero: r.numero,
+      status: r.status,
+      valorComissao: r.valorComissao,
+      valorPresente: r.valorPresente,
+      counterpartyLabel: r.construtoraNome,
+    }));
+  }
+
+  const counterpartyHeader = isConstrutora ? "Corretor" : "Construtora";
+  const titleLabel = isConstrutora ? "vinculadas a você" : "operações";
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-12 md:py-16">
@@ -26,25 +67,31 @@ export default async function OperacoesPage() {
             ← painel
           </Link>
           <h1 className="text-display-md">
-            Suas <span className="text-gradient-blue">operações</span>
+            {isConstrutora ? "Operações " : "Suas "}
+            <span className="text-gradient-blue">{titleLabel}</span>
           </h1>
           <p className="mt-2 text-fg-muted">
             Total: {operacoes.length}{" "}
             {operacoes.length === 1 ? "operação" : "operações"}
           </p>
         </div>
-        <Link href="/painel/operacoes/nova" className="btn-primary !h-11 !px-5">
-          + Nova operação
-        </Link>
+        {!isConstrutora && (
+          <Link
+            href="/painel/operacoes/nova"
+            className="btn-primary !h-11 !px-5"
+          >
+            + Nova operação
+          </Link>
+        )}
       </div>
 
       {operacoes.length === 0 ? (
-        <EmptyState />
+        <EmptyState isConstrutora={isConstrutora} />
       ) : (
         <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
           <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border bg-bg-card">
             <div className="col-span-2">Número</div>
-            <div className="col-span-3">Construtora</div>
+            <div className="col-span-3">{counterpartyHeader}</div>
             <div className="col-span-2 text-right">Comissão</div>
             <div className="col-span-2 text-right">Valor presente</div>
             <div className="col-span-2">Status</div>
@@ -57,9 +104,11 @@ export default async function OperacoesPage() {
                   href={`/painel/operacoes/${op.id}`}
                   className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-bg-card transition-colors group"
                 >
-                  <div className="col-span-2 font-mono text-sm text-fg">{op.numero}</div>
+                  <div className="col-span-2 font-mono text-sm text-fg">
+                    {op.numero}
+                  </div>
                   <div className="col-span-3 text-sm text-fg-muted truncate">
-                    {op.construtoraNome ?? "—"}
+                    {op.counterpartyLabel ?? "—"}
                   </div>
                   <div className="col-span-2 text-right font-mono tabular text-sm text-fg-muted">
                     {formatBRL(parseFloat(op.valorComissao))}
@@ -83,7 +132,21 @@ export default async function OperacoesPage() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ isConstrutora }: { isConstrutora: boolean }) {
+  if (isConstrutora) {
+    return (
+      <div className="rounded-3xl border border-dashed border-border-strong bg-bg-card p-10 md:p-14 text-center">
+        <div className="text-5xl mb-4">🤝</div>
+        <h2 className="text-2xl font-bold tracking-tight">
+          Nenhuma operação vinculada
+        </h2>
+        <p className="mt-3 text-fg-muted max-w-md mx-auto">
+          Quando um corretor antecipar uma comissão vinculada à sua
+          construtora, ela vai aparecer aqui.
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="rounded-3xl border border-dashed border-border-strong bg-bg-card p-10 md:p-14 text-center">
       <div className="text-5xl mb-4">📊</div>

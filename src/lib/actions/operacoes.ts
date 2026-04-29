@@ -272,6 +272,18 @@ export async function getOperacoesByCorretor(corretorUserId: string) {
 }
 
 export async function getOperacaoDetail(operacaoId: string, userId: string) {
+  // Permite acesso pelo corretor que cadastrou OU pela construtora dona da row
+  const construtoraOwned = (
+    await db
+      .select({ id: construtoras.id })
+      .from(construtoras)
+      .where(eq(construtoras.ownerUserId, userId))
+      .limit(1)
+  )[0];
+
+  const conditions = [eq(operacoes.id, operacaoId)];
+  // Authz: corretor dono OU construtora dona
+  // Drizzle: fazemos a query e checamos no app
   const [op] = await db
     .select({
       id: operacoes.id,
@@ -293,15 +305,15 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
-    .where(
-      and(
-        eq(operacoes.id, operacaoId),
-        eq(operacoes.corretorUserId, userId),
-      ),
-    )
+    .where(and(...conditions))
     .limit(1);
 
   if (!op) return null;
+
+  const isCorretor = op.corretorUserId === userId;
+  const isConstrutora =
+    construtoraOwned && op.construtoraId === construtoraOwned.id;
+  if (!isCorretor && !isConstrutora) return null;
 
   const parcelas = await db
     .select()
@@ -309,7 +321,151 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
     .where(eq(parcelasComissao.operacaoId, operacaoId))
     .orderBy(parcelasComissao.numero);
 
-  return { ...op, parcelas };
+  return { ...op, parcelas, viewerRole: isConstrutora ? "construtora" as const : "corretor" as const };
+}
+
+/* =========================================
+   QUERIES — visão da CONSTRUTORA
+   ========================================= */
+
+export async function getConstrutoraByOwnerId(userId: string) {
+  return (
+    await db
+      .select()
+      .from(construtoras)
+      .where(eq(construtoras.ownerUserId, userId))
+      .limit(1)
+  )[0];
+}
+
+export async function getOperacoesByConstrutora(construtoraId: string) {
+  return db
+    .select({
+      id: operacoes.id,
+      numero: operacoes.numero,
+      status: operacoes.status,
+      valorComissao: operacoes.valorComissao,
+      valorPresente: operacoes.valorPresente,
+      desagio: operacoes.desagio,
+      dataVenda: operacoes.dataVenda,
+      createdAt: operacoes.createdAt,
+      corretorNome: users.nome,
+    })
+    .from(operacoes)
+    .leftJoin(users, eq(operacoes.corretorUserId, users.id))
+    .where(eq(operacoes.construtoraId, construtoraId))
+    .orderBy(desc(operacoes.createdAt));
+}
+
+export async function getDashboardStatsForConstrutora(construtoraId: string) {
+  const ops = await db
+    .select({
+      id: operacoes.id,
+      status: operacoes.status,
+      valorComissao: operacoes.valorComissao,
+    })
+    .from(operacoes)
+    .where(eq(operacoes.construtoraId, construtoraId));
+
+  const ativasIds = ops
+    .filter((o) =>
+      ["aprovada", "em_assinatura", "ativa"].includes(o.status),
+    )
+    .map((o) => o.id);
+
+  const totalDevido = ops
+    .filter((o) =>
+      ["aprovada", "em_assinatura", "ativa"].includes(o.status),
+    )
+    .reduce((s, o) => s + parseFloat(o.valorComissao), 0);
+
+  // Parcelas a vencer no mês corrente
+  const parcelas = ativasIds.length
+    ? await db
+        .select({
+          valor: parcelasComissao.valor,
+          vencimento: parcelasComissao.vencimento,
+          status: parcelasComissao.status,
+          pagoValor: parcelasComissao.pagoValor,
+        })
+        .from(parcelasComissao)
+        .where(
+          and(
+            eq(parcelasComissao.status, "a_vencer"),
+            // include all parcelas of these ops
+            sql`${parcelasComissao.operacaoId} = ANY(${ativasIds})`,
+          ),
+        )
+    : [];
+
+  const allParcelas = ativasIds.length
+    ? await db
+        .select({
+          valor: parcelasComissao.valor,
+          vencimento: parcelasComissao.vencimento,
+          status: parcelasComissao.status,
+          pagoValor: parcelasComissao.pagoValor,
+        })
+        .from(parcelasComissao)
+        .where(sql`${parcelasComissao.operacaoId} = ANY(${ativasIds})`)
+    : [];
+
+  const now = new Date();
+  const inMonth = (d: string) => {
+    const dt = new Date(d + "T00:00:00");
+    return (
+      dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear()
+    );
+  };
+
+  const aVencerNoMes = parcelas
+    .filter((p) => inMonth(p.vencimento))
+    .reduce((s, p) => s + parseFloat(p.valor), 0);
+
+  const totalPago = allParcelas
+    .filter((p) => p.status === "paga")
+    .reduce((s, p) => s + parseFloat(p.pagoValor ?? p.valor), 0);
+
+  const vencidas = allParcelas
+    .filter((p) => p.status === "vencida")
+    .reduce((s, p) => s + parseFloat(p.valor), 0);
+
+  return {
+    totalOperacoes: ops.length,
+    totalAtivas: ativasIds.length,
+    totalDevido,
+    aVencerNoMes,
+    totalPago,
+    vencidas,
+  };
+}
+
+export async function getDuplicatasParaPagar(construtoraId: string) {
+  // Lista todas as parcelas das operações ativas, ordenadas por vencimento
+  return db
+    .select({
+      parcelaId: parcelasComissao.id,
+      numero: parcelasComissao.numero,
+      valor: parcelasComissao.valor,
+      vencimento: parcelasComissao.vencimento,
+      statusParcela: parcelasComissao.status,
+      pagoEm: parcelasComissao.pagoEm,
+      pagoValor: parcelasComissao.pagoValor,
+      operacaoId: operacoes.id,
+      operacaoNumero: operacoes.numero,
+      operacaoStatus: operacoes.status,
+      corretorNome: users.nome,
+    })
+    .from(parcelasComissao)
+    .innerJoin(operacoes, eq(parcelasComissao.operacaoId, operacoes.id))
+    .leftJoin(users, eq(operacoes.corretorUserId, users.id))
+    .where(
+      and(
+        eq(operacoes.construtoraId, construtoraId),
+        sql`${operacoes.status} IN ('aprovada', 'em_assinatura', 'ativa')`,
+      ),
+    )
+    .orderBy(parcelasComissao.vencimento);
 }
 
 export async function listConstrutorasForSelect() {

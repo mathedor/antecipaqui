@@ -79,11 +79,33 @@ export async function saveCompanyDataAction(
     })
     .where(eq(users.id, user.id));
 
-  // Cria empresa de acordo com role
+  // Cria/assume empresa de acordo com role.
+  // Se uma row com mesmo CNPJ já existe (ex: cadastrada por outro user
+  // durante operação), o user atual ASSUME a titularidade.
   if (user.role === "imobiliaria" || user.role === "corretor") {
-    await db
-      .insert(imobiliarias)
-      .values({
+    const existing = await db
+      .select()
+      .from(imobiliarias)
+      .where(eq(imobiliarias.cnpj, cnpj))
+      .limit(1);
+    if (existing[0]) {
+      await db
+        .update(imobiliarias)
+        .set({
+          ownerUserId: user.id,
+          razaoSocial,
+          nomeFantasia,
+          creciResponsavel: creci,
+          telefone,
+          cep,
+          endereco,
+          cidade,
+          uf,
+          updatedAt: new Date(),
+        })
+        .where(eq(imobiliarias.id, existing[0].id));
+    } else {
+      await db.insert(imobiliarias).values({
         ownerUserId: user.id,
         razaoSocial,
         nomeFantasia,
@@ -94,12 +116,33 @@ export async function saveCompanyDataAction(
         endereco,
         cidade,
         uf,
-      })
-      .onConflictDoNothing();
+      });
+    }
   } else if (user.role === "construtora") {
-    await db
-      .insert(construtoras)
-      .values({
+    const existing = await db
+      .select()
+      .from(construtoras)
+      .where(eq(construtoras.cnpj, cnpj))
+      .limit(1);
+    if (existing[0]) {
+      await db
+        .update(construtoras)
+        .set({
+          ownerUserId: user.id,
+          razaoSocial,
+          nomeFantasia,
+          telefone,
+          email: emailEmpresa,
+          cep,
+          endereco,
+          cidade,
+          uf,
+          onboardingStatus: "documentos_enviados",
+          updatedAt: new Date(),
+        })
+        .where(eq(construtoras.id, existing[0].id));
+    } else {
+      await db.insert(construtoras).values({
         ownerUserId: user.id,
         razaoSocial,
         nomeFantasia,
@@ -111,8 +154,8 @@ export async function saveCompanyDataAction(
         cidade,
         uf,
         onboardingStatus: "documentos_enviados",
-      })
-      .onConflictDoNothing();
+      });
+    }
   }
 
   revalidatePath("/painel");
