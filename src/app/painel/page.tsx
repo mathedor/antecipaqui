@@ -11,10 +11,19 @@ export default async function PainelPage() {
   const user = await getCurrentDbUser();
   if (!user) redirect("/entrar");
 
+  // Admin → /admin
+  if (user.role === "admin") {
+    redirect("/admin");
+  }
+
+  // Onboarding pendente → vai direto pra escolha de tipo + dados
+  if (user.onboardingStatus === "pendente") {
+    redirect("/painel/onboarding");
+  }
+
   if (user.role === "construtora") {
     return <ConstrutoraDashboard user={user} />;
   }
 
-  // Default: corretor / imobiliaria / admin
   return <CorretorDashboard user={user} />;
 }
