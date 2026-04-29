@@ -4,9 +4,36 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { users, imobiliarias, construtoras } from "@/db/schema";
+import { users, imobiliarias, construtoras, documentos } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
+
+type DocumentoTipo =
+  | "contrato_social"
+  | "comprovante_endereco"
+  | "creci";
+
+async function persistDocumentos(
+  args: {
+    userId: string;
+    imobiliariaId?: string;
+    construtoraId?: string;
+    docs: { tipo: DocumentoTipo; url: string; nome: string }[];
+  },
+) {
+  const rows = args.docs
+    .filter((d) => d.url)
+    .map((d) => ({
+      tipo: d.tipo,
+      url: d.url,
+      nomeOriginal: d.nome,
+      userId: args.userId,
+      imobiliariaId: args.imobiliariaId ?? null,
+      construtoraId: args.construtoraId ?? null,
+    }));
+  if (rows.length === 0) return;
+  await db.insert(documentos).values(rows);
+}
 
 type Role = "corretor" | "imobiliaria" | "construtora";
 
@@ -79,9 +106,20 @@ export async function saveCompanyDataAction(
     })
     .where(eq(users.id, user.id));
 
+  // Documentos enviados (URLs do Vercel Blob, vindos do form)
+  const docContratoSocial = String(formData.get("doc_contrato_social") || "");
+  const docComprovEndereco = String(formData.get("doc_comprovante_endereco") || "");
+  const docCreci = String(formData.get("doc_creci") || "");
+  const nomeContratoSocial = String(formData.get("doc_contrato_social_nome") || "contrato_social.pdf");
+  const nomeComprovEndereco = String(formData.get("doc_comprovante_endereco_nome") || "comprovante.pdf");
+  const nomeCreci = String(formData.get("doc_creci_nome") || "creci.pdf");
+
   // Cria/assume empresa de acordo com role.
   // Se uma row com mesmo CNPJ já existe (ex: cadastrada por outro user
   // durante operação), o user atual ASSUME a titularidade.
+  let imobiliariaId: string | undefined;
+  let construtoraId: string | undefined;
+
   if (user.role === "imobiliaria" || user.role === "corretor") {
     const existing = await db
       .select()
@@ -104,20 +142,34 @@ export async function saveCompanyDataAction(
           updatedAt: new Date(),
         })
         .where(eq(imobiliarias.id, existing[0].id));
+      imobiliariaId = existing[0].id;
     } else {
-      await db.insert(imobiliarias).values({
-        ownerUserId: user.id,
-        razaoSocial,
-        nomeFantasia,
-        cnpj,
-        creciResponsavel: creci,
-        telefone,
-        cep,
-        endereco,
-        cidade,
-        uf,
-      });
+      const [created] = await db
+        .insert(imobiliarias)
+        .values({
+          ownerUserId: user.id,
+          razaoSocial,
+          nomeFantasia,
+          cnpj,
+          creciResponsavel: creci,
+          telefone,
+          cep,
+          endereco,
+          cidade,
+          uf,
+        })
+        .returning({ id: imobiliarias.id });
+      imobiliariaId = created.id;
     }
+    await persistDocumentos({
+      userId: user.id,
+      imobiliariaId,
+      docs: [
+        { tipo: "contrato_social", url: docContratoSocial, nome: nomeContratoSocial },
+        { tipo: "comprovante_endereco", url: docComprovEndereco, nome: nomeComprovEndereco },
+        { tipo: "creci", url: docCreci, nome: nomeCreci },
+      ],
+    });
   } else if (user.role === "construtora") {
     const existing = await db
       .select()
@@ -141,21 +193,34 @@ export async function saveCompanyDataAction(
           updatedAt: new Date(),
         })
         .where(eq(construtoras.id, existing[0].id));
+      construtoraId = existing[0].id;
     } else {
-      await db.insert(construtoras).values({
-        ownerUserId: user.id,
-        razaoSocial,
-        nomeFantasia,
-        cnpj,
-        telefone,
-        email: emailEmpresa,
-        cep,
-        endereco,
-        cidade,
-        uf,
-        onboardingStatus: "documentos_enviados",
-      });
+      const [created] = await db
+        .insert(construtoras)
+        .values({
+          ownerUserId: user.id,
+          razaoSocial,
+          nomeFantasia,
+          cnpj,
+          telefone,
+          email: emailEmpresa,
+          cep,
+          endereco,
+          cidade,
+          uf,
+          onboardingStatus: "documentos_enviados",
+        })
+        .returning({ id: construtoras.id });
+      construtoraId = created.id;
     }
+    await persistDocumentos({
+      userId: user.id,
+      construtoraId,
+      docs: [
+        { tipo: "contrato_social", url: docContratoSocial, nome: nomeContratoSocial },
+        { tipo: "comprovante_endereco", url: docComprovEndereco, nome: nomeComprovEndereco },
+      ],
+    });
   }
 
   revalidatePath("/painel");

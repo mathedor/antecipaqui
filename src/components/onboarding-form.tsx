@@ -7,6 +7,7 @@ import {
   type SaveCompanyState,
 } from "@/lib/actions/onboarding";
 import { maskCNPJ, maskCEP, maskPhone, UF_LIST } from "@/lib/cnpj";
+import { FileUploadField, type UploadedBlob } from "./file-upload-field";
 
 type Props = {
   role: "corretor" | "imobiliaria" | "construtora";
@@ -22,6 +23,9 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
   const [cnpj, setCnpj] = useState("");
   const [cep, setCep] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [docContratoSocial, setDocContratoSocial] = useState<UploadedBlob | null>(null);
+  const [docComprovEndereco, setDocComprovEndereco] = useState<UploadedBlob | null>(null);
+  const [docCreci, setDocCreci] = useState<UploadedBlob | null>(null);
 
   useEffect(() => {
     if (state?.ok) router.push(state.redirectTo);
@@ -144,19 +148,53 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
         </div>
       </div>
 
+      {/* DOCUMENTOS KYC */}
+      <div className="border-t border-border pt-5">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-4">
+          documentos KYC
+        </div>
+        <div className="space-y-4">
+          <FileUploadField
+            label="Contrato social"
+            name="doc_contrato_social"
+            required
+            folder="kyc/contrato-social"
+            description="Última alteração contratual atualizada na Junta Comercial."
+            onChange={setDocContratoSocial}
+          />
+          <FileUploadField
+            label="Comprovante de endereço"
+            name="doc_comprovante_endereco"
+            required
+            folder="kyc/comprovante-endereco"
+            description="Conta de luz, água, telefone ou contrato de locação — últimos 90 dias."
+            onChange={setDocComprovEndereco}
+          />
+          {!isConstrutora && (
+            <FileUploadField
+              label="Comprovante de CRECI"
+              name="doc_creci"
+              required
+              folder="kyc/creci"
+              description="Carteira ou certidão de regularidade do CRECI."
+              onChange={setDocCreci}
+            />
+          )}
+          {/* Hidden inputs com nome do arquivo (pra exibir lindo no painel admin) */}
+          <input type="hidden" name="doc_contrato_social_nome" value={docContratoSocial?.name ?? ""} />
+          <input type="hidden" name="doc_comprovante_endereco_nome" value={docComprovEndereco?.name ?? ""} />
+          <input type="hidden" name="doc_creci_nome" value={docCreci?.name ?? ""} />
+        </div>
+      </div>
+
       <button
         type="submit"
         disabled={pending}
         className="btn-primary !w-full justify-center !h-12"
       >
-        {pending ? "Salvando..." : "Continuar pra documentos"}
+        {pending ? "Salvando..." : "Concluir cadastro"}
         <span className="arrow">→</span>
       </button>
-
-      <p className="text-center text-xs text-fg-dim">
-        Próxima etapa: upload do contrato social, comprovante de endereço e
-        dados bancários.
-      </p>
     </form>
   );
 }

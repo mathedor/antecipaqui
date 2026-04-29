@@ -11,6 +11,7 @@ import {
   operacoes,
   parcelasComissao,
   operacaoEvents,
+  documentos,
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
@@ -200,12 +201,49 @@ export async function createOperacaoAction(
     })),
   );
 
+  // Documentos da operação (URLs do Vercel Blob)
+  const docRows = [
+    {
+      tipo: "contrato_venda" as const,
+      url: String(formData.get("doc_contrato_venda") || ""),
+      nome: String(formData.get("doc_contrato_venda_nome") || "contrato_venda.pdf"),
+    },
+    {
+      tipo: "contrato_comissao" as const,
+      url: String(formData.get("doc_contrato_comissao") || ""),
+      nome: String(formData.get("doc_contrato_comissao_nome") || "contrato_comissao.pdf"),
+    },
+    {
+      tipo: "nota_fiscal" as const,
+      url: String(formData.get("doc_nota_fiscal") || ""),
+      nome: String(formData.get("doc_nota_fiscal_nome") || "nota_fiscal.pdf"),
+    },
+  ].filter((d) => d.url);
+
+  if (docRows.length > 0) {
+    await db.insert(documentos).values(
+      docRows.map((d) => ({
+        tipo: d.tipo,
+        url: d.url,
+        nomeOriginal: d.nome,
+        userId: user.id,
+        operacaoId: op.id,
+      })),
+    );
+  }
+
   // Audit log
   await db.insert(operacaoEvents).values({
     operacaoId: op.id,
     userId: user.id,
     type: "operacao_created",
-    payload: { numero: op.numero, valorComissao, vp, desagio },
+    payload: {
+      numero: op.numero,
+      valorComissao,
+      vp,
+      desagio,
+      docs: docRows.length,
+    },
   });
 
   revalidatePath("/painel");
@@ -321,7 +359,25 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
     .where(eq(parcelasComissao.operacaoId, operacaoId))
     .orderBy(parcelasComissao.numero);
 
-  return { ...op, parcelas, viewerRole: isConstrutora ? "construtora" as const : "corretor" as const };
+  const docs = await db
+    .select({
+      id: documentos.id,
+      tipo: documentos.tipo,
+      url: documentos.url,
+      nomeOriginal: documentos.nomeOriginal,
+      sizeBytes: documentos.sizeBytes,
+      createdAt: documentos.createdAt,
+    })
+    .from(documentos)
+    .where(eq(documentos.operacaoId, operacaoId))
+    .orderBy(documentos.createdAt);
+
+  return {
+    ...op,
+    parcelas,
+    documentos: docs,
+    viewerRole: isConstrutora ? ("construtora" as const) : ("corretor" as const),
+  };
 }
 
 /* =========================================

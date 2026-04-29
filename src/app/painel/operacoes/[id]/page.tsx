@@ -3,22 +3,47 @@ import { redirect, notFound } from "next/navigation";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { getOperacaoDetail } from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { PrintButton } from "@/components/print-button";
 import { formatBRL, formatPercent } from "@/lib/format";
 
 export const metadata = {
-  title: "Detalhe da operação",
+  title: "Borderô da operação",
 };
 
 type Params = { params: Promise<{ id: string }> };
 
-const PARCELA_LABEL: Record<string, { label: string; tone: string }> = {
-  a_vencer: { label: "A vencer", tone: "muted" },
-  vencida: { label: "Vencida", tone: "warn" },
-  paga: { label: "Paga", tone: "success" },
+const TIPO_LABEL: Record<string, string> = {
+  contrato_venda: "Contrato de compra e venda",
+  contrato_comissao: "Contrato de comissionamento",
+  nota_fiscal: "Nota fiscal",
+  contrato_social: "Contrato social",
+  comprovante_endereco: "Comprovante de endereço",
+  creci: "Comprovante CRECI",
+  rg: "RG",
+  cpf: "CPF",
+  outro: "Outro",
 };
 
 function formatDate(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("pt-BR");
+}
+
+function formatDateTime(d: Date | string) {
+  const dt = typeof d === "string" ? new Date(d) : d;
+  return dt.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function monthsBetween(from: Date, to: Date) {
+  const y = to.getFullYear() - from.getFullYear();
+  const m = to.getMonth() - from.getMonth();
+  const dayFrac = (to.getDate() - from.getDate()) / 30;
+  return Math.max(y * 12 + m + dayFrac, 0);
 }
 
 export default async function OperacaoDetailPage({ params }: Params) {
@@ -29,214 +54,266 @@ export default async function OperacaoDetailPage({ params }: Params) {
   const op = await getOperacaoDetail(id, user.id);
   if (!op) notFound();
 
-  return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:py-16">
-      <Link
-        href="/painel/operacoes"
-        className="font-mono text-[11px] uppercase tracking-wider text-fg-muted hover:text-fg transition-colors mb-3 inline-block"
-      >
-        ← operações
-      </Link>
+  const taxaMensal = parseFloat(op.taxaMensal);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-      <div className="flex items-start justify-between gap-4 flex-wrap mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-display-md font-mono">{op.numero}</h1>
-            <OperacaoStatusBadge status={op.status} />
-          </div>
-          <p className="text-fg-muted">
-            Criada em{" "}
-            {new Date(op.createdAt).toLocaleString("pt-BR", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
+  const parcelasComCalculo = op.parcelas.map((p) => {
+    const venc = new Date(p.vencimento + "T00:00:00");
+    const meses = monthsBetween(today, venc);
+    const valorNominal = parseFloat(p.valor);
+    const fator = Math.pow(1 + taxaMensal, meses);
+    const vp = valorNominal / fator;
+    const juros = valorNominal - vp;
+    return { ...p, meses, vp, juros, valorNominal };
+  });
+
+  const totalNominal = parcelasComCalculo.reduce((s, p) => s + p.valorNominal, 0);
+  const totalVP = parcelasComCalculo.reduce((s, p) => s + p.vp, 0);
+  const totalJuros = parcelasComCalculo.reduce((s, p) => s + p.juros, 0);
+
+  return (
+    <section className="mx-auto max-w-6xl px-6 py-12 md:py-16 print:py-4 print:px-0">
+      <div className="flex items-center justify-between mb-6 print:hidden">
+        <Link
+          href="/painel/operacoes"
+          className="font-mono text-[11px] uppercase tracking-wider text-fg-muted hover:text-fg transition-colors"
+        >
+          ← operações
+        </Link>
+        <PrintButton>🖨 Imprimir / salvar PDF</PrintButton>
       </div>
 
-      {op.status === "recusada" && op.motivoRecusa && (
-        <div className="rounded-2xl border border-danger/40 bg-red-50 p-5 mb-6">
-          <div className="font-mono text-[10px] uppercase tracking-wider text-danger mb-2">
-            motivo da recusa
+      <article className="rounded-3xl border border-border bg-bg-elev p-8 md:p-12 print:border-0 print:rounded-none print:p-0 print:bg-transparent">
+        <header className="border-b border-border pb-6 mb-8 flex items-start justify-between gap-6 flex-wrap">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-accent mb-2">
+              borderô · operação antecipada
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-mono">
+              {op.numero}
+            </h1>
+            <div className="mt-2 text-sm text-fg-muted">
+              Emitido em {formatDateTime(op.createdAt)}
+            </div>
           </div>
-          <p className="text-fg">{op.motivoRecusa}</p>
-        </div>
-      )}
+          <div className="text-right">
+            <OperacaoStatusBadge status={op.status} />
+            <div className="mt-2 text-xs text-fg-dim font-mono">
+              taxa {formatPercent(taxaMensal)} a.m.
+            </div>
+          </div>
+        </header>
 
-      <div className="grid lg:grid-cols-12 gap-6">
-        {/* Coluna principal — dados */}
-        <div className="lg:col-span-7 space-y-5">
-          <Card title="Construtora" subtitle="A devedora da comissão">
-            <div className="text-xl font-bold tracking-tight">
+        {op.status === "recusada" && op.motivoRecusa && (
+          <div className="rounded-2xl border border-danger/40 bg-red-50 p-5 mb-6 print:border print:border-danger">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-danger mb-2">
+              motivo da recusa
+            </div>
+            <p className="text-fg">{op.motivoRecusa}</p>
+          </div>
+        )}
+
+        <div className="grid md:grid-cols-2 gap-5 mb-8">
+          <Card label="Cedente · corretor / imobiliária">
+            <div className="text-sm text-fg-muted mb-1">
+              Quem antecipou a comissão
+            </div>
+            <div className="text-fg font-mono text-sm">
+              user · {op.corretorUserId.slice(0, 16)}…
+            </div>
+          </Card>
+          <Card label="Devedora · construtora">
+            <div className="text-base font-bold tracking-tight">
               {op.construtoraNome ?? "—"}
             </div>
             <div className="mt-1 font-mono text-xs text-fg-muted">
               CNPJ {op.construtoraCnpj ?? "—"}
             </div>
           </Card>
-
-          <Card title="Dados da venda">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Data da venda" value={formatDate(op.dataVenda)} />
-              <Field
-                label="Valor da venda"
-                value={formatBRL(parseFloat(op.valorVenda))}
-              />
-              <Field
-                label="Comissão total"
-                value={formatBRL(parseFloat(op.valorComissao))}
-                highlight
-              />
-              <Field
-                label="Número de parcelas"
-                value={`${op.numeroParcelas}x`}
-              />
-            </div>
-          </Card>
-
-          <Card title="Cronograma de parcelas">
-            <ul className="space-y-2">
-              {op.parcelas.map((p) => {
-                const parcela =
-                  PARCELA_LABEL[p.status] ?? PARCELA_LABEL.a_vencer;
-                return (
-                  <li
-                    key={p.id}
-                    className="grid grid-cols-12 gap-3 items-center py-2.5 border-b border-border last:border-0"
-                  >
-                    <span className="col-span-2 font-mono text-xs text-fg-dim">
-                      {String(p.numero).padStart(2, "0")}
-                    </span>
-                    <span className="col-span-4 text-sm text-fg">
-                      {formatDate(p.vencimento)}
-                    </span>
-                    <span className="col-span-3 text-right font-mono tabular text-sm text-fg-muted">
-                      {formatBRL(parseFloat(p.valor))}
-                    </span>
-                    <span
-                      className={`col-span-3 text-right font-mono text-[10px] uppercase tracking-wider ${
-                        parcela.tone === "success"
-                          ? "text-success"
-                          : parcela.tone === "warn"
-                            ? "text-warn"
-                            : "text-fg-dim"
-                      }`}
-                    >
-                      {parcela.label}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
         </div>
 
-        {/* Coluna lateral — sumário financeiro */}
-        <aside className="lg:col-span-5">
-          <div className="lg:sticky lg:top-24 rounded-3xl bg-bg-dark text-fg-inverse p-7 md:p-9 relative overflow-hidden">
-            <div className="absolute inset-0 bg-mesh-dark pointer-events-none" aria-hidden />
-            <div className="relative">
-              <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-fg-inverse/70 mb-2">
-                {op.status === "ativa" || op.status === "liquidada"
-                  ? "você recebeu"
-                  : "você recebe"}
-              </div>
-              <div className="font-mono tabular text-4xl md:text-5xl font-bold tracking-tight text-gradient-blue">
-                {formatBRL(parseFloat(op.valorPresente))}
-              </div>
-              <div className="mt-1 text-fg-inverse/60 text-sm">
-                taxa {formatPercent(parseFloat(op.taxaMensal))} a.m.
-              </div>
-
-              <div className="mt-7 pt-6 border-t border-white/10 space-y-3 text-sm">
-                <Row
-                  label="Comissão total"
-                  value={formatBRL(parseFloat(op.valorComissao))}
-                />
-                <Row label="Diluído em" value={`${op.numeroParcelas}x`} />
-                <Row
-                  label="Deságio"
-                  value={`− ${formatBRL(parseFloat(op.desagio))}`}
-                  highlight="warn"
-                />
-              </div>
-            </div>
+        <Card label="Resumo financeiro" className="mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Stat label="Venda total" value={formatBRL(parseFloat(op.valorVenda))} />
+            <Stat
+              label="Comissão"
+              value={formatBRL(parseFloat(op.valorComissao))}
+            />
+            <Stat
+              label="Valor presente"
+              value={formatBRL(parseFloat(op.valorPresente))}
+              highlight
+            />
+            <Stat
+              label="Deságio total"
+              value={formatBRL(parseFloat(op.desagio))}
+              tone="warn"
+            />
           </div>
-        </aside>
-      </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-border">
+            <Stat label="Data da venda" value={formatDate(op.dataVenda)} />
+            <Stat label="Parcelas" value={`${op.numeroParcelas}x`} />
+            <Stat label="Taxa mensal" value={formatPercent(taxaMensal)} />
+            <Stat
+              label="% deságio"
+              value={`${(((parseFloat(op.desagio)) / parseFloat(op.valorComissao)) * 100).toFixed(2)}%`}
+            />
+          </div>
+        </Card>
+
+        <Card label="Cronograma com cálculo de juros por parcela" className="mb-8">
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-2 font-mono text-[10px] uppercase tracking-wider text-fg-dim">Nº</th>
+                  <th className="text-left py-3 px-2 font-mono text-[10px] uppercase tracking-wider text-fg-dim">Vencimento</th>
+                  <th className="text-right py-3 px-2 font-mono text-[10px] uppercase tracking-wider text-fg-dim">Prazo</th>
+                  <th className="text-right py-3 px-2 font-mono text-[10px] uppercase tracking-wider text-fg-dim">Valor nominal</th>
+                  <th className="text-right py-3 px-2 font-mono text-[10px] uppercase tracking-wider text-fg-dim">Juros</th>
+                  <th className="text-right py-3 px-2 font-mono text-[10px] uppercase tracking-wider text-fg-dim">Valor presente</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parcelasComCalculo.map((p) => (
+                  <tr
+                    key={p.id}
+                    className="border-b border-border last:border-0 hover:bg-bg-card transition-colors"
+                  >
+                    <td className="py-3 px-2 font-mono text-xs text-fg-dim">
+                      {String(p.numero).padStart(2, "0")}
+                    </td>
+                    <td className="py-3 px-2 text-fg">{formatDate(p.vencimento)}</td>
+                    <td className="py-3 px-2 text-right font-mono tabular text-fg-muted text-xs">
+                      {p.meses.toFixed(1)} mês{p.meses === 1 ? "" : "es"}
+                    </td>
+                    <td className="py-3 px-2 text-right font-mono tabular text-fg">
+                      {formatBRL(p.valorNominal)}
+                    </td>
+                    <td className="py-3 px-2 text-right font-mono tabular text-warn">
+                      − {formatBRL(p.juros)}
+                    </td>
+                    <td className="py-3 px-2 text-right font-mono tabular font-semibold text-accent">
+                      {formatBRL(p.vp)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-border-strong bg-bg-card">
+                  <td colSpan={3} className="py-3 px-2 font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Totais
+                  </td>
+                  <td className="py-3 px-2 text-right font-mono tabular text-fg font-bold">
+                    {formatBRL(totalNominal)}
+                  </td>
+                  <td className="py-3 px-2 text-right font-mono tabular text-warn font-bold">
+                    − {formatBRL(totalJuros)}
+                  </td>
+                  <td className="py-3 px-2 text-right font-mono tabular text-accent font-bold">
+                    {formatBRL(totalVP)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+
+        {op.documentos.length > 0 && (
+          <Card label="Documentos anexados" className="mb-8 print:break-before-page">
+            <ul className="grid sm:grid-cols-2 gap-3">
+              {op.documentos.map((d) => (
+                <li
+                  key={d.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-border bg-bg hover:border-accent transition-colors"
+                >
+                  <div className="min-w-0">
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-0.5">
+                      {TIPO_LABEL[d.tipo] ?? d.tipo}
+                    </div>
+                    <div className="text-sm text-fg truncate" title={d.nomeOriginal}>
+                      {d.nomeOriginal}
+                    </div>
+                  </div>
+                  <a
+                    href={d.url}
+                    target="_blank"
+                    rel="noopener"
+                    className="text-accent text-sm font-semibold whitespace-nowrap shrink-0 print:hidden"
+                  >
+                    abrir ↗
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        <footer className="text-center text-xs text-fg-dim border-t border-border pt-6 mt-8">
+          <p className="font-mono">
+            Borderô gerado pela plataforma Antecipaqui · Documento informativo
+          </p>
+          <p className="mt-1">
+            Os valores são resultado do cálculo de valor presente com juros
+            compostos mensais à taxa de {formatPercent(taxaMensal)} ao mês,
+            descontados a partir da data de emissão deste documento.
+          </p>
+        </footer>
+      </article>
+
+      <style>{`
+        @media print {
+          @page { size: A4; margin: 14mm; }
+          body { background: white !important; color: black !important; }
+        }
+      `}</style>
     </section>
   );
 }
 
 function Card({
-  title,
-  subtitle,
+  label,
   children,
+  className = "",
 }: {
-  title: string;
-  subtitle?: string;
+  label: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-bg-elev p-6 md:p-7">
-      <div className="mb-5">
-        <h3 className="text-lg font-bold tracking-tight">{title}</h3>
-        {subtitle && <p className="text-xs text-fg-muted mt-0.5">{subtitle}</p>}
+    <section
+      className={`rounded-2xl border border-border bg-bg p-5 md:p-7 print:border print:rounded-none ${className}`}
+    >
+      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-4">
+        {label}
       </div>
       {children}
-    </div>
+    </section>
   );
 }
 
-function Field({
+function Stat({
   label,
   value,
-  highlight,
+  highlight = false,
+  tone = "default",
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  tone?: "default" | "warn";
 }) {
+  const valueColor =
+    tone === "warn" ? "text-warn" : highlight ? "text-accent" : "text-fg";
   return (
     <div>
       <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
         {label}
       </div>
-      <div
-        className={`font-mono tabular ${
-          highlight ? "text-fg text-lg font-semibold" : "text-fg"
-        }`}
-      >
+      <div className={`font-mono tabular text-base md:text-lg font-bold ${valueColor}`}>
         {value}
       </div>
-    </div>
-  );
-}
-
-function Row({
-  label,
-  value,
-  highlight = "default",
-}: {
-  label: string;
-  value: string;
-  highlight?: "default" | "muted" | "warn";
-}) {
-  const valueColor =
-    highlight === "warn"
-      ? "text-orange-300"
-      : highlight === "muted"
-        ? "text-fg-inverse/80"
-        : "text-fg-inverse";
-  return (
-    <div className="flex items-baseline justify-between">
-      <span className="text-fg-inverse/60 text-xs uppercase tracking-wider font-mono">
-        {label}
-      </span>
-      <span className={`font-mono tabular ${valueColor}`}>{value}</span>
     </div>
   );
 }

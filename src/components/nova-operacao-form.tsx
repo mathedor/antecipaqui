@@ -7,6 +7,7 @@ import {
   type CreateOperacaoState,
 } from "@/lib/actions/operacoes";
 import { ConstrutoraModal } from "./construtora-modal";
+import { FileUploadField, type UploadedBlob } from "./file-upload-field";
 import { formatBRL, valorPresente } from "@/lib/format";
 
 type Construtora = {
@@ -82,6 +83,10 @@ export function NovaOperacaoForm({ construtoras }: Props) {
   );
   const [numParcelas, setNumParcelas] = useState(12);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
+
+  const [docContratoVenda, setDocContratoVenda] = useState<UploadedBlob | null>(null);
+  const [docContratoComissao, setDocContratoComissao] = useState<UploadedBlob | null>(null);
+  const [docNotaFiscal, setDocNotaFiscal] = useState<UploadedBlob | null>(null);
 
   const valorComissaoNum = unmaskCurrency(valorComissao);
 
@@ -298,9 +303,50 @@ export function NovaOperacaoForm({ construtoras }: Props) {
             <input type="hidden" name="parcelas" value={JSON.stringify(parcelas)} />
           </Section>
 
+          {/* Documentos da operação */}
+          <Section
+            title="04. Documentos da operação"
+            subtitle="Anexe os 3 PDFs que comprovam a operação"
+          >
+            <FileUploadField
+              label="Contrato de compra e venda do imóvel"
+              name="doc_contrato_venda"
+              required
+              folder="operacoes/contrato-venda"
+              description="Contrato assinado com o comprador final."
+              onChange={setDocContratoVenda}
+            />
+            <FileUploadField
+              label="Contrato de comissionamento"
+              name="doc_contrato_comissao"
+              required
+              folder="operacoes/contrato-comissao"
+              description="Contrato firmado entre você (corretor/imobiliária) e a construtora."
+              onChange={setDocContratoComissao}
+            />
+            <FileUploadField
+              label="Nota fiscal da comissão"
+              name="doc_nota_fiscal"
+              required
+              folder="operacoes/nota-fiscal"
+              description="NF emitida pelo corretor/imobiliária pra construtora."
+              onChange={setDocNotaFiscal}
+            />
+            <input type="hidden" name="doc_contrato_venda_nome" value={docContratoVenda?.name ?? ""} />
+            <input type="hidden" name="doc_contrato_comissao_nome" value={docContratoComissao?.name ?? ""} />
+            <input type="hidden" name="doc_nota_fiscal_nome" value={docNotaFiscal?.name ?? ""} />
+          </Section>
+
           <button
             type="submit"
-            disabled={pending || parcelas.length === 0 || !construtoraId}
+            disabled={
+              pending ||
+              parcelas.length === 0 ||
+              !construtoraId ||
+              !docContratoVenda ||
+              !docContratoComissao ||
+              !docNotaFiscal
+            }
             className="btn-primary !w-full justify-center !h-13"
           >
             {pending ? "Registrando..." : "Registrar operação"}
