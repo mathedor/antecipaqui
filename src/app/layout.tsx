@@ -1,0 +1,66 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { ptBR } from "@clerk/localizations";
+import "./globals.css";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { clerkAppearance } from "@/lib/clerk-appearance";
+
+const sans = Geist({
+  variable: "--font-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const mono = Geist_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://www.antecipaqui.digital"),
+  title: {
+    default: "Antecipaqui — Antecipação de Comissões Imobiliárias",
+    template: "%s · Antecipaqui",
+  },
+  description:
+    "Receba sua comissão hoje, mesmo se a venda for parcelada em 24x. Antecipação para corretores, imobiliárias e construtoras — com segurança, agilidade e sem burocracia.",
+  keywords: [
+    "antecipação de comissão imobiliária",
+    "factoring imobiliário",
+    "corretor de imóveis",
+    "imobiliária",
+    "construtora",
+    "fluxo de caixa",
+    "comissão antecipada",
+  ],
+  openGraph: {
+    title: "Antecipaqui — Receba sua comissão hoje",
+    description:
+      "Antecipação de comissões imobiliárias. Em 1 dia, sua comissão parcelada vira dinheiro na conta.",
+    locale: "pt_BR",
+    type: "website",
+  },
+  robots: { index: true, follow: true },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <ClerkProvider localization={ptBR} appearance={clerkAppearance}>
+      <html
+        lang="pt-BR"
+        className={`${sans.variable} ${mono.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col bg-bg text-fg pb-14 md:pb-0">
+          <SiteHeader />
+          <main className="flex-1 relative z-10">{children}</main>
+          <SiteFooter />
+        </body>
+      </html>
+    </ClerkProvider>
+  );
+}
