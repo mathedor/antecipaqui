@@ -2,8 +2,10 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { getOperacaoDetail } from "@/lib/actions/operacoes";
+import { getContratoForOperacao } from "@/lib/actions/contract";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PrintButton } from "@/components/print-button";
+import { ContratoCard } from "@/components/contrato-card";
 import { formatBRL, formatPercent } from "@/lib/format";
 
 export const metadata = {
@@ -51,7 +53,10 @@ export default async function OperacaoDetailPage({ params }: Params) {
   const user = await getCurrentDbUser();
   if (!user) redirect("/entrar");
 
-  const op = await getOperacaoDetail(id, user.id);
+  const [op, contrato] = await Promise.all([
+    getOperacaoDetail(id, user.id),
+    getContratoForOperacao(id),
+  ]);
   if (!op) notFound();
 
   const taxaMensal = parseFloat(op.taxaMensal);
@@ -111,6 +116,17 @@ export default async function OperacaoDetailPage({ params }: Params) {
               motivo da recusa
             </div>
             <p className="text-fg">{op.motivoRecusa}</p>
+          </div>
+        )}
+
+        {contrato && (
+          <div className="mb-6">
+            <ContratoCard
+              pdfUrl={contrato.pdfUrl}
+              createdAt={contrato.createdAt}
+              status={contrato.status}
+              operacaoId={op.id}
+            />
           </div>
         )}
 

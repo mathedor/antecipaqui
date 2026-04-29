@@ -4,8 +4,10 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { AdminAprovarRecusar } from "@/components/admin-aprovar-recusar";
+import { ContratoCard } from "@/components/contrato-card";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { getAdminOperacaoDetail } from "@/lib/actions/admin";
+import { getContratoForOperacao } from "@/lib/actions/contract";
 
 export const metadata = {
   title: "Admin · Detalhe da operação",
@@ -45,7 +47,10 @@ type Params = { params: Promise<{ id: string }> };
 export default async function AdminOperacaoDetail({ params }: Params) {
   const admin = await requireAdmin();
   const { id } = await params;
-  const op = await getAdminOperacaoDetail(id);
+  const [op, contrato] = await Promise.all([
+    getAdminOperacaoDetail(id),
+    getContratoForOperacao(id),
+  ]);
   if (!op) notFound();
 
   const taxa = parseFloat(op.taxaMensal);
@@ -87,12 +92,24 @@ export default async function AdminOperacaoDetail({ params }: Params) {
       )}
 
       {/* Aprovar / recusar */}
-      <div className="mb-8">
+      <div className="mb-6">
         <AdminAprovarRecusar
           operacaoId={op.id}
           isPending={op.status === "em_analise"}
         />
       </div>
+
+      {contrato && (
+        <div className="mb-6">
+          <ContratoCard
+            pdfUrl={contrato.pdfUrl}
+            createdAt={contrato.createdAt}
+            status={contrato.status}
+            adminMode
+            operacaoId={op.id}
+          />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-12 gap-5">
         <div className="lg:col-span-7 space-y-5">

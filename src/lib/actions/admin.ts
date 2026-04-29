@@ -14,6 +14,7 @@ import {
   type User,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
+import { generateContractForOperacao } from "@/lib/actions/contract";
 
 /* =========================================
    STATS — Admin dashboard
@@ -191,10 +192,46 @@ export async function approveOperacaoAction(operacaoId: string) {
     payload: { adminId: admin.id, adminNome: admin.nome },
   });
 
+  // Gera o contrato PDF + borderô anexo
+  try {
+    const { contratoId, url } = await generateContractForOperacao(operacaoId);
+    await db.insert(operacaoEvents).values({
+      operacaoId,
+      userId: admin.id,
+      type: "contract_generated",
+      payload: { contratoId, url },
+    });
+  } catch (e) {
+    // Não falhar a aprovação se o PDF der pau — admin pode regerar
+    console.error("[contract] generation failed:", e);
+    await db.insert(operacaoEvents).values({
+      operacaoId,
+      userId: admin.id,
+      type: "contract_generation_failed",
+      payload: { error: (e as Error).message },
+    });
+  }
+
   revalidatePath("/admin");
   revalidatePath(`/admin/operacoes/${operacaoId}`);
   revalidatePath("/admin/operacoes");
   revalidatePath("/painel/operacoes");
+  revalidatePath(`/painel/operacoes/${operacaoId}`);
+}
+
+/** Botão "Regenerar contrato" — útil se o primeiro deu erro ou dados mudaram. */
+export async function regenerateContractAction(operacaoId: string) {
+  const admin = await requireAdmin();
+  const { contratoId, url } = await generateContractForOperacao(operacaoId);
+  await db.insert(operacaoEvents).values({
+    operacaoId,
+    userId: admin.id,
+    type: "contract_regenerated",
+    payload: { contratoId, url },
+  });
+  revalidatePath(`/admin/operacoes/${operacaoId}`);
+  revalidatePath(`/painel/operacoes/${operacaoId}`);
+  return { url };
 }
 
 export async function rejectOperacaoAction(formData: FormData) {
