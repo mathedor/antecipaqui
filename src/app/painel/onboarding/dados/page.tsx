@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { OnboardingProgress } from "@/components/onboarding-progress";
 import { OnboardingForm } from "@/components/onboarding-form";
+import { SairButton } from "@/components/sair-button";
 import { getCurrentDbUser } from "@/lib/auth-user";
 
 export const metadata = {
@@ -28,8 +29,9 @@ export default async function OnboardingDadosPage() {
       <div className="absolute inset-0 bg-mesh pointer-events-none" aria-hidden />
       <div className="relative w-full max-w-2xl">
         <div className="rounded-3xl border border-border bg-bg-elev p-8 md:p-12 shadow-xl">
-          <div className="flex justify-center mb-8">
+          <div className="flex items-center justify-between mb-8">
             <Logo size={40} />
+            <SairButton />
           </div>
 
           <OnboardingProgress step={2} />

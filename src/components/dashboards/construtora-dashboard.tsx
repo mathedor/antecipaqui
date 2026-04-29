@@ -6,6 +6,7 @@ import {
   getOperacoesByConstrutora,
 } from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { SairButton } from "@/components/sair-button";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -68,7 +69,10 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
             </span>
           </div>
         </div>
-        <UserButton />
+        <div className="flex items-center gap-3">
+          <SairButton />
+          <UserButton />
+        </div>
       </div>
 
       {!podeOperar && (

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { OnboardingProgress } from "@/components/onboarding-progress";
+import { SairButton } from "@/components/sair-button";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { selectRoleAction } from "@/lib/actions/onboarding";
 
@@ -41,8 +42,9 @@ export default async function OnboardingStartPage() {
       <div className="absolute inset-0 bg-mesh pointer-events-none" aria-hidden />
       <div className="relative w-full max-w-2xl">
         <div className="rounded-3xl border border-border bg-bg-elev p-8 md:p-12 shadow-xl">
-          <div className="flex justify-center mb-8">
+          <div className="flex items-center justify-between mb-8">
             <Logo size={40} />
+            <SairButton />
           </div>
 
           <OnboardingProgress step={1} />
