@@ -83,6 +83,12 @@ export async function saveCompanyDataAction(
   const creci = String(formData.get("creci") || "").trim() || null;
   const emailEmpresa = String(formData.get("email") || "").trim() || null;
 
+  // Dados bancários (apenas pra corretor/imobiliária — usados no contrato)
+  const bancoNome = String(formData.get("bancoNome") || "").trim() || null;
+  const bancoCodigo = String(formData.get("bancoCodigo") || "").trim() || null;
+  const bancoAgencia = String(formData.get("bancoAgencia") || "").trim() || null;
+  const bancoConta = String(formData.get("bancoConta") || "").trim() || null;
+
   // Validações
   if (!nome) return { ok: false, error: "Nome é obrigatório" };
   if (!razaoSocial) return { ok: false, error: "Razão social é obrigatória" };
@@ -94,6 +100,18 @@ export async function saveCompanyDataAction(
   if (!cidade) return { ok: false, error: "Cidade é obrigatória" };
   if (uf.length !== 2) return { ok: false, error: "UF inválida" };
   if (!telefone) return { ok: false, error: "Telefone é obrigatório" };
+
+  if (
+    user.role === "corretor" || user.role === "imobiliaria"
+  ) {
+    if (!bancoNome || !bancoAgencia || !bancoConta) {
+      return {
+        ok: false,
+        error:
+          "Dados bancários (banco, agência e conta) são obrigatórios pra corretor/imobiliária — necessários no contrato",
+      };
+    }
+  }
 
   // Atualiza dados do usuário
   await db
@@ -139,6 +157,10 @@ export async function saveCompanyDataAction(
           endereco,
           cidade,
           uf,
+          bancoNome,
+          bancoCodigo,
+          bancoAgencia,
+          bancoConta,
           updatedAt: new Date(),
         })
         .where(eq(imobiliarias.id, existing[0].id));
@@ -157,6 +179,10 @@ export async function saveCompanyDataAction(
           endereco,
           cidade,
           uf,
+          bancoNome,
+          bancoCodigo,
+          bancoAgencia,
+          bancoConta,
         })
         .returning({ id: imobiliarias.id });
       imobiliariaId = created.id;

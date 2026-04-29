@@ -98,6 +98,48 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
         />
       )}
 
+      {/* Dados bancários — só pra corretor/imobiliária (recebe a antecipação) */}
+      {!isConstrutora && (
+        <div className="border-t border-border pt-5">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-3">
+            dados bancários (recebimento)
+          </div>
+          <p className="text-xs text-fg-muted mb-4">
+            Onde o valor da antecipação cai. Esses dados aparecem na cláusula
+            3ª do contrato de cessão.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field
+              name="bancoNome"
+              label="Banco"
+              required
+              placeholder="Ex: Banco C6 S.A."
+            />
+            <Field
+              name="bancoCodigo"
+              label="Código (3 dígitos)"
+              placeholder="336"
+              inputMode="numeric"
+            />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4 mt-4">
+            <Field
+              name="bancoAgencia"
+              label="Agência"
+              required
+              placeholder="0001"
+              inputMode="numeric"
+            />
+            <Field
+              name="bancoConta"
+              label="Conta corrente"
+              required
+              placeholder="40574449-8"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="border-t border-border pt-5">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-3">
           endereço

@@ -124,6 +124,11 @@ export const imobiliarias = pgTable(
     endereco: text("endereco"),
     cidade: text("cidade"),
     uf: text("uf"),
+    // Dados bancários — usados na cláusula 3ª do contrato de cessão
+    bancoNome: text("banco_nome"),
+    bancoCodigo: text("banco_codigo"),
+    bancoAgencia: text("banco_agencia"),
+    bancoConta: text("banco_conta"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
