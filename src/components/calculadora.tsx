@@ -8,14 +8,14 @@ import { LINKS } from "@/lib/links";
 const TAXA_MENSAL = 0.06; // 6% a.m. — taxa média informada
 
 const PRESETS = [
-  { valor: 30000, parcelas: 12, label: "Comissão pequena" },
-  { valor: 80000, parcelas: 24, label: "Padrão" },
-  { valor: 150000, parcelas: 36, label: "Grande" },
+  { valor: 30000, parcelas: 2, label: "Comissão pequena" },
+  { valor: 80000, parcelas: 3, label: "Padrão" },
+  { valor: 150000, parcelas: 4, label: "Grande" },
 ];
 
 export function Calculadora() {
   const [valor, setValor] = useState(80000);
-  const [parcelas, setParcelas] = useState(24);
+  const [parcelas, setParcelas] = useState(3);
 
   const resultado = useMemo(() => {
     const valorHoje = valorPresenteParcelasIguais(valor, parcelas, TAXA_MENSAL);
@@ -107,16 +107,16 @@ export function Calculadora() {
             <input
               id="parcelas"
               type="range"
-              min={2}
-              max={60}
+              min={1}
+              max={4}
               step={1}
               value={parcelas}
               onChange={(e) => setParcelas(Number(e.target.value))}
               className="range-slider"
             />
             <div className="flex justify-between mt-2 text-[10px] font-mono text-fg-dim uppercase tracking-wider">
-              <span>2x</span>
-              <span>60x</span>
+              <span>1x</span>
+              <span>4x · 120 dias</span>
             </div>
           </div>
         </div>

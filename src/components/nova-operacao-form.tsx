@@ -81,7 +81,7 @@ export function NovaOperacaoForm({ construtoras }: Props) {
   const [dataVenda, setDataVenda] = useState(
     new Date().toISOString().slice(0, 10),
   );
-  const [numParcelas, setNumParcelas] = useState(12);
+  const [numParcelas, setNumParcelas] = useState(3);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
 
   const [docContratoVenda, setDocContratoVenda] = useState<UploadedBlob | null>(null);
@@ -251,19 +251,22 @@ export function NovaOperacaoForm({ construtoras }: Props) {
             <div className="flex items-end gap-3 mb-5">
               <div>
                 <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
-                  Número de parcelas
+                  Número de parcelas (máx 4)
                 </label>
                 <input
                   type="number"
                   min={1}
-                  max={60}
+                  max={4}
                   value={numParcelas}
-                  onChange={(e) => setNumParcelas(parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value) || 1;
+                    setNumParcelas(Math.min(Math.max(v, 1), 4));
+                  }}
                   className="w-32 h-12 rounded-xl bg-bg border border-border-strong px-4 text-fg focus:border-accent outline-none transition-colors tabular"
                 />
               </div>
               <span className="text-xs text-fg-dim font-mono pb-3">
-                gera parcelas iguais — você pode ajustar abaixo
+                limite de 120 dias · até 4 parcelas mensais
               </span>
             </div>
             {parcelas.length > 0 && (

@@ -143,6 +143,23 @@ export async function createOperacaoAction(
   }
   if (!Array.isArray(parcelas) || parcelas.length === 0)
     return { ok: false, error: "Adicione pelo menos uma parcela" };
+  if (parcelas.length > 4)
+    return { ok: false, error: "Limite máximo de 4 parcelas (120 dias)" };
+
+  // Valida que nenhuma parcela passa de 120 dias do hoje
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const limite120 = new Date(hoje);
+  limite120.setDate(limite120.getDate() + 120);
+  const passa120 = parcelas.some((p) => {
+    const v = new Date(p.vencimento + "T00:00:00");
+    return v > limite120;
+  });
+  if (passa120)
+    return {
+      ok: false,
+      error: "Parcelas devem vencer dentro de 120 dias da data de hoje",
+    };
 
   const totalParcelas = parcelas.reduce((s, p) => s + Number(p.valor || 0), 0);
   if (Math.abs(totalParcelas - valorComissao) > 0.5) {

@@ -17,7 +17,7 @@ const perfis = [
   {
     num: "01",
     title: "Corretor",
-    body: "Vendeu? Recebe a comissão hoje. Sem esperar 24x. Cadastra a operação, envia os contratos e recebe o valor presente direto na sua conta.",
+    body: "Vendeu? Recebe a comissão hoje. Antecipa até 4 parcelas (120 dias). Cadastra a operação, envia os contratos e recebe o valor presente direto na sua conta.",
     cta: "É meu caso",
     href: LINKS.cadastrar,
     accent: true,
@@ -117,7 +117,7 @@ export default function Home() {
             </span>
             <span className="block text-display-xl-half text-fg-muted mt-3">
               <TextReveal delayMs={500}>
-                Mesmo se a venda for parcelada em 24x.
+                Mesmo que parcelada em até 4x (120 dias).
               </TextReveal>
             </span>
           </h1>

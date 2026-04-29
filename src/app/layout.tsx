@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s · Antecipaqui",
   },
   description:
-    "Receba sua comissão hoje, mesmo se a venda for parcelada em 24x. Antecipação para corretores, imobiliárias e construtoras — com segurança, agilidade e sem burocracia.",
+    "Receba sua comissão hoje, mesmo que parcelada em até 4x (120 dias). Antecipação para corretores, imobiliárias e construtoras — com segurança, agilidade e sem burocracia.",
   keywords: [
     "antecipação de comissão imobiliária",
     "factoring imobiliário",

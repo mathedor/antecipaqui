@@ -48,7 +48,7 @@ const passos = [
 
 const dores = [
   {
-    antes: "Esperar 24 meses",
+    antes: "Esperar 4 meses",
     depois: "1 dia útil",
   },
   {
