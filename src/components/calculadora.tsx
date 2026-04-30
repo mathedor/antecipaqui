@@ -4,7 +4,10 @@ import { useMemo, useState } from "react";
 import { formatBRL, valorPresenteParcelasIguais } from "@/lib/format";
 import { CtaCadastro } from "@/components/cta-buttons";
 
-const TAXA_MENSAL = 0.06; // 6% a.m. — taxa média informada
+type CalculadoraProps = {
+  /** Taxa mensal sugerida vinda do admin (ex: 0.06 = 6%). Default 0.06. */
+  taxaMensalSugerida?: number;
+};
 
 const PRESETS = [
   { valor: 30000, parcelas: 2, label: "Comissão pequena" },
@@ -12,7 +15,10 @@ const PRESETS = [
   { valor: 150000, parcelas: 4, label: "Grande" },
 ];
 
-export function Calculadora() {
+export function Calculadora({
+  taxaMensalSugerida = 0.06,
+}: CalculadoraProps = {}) {
+  const TAXA_MENSAL = taxaMensalSugerida;
   const [valor, setValor] = useState(80000);
   const [parcelas, setParcelas] = useState(3);
 
@@ -26,7 +32,9 @@ export function Calculadora() {
       desagioPercent,
       valorParcela: valor / parcelas,
     };
-  }, [valor, parcelas]);
+  }, [valor, parcelas, TAXA_MENSAL]);
+
+  const taxaPct = (TAXA_MENSAL * 100).toFixed(2).replace(".", ",");
 
   return (
     <div className="rounded-3xl border border-border bg-bg-elev shadow-xl overflow-hidden">
@@ -36,7 +44,7 @@ export function Calculadora() {
           <div className="flex items-center justify-between mb-2">
             <div className="eyebrow">simulador</div>
             <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-              taxa média 6% a.m.
+              taxa {taxaPct}% a.m.
             </span>
           </div>
           <h3 className="text-2xl md:text-3xl font-bold tracking-tight">
@@ -44,6 +52,9 @@ export function Calculadora() {
           </h3>
           <p className="mt-2 text-sm text-fg-muted">
             Arraste pra simular. O cálculo é em tempo real.
+          </p>
+          <p className="mt-1 text-[11px] text-fg-dim italic">
+            Taxa de juros sugerida — pode ser alterada na aprovação da operação.
           </p>
 
           {/* Presets */}

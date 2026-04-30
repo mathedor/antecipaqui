@@ -10,6 +10,7 @@ const nav = [
   { href: "/admin/usuarios", label: "Imobiliárias / Corretores" },
   { href: "/admin/construtoras", label: "Construtoras" },
   { href: "/admin/tickets", label: "Tickets" },
+  { href: "/admin/configuracoes", label: "Configurações" },
 ];
 
 export function AdminShell({

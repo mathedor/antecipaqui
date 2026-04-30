@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { documentos } from "@/db/schema";
 import { requireActiveUser } from "@/lib/auth-user";
 import { listConstrutorasForSelect } from "@/lib/actions/operacoes";
+import { getTaxaMensal } from "@/lib/actions/settings";
 import { NovaOperacaoForm } from "@/components/nova-operacao-form";
 import { PainelShell } from "@/components/painel-shell";
 
@@ -33,7 +34,10 @@ export default async function NovaOperacaoPage() {
       docsFaltando.push("Comprovante de endereço");
   }
 
-  const construtoras = await listConstrutorasForSelect();
+  const [construtoras, taxaMensalSugerida] = await Promise.all([
+    listConstrutorasForSelect(),
+    getTaxaMensal(),
+  ]);
 
   const role = (user.role === "imobiliaria" ? "imobiliaria" : "corretor") as
     | "corretor"
@@ -85,7 +89,10 @@ export default async function NovaOperacaoPage() {
           </div>
         </div>
       ) : (
-        <NovaOperacaoForm construtoras={construtoras} />
+        <NovaOperacaoForm
+          construtoras={construtoras}
+          taxaMensalSugerida={taxaMensalSugerida}
+        />
       )}
     </PainelShell>
   );

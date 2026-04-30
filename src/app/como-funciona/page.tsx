@@ -3,6 +3,7 @@ import { Reveal } from "@/components/reveal";
 import { TextReveal } from "@/components/text-reveal";
 import { Calculadora } from "@/components/calculadora";
 import { CtaCadastro } from "@/components/cta-buttons";
+import { getTaxaMensal } from "@/lib/actions/settings";
 import { LINKS } from "@/lib/links";
 
 export const metadata = {
@@ -66,7 +67,8 @@ const dores = [
   },
 ];
 
-export default function ComoFuncionaPage() {
+export default async function ComoFuncionaPage() {
+  const taxaMensalSugerida = await getTaxaMensal();
   return (
     <>
       <section className="relative overflow-hidden border-b border-border">
@@ -182,7 +184,7 @@ export default function ComoFuncionaPage() {
           </div>
         </Reveal>
         <Reveal>
-          <Calculadora />
+          <Calculadora taxaMensalSugerida={taxaMensalSugerida} />
         </Reveal>
       </section>
 

@@ -17,8 +17,7 @@ import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { sendEmail } from "@/lib/email";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
-
-const TAXA_MENSAL_DEFAULT = 0.06;
+import { getTaxaMensal } from "@/lib/actions/settings";
 
 /* =========================================
    HELPERS
@@ -253,13 +252,14 @@ export async function createOperacaoAction(
       .limit(1)
   )[0];
 
-  // Cálculo do valor presente
+  // Cálculo do valor presente — usa a taxa configurada pelo admin
+  const taxaMensal = await getTaxaMensal();
   const today = new Date();
   const parcelasComMeses = parcelas.map((p) => ({
     valor: Number(p.valor),
     mesesAteVencimento: Math.max(monthsBetween(today, new Date(p.vencimento)), 0),
   }));
-  const vp = valorPresente(parcelasComMeses, TAXA_MENSAL_DEFAULT);
+  const vp = valorPresente(parcelasComMeses, taxaMensal);
   const desagio = valorComissao - vp;
 
   const numero = await generateOperacaoNumero();
@@ -275,7 +275,7 @@ export async function createOperacaoAction(
       valorComissao: String(valorComissao.toFixed(2)),
       dataVenda,
       numeroParcelas: parcelas.length,
-      taxaMensal: String(TAXA_MENSAL_DEFAULT),
+      taxaMensal: String(taxaMensal),
       valorPresente: String(vp.toFixed(2)),
       desagio: String(desagio.toFixed(2)),
       status: "aguardando_aprovacao",

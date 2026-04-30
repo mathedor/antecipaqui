@@ -5,6 +5,7 @@ import { TypeText } from "@/components/type-text";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { Calculadora } from "@/components/calculadora";
 import { CtaCadastro, CtaSimular } from "@/components/cta-buttons";
+import { getTaxaMensal } from "@/lib/actions/settings";
 import { LINKS } from "@/lib/links";
 
 const stats = [
@@ -90,7 +91,8 @@ const diferenciais = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const taxaMensalSugerida = await getTaxaMensal();
   return (
     <>
       {/* ============== HERO ============== */}
@@ -187,7 +189,7 @@ export default function Home() {
             </p>
           </Reveal>
           <Reveal>
-            <Calculadora />
+            <Calculadora taxaMensalSugerida={taxaMensalSugerida} />
           </Reveal>
         </div>
       </section>

@@ -14,6 +14,7 @@ import {
 import { requireAdmin } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
+import { getTaxaMensal } from "@/lib/actions/settings";
 
 /* =============================================================
    USUÁRIO — editar
@@ -138,7 +139,9 @@ export type EditOperacaoState =
   | { ok: true }
   | null;
 
-const TAXA_MENSAL_DEFAULT = 0.06;
+// Taxa mensal vem de system_settings — admin configura em /admin/configuracoes.
+// Pra editar operação, lemos a taxa que já está gravada na própria row
+// (preserva taxa específica da operação se foi customizada).
 
 function monthsBetween(from: Date, to: Date) {
   const y = to.getFullYear() - from.getFullYear();
@@ -194,13 +197,22 @@ export async function editOperacaoAction(
       error: `Soma das parcelas (${totalParcelas.toFixed(2)}) não bate com a comissão (${valorComissao.toFixed(2)})`,
     };
 
-  // Recalcula VP
+  // Recalcula VP usando a taxa que já está gravada na operação
+  // (admin pode customizar taxa por operação na aprovação).
+  const [opCurrent] = await db
+    .select({ taxaMensal: operacoes.taxaMensal })
+    .from(operacoes)
+    .where(eq(operacoes.id, operacaoId))
+    .limit(1);
+  const taxaMensal = opCurrent
+    ? parseFloat(opCurrent.taxaMensal)
+    : await getTaxaMensal();
   const today = new Date();
   const arr = parcelas.map((p) => ({
     valor: p.valor,
     mesesAteVencimento: Math.max(monthsBetween(today, new Date(p.vencimento)), 0),
   }));
-  const vp = valorPresente(arr, TAXA_MENSAL_DEFAULT);
+  const vp = valorPresente(arr, taxaMensal);
   const desagio = valorComissao - vp;
 
   await db

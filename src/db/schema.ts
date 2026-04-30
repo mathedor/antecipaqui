@@ -453,6 +453,23 @@ export const operacaoEvents = pgTable(
 );
 
 /* =========================================
+   SYSTEM SETTINGS — configurações administrativas (key/value)
+   ========================================= */
+
+export const systemSettings = pgTable("system_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedBy: text("updated_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type SystemSetting = typeof systemSettings.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 

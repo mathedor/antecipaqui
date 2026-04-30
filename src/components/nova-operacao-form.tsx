@@ -19,9 +19,9 @@ type Construtora = {
 
 type Props = {
   construtoras: Construtora[];
+  /** Taxa mensal sugerida vinda do admin (default 0.06) */
+  taxaMensalSugerida?: number;
 };
-
-const TAXA_MENSAL = 0.06;
 
 type Parcela = { valor: string; vencimento: string };
 
@@ -70,7 +70,12 @@ function monthsBetween(from: Date, to: Date) {
   return years * 12 + months + dayFrac;
 }
 
-export function NovaOperacaoForm({ construtoras }: Props) {
+export function NovaOperacaoForm({
+  construtoras,
+  taxaMensalSugerida = 0.06,
+}: Props) {
+  const TAXA_MENSAL = taxaMensalSugerida;
+  const taxaPct = (TAXA_MENSAL * 100).toFixed(2).replace(".", ",");
   const [state, action, pending] = useActionState<
     CreateOperacaoState,
     FormData
@@ -378,7 +383,11 @@ export function NovaOperacaoForm({ construtoras }: Props) {
                 {formatBRL(vp)}
               </div>
               <div className="mt-1 text-fg-inverse/60 text-sm">
-                taxa {(TAXA_MENSAL * 100).toFixed(0)}% a.m. · em até 1 dia útil após aprovação
+                taxa {taxaPct}% a.m. · em até 1 dia útil após aprovação
+              </div>
+              <div className="mt-1 text-fg-inverse/45 text-[11px] italic">
+                Taxa de juros sugerida — pode ser alterada na aprovação da
+                operação.
               </div>
 
               <div className="mt-7 pt-6 border-t border-white/10 space-y-3 text-sm">
