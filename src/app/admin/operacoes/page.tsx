@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
+import { AdminRowActions } from "@/components/admin-row-actions";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { formatBRL } from "@/lib/format";
 import { getAllOperacoes } from "@/lib/actions/admin";
@@ -104,13 +105,11 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
                 <div className="col-span-5 md:col-span-2 flex justify-end md:justify-start">
                   <OperacaoStatusBadge status={op.status} />
                 </div>
-                <div className="hidden md:flex col-span-1 justify-end gap-2">
-                  <Link
-                    href={`/admin/operacoes/${op.id}/editar`}
-                    className="text-xs text-accent hover:underline"
-                  >
-                    editar
-                  </Link>
+                <div className="hidden md:flex col-span-1 justify-end gap-1.5">
+                  <AdminRowActions
+                    viewHref={`/admin/operacoes/${op.id}`}
+                    editHref={`/admin/operacoes/${op.id}/editar`}
+                  />
                 </div>
               </li>
             ))}

@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
+import { sendEmail } from "@/lib/email";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 
 const TAXA_MENSAL_DEFAULT = 0.06;
@@ -59,11 +60,16 @@ export async function createConstrutoraAction(
     String(formData.get("nomeFantasia") || "").trim() || null;
   const cnpjRaw = String(formData.get("cnpj") || "");
   const cnpj = unmaskCNPJ(cnpjRaw);
-  const telefone = String(formData.get("telefone") || "").trim() || null;
-  const email = String(formData.get("email") || "").trim() || null;
+  const telefone = String(formData.get("telefone") || "").trim();
+  const email = String(formData.get("email") || "").trim();
 
   if (!razaoSocial) return { ok: false, error: "Razão social é obrigatória" };
   if (!isValidCNPJ(cnpj)) return { ok: false, error: "CNPJ inválido" };
+  if (!telefone)
+    return { ok: false, error: "Telefone comercial é obrigatório" };
+  if (!email) return { ok: false, error: "Email é obrigatório" };
+  if (!email.includes("@"))
+    return { ok: false, error: "Email inválido" };
 
   const existing = await db
     .select()
@@ -87,6 +93,30 @@ export async function createConstrutoraAction(
       onboardingStatus: "pendente",
     })
     .returning();
+
+  // Email de boas-vindas — best-effort, não bloqueia o fluxo
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.antecipaqui.digital";
+  const cadastroLink = `${baseUrl}/cadastre-se`;
+  await sendEmail({
+    to: email,
+    subject: `Antecipaqui · ${razaoSocial} foi cadastrada na nossa plataforma`,
+    body: `Olá! Tudo bem?
+
+A ${razaoSocial} foi cadastrada na plataforma Antecipaqui por ${user.nome ?? user.email}, que está prestes a antecipar uma comissão imobiliária vinculada à sua construtora.
+
+Pra que as operações sigam normalmente, é necessário que a sua empresa complete o cadastro com os seguintes documentos:
+
+• Contrato social
+• Comprovante de endereço
+• Telefone e dados de contato confirmados
+
+Faça o cadastro de acesso aqui: ${cadastroLink}
+
+Use o CNPJ ${cnpj} pra que sua construtora seja vinculada automaticamente. Em caso de dúvidas, responda este email ou fale com a gente em contato@antecipaqui.digital.
+
+Equipe Antecipaqui`,
+  }).catch((e) => console.error("[construtora/welcome-email]", e));
 
   revalidatePath("/painel/operacoes/nova");
   return { ok: true, construtoraId: created.id };
@@ -115,6 +145,26 @@ export async function createOperacaoAction(
       ok: false,
       error: "Complete seu cadastro antes de registrar operações.",
     };
+  }
+
+  // Pra corretor/imobiliária: precisa ter os 2 documentos KYC no DB
+  // (contrato social + comprovante de endereço) antes de criar operação.
+  if (user.role === "corretor" || user.role === "imobiliaria") {
+    const userDocs = await db
+      .select({ tipo: documentos.tipo })
+      .from(documentos)
+      .where(eq(documentos.userId, user.id));
+    const tipos = new Set(userDocs.map((d) => d.tipo));
+    const faltam: string[] = [];
+    if (!tipos.has("contrato_social")) faltam.push("contrato social");
+    if (!tipos.has("comprovante_endereco"))
+      faltam.push("comprovante de endereço");
+    if (faltam.length > 0) {
+      return {
+        ok: false,
+        error: `Antes de cadastrar operações você precisa enviar: ${faltam.join(" e ")}. Acesse seu painel para completar o cadastro.`,
+      };
+    }
   }
 
   const construtoraId = String(formData.get("construtoraId") || "").trim();

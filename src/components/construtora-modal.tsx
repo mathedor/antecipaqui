@@ -105,7 +105,8 @@ export function ConstrutoraModal({ open, onClose, onCreated }: Props) {
             <div className="grid grid-cols-2 gap-3">
               <Input
                 name="telefone"
-                label="Telefone (opcional)"
+                label="Telefone comercial"
+                required
                 value={telefone}
                 onChange={(e) => setTelefone(maskPhone(e.target.value))}
                 placeholder="(00) 00000-0000"
@@ -113,11 +114,17 @@ export function ConstrutoraModal({ open, onClose, onCreated }: Props) {
               />
               <Input
                 name="email"
-                label="Email (opcional)"
+                label="Email"
+                required
                 type="email"
                 placeholder="contato@..."
               />
             </div>
+            <p className="text-[11px] text-fg-dim leading-relaxed">
+              A construtora vai receber um email automático com convite pra
+              completar o cadastro (contrato social, comprovante de endereço)
+              pra que as operações possam seguir normalmente.
+            </p>
             <button
               type="submit"
               disabled={pending}

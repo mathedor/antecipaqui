@@ -428,6 +428,145 @@ export function ConstrutoraCharts({ data }: { data: ConstrutoraPoint[] }) {
 }
 
 /* ============================================================
+   USER ADMIN VIEW — operações + valores antecipados (12 meses)
+   ============================================================ */
+export function UserCharts({
+  data,
+}: {
+  data: Array<{
+    month: string;
+    label: string;
+    operacoes: number;
+    lucro: number;
+    valorAntecipado: number;
+    valorComissao: number;
+  }>;
+}) {
+  const opsTotal = data.reduce((s, d) => s + d.operacoes, 0);
+  const opsAtual = data[data.length - 1]?.operacoes ?? 0;
+  const antecipadoTotal = data.reduce((s, d) => s + d.valorAntecipado, 0);
+  const antecipadoAtual = data[data.length - 1]?.valorAntecipado ?? 0;
+
+  if (opsTotal === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border-strong bg-bg-card p-8 text-center">
+        <p className="text-sm text-fg-muted">
+          Sem operações nos últimos 12 meses pra montar gráficos.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-5">
+      <ChartCard
+        title="operações por mês"
+        subtitle="Volume mensal — últimos 12 meses"
+        total={String(opsTotal)}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            margin={{ top: 10, right: 8, left: 8, bottom: 0 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--border)"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="label"
+              stroke="var(--fg-dim)"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              stroke="var(--fg-dim)"
+              fontSize={10}
+              allowDecimals={false}
+              tickLine={false}
+              axisLine={false}
+              width={30}
+            />
+            <Tooltip content={<CountTooltip />} cursor={{ fill: "var(--bg-card)" }} />
+            <Bar
+              dataKey="operacoes"
+              name="Operações"
+              fill="var(--accent)"
+              radius={[6, 6, 0, 0]}
+              maxBarSize={42}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+        <div className="mt-2 flex justify-between text-xs">
+          <span className="text-fg-muted">Este mês</span>
+          <span className="font-mono tabular font-semibold text-fg">
+            {opsAtual} operação{opsAtual === 1 ? "" : "ões"}
+          </span>
+        </div>
+      </ChartCard>
+
+      <ChartCard
+        title="valores antecipados · mês"
+        subtitle="Total creditado ao cedente nos últimos 12 meses"
+        total={fmtBRLcompact(antecipadoTotal)}
+        highlight
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={data}
+            margin={{ top: 10, right: 8, left: 8, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id="gradUserAntecip" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.55} />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--border)"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="label"
+              stroke="var(--fg-dim)"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              stroke="var(--fg-dim)"
+              fontSize={10}
+              tickFormatter={fmtBRLcompact}
+              tickLine={false}
+              axisLine={false}
+              width={50}
+            />
+            <Tooltip content={<MoneyTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="valorAntecipado"
+              name="Valor antecipado"
+              stroke="var(--accent)"
+              strokeWidth={2}
+              fill="url(#gradUserAntecip)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+        <div className="mt-2 flex justify-between text-xs">
+          <span className="text-fg-muted">Este mês</span>
+          <span className="font-mono tabular font-semibold text-fg">
+            {fmtBRLfull(antecipadoAtual)}
+          </span>
+        </div>
+      </ChartCard>
+    </div>
+  );
+}
+
+/* ============================================================
    Stat card (compartilhado)
    ============================================================ */
 function Stat({

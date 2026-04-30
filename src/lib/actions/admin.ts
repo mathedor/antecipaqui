@@ -370,6 +370,7 @@ export async function listAllUsers() {
       nome: users.nome,
       role: users.role,
       onboardingStatus: users.onboardingStatus,
+      isActive: users.isActive,
       telefone: users.telefone,
       createdAt: users.createdAt,
     })
@@ -387,14 +388,45 @@ export async function listAllUsers() {
 
   const opMap = new Map(opCounts.map((c) => [c.corretorUserId, c.total]));
 
-  return rows.map((u) => ({
-    ...u,
-    totalOperacoes: opMap.get(u.id) ?? 0,
-  }));
+  // Conta documentos KYC por user (tipo contrato_social + comprovante_endereco)
+  const docs = await db
+    .select({ userId: documentos.userId, tipo: documentos.tipo })
+    .from(documentos);
+
+  const docsByUser = new Map<string, Set<string>>();
+  for (const d of docs) {
+    if (!d.userId) continue;
+    if (!docsByUser.has(d.userId)) docsByUser.set(d.userId, new Set());
+    docsByUser.get(d.userId)!.add(d.tipo);
+  }
+
+  return rows.map((u) => {
+    const dt = docsByUser.get(u.id) ?? new Set();
+    const hasContrato = dt.has("contrato_social");
+    const hasComprovante = dt.has("comprovante_endereco");
+    const cadastroCompleto =
+      u.role === "admin"
+        ? true
+        : u.role === "construtora"
+          ? u.onboardingStatus === "aprovado"
+          : hasContrato && hasComprovante;
+    return {
+      ...u,
+      totalOperacoes: opMap.get(u.id) ?? 0,
+      cadastroCompleto,
+      docsFaltando:
+        u.role === "corretor" || u.role === "imobiliaria"
+          ? [
+              !hasContrato && "Contrato social",
+              !hasComprovante && "Comprovante de endereço",
+            ].filter(Boolean) as string[]
+          : [],
+    };
+  });
 }
 
 export async function listAllConstrutoras() {
-  return db
+  const rows = await db
     .select({
       id: construtoras.id,
       razaoSocial: construtoras.razaoSocial,
@@ -403,11 +435,77 @@ export async function listAllConstrutoras() {
       telefone: construtoras.telefone,
       email: construtoras.email,
       onboardingStatus: construtoras.onboardingStatus,
+      isActive: construtoras.isActive,
       ownerUserId: construtoras.ownerUserId,
       createdAt: construtoras.createdAt,
     })
     .from(construtoras)
     .orderBy(desc(construtoras.createdAt));
+
+  // Documentos por construtora (pra calcular cadastro completo)
+  const docs = await db
+    .select({
+      construtoraId: documentos.construtoraId,
+      tipo: documentos.tipo,
+    })
+    .from(documentos);
+  const docsByConstrutora = new Map<string, Set<string>>();
+  for (const d of docs) {
+    if (!d.construtoraId) continue;
+    if (!docsByConstrutora.has(d.construtoraId))
+      docsByConstrutora.set(d.construtoraId, new Set());
+    docsByConstrutora.get(d.construtoraId)!.add(d.tipo);
+  }
+
+  return rows.map((c) => {
+    const dt = docsByConstrutora.get(c.id) ?? new Set();
+    const hasContrato = dt.has("contrato_social");
+    const hasComprovante = dt.has("comprovante_endereco");
+    const cadastroCompleto =
+      c.onboardingStatus === "aprovado" || (hasContrato && hasComprovante);
+    return {
+      ...c,
+      cadastroCompleto,
+      docsFaltando: [
+        !hasContrato && "Contrato social",
+        !hasComprovante && "Comprovante de endereço",
+      ].filter(Boolean) as string[],
+    };
+  });
+}
+
+/** Stats mensais (12 meses) das operações de um corretor específico. */
+export async function getUserMonthlyStats(userId: string) {
+  const rows = await db.execute(sql`
+    SELECT
+      to_char(date_trunc('month', created_at), 'YYYY-MM') AS month,
+      COUNT(*)::int AS operacoes,
+      COALESCE(SUM(valor_presente), 0)::float AS valor_antecipado,
+      COALESCE(SUM(valor_comissao), 0)::float AS valor_comissao,
+      COALESCE(SUM(desagio), 0)::float AS lucro
+    FROM operacoes
+    WHERE corretor_user_id = ${userId}
+      AND created_at >= date_trunc('month', now()) - interval '11 months'
+      AND status NOT IN ('rascunho', 'recusada', 'cancelada')
+    GROUP BY date_trunc('month', created_at)
+  `);
+  return fillMonthlySeries(
+    (
+      rows as unknown as Array<{
+        month: string;
+        operacoes: number;
+        valor_antecipado: number;
+        valor_comissao: number;
+        lucro: number;
+      }>
+    ).map((r) => ({
+      month: r.month,
+      operacoes: Number(r.operacoes),
+      lucro: Number(r.lucro),
+      valorAntecipado: Number(r.valor_antecipado),
+      valorComissao: Number(r.valor_comissao),
+    })),
+  );
 }
 
 export async function getUserDetail(userId: string) {
@@ -433,13 +531,56 @@ export async function getUserDetail(userId: string) {
       numero: operacoes.numero,
       status: operacoes.status,
       valorPresente: operacoes.valorPresente,
+      valorComissao: operacoes.valorComissao,
+      desagio: operacoes.desagio,
       createdAt: operacoes.createdAt,
+      construtoraId: operacoes.construtoraId,
+      construtoraNome: construtoras.razaoSocial,
+      construtoraCnpj: construtoras.cnpj,
     })
     .from(operacoes)
+    .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
     .where(eq(operacoes.corretorUserId, userId))
     .orderBy(desc(operacoes.createdAt));
 
-  return { user: u, imobiliaria: imob, documentos: docs, operacoes: userOps };
+  // Agrupa construtoras únicas com agregados (qtd operações + total antecipado)
+  const construtorasMap = new Map<
+    string,
+    {
+      id: string;
+      nome: string;
+      cnpj: string;
+      operacoes: number;
+      valorAntecipado: number;
+    }
+  >();
+  for (const op of userOps) {
+    if (!op.construtoraId) continue;
+    const existing = construtorasMap.get(op.construtoraId);
+    if (existing) {
+      existing.operacoes += 1;
+      existing.valorAntecipado += parseFloat(op.valorPresente);
+    } else {
+      construtorasMap.set(op.construtoraId, {
+        id: op.construtoraId,
+        nome: op.construtoraNome ?? "—",
+        cnpj: op.construtoraCnpj ?? "",
+        operacoes: 1,
+        valorAntecipado: parseFloat(op.valorPresente),
+      });
+    }
+  }
+  const construtorasNegocio = Array.from(construtorasMap.values()).sort(
+    (a, b) => b.valorAntecipado - a.valorAntecipado,
+  );
+
+  return {
+    user: u,
+    imobiliaria: imob,
+    documentos: docs,
+    operacoes: userOps,
+    construtoras: construtorasNegocio,
+  };
 }
 
 export async function getConstrutoraDetail(construtoraId: string) {
