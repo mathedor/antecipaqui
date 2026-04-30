@@ -16,7 +16,12 @@ const nav = [
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -55,13 +60,14 @@ export function SiteHeader() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            {isLoaded && isSignedIn ? (
+            {mounted && isLoaded && isSignedIn ? (
               <Link href="/painel" className="btn-primary !h-10 !px-5">
                 Acessar painel <span className="arrow">→</span>
               </Link>
             ) : (
-              // Default: mostra os botões mesmo enquanto Clerk carrega.
-              // Se já estiver logado, hidratação troca pelo botão Acessar painel.
+              // SSR e primeiro paint: sempre os botões deslogados.
+              // Após mount + Clerk carregar, troca por "Acessar painel" se
+              // logado. Isso evita hydration mismatch.
               <>
                 <SignInButton
                   mode="modal"

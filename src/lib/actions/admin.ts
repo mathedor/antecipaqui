@@ -103,9 +103,23 @@ export async function getAdminStats() {
  * pro mais recente, formato { month: "2026-01", label: "jan/26",
  * operacoes, lucro, valorAntecipado, valorComissao }.
  */
+/** Extrai array de rows de qualquer formato retornado por db.execute() */
+function extractRows<T>(result: unknown): T[] {
+  if (Array.isArray(result)) return result as T[];
+  if (
+    result &&
+    typeof result === "object" &&
+    "rows" in result &&
+    Array.isArray((result as { rows: unknown[] }).rows)
+  ) {
+    return (result as { rows: T[] }).rows;
+  }
+  return [];
+}
+
 export async function getAdminMonthlyStats() {
   await requireAdmin();
-  const rows = await db.execute(sql`
+  const result = await db.execute(sql`
     SELECT
       to_char(date_trunc('month', created_at), 'YYYY-MM') AS month,
       COUNT(*)::int AS operacoes,
@@ -118,14 +132,16 @@ export async function getAdminMonthlyStats() {
     GROUP BY date_trunc('month', created_at)
   `);
 
+  const rows = extractRows<{
+    month: string;
+    operacoes: number;
+    lucro: number;
+    valor_antecipado: number;
+    valor_comissao: number;
+  }>(result);
+
   return fillMonthlySeries(
-    (rows as unknown as Array<{
-      month: string;
-      operacoes: number;
-      lucro: number;
-      valor_antecipado: number;
-      valor_comissao: number;
-    }>).map((r) => ({
+    rows.map((r) => ({
       month: r.month,
       operacoes: Number(r.operacoes),
       lucro: Number(r.lucro),
@@ -530,7 +546,7 @@ export async function listAllConstrutoras() {
 
 /** Stats mensais (12 meses) das operações de um corretor específico. */
 export async function getUserMonthlyStats(userId: string) {
-  const rows = await db.execute(sql`
+  const result = await db.execute(sql`
     SELECT
       to_char(date_trunc('month', created_at), 'YYYY-MM') AS month,
       COUNT(*)::int AS operacoes,
@@ -543,16 +559,15 @@ export async function getUserMonthlyStats(userId: string) {
       AND status NOT IN ('rascunho', 'recusada', 'cancelada')
     GROUP BY date_trunc('month', created_at)
   `);
+  const rows = extractRows<{
+    month: string;
+    operacoes: number;
+    valor_antecipado: number;
+    valor_comissao: number;
+    lucro: number;
+  }>(result);
   return fillMonthlySeries(
-    (
-      rows as unknown as Array<{
-        month: string;
-        operacoes: number;
-        valor_antecipado: number;
-        valor_comissao: number;
-        lucro: number;
-      }>
-    ).map((r) => ({
+    rows.map((r) => ({
       month: r.month,
       operacoes: Number(r.operacoes),
       lucro: Number(r.lucro),

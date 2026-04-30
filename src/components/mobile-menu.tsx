@@ -15,7 +15,12 @@ const navItems = [
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -116,7 +121,7 @@ export function MobileMenu() {
         </nav>
 
         <div className="relative p-6 border-t border-border space-y-3">
-          {isLoaded && isSignedIn ? (
+          {mounted && isLoaded && isSignedIn ? (
             <Link
               href="/painel"
               onClick={() => setOpen(false)}

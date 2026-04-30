@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "img.clerk.com" },
     ],
   },
+  allowedDevOrigins: [
+    "*.trycloudflare.com",
+    "*.loca.lt",
+  ],
 };
 
 export default nextConfig;

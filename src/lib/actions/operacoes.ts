@@ -607,7 +607,7 @@ export async function getDashboardStatsForConstrutora(construtoraId: string) {
  * valorAntecipado, valorComissao }.
  */
 export async function getConstrutoraMonthlyStats(construtoraId: string) {
-  const rows = await db.execute(sql`
+  const result = await db.execute(sql`
     SELECT
       to_char(date_trunc('month', created_at), 'YYYY-MM') AS month,
       COUNT(*)::int AS operacoes,
@@ -620,14 +620,18 @@ export async function getConstrutoraMonthlyStats(construtoraId: string) {
     GROUP BY date_trunc('month', created_at)
   `);
 
-  const list = (
-    rows as unknown as Array<{
-      month: string;
-      operacoes: number;
-      valor_antecipado: number;
-      valor_comissao: number;
-    }>
-  ).map((r) => ({
+  // db.execute() pode retornar array direto OU { rows: [] } dependendo
+  // do driver — extrai de forma resiliente.
+  const rawRows: Array<{
+    month: string;
+    operacoes: number;
+    valor_antecipado: number;
+    valor_comissao: number;
+  }> = Array.isArray(result)
+    ? (result as never)
+    : ((result as { rows?: unknown[] }).rows as never) ?? [];
+
+  const list = rawRows.map((r) => ({
     month: r.month,
     operacoes: Number(r.operacoes),
     valorAntecipado: Number(r.valor_antecipado),
@@ -639,7 +643,7 @@ export async function getConstrutoraMonthlyStats(construtoraId: string) {
   now.setDate(1);
   now.setHours(0, 0, 0, 0);
 
-  const result: Array<{
+  const series: Array<{
     month: string;
     label: string;
     operacoes: number;
@@ -655,7 +659,7 @@ export async function getConstrutoraMonthlyStats(construtoraId: string) {
       .replace(".", "")
       .replace(" de ", "/");
     const found = map.get(monthKey);
-    result.push({
+    series.push({
       month: monthKey,
       label,
       operacoes: found?.operacoes ?? 0,
@@ -663,7 +667,7 @@ export async function getConstrutoraMonthlyStats(construtoraId: string) {
       valorComissao: found?.valorComissao ?? 0,
     });
   }
-  return result;
+  return series;
 }
 
 export async function getDuplicatasParaPagar(construtoraId: string) {
