@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { changeOperacaoStatusAction } from "@/lib/actions/status-flow";
+import { formatBRL, valorPresente } from "@/lib/format";
 
 type Status =
   | "rascunho"
@@ -16,8 +17,6 @@ type Status =
   | "realizada"
   | "cancelada";
 
-// Status pra onde o admin pode mover (todos exceto "rascunho", que só o
-// corretor cria via submissão)
 type TargetStatus = Exclude<Status, "rascunho">;
 
 type TransitionDef = {
@@ -26,19 +25,22 @@ type TransitionDef = {
   variant: "primary" | "success" | "warn" | "danger" | "ghost";
   needsMotivo?: boolean;
   motivoLabel?: string;
+  /** Se true, abre painel pra admin ajustar a taxa antes de aprovar */
+  ajustaTaxa?: boolean;
   confirm?: string;
 };
 
 const TRANSITIONS: Partial<Record<Status, TransitionDef[]>> = {
   rascunho: [
-    {
-      label: "Submeter para análise",
-      to: "aguardando_aprovacao",
-      variant: "primary",
-    },
+    { label: "Submeter para análise", to: "aguardando_aprovacao", variant: "primary" },
   ],
   aguardando_aprovacao: [
-    { label: "✓ Pré-aprovar", to: "pre_aprovada", variant: "success", confirm: "Pré-aprovar essa operação? A construtora vai receber notificação pra confirmar." },
+    {
+      label: "✓ Pré-aprovar",
+      to: "pre_aprovada",
+      variant: "success",
+      ajustaTaxa: true,
+    },
     {
       label: "⚠ Documentos incompletos",
       to: "documentos_incompletos",
@@ -89,7 +91,7 @@ const TRANSITIONS: Partial<Record<Status, TransitionDef[]>> = {
       label: "✓ Aprovar e enviar pra assinatura",
       to: "enviada_para_assinatura",
       variant: "success",
-      confirm: "Gera o contrato e envia pra assinatura digital?",
+      ajustaTaxa: true,
     },
     {
       label: "✕ Recusar",
@@ -128,44 +130,92 @@ const TRANSITIONS: Partial<Record<Status, TransitionDef[]>> = {
 };
 
 const VARIANT_CLS: Record<TransitionDef["variant"], string> = {
-  primary:
-    "bg-accent text-white hover:bg-accent-dark border-accent",
-  success:
-    "bg-success text-white hover:bg-green-700 border-success",
-  warn:
-    "bg-orange-500 text-white hover:bg-orange-600 border-orange-500",
-  danger:
-    "bg-danger text-white hover:bg-red-800 border-danger",
-  ghost:
-    "bg-bg-elev text-fg border-border hover:border-accent",
+  primary: "bg-accent text-white hover:bg-accent-dark border-accent",
+  success: "bg-success text-white hover:bg-green-700 border-success",
+  warn: "bg-orange-500 text-white hover:bg-orange-600 border-orange-500",
+  danger: "bg-danger text-white hover:bg-red-800 border-danger",
+  ghost: "bg-bg-elev text-fg border-border hover:border-accent",
 };
+
+type Props = {
+  operacaoId: string;
+  currentStatus: string;
+  /** Taxa mensal atual da operação (decimal, ex 0.06). */
+  currentTaxaMensal: number;
+  /** Comissão total — pra preview de novo deságio. */
+  valorComissao: number;
+  /** Parcelas pra recalcular VP no preview client-side. */
+  parcelas: Array<{ valor: string; vencimento: string }>;
+};
+
+function monthsBetween(from: Date, to: Date) {
+  const y = to.getFullYear() - from.getFullYear();
+  const m = to.getMonth() - from.getMonth();
+  const dayFrac = (to.getDate() - from.getDate()) / 30;
+  return Math.max(y * 12 + m + dayFrac, 0);
+}
 
 export function AdminStatusFlow({
   operacaoId,
   currentStatus,
-}: {
-  operacaoId: string;
-  currentStatus: string;
-}) {
+  currentTaxaMensal,
+  valorComissao,
+  parcelas,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [activeMotivo, setActiveMotivo] = useState<{
     to: TargetStatus;
     label: string;
   } | null>(null);
+  const [activeTaxa, setActiveTaxa] = useState<{
+    to: TargetStatus;
+    label: string;
+  } | null>(null);
   const [motivoText, setMotivoText] = useState("");
+  const [taxaInput, setTaxaInput] = useState(
+    String((currentTaxaMensal * 100).toFixed(2)),
+  );
 
   const transitions = TRANSITIONS[currentStatus as Status] ?? [];
 
-  function executeTransition(to: TargetStatus, motivo?: string) {
+  // Preview do novo VP/deságio com a taxa digitada
+  const taxaPreview = useMemo(() => {
+    const cleaned = taxaInput.replace(",", ".").replace("%", "").trim();
+    const n = parseFloat(cleaned);
+    if (!Number.isFinite(n)) return null;
+    const taxa = n >= 0.5 ? n / 100 : n;
+    if (taxa < 0.005 || taxa > 0.2) return { taxa, invalida: true };
+    const today = new Date();
+    const arr = parcelas.map((p) => ({
+      valor: parseFloat(p.valor),
+      mesesAteVencimento: monthsBetween(
+        today,
+        new Date(p.vencimento + "T00:00:00"),
+      ),
+    }));
+    const vp = valorPresente(arr, taxa);
+    return {
+      taxa,
+      invalida: false as const,
+      vp,
+      desagio: valorComissao - vp,
+    };
+  }, [taxaInput, parcelas, valorComissao]);
+
+  function executeTransition(
+    to: TargetStatus,
+    extras: { motivo?: string; novaTaxaMensal?: number } = {},
+  ) {
     startTransition(async () => {
       try {
         await changeOperacaoStatusAction({
           operacaoId,
           newStatus: to,
-          motivo,
+          ...extras,
         });
         setActiveMotivo(null);
+        setActiveTaxa(null);
         setMotivoText("");
         router.refresh();
       } catch (e) {
@@ -177,6 +227,11 @@ export function AdminStatusFlow({
   function handleClick(t: TransitionDef) {
     if (t.needsMotivo) {
       setActiveMotivo({ to: t.to, label: t.motivoLabel ?? "Motivo" });
+      return;
+    }
+    if (t.ajustaTaxa) {
+      setActiveTaxa({ to: t.to, label: t.label });
+      setTaxaInput(String((currentTaxaMensal * 100).toFixed(2)));
       return;
     }
     if (t.confirm && !confirm(t.confirm)) return;
@@ -197,18 +252,24 @@ export function AdminStatusFlow({
     );
   }
 
+  const noPanel = !activeMotivo && !activeTaxa;
+
   return (
     <div className="rounded-2xl border border-accent/30 bg-accent-soft p-5 md:p-6">
       <div className="font-mono text-[10px] uppercase tracking-wider text-accent mb-3">
         ações administrativas · próximo passo
       </div>
 
-      {!activeMotivo ? (
+      {noPanel && (
         <>
           <p className="text-sm text-fg-muted mb-5">
             Status atual:{" "}
             <span className="font-mono text-xs uppercase font-semibold text-fg">
               {currentStatus}
+            </span>
+            . Taxa atual:{" "}
+            <span className="font-mono font-semibold text-fg">
+              {(currentTaxaMensal * 100).toFixed(2).replace(".", ",")}% a.m.
             </span>
             . Escolha pra onde ir:
           </p>
@@ -226,7 +287,9 @@ export function AdminStatusFlow({
             ))}
           </div>
         </>
-      ) : (
+      )}
+
+      {activeMotivo && (
         <div className="space-y-3">
           <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim font-mono">
             {activeMotivo.label}
@@ -248,7 +311,9 @@ export function AdminStatusFlow({
                   alert("Preencha o motivo.");
                   return;
                 }
-                executeTransition(activeMotivo.to, motivoText.trim());
+                executeTransition(activeMotivo.to, {
+                  motivo: motivoText.trim(),
+                });
               }}
               disabled={pending || !motivoText.trim()}
               className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-accent text-white font-semibold text-sm hover:bg-accent-dark transition-colors disabled:opacity-60"
@@ -261,6 +326,110 @@ export function AdminStatusFlow({
                 setActiveMotivo(null);
                 setMotivoText("");
               }}
+              disabled={pending}
+              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl border border-border text-fg-muted hover:text-fg font-medium text-sm transition-colors disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeTaxa && (
+        <div className="space-y-4">
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-fg-dim mb-1">
+              ação
+            </div>
+            <div className="font-bold">{activeTaxa.label}</div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
+              Taxa mensal desta operação (%)
+              <span className="ml-1 text-accent">*</span>
+            </label>
+            <div className="relative max-w-xs">
+              <input
+                value={taxaInput}
+                onChange={(e) => setTaxaInput(e.target.value)}
+                inputMode="decimal"
+                placeholder="6,00"
+                autoFocus
+                className="form-input !pr-12 tabular text-right"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted text-sm font-mono pointer-events-none">
+                % a.m.
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-fg-muted">
+              Padrão sugerido pela configuração:{" "}
+              <span className="font-mono font-semibold">
+                {(currentTaxaMensal * 100).toFixed(2).replace(".", ",")}% a.m.
+              </span>
+              . Você pode customizar pra esta operação. Limites: 0,5%–20%.
+            </p>
+          </div>
+
+          {taxaPreview && !taxaPreview.invalida && (
+            <div className="rounded-xl border border-border bg-bg p-4">
+              <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-2">
+                preview com a nova taxa
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Comissão
+                  </div>
+                  <div className="font-mono tabular text-base font-semibold">
+                    {formatBRL(valorComissao)}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Novo VP
+                  </div>
+                  <div className="font-mono tabular text-base font-bold text-accent">
+                    {formatBRL(taxaPreview.vp ?? 0)}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Novo deságio
+                  </div>
+                  <div className="font-mono tabular text-base font-semibold text-warn">
+                    {formatBRL(taxaPreview.desagio ?? 0)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {taxaPreview && taxaPreview.invalida && (
+            <div className="rounded-xl border border-danger/40 bg-red-50 text-danger p-3 text-sm">
+              Taxa fora dos limites (0,5% a 20%).
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (!taxaPreview || taxaPreview.invalida) {
+                  alert("Taxa inválida. Use entre 0,5% e 20%.");
+                  return;
+                }
+                executeTransition(activeTaxa.to, {
+                  novaTaxaMensal: taxaPreview.taxa,
+                });
+              }}
+              disabled={pending || !taxaPreview || taxaPreview.invalida}
+              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-success text-white font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-60"
+            >
+              {pending ? "Salvando..." : "Confirmar e mudar status"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTaxa(null)}
               disabled={pending}
               className="inline-flex items-center gap-2 h-11 px-5 rounded-xl border border-border text-fg-muted hover:text-fg font-medium text-sm transition-colors disabled:opacity-60"
             >

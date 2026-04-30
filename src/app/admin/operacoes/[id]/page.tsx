@@ -152,7 +152,16 @@ export default async function AdminOperacaoDetail({ params }: Params) {
 
       {/* Fluxo de status (admin) */}
       <div className="mb-6">
-        <AdminStatusFlow operacaoId={op.id} currentStatus={op.status} />
+        <AdminStatusFlow
+          operacaoId={op.id}
+          currentStatus={op.status}
+          currentTaxaMensal={parseFloat(op.taxaMensal)}
+          valorComissao={parseFloat(op.valorComissao)}
+          parcelas={op.parcelas.map((p) => ({
+            valor: p.valor,
+            vencimento: p.vencimento,
+          }))}
+        />
       </div>
 
       {contrato && (

@@ -8,11 +8,13 @@ import {
   imobiliarias,
   operacaoEvents,
   operacoes,
+  parcelasComissao,
   users,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
 import { notify } from "@/lib/notify";
 import { generateContractForOperacao } from "@/lib/actions/contract";
+import { valorPresente } from "@/lib/format";
 
 type ChangeStatusInput = {
   operacaoId: string;
@@ -27,7 +29,18 @@ type ChangeStatusInput = {
     | "cancelada"
     | "aguardando_aprovacao";
   motivo?: string;
+  /** Nova taxa mensal (decimal: 0.06 = 6%). Usada quando admin aprova
+   *  e quer ajustar a taxa específica daquela operação. Recalcula VP +
+   *  deságio. Validada server-side (0,5%–20%). */
+  novaTaxaMensal?: number;
 };
+
+function monthsBetween(from: Date, to: Date) {
+  const years = to.getFullYear() - from.getFullYear();
+  const months = to.getMonth() - from.getMonth();
+  const dayFrac = (to.getDate() - from.getDate()) / 30;
+  return Math.max(years * 12 + months + dayFrac, 0);
+}
 
 const STATUS_LABELS: Record<string, string> = {
   aguardando_aprovacao: "Aguardando aprovação",
@@ -77,6 +90,33 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     updates.aprovadoPorUserId = admin.id;
     updates.aprovadoEm = new Date();
     updates.motivoPendencia = null;
+
+    // Se o admin enviou nova taxa, recalcula VP + deságio das parcelas
+    if (typeof input.novaTaxaMensal === "number") {
+      if (input.novaTaxaMensal < 0.005 || input.novaTaxaMensal > 0.2) {
+        throw new Error(
+          "Taxa mensal fora dos limites permitidos (0,5% a 20%)",
+        );
+      }
+      const parcelas = await db
+        .select()
+        .from(parcelasComissao)
+        .where(eq(parcelasComissao.operacaoId, input.operacaoId))
+        .orderBy(parcelasComissao.numero);
+      const today = new Date();
+      const arr = parcelas.map((p) => ({
+        valor: parseFloat(p.valor),
+        mesesAteVencimento: monthsBetween(
+          today,
+          new Date(p.vencimento + "T00:00:00"),
+        ),
+      }));
+      const novoVp = valorPresente(arr, input.novaTaxaMensal);
+      const novoDesagio = parseFloat(op.valorComissao) - novoVp;
+      updates.taxaMensal = String(input.novaTaxaMensal);
+      updates.valorPresente = String(novoVp.toFixed(2));
+      updates.desagio = String(novoDesagio.toFixed(2));
+    }
   }
   if (input.newStatus === "aguardando_aprovacao") {
     // Quando admin reverte/corretor reenviou docs, limpa motivo
