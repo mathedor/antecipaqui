@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { construtoras, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
+import { audit } from "@/lib/audit";
 
 /**
  * Bloqueia/desbloqueia usuário individual.
@@ -12,20 +13,42 @@ import { requireAdmin } from "@/lib/auth-user";
  */
 export async function blockUserAction(userId: string) {
   await requireAdmin();
+  const [u] = await db
+    .select({ nome: users.nome, email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
   await db
     .update(users)
     .set({ isActive: false, updatedAt: new Date() })
     .where(eq(users.id, userId));
+  audit({
+    action: "block_user",
+    targetType: "user",
+    targetId: userId,
+    targetLabel: u?.nome ?? u?.email ?? userId,
+  }).catch(() => undefined);
   revalidatePath("/admin/usuarios");
   revalidatePath(`/admin/usuarios/${userId}`);
 }
 
 export async function unblockUserAction(userId: string) {
   await requireAdmin();
+  const [u] = await db
+    .select({ nome: users.nome, email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
   await db
     .update(users)
     .set({ isActive: true, updatedAt: new Date() })
     .where(eq(users.id, userId));
+  audit({
+    action: "unblock_user",
+    targetType: "user",
+    targetId: userId,
+    targetLabel: u?.nome ?? u?.email ?? userId,
+  }).catch(() => undefined);
   revalidatePath("/admin/usuarios");
   revalidatePath(`/admin/usuarios/${userId}`);
 }
@@ -55,6 +78,13 @@ export async function blockConstrutoraAction(construtoraId: string) {
       .where(eq(users.id, c.ownerUserId));
   }
 
+  audit({
+    action: "block_construtora",
+    targetType: "construtora",
+    targetId: construtoraId,
+    targetLabel: c.razaoSocial,
+  }).catch(() => undefined);
+
   revalidatePath("/admin/construtoras");
   revalidatePath(`/admin/construtoras/${construtoraId}`);
 }
@@ -79,6 +109,13 @@ export async function unblockConstrutoraAction(construtoraId: string) {
       .set({ isActive: true, updatedAt: new Date() })
       .where(eq(users.id, c.ownerUserId));
   }
+
+  audit({
+    action: "unblock_construtora",
+    targetType: "construtora",
+    targetId: construtoraId,
+    targetLabel: c.razaoSocial,
+  }).catch(() => undefined);
 
   revalidatePath("/admin/construtoras");
   revalidatePath(`/admin/construtoras/${construtoraId}`);

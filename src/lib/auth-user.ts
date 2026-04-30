@@ -22,6 +22,7 @@ import { db } from "@/db";
 import { notificacoes, users, type User } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { sendEmail } from "@/lib/email";
+import { maybeLogLoginFor } from "@/lib/audit";
 
 const adminEmails = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
@@ -57,8 +58,20 @@ export async function getCurrentDbUser(): Promise<User | null> {
         })
         .where(eq(users.id, existing[0].id))
         .returning();
-      return updated ?? existing[0];
+      const ret = updated ?? existing[0];
+      // Detecção de login (debounced) — não bloqueia
+      maybeLogLoginFor({
+        id: ret.id,
+        role: ret.role,
+        email: ret.email,
+      }).catch(() => undefined);
+      return ret;
     }
+    maybeLogLoginFor({
+      id: existing[0].id,
+      role: existing[0].role,
+      email: existing[0].email,
+    }).catch(() => undefined);
     return existing[0];
   }
 

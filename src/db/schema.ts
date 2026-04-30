@@ -466,6 +466,42 @@ export const operacaoEvents = pgTable(
 );
 
 /* =========================================
+   AUDIT LOG — ações de TODOS os usuários
+   (login, leitura, escrita, transições, etc.)
+   ========================================= */
+
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    userRole: text("user_role"),
+    userEmail: text("user_email"),
+    /** ex: "login" | "view_user" | "view_construtora" | "create_operacao" |
+     *  "change_status" | "update_user" | etc. */
+    action: text("action").notNull(),
+    /** "user" | "construtora" | "operacao" | "ticket" | "mural" | etc. */
+    targetType: text("target_type"),
+    targetId: text("target_id"),
+    /** Label legível pra UI (ex: nome do user, número da operação) */
+    targetLabel: text("target_label"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("audit_logs_user_idx").on(t.userId, t.createdAt),
+    index("audit_logs_target_idx").on(t.targetType, t.targetId, t.createdAt),
+    index("audit_logs_action_idx").on(t.action, t.createdAt),
+  ],
+);
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+
+/* =========================================
    PENDING OPERAÇÕES — lote da construtora
    (aguardando o corretor logar + completar)
    ========================================= */

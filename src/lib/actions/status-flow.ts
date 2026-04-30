@@ -14,6 +14,7 @@ import {
 import { requireAdmin } from "@/lib/auth-user";
 import { notify } from "@/lib/notify";
 import { generateContractForOperacao } from "@/lib/actions/contract";
+import { audit } from "@/lib/audit";
 import { valorPresente } from "@/lib/format";
 
 type ChangeStatusInput = {
@@ -152,7 +153,7 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     .set(updates)
     .where(eq(operacoes.id, input.operacaoId));
 
-  // Audit log
+  // Audit log (operação + sistema-wide)
   await db.insert(operacaoEvents).values({
     operacaoId: input.operacaoId,
     userId: admin.id,
@@ -164,6 +165,19 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
       adminId: admin.id,
     },
   });
+  audit({
+    action: "change_status",
+    targetType: "operacao",
+    targetId: input.operacaoId,
+    targetLabel: `${op.numero} → ${input.newStatus}`,
+    metadata: {
+      from: op.status,
+      to: input.newStatus,
+      motivo: input.motivo ?? null,
+      novaTaxaMensal: input.novaTaxaMensal ?? null,
+      cashbackPercent: input.cashbackPercent ?? null,
+    },
+  }).catch(() => undefined);
 
   // Carrega usuários envolvidos pra notificações
   const [cedente] = await db

@@ -679,12 +679,107 @@ export async function getConstrutoraDetail(construtoraId: string) {
       id: operacoes.id,
       numero: operacoes.numero,
       status: operacoes.status,
+      valorVenda: operacoes.valorVenda,
       valorComissao: operacoes.valorComissao,
+      valorPresente: operacoes.valorPresente,
+      desagio: operacoes.desagio,
+      dataVenda: operacoes.dataVenda,
+      numeroParcelas: operacoes.numeroParcelas,
+      taxaMensal: operacoes.taxaMensal,
+      cashbackPercent: operacoes.cashbackPercent,
+      cashbackValor: operacoes.cashbackValor,
+      cashbackSacadoEm: operacoes.cashbackSacadoEm,
       createdAt: operacoes.createdAt,
+      aprovadoEm: operacoes.aprovadoEm,
+      liquidadoEm: operacoes.liquidadoEm,
+      corretorUserId: operacoes.corretorUserId,
+      corretorNome: users.nome,
+      corretorEmail: users.email,
     })
     .from(operacoes)
+    .leftJoin(users, eq(operacoes.corretorUserId, users.id))
     .where(eq(operacoes.construtoraId, construtoraId))
     .orderBy(desc(operacoes.createdAt));
 
-  return { construtora: c, owner, documentos: docs, operacoes: ops };
+  // Totais agregados
+  const STATUS_PRODUTIVOS = [
+    "aguardando_aprovacao",
+    "documentos_incompletos",
+    "pre_aprovada",
+    "analise_final",
+    "enviada_para_assinatura",
+    "enviada_para_pagamento",
+    "realizada",
+  ];
+  const opsAtivas = ops.filter((o) => STATUS_PRODUTIVOS.includes(o.status));
+  const opsRealizadas = ops.filter((o) => o.status === "realizada");
+  const totalOperado = opsAtivas.reduce(
+    (s, o) => s + parseFloat(o.valorComissao),
+    0,
+  );
+  const totalPago = opsRealizadas.reduce(
+    (s, o) => s + parseFloat(o.valorPresente),
+    0,
+  );
+  const totalAberto = opsAtivas
+    .filter((o) => o.status !== "realizada")
+    .reduce((s, o) => s + parseFloat(o.valorPresente), 0);
+  const cashbackTotal = ops.reduce(
+    (s, o) => s + parseFloat(o.cashbackValor ?? "0"),
+    0,
+  );
+  const cashbackSacado = ops
+    .filter((o) => o.cashbackSacadoEm)
+    .reduce((s, o) => s + parseFloat(o.cashbackValor ?? "0"), 0);
+  const cashbackDisponivel = cashbackTotal - cashbackSacado;
+
+  // Imobiliárias com quem fez negócio (lista única)
+  const corretoresMap = new Map<
+    string,
+    {
+      id: string;
+      nome: string;
+      email: string;
+      operacoes: number;
+      valorOperado: number;
+    }
+  >();
+  for (const op of ops) {
+    if (!op.corretorUserId) continue;
+    const e = corretoresMap.get(op.corretorUserId);
+    if (e) {
+      e.operacoes += 1;
+      e.valorOperado += parseFloat(op.valorComissao);
+    } else {
+      corretoresMap.set(op.corretorUserId, {
+        id: op.corretorUserId,
+        nome: op.corretorNome ?? op.corretorEmail ?? "—",
+        email: op.corretorEmail ?? "",
+        operacoes: 1,
+        valorOperado: parseFloat(op.valorComissao),
+      });
+    }
+  }
+  const corretores = Array.from(corretoresMap.values()).sort(
+    (a, b) => b.valorOperado - a.valorOperado,
+  );
+
+  return {
+    construtora: c,
+    owner,
+    documentos: docs,
+    operacoes: ops,
+    corretores,
+    totals: {
+      operacoesTotal: ops.length,
+      operacoesAtivas: opsAtivas.length,
+      operacoesRealizadas: opsRealizadas.length,
+      totalOperado,
+      totalPago,
+      totalAberto,
+      cashbackTotal,
+      cashbackSacado,
+      cashbackDisponivel,
+    },
+  };
 }

@@ -12,6 +12,8 @@ import {
   rejectUserOnboardingAction,
 } from "@/lib/actions/admin";
 import { blockUserAction, unblockUserAction } from "@/lib/actions/block";
+import { audit, getAuditLogsByUser, getAuditLogsByTarget } from "@/lib/audit";
+import { AuditLogTimeline } from "@/components/audit-log-timeline";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -50,11 +52,21 @@ type Params = { params: Promise<{ id: string }> };
 export default async function AdminUsuarioDetail({ params }: Params) {
   const admin = await requireAdmin();
   const { id } = await params;
-  const [detail, monthly] = await Promise.all([
+  const [detail, monthly, logsActions, logsTarget] = await Promise.all([
     getUserDetail(id),
     getUserMonthlyStats(id),
+    getAuditLogsByUser(id, 50),
+    getAuditLogsByTarget("user", id, 50),
   ]);
   if (!detail) notFound();
+
+  // Log da visualização (best-effort)
+  audit({
+    action: "view_user",
+    targetType: "user",
+    targetId: id,
+    targetLabel: detail.user.nome ?? detail.user.email,
+  }).catch(() => undefined);
 
   const { user, imobiliaria, documentos, operacoes, construtoras } = detail;
   const isPending = user.onboardingStatus === "documentos_enviados";
@@ -409,6 +421,19 @@ export default async function AdminUsuarioDetail({ params }: Params) {
               </div>
             )}
           </Card>
+
+          <Card label={`Histórico de ações deste usuário (${logsActions.length})`}>
+            <AuditLogTimeline
+              logs={logsActions}
+              emptyLabel="Sem ações registradas ainda."
+            />
+          </Card>
+
+          {logsTarget.length > 0 && (
+            <Card label={`Ações sobre este cadastro (${logsTarget.length})`}>
+              <AuditLogTimeline logs={logsTarget} />
+            </Card>
+          )}
         </aside>
       </div>
     </AdminShell>

@@ -23,7 +23,22 @@ const nav: AdminNavItem[] = [
   },
   { type: "link", href: "/admin/tickets", label: "Tickets" },
   { type: "link", href: "/admin/mural", label: "Mural" },
-  { type: "link", href: "/admin/relatorios", label: "Relatórios" },
+  {
+    type: "submenu",
+    label: "Relatórios",
+    matchPrefix: ["/admin/relatorios"],
+    items: [
+      { href: "/admin/relatorios", label: "Visão geral" },
+      {
+        href: "/admin/relatorios/construtoras",
+        label: "Ranking de construtoras",
+      },
+      {
+        href: "/admin/relatorios/imobiliarias",
+        label: "Ranking de imobiliárias / corretores",
+      },
+    ],
+  },
   { type: "link", href: "/admin/configuracoes", label: "Configurações" },
 ];
 
