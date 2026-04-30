@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminRowActions } from "@/components/admin-row-actions";
+import { NotificarWhatsappRowActions } from "@/components/notificar-whatsapp-button";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import {
   DateRangeFilter,
@@ -99,10 +100,10 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
           <div className="hidden md:grid grid-cols-12 gap-3 px-6 py-3 text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border bg-bg-card">
             <div className="col-span-2">Número</div>
             <div className="col-span-3">Imobiliária / Corretor</div>
-            <div className="col-span-3">Construtora</div>
+            <div className="col-span-2">Construtora</div>
             <div className="col-span-1 text-right">VP</div>
             <div className="col-span-2">Status</div>
-            <div className="col-span-1 text-right">Ações</div>
+            <div className="col-span-2 text-right">Ações</div>
           </div>
           <ul>
             {operacoes.map((op) => (
@@ -122,7 +123,7 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
                     {op.corretorEmail}
                   </div>
                 </div>
-                <div className="hidden md:block col-span-3 text-sm text-fg-muted truncate">
+                <div className="hidden md:block col-span-2 text-sm text-fg-muted truncate">
                   {op.construtoraNome ?? "—"}
                 </div>
                 <div className="hidden md:block col-span-1 text-right font-mono tabular text-xs text-fg font-semibold">
@@ -131,7 +132,25 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
                 <div className="col-span-5 md:col-span-2 flex justify-end md:justify-start">
                   <OperacaoStatusBadge status={op.status} />
                 </div>
-                <div className="hidden md:flex col-span-1 justify-end gap-1.5">
+                <div className="hidden md:flex col-span-2 justify-end items-center gap-1.5">
+                  <NotificarWhatsappRowActions
+                    operacao={{
+                      numero: op.numero,
+                      status: op.status,
+                      valorPresente: parseFloat(op.valorPresente),
+                      valorComissao: parseFloat(op.valorComissao),
+                      construtoraNome: op.construtoraNome,
+                      corretorNome: op.corretorNome,
+                    }}
+                    corretor={{
+                      phone: op.corretorTelefone,
+                      nome: op.corretorNome,
+                    }}
+                    construtora={{
+                      phone: op.construtoraTelefone,
+                      nome: op.construtoraNome,
+                    }}
+                  />
                   <AdminRowActions
                     viewHref={`/admin/operacoes/${op.id}`}
                     editHref={`/admin/operacoes/${op.id}/editar`}

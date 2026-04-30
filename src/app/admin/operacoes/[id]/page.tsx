@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { AdminStatusFlow } from "@/components/admin-status-flow";
 import { ContratoCard } from "@/components/contrato-card";
+import { NotificarWhatsappButton } from "@/components/notificar-whatsapp-button";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { getAdminOperacaoDetail } from "@/lib/actions/admin";
 import { getContratoForOperacao } from "@/lib/actions/contract";
@@ -173,27 +174,46 @@ export default async function AdminOperacaoDetail({ params }: Params) {
           <Card label="Cedente · corretor / imobiliária">
             <div className="space-y-3">
               <div>
-                <div className="text-[11px] font-mono uppercase tracking-wider text-fg-dim mb-0.5">
-                  Responsável
-                </div>
-                <div className="text-base font-bold">
-                  {op.corretorNome ?? "—"}
-                </div>
-                <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted">
-                  <a
-                    href={`mailto:${op.corretorEmail}`}
-                    className="hover:text-accent"
-                  >
-                    {op.corretorEmail}
-                  </a>
-                  {op.corretorTelefone && (
-                    <a
-                      href={`tel:${op.corretorTelefone}`}
-                      className="font-mono hover:text-accent"
-                    >
-                      {op.corretorTelefone}
-                    </a>
-                  )}
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-fg-dim mb-0.5">
+                      Responsável
+                    </div>
+                    <div className="text-base font-bold">
+                      {op.corretorNome ?? "—"}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted">
+                      <a
+                        href={`mailto:${op.corretorEmail}`}
+                        className="hover:text-accent"
+                      >
+                        {op.corretorEmail}
+                      </a>
+                      {op.corretorTelefone && (
+                        <a
+                          href={`tel:${op.corretorTelefone}`}
+                          className="font-mono hover:text-accent"
+                        >
+                          {op.corretorTelefone}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <NotificarWhatsappButton
+                    target="corretor"
+                    phone={op.corretorTelefone ?? op.imobiliaria?.telefone}
+                    destinatarioNome={op.corretorNome}
+                    operacao={{
+                      numero: op.numero,
+                      status: op.status,
+                      valorPresente: parseFloat(op.valorPresente),
+                      valorComissao: parseFloat(op.valorComissao),
+                      construtoraNome: op.construtoraNome,
+                      corretorNome: op.corretorNome,
+                      motivoPendencia: op.motivoPendencia,
+                      motivoRecusa: op.motivoRecusa,
+                    }}
+                  />
                 </div>
               </div>
 
@@ -271,14 +291,35 @@ export default async function AdminOperacaoDetail({ params }: Params) {
 
           <Card label="Devedora · construtora">
             <div className="space-y-2">
-              <div className="text-base font-bold">
-                {op.construtoraNome ?? "—"}
-                {op.construtoraNomeFantasia && (
-                  <span className="text-fg-muted font-normal">
-                    {" · "}
-                    {op.construtoraNomeFantasia}
-                  </span>
-                )}
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="text-base font-bold">
+                  {op.construtoraNome ?? "—"}
+                  {op.construtoraNomeFantasia && (
+                    <span className="text-fg-muted font-normal">
+                      {" · "}
+                      {op.construtoraNomeFantasia}
+                    </span>
+                  )}
+                </div>
+                <NotificarWhatsappButton
+                  target="construtora"
+                  phone={
+                    op.construtoraOwner?.telefone ?? op.construtoraTelefone
+                  }
+                  destinatarioNome={
+                    op.construtoraOwner?.nome ?? op.construtoraNome
+                  }
+                  operacao={{
+                    numero: op.numero,
+                    status: op.status,
+                    valorPresente: parseFloat(op.valorPresente),
+                    valorComissao: parseFloat(op.valorComissao),
+                    construtoraNome: op.construtoraNome,
+                    corretorNome: op.corretorNome,
+                    motivoPendencia: op.motivoPendencia,
+                    motivoRecusa: op.motivoRecusa,
+                  }}
+                />
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted">
                 <span className="font-mono text-xs">

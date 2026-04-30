@@ -219,8 +219,10 @@ export async function getAllOperacoes(filters?: {
       dataVenda: operacoes.dataVenda,
       createdAt: operacoes.createdAt,
       construtoraNome: construtoras.razaoSocial,
+      construtoraTelefone: construtoras.telefone,
       corretorNome: users.nome,
       corretorEmail: users.email,
+      corretorTelefone: users.telefone,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
