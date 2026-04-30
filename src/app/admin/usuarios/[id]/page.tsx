@@ -8,6 +8,7 @@ import {
   getUserDetail,
   rejectUserOnboardingAction,
 } from "@/lib/actions/admin";
+import { blockUserAction, unblockUserAction } from "@/lib/actions/block";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -36,6 +37,16 @@ export default async function AdminUsuarioDetail({ params }: Params) {
     await approveUserOnboardingAction(id);
   }
 
+  async function block() {
+    "use server";
+    await blockUserAction(id);
+  }
+
+  async function unblock() {
+    "use server";
+    await unblockUserAction(id);
+  }
+
   return (
     <AdminShell active="/admin/usuarios" userName={admin.nome}>
       <Link
@@ -62,12 +73,38 @@ export default async function AdminUsuarioDetail({ params }: Params) {
             >
               {user.onboardingStatus}
             </span>
+            {!user.isActive && (
+              <span className="chip bg-red-50 border-danger/40 text-danger">
+                ⛔ bloqueado
+              </span>
+            )}
             {user.telefone && (
               <span className="font-mono text-[11px] text-fg-muted">
                 {user.telefone}
               </span>
             )}
           </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {user.isActive ? (
+            <form action={block}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-danger/40 text-danger hover:bg-red-50 font-medium text-sm transition-colors"
+              >
+                ⛔ Bloquear cadastro
+              </button>
+            </form>
+          ) : (
+            <form action={unblock}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-success/40 text-success hover:bg-green-50 font-medium text-sm transition-colors"
+              >
+                ✓ Desbloquear cadastro
+              </button>
+            </form>
+          )}
         </div>
       </div>
 

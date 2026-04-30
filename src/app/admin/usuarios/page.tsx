@@ -27,8 +27,8 @@ const STATUS_DISPLAY: Record<string, { label: string; class: string }> = {
 };
 
 const ROLE_LABEL: Record<string, string> = {
-  corretor: "Corretor",
-  imobiliaria: "Imobiliária",
+  corretor: "Imobiliária / Corretor",
+  imobiliaria: "Imobiliária / Corretor",
   construtora: "Construtora",
   admin: "Admin",
 };

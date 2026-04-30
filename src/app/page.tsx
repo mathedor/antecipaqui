@@ -27,7 +27,7 @@ type Perfil = {
 const perfis: Perfil[] = [
   {
     num: "01",
-    title: "Corretor",
+    title: "Imobiliária / Corretor",
     body: "Vendeu? Recebe a comissão hoje. Antecipa até 4 parcelas (120 dias). Cadastra a operação, envia os contratos e recebe o valor presente direto na sua conta.",
     cta: "É meu caso",
     signup: true,

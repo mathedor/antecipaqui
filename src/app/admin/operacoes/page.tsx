@@ -71,7 +71,7 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
         <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
           <div className="hidden md:grid grid-cols-12 gap-3 px-6 py-3 text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border bg-bg-card">
             <div className="col-span-2">Número</div>
-            <div className="col-span-3">Corretor</div>
+            <div className="col-span-3">Imobiliária / Corretor</div>
             <div className="col-span-3">Construtora</div>
             <div className="col-span-1 text-right">Comissão</div>
             <div className="col-span-1 text-right">VP</div>

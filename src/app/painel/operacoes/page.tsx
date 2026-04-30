@@ -54,7 +54,9 @@ export default async function OperacoesPage() {
     }));
   }
 
-  const counterpartyHeader = isConstrutora ? "Corretor" : "Construtora";
+  const counterpartyHeader = isConstrutora
+    ? "Imobiliária / Corretor"
+    : "Construtora";
   const titleLabel = isConstrutora ? "vinculadas a você" : "operações";
 
   const role = (

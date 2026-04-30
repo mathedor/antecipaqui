@@ -7,7 +7,7 @@ import { NotificationBell } from "@/components/notification-bell";
 const nav = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/operacoes", label: "Operações" },
-  { href: "/admin/usuarios", label: "Corretores" },
+  { href: "/admin/usuarios", label: "Imobiliárias / Corretores" },
   { href: "/admin/construtoras", label: "Construtoras" },
 ];
 

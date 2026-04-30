@@ -12,8 +12,8 @@ import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
 const ROLE_LABEL: Record<string, string> = {
-  corretor: "Corretor",
-  imobiliaria: "Imobiliária",
+  corretor: "Imobiliária / Corretor",
+  imobiliaria: "Imobiliária / Corretor",
   admin: "Administrador",
 };
 

@@ -179,6 +179,7 @@ export const construtoras = pgTable(
     onboardingStatus: onboardingStatusEnum("onboarding_status")
       .notNull()
       .default("pendente"),
+    isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -374,6 +375,61 @@ export const notificacoes = pgTable(
     index("notificacoes_created_idx").on(t.createdAt),
   ],
 );
+
+/* =========================================
+   TICKETS — sistema de suporte
+   ========================================= */
+
+export const ticketStatusEnum = pgEnum("ticket_status", [
+  "aberto",
+  "aguardando_resposta",
+  "finalizado",
+]);
+
+export const tickets = pgTable(
+  "tickets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    assunto: text("assunto").notNull(),
+    status: ticketStatusEnum("status").notNull().default("aberto"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    finalizadoEm: timestamp("finalizado_em", { withTimezone: true }),
+  },
+  (t) => [
+    index("tickets_user_idx").on(t.userId),
+    index("tickets_status_idx").on(t.status),
+  ],
+);
+
+export const ticketMessages = pgTable(
+  "ticket_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ticketId: uuid("ticket_id")
+      .notNull()
+      .references(() => tickets.id, { onDelete: "cascade" }),
+    fromUserId: text("from_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    fromRole: text("from_role").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("ticket_messages_ticket_idx").on(t.ticketId)],
+);
+
+export type Ticket = typeof tickets.$inferSelect;
+export type TicketMessage = typeof ticketMessages.$inferSelect;
 
 /* =========================================
    AUDIT LOG por operação

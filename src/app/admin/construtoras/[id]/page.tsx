@@ -7,6 +7,10 @@ import {
   approveConstrutoraOnboardingAction,
   getConstrutoraDetail,
 } from "@/lib/actions/admin";
+import {
+  blockConstrutoraAction,
+  unblockConstrutoraAction,
+} from "@/lib/actions/block";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -32,6 +36,16 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
   async function approve() {
     "use server";
     await approveConstrutoraOnboardingAction(id);
+  }
+
+  async function block() {
+    "use server";
+    await blockConstrutoraAction(id);
+  }
+
+  async function unblock() {
+    "use server";
+    await unblockConstrutoraAction(id);
   }
 
   return (
@@ -65,7 +79,33 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
             >
               {construtora.onboardingStatus}
             </span>
+            {!construtora.isActive && (
+              <span className="chip bg-red-50 border-danger/40 text-danger">
+                ⛔ bloqueada
+              </span>
+            )}
           </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {construtora.isActive ? (
+            <form action={block}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-danger/40 text-danger hover:bg-red-50 font-medium text-sm transition-colors"
+              >
+                ⛔ Bloquear cadastro
+              </button>
+            </form>
+          ) : (
+            <form action={unblock}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-success/40 text-success hover:bg-green-50 font-medium text-sm transition-colors"
+              >
+                ✓ Desbloquear cadastro
+              </button>
+            </form>
+          )}
         </div>
       </div>
 

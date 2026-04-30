@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentDbUser } from "@/lib/auth-user";
+import { requireActiveUser } from "@/lib/auth-user";
 import { CorretorDashboard } from "@/components/dashboards/corretor-dashboard";
 import { ConstrutoraDashboard } from "@/components/dashboards/construtora-dashboard";
 
@@ -8,8 +8,7 @@ export const metadata = {
 };
 
 export default async function PainelPage() {
-  const user = await getCurrentDbUser();
-  if (!user) redirect("/entrar");
+  const user = await requireActiveUser();
 
   // Admin → /admin
   if (user.role === "admin") {
