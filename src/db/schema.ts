@@ -41,14 +41,28 @@ export const onboardingStatusEnum = pgEnum("onboarding_status", [
   "recusado",
 ]);
 
+/**
+ * Fluxo de status:
+ * rascunho → aguardando_aprovacao → (admin)
+ *   ├→ documentos_incompletos (admin pediu correção; volta após reenvio)
+ *   ├→ pre_aprovada (aguarda construtora — sistema notifica)
+ *   │   └→ analise_final (construtora deu OK; admin decide final)
+ *   │       └→ enviada_para_assinatura (ZapSign)
+ *   │           └→ enviada_para_pagamento
+ *   │               └→ realizada
+ *   ├→ recusada
+ *   └→ cancelada
+ */
 export const operacaoStatusEnum = pgEnum("operacao_status", [
   "rascunho",
-  "em_analise",
-  "aprovada",
+  "aguardando_aprovacao",
+  "documentos_incompletos",
+  "pre_aprovada",
+  "analise_final",
   "recusada",
-  "em_assinatura",
-  "ativa",
-  "liquidada",
+  "enviada_para_assinatura",
+  "enviada_para_pagamento",
+  "realizada",
   "cancelada",
 ]);
 
@@ -241,6 +255,7 @@ export const operacoes = pgTable(
     // Estado
     status: operacaoStatusEnum("status").notNull().default("rascunho"),
     motivoRecusa: text("motivo_recusa"),
+    motivoPendencia: text("motivo_pendencia"),
     aprovadoPorUserId: text("aprovado_por_user_id").references(() => users.id),
     aprovadoEm: timestamp("aprovado_em", { withTimezone: true }),
     liquidadoEm: timestamp("liquidado_em", { withTimezone: true }),
@@ -313,6 +328,38 @@ export const contratos = pgTable(
       .defaultNow(),
   },
   (t) => [index("contratos_operacao_idx").on(t.operacaoId)],
+);
+
+/* =========================================
+   NOTIFICAÇÕES — todos os níveis
+   ========================================= */
+
+export const notificacoes = pgTable(
+  "notificacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    body: text("body"),
+    link: text("link"),
+    operacaoId: uuid("operacao_id").references(() => operacoes.id, {
+      onDelete: "cascade",
+    }),
+    read: boolean("read").notNull().default(false),
+    emailSent: boolean("email_sent").notNull().default(false),
+    smsSent: boolean("sms_sent").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("notificacoes_user_idx").on(t.userId),
+    index("notificacoes_unread_idx").on(t.userId, t.read),
+    index("notificacoes_created_idx").on(t.createdAt),
+  ],
 );
 
 /* =========================================
@@ -412,3 +459,4 @@ export type Operacao = typeof operacoes.$inferSelect;
 export type NewOperacao = typeof operacoes.$inferInsert;
 export type ParcelaComissao = typeof parcelasComissao.$inferSelect;
 export type Contrato = typeof contratos.$inferSelect;
+export type Notificacao = typeof notificacoes.$inferSelect;

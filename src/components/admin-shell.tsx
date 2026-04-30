@@ -2,6 +2,7 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { SairButton } from "@/components/sair-button";
 import { Logo } from "@/components/logo";
+import { NotificationBell } from "@/components/notification-bell";
 
 const nav = [
   { href: "/admin", label: "Dashboard" },
@@ -48,6 +49,7 @@ export function AdminShell({
             <span className="hidden md:inline-flex chip chip-accent">
               admin{userName ? ` · ${userName.split(" ")[0]}` : ""}
             </span>
+            <NotificationBell />
             <SairButton />
             <UserButton />
           </div>

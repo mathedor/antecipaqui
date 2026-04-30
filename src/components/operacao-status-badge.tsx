@@ -1,44 +1,51 @@
 type Status =
   | "rascunho"
-  | "em_analise"
-  | "aprovada"
+  | "aguardando_aprovacao"
+  | "documentos_incompletos"
+  | "pre_aprovada"
+  | "analise_final"
   | "recusada"
-  | "em_assinatura"
-  | "ativa"
-  | "liquidada"
+  | "enviada_para_assinatura"
+  | "enviada_para_pagamento"
+  | "realizada"
   | "cancelada";
 
-const STYLES: Record<
-  Status,
-  { label: string; className: string }
-> = {
+const STYLES: Record<Status, { label: string; className: string }> = {
   rascunho: {
     label: "Rascunho",
     className: "bg-bg-soft text-fg-dim border-border",
   },
-  em_analise: {
-    label: "Em análise",
+  aguardando_aprovacao: {
+    label: "Aguardando aprovação",
     className: "bg-yellow-50 text-warn border-yellow-200",
   },
-  aprovada: {
-    label: "Aprovada",
+  documentos_incompletos: {
+    label: "Documentos incompletos",
+    className: "bg-orange-50 text-warn border-orange-200",
+  },
+  pre_aprovada: {
+    label: "Pré-aprovada",
+    className: "bg-blue-50 text-accent border-blue-200",
+  },
+  analise_final: {
+    label: "Análise final",
     className: "bg-blue-50 text-accent border-blue-200",
   },
   recusada: {
     label: "Recusada",
     className: "bg-red-50 text-danger border-red-200",
   },
-  em_assinatura: {
-    label: "Em assinatura",
-    className: "bg-blue-50 text-accent border-blue-200",
+  enviada_para_assinatura: {
+    label: "Enviada p/ assinatura",
+    className: "bg-violet-50 text-violet-700 border-violet-200",
   },
-  ativa: {
-    label: "Ativa",
-    className: "bg-green-50 text-success border-green-200",
+  enviada_para_pagamento: {
+    label: "Enviada p/ pagamento",
+    className: "bg-emerald-50 text-success border-emerald-200",
   },
-  liquidada: {
-    label: "Liquidada",
-    className: "bg-bg-soft text-fg-muted border-border",
+  realizada: {
+    label: "Realizada",
+    className: "bg-green-100 text-success border-green-300",
   },
   cancelada: {
     label: "Cancelada",
@@ -57,3 +64,7 @@ export function OperacaoStatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+export const STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(STYLES).map(([k, v]) => [k, v.label]),
+);

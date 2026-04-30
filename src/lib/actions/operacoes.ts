@@ -203,7 +203,7 @@ export async function createOperacaoAction(
       taxaMensal: String(TAXA_MENSAL_DEFAULT),
       valorPresente: String(vp.toFixed(2)),
       desagio: String(desagio.toFixed(2)),
-      status: "em_analise",
+      status: "aguardando_aprovacao",
     })
     .returning();
 
@@ -283,13 +283,23 @@ export async function getDashboardStats(corretorUserId: string) {
     .where(eq(operacoes.corretorUserId, corretorUserId));
 
   const total = rows.length;
-  const aprovadas = rows.filter((r) =>
-    ["aprovada", "em_assinatura", "ativa"].includes(r.status),
+  const APROVADAS_STATUSES = [
+    "pre_aprovada",
+    "analise_final",
+    "enviada_para_assinatura",
+    "enviada_para_pagamento",
+  ];
+  const aprovadas = rows.filter((r) => APROVADAS_STATUSES.includes(r.status));
+  const ativas = rows.filter((r) =>
+    ["enviada_para_assinatura", "enviada_para_pagamento"].includes(r.status),
   );
-  const ativas = rows.filter((r) => r.status === "ativa");
-  const liquidadas = rows.filter((r) => r.status === "liquidada");
+  const liquidadas = rows.filter((r) => r.status === "realizada");
   const pendentes = rows.filter((r) =>
-    ["em_analise", "rascunho"].includes(r.status),
+    [
+      "aguardando_aprovacao",
+      "documentos_incompletos",
+      "rascunho",
+    ].includes(r.status),
   );
 
   const sum = (
@@ -440,16 +450,19 @@ export async function getDashboardStatsForConstrutora(construtoraId: string) {
     .from(operacoes)
     .where(eq(operacoes.construtoraId, construtoraId));
 
+  const STATUS_ATIVAS = [
+    "pre_aprovada",
+    "analise_final",
+    "enviada_para_assinatura",
+    "enviada_para_pagamento",
+  ];
+
   const ativasIds = ops
-    .filter((o) =>
-      ["aprovada", "em_assinatura", "ativa"].includes(o.status),
-    )
+    .filter((o) => STATUS_ATIVAS.includes(o.status))
     .map((o) => o.id);
 
   const totalDevido = ops
-    .filter((o) =>
-      ["aprovada", "em_assinatura", "ativa"].includes(o.status),
-    )
+    .filter((o) => STATUS_ATIVAS.includes(o.status))
     .reduce((s, o) => s + parseFloat(o.valorComissao), 0);
 
   // Parcelas a vencer no mês corrente
@@ -535,7 +548,7 @@ export async function getDuplicatasParaPagar(construtoraId: string) {
     .where(
       and(
         eq(operacoes.construtoraId, construtoraId),
-        sql`${operacoes.status} IN ('aprovada', 'em_assinatura', 'ativa')`,
+        sql`${operacoes.status} IN ('pre_aprovada', 'analise_final', 'enviada_para_assinatura', 'enviada_para_pagamento')`,
       ),
     )
     .orderBy(parcelasComissao.vencimento);

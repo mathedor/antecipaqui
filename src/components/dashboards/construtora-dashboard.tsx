@@ -7,6 +7,7 @@ import {
 } from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { SairButton } from "@/components/sair-button";
+import { NotificationBell } from "@/components/notification-bell";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -32,8 +33,9 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
   ]);
 
   const operacoesRecentes = operacoes.slice(0, 5);
-  const operacoesPendentes = operacoes.filter((o) => o.status === "em_analise")
-    .length;
+  const operacoesPendentes = operacoes.filter((o) =>
+    ["pre_aprovada", "analise_final"].includes(o.status),
+  ).length;
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-12 md:py-16 min-h-[60vh]">
@@ -70,6 +72,7 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <NotificationBell />
           <SairButton />
           <UserButton />
         </div>

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
-import { AdminAprovarRecusar } from "@/components/admin-aprovar-recusar";
+import { AdminStatusFlow } from "@/components/admin-status-flow";
 import { ContratoCard } from "@/components/contrato-card";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { getAdminOperacaoDetail } from "@/lib/actions/admin";
@@ -20,12 +20,27 @@ const TIPO_LABEL: Record<string, string> = {
   contrato_social: "Contrato social",
   comprovante_endereco: "Comprovante de endereço",
   creci: "Comprovante CRECI",
+  cpf: "CPF",
+  rg: "RG",
+  outro: "Outro",
 };
 
 const EVENT_LABEL: Record<string, string> = {
   operacao_created: "Operação criada",
   approved_by_admin: "Aprovada pelo admin",
   rejected_by_admin: "Recusada pelo admin",
+  contract_generated: "Contrato gerado",
+  contract_regenerated: "Contrato regerado",
+  contract_generation_failed: "Falha ao gerar contrato",
+  status_changed_to_aguardando_aprovacao: "Status → aguardando aprovação",
+  status_changed_to_documentos_incompletos: "Status → documentos incompletos",
+  status_changed_to_pre_aprovada: "Status → pré-aprovada",
+  status_changed_to_analise_final: "Status → análise final",
+  status_changed_to_recusada: "Status → recusada",
+  status_changed_to_enviada_para_assinatura: "Status → enviada p/ assinatura",
+  status_changed_to_enviada_para_pagamento: "Status → enviada p/ pagamento",
+  status_changed_to_realizada: "Status → realizada",
+  status_changed_to_cancelada: "Status → cancelada",
 };
 
 function formatDate(iso: string) {
@@ -55,6 +70,26 @@ export default async function AdminOperacaoDetail({ params }: Params) {
 
   const taxa = parseFloat(op.taxaMensal);
 
+  const enderecoConstrutora = [
+    op.construtoraEndereco,
+    op.construtoraCidade,
+    op.construtoraUf,
+    op.construtoraCep && `CEP ${op.construtoraCep}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const enderecoImobiliaria = op.imobiliaria
+    ? [
+        op.imobiliaria.endereco,
+        op.imobiliaria.cidade,
+        op.imobiliaria.uf,
+        op.imobiliaria.cep && `CEP ${op.imobiliaria.cep}`,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+
   return (
     <AdminShell active="/admin/operacoes" userName={admin.nome}>
       <Link
@@ -78,25 +113,39 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                 Decidida em {formatDateTime(op.aprovadoEm)}
               </>
             )}
+            {op.liquidadoEm && (
+              <>
+                {" · "}
+                Liquidada em {formatDateTime(op.liquidadoEm)}
+              </>
+            )}
           </p>
         </div>
       </div>
 
-      {op.status === "recusada" && op.motivoRecusa && (
-        <div className="rounded-2xl border border-danger/40 bg-red-50 p-5 mb-6">
-          <div className="font-mono text-[10px] uppercase tracking-wider text-danger mb-2">
-            motivo da recusa
+      {/* Banners de motivo */}
+      {op.status === "documentos_incompletos" && op.motivoPendencia && (
+        <div className="rounded-2xl border border-orange-300 bg-orange-50 p-5 mb-6">
+          <div className="font-mono text-[10px] uppercase tracking-wider text-warn mb-2">
+            pendência de documentos
           </div>
-          <p className="text-fg">{op.motivoRecusa}</p>
+          <p className="text-fg whitespace-pre-line">{op.motivoPendencia}</p>
         </div>
       )}
 
-      {/* Aprovar / recusar */}
+      {(op.status === "recusada" || op.status === "cancelada") &&
+        op.motivoRecusa && (
+          <div className="rounded-2xl border border-danger/40 bg-red-50 p-5 mb-6">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-danger mb-2">
+              motivo {op.status === "cancelada" ? "do cancelamento" : "da recusa"}
+            </div>
+            <p className="text-fg whitespace-pre-line">{op.motivoRecusa}</p>
+          </div>
+        )}
+
+      {/* Fluxo de status (admin) */}
       <div className="mb-6">
-        <AdminAprovarRecusar
-          operacaoId={op.id}
-          isPending={op.status === "em_analise"}
-        />
+        <AdminStatusFlow operacaoId={op.id} currentStatus={op.status} />
       </div>
 
       {contrato && (
@@ -114,32 +163,171 @@ export default async function AdminOperacaoDetail({ params }: Params) {
       <div className="grid lg:grid-cols-12 gap-5">
         <div className="lg:col-span-7 space-y-5">
           <Card label="Cedente · corretor / imobiliária">
-            <div className="text-base font-bold">
-              {op.corretorNome ?? "—"}
-            </div>
-            <div className="mt-1 text-sm text-fg-muted">{op.corretorEmail}</div>
-            {op.corretorTelefone && (
-              <div className="text-sm text-fg-muted font-mono">
-                {op.corretorTelefone}
+            <div className="space-y-3">
+              <div>
+                <div className="text-[11px] font-mono uppercase tracking-wider text-fg-dim mb-0.5">
+                  Responsável
+                </div>
+                <div className="text-base font-bold">
+                  {op.corretorNome ?? "—"}
+                </div>
+                <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted">
+                  <a
+                    href={`mailto:${op.corretorEmail}`}
+                    className="hover:text-accent"
+                  >
+                    {op.corretorEmail}
+                  </a>
+                  {op.corretorTelefone && (
+                    <a
+                      href={`tel:${op.corretorTelefone}`}
+                      className="font-mono hover:text-accent"
+                    >
+                      {op.corretorTelefone}
+                    </a>
+                  )}
+                </div>
               </div>
-            )}
-            <div className="mt-3 font-mono text-[10px] text-fg-dim">
-              user · {op.corretorUserId.slice(0, 24)}
+
+              {op.imobiliaria && (
+                <>
+                  <div className="border-t border-border pt-3">
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-fg-dim mb-0.5">
+                      Imobiliária PJ
+                    </div>
+                    <div className="text-base font-semibold">
+                      {op.imobiliaria.razaoSocial}
+                      {op.imobiliaria.nomeFantasia && (
+                        <span className="text-fg-muted font-normal">
+                          {" · "}
+                          {op.imobiliaria.nomeFantasia}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted">
+                      <span className="font-mono text-xs">
+                        CNPJ {op.imobiliaria.cnpj}
+                      </span>
+                      {op.imobiliaria.creciResponsavel && (
+                        <span className="font-mono text-xs">
+                          CRECI {op.imobiliaria.creciResponsavel}
+                        </span>
+                      )}
+                      {op.imobiliaria.telefone && (
+                        <a
+                          href={`tel:${op.imobiliaria.telefone}`}
+                          className="font-mono text-xs hover:text-accent"
+                        >
+                          {op.imobiliaria.telefone}
+                        </a>
+                      )}
+                    </div>
+                    {enderecoImobiliaria && (
+                      <div className="mt-1 text-sm text-fg-muted">
+                        {enderecoImobiliaria}
+                      </div>
+                    )}
+                  </div>
+
+                  {(op.imobiliaria.bancoNome ||
+                    op.imobiliaria.bancoAgencia ||
+                    op.imobiliaria.bancoConta) && (
+                    <div className="border-t border-border pt-3">
+                      <div className="text-[11px] font-mono uppercase tracking-wider text-fg-dim mb-1">
+                        Dados bancários (cessão)
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <Field label="Banco" value={op.imobiliaria.bancoNome} />
+                        <Field
+                          label="Código"
+                          value={op.imobiliaria.bancoCodigo}
+                          mono
+                        />
+                        <Field
+                          label="Agência"
+                          value={op.imobiliaria.bancoAgencia}
+                          mono
+                        />
+                        <Field
+                          label="Conta"
+                          value={op.imobiliaria.bancoConta}
+                          mono
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </Card>
 
           <Card label="Devedora · construtora">
-            <div className="text-base font-bold">
-              {op.construtoraNome ?? "—"}
-            </div>
-            <div className="mt-1 font-mono text-xs text-fg-muted">
-              CNPJ {op.construtoraCnpj ?? "—"}
-            </div>
-            {op.construtoraTelefone && (
-              <div className="text-sm text-fg-muted font-mono">
-                {op.construtoraTelefone}
+            <div className="space-y-2">
+              <div className="text-base font-bold">
+                {op.construtoraNome ?? "—"}
+                {op.construtoraNomeFantasia && (
+                  <span className="text-fg-muted font-normal">
+                    {" · "}
+                    {op.construtoraNomeFantasia}
+                  </span>
+                )}
               </div>
-            )}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted">
+                <span className="font-mono text-xs">
+                  CNPJ {op.construtoraCnpj ?? "—"}
+                </span>
+                {op.construtoraEmail && (
+                  <a
+                    href={`mailto:${op.construtoraEmail}`}
+                    className="hover:text-accent"
+                  >
+                    {op.construtoraEmail}
+                  </a>
+                )}
+                {op.construtoraTelefone && (
+                  <a
+                    href={`tel:${op.construtoraTelefone}`}
+                    className="font-mono hover:text-accent"
+                  >
+                    {op.construtoraTelefone}
+                  </a>
+                )}
+              </div>
+              {enderecoConstrutora && (
+                <div className="text-sm text-fg-muted">{enderecoConstrutora}</div>
+              )}
+              {op.construtoraOwner ? (
+                <div className="border-t border-border pt-3 mt-2">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-fg-dim mb-0.5">
+                    Responsável cadastrado
+                  </div>
+                  <div className="text-sm font-semibold">
+                    {op.construtoraOwner.nome ?? "—"}
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted">
+                    <a
+                      href={`mailto:${op.construtoraOwner.email}`}
+                      className="hover:text-accent"
+                    >
+                      {op.construtoraOwner.email}
+                    </a>
+                    {op.construtoraOwner.telefone && (
+                      <a
+                        href={`tel:${op.construtoraOwner.telefone}`}
+                        className="font-mono hover:text-accent"
+                      >
+                        {op.construtoraOwner.telefone}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="border-t border-border pt-3 mt-2 text-sm text-fg-dim italic">
+                  Construtora ainda sem usuário cadastrado — outreach manual via
+                  email/telefone acima.
+                </div>
+              )}
+            </div>
           </Card>
 
           <Card label="Resumo financeiro">
@@ -197,7 +385,7 @@ export default async function AdminOperacaoDetail({ params }: Params) {
         </div>
 
         <aside className="lg:col-span-5 space-y-5">
-          <Card label="Documentos anexados">
+          <Card label={`Documentos anexados (${op.documentos.length})`}>
             {op.documentos.length === 0 ? (
               <p className="text-sm text-fg-muted">
                 Nenhum documento anexado.
@@ -221,9 +409,10 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                       href={d.url}
                       target="_blank"
                       rel="noopener"
+                      download
                       className="text-accent text-sm font-semibold whitespace-nowrap shrink-0"
                     >
-                      abrir ↗
+                      baixar ↓
                     </a>
                   </li>
                 ))}
@@ -295,6 +484,31 @@ function Stat({
       </div>
       <div className={`font-mono tabular text-base font-bold ${valueColor}`}>
         {value}
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string | null | undefined;
+  mono?: boolean;
+}) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-0.5">
+        {label}
+      </div>
+      <div
+        className={`text-sm ${mono ? "font-mono" : ""} ${
+          value ? "text-fg" : "text-fg-dim italic"
+        }`}
+      >
+        {value || "—"}
       </div>
     </div>
   );

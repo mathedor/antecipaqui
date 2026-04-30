@@ -51,7 +51,9 @@ export async function getAdminStats() {
     })
     .from(parcelasComissao)
     .innerJoin(operacoes, eq(parcelasComissao.operacaoId, operacoes.id))
-    .where(sql`${operacoes.status} IN ('aprovada', 'em_assinatura', 'ativa')`);
+    .where(
+      sql`${operacoes.status} IN ('pre_aprovada', 'analise_final', 'enviada_para_assinatura', 'enviada_para_pagamento')`,
+    );
 
   const aVencer = parcelas
     .filter((p) => p.status === "a_vencer")
@@ -66,22 +68,27 @@ export async function getAdminStats() {
     })
     .reduce((s, p) => s + parseFloat(p.valor), 0);
 
+  const STATUS_PENDING = ["aguardando_aprovacao", "documentos_incompletos"];
+  const STATUS_APROVADAS = [
+    "pre_aprovada",
+    "analise_final",
+    "enviada_para_assinatura",
+    "enviada_para_pagamento",
+  ];
+
   return {
     totalOperacoes: ops.length,
-    pendentesAprovacao: ops.filter((o) => o.status === "em_analise").length,
-    aprovadas: ops.filter((o) =>
-      ["aprovada", "em_assinatura", "ativa"].includes(o.status),
-    ).length,
+    pendentesAprovacao: ops.filter((o) => STATUS_PENDING.includes(o.status))
+      .length,
+    aprovadas: ops.filter((o) => STATUS_APROVADAS.includes(o.status)).length,
     recusadas: ops.filter((o) => o.status === "recusada").length,
-    liquidadas: ops.filter((o) => o.status === "liquidada").length,
+    liquidadas: ops.filter((o) => o.status === "realizada").length,
     valorComissaoTotal: sumComissao([
-      "em_analise",
-      "aprovada",
-      "em_assinatura",
-      "ativa",
-      "liquidada",
+      ...STATUS_PENDING,
+      ...STATUS_APROVADAS,
+      "realizada",
     ]),
-    valorAntecipado: sumVP(["aprovada", "em_assinatura", "ativa", "liquidada"]),
+    valorAntecipado: sumVP([...STATUS_APROVADAS, "realizada"]),
     aVencer,
     vencidas,
   };
@@ -127,16 +134,26 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
       numeroParcelas: operacoes.numeroParcelas,
       taxaMensal: operacoes.taxaMensal,
       motivoRecusa: operacoes.motivoRecusa,
+      motivoPendencia: operacoes.motivoPendencia,
       aprovadoEm: operacoes.aprovadoEm,
+      liquidadoEm: operacoes.liquidadoEm,
       createdAt: operacoes.createdAt,
+      imobiliariaId: operacoes.imobiliariaId,
       corretorUserId: operacoes.corretorUserId,
       corretorNome: users.nome,
       corretorEmail: users.email,
       corretorTelefone: users.telefone,
       construtoraId: operacoes.construtoraId,
       construtoraNome: construtoras.razaoSocial,
+      construtoraNomeFantasia: construtoras.nomeFantasia,
       construtoraCnpj: construtoras.cnpj,
       construtoraTelefone: construtoras.telefone,
+      construtoraEmail: construtoras.email,
+      construtoraEndereco: construtoras.endereco,
+      construtoraCidade: construtoras.cidade,
+      construtoraUf: construtoras.uf,
+      construtoraCep: construtoras.cep,
+      construtoraOwnerUserId: construtoras.ownerUserId,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
@@ -145,6 +162,31 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
     .limit(1);
 
   if (!op) return null;
+
+  const imobiliaria = op.imobiliariaId
+    ? (
+        await db
+          .select()
+          .from(imobiliarias)
+          .where(eq(imobiliarias.id, op.imobiliariaId))
+          .limit(1)
+      )[0] ?? null
+    : null;
+
+  const construtoraOwner = op.construtoraOwnerUserId
+    ? (
+        await db
+          .select({
+            id: users.id,
+            nome: users.nome,
+            email: users.email,
+            telefone: users.telefone,
+          })
+          .from(users)
+          .where(eq(users.id, op.construtoraOwnerUserId))
+          .limit(1)
+      )[0] ?? null
+    : null;
 
   const parcelas = await db
     .select()
@@ -164,60 +206,19 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
     .where(eq(operacaoEvents.operacaoId, operacaoId))
     .orderBy(desc(operacaoEvents.createdAt));
 
-  return { ...op, parcelas, documentos: docs, events };
+  return {
+    ...op,
+    imobiliaria,
+    construtoraOwner,
+    parcelas,
+    documentos: docs,
+    events,
+  };
 }
 
 /* =========================================
-   ACTIONS — Aprovar / Recusar operação
+   ACTIONS — Regenerar contrato (admin)
    ========================================= */
-
-export async function approveOperacaoAction(operacaoId: string) {
-  const admin = await requireAdmin();
-
-  await db
-    .update(operacoes)
-    .set({
-      status: "aprovada",
-      aprovadoPorUserId: admin.id,
-      aprovadoEm: new Date(),
-      motivoRecusa: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(operacoes.id, operacaoId));
-
-  await db.insert(operacaoEvents).values({
-    operacaoId,
-    userId: admin.id,
-    type: "approved_by_admin",
-    payload: { adminId: admin.id, adminNome: admin.nome },
-  });
-
-  // Gera o contrato PDF + borderô anexo
-  try {
-    const { contratoId, url } = await generateContractForOperacao(operacaoId);
-    await db.insert(operacaoEvents).values({
-      operacaoId,
-      userId: admin.id,
-      type: "contract_generated",
-      payload: { contratoId, url },
-    });
-  } catch (e) {
-    // Não falhar a aprovação se o PDF der pau — admin pode regerar
-    console.error("[contract] generation failed:", e);
-    await db.insert(operacaoEvents).values({
-      operacaoId,
-      userId: admin.id,
-      type: "contract_generation_failed",
-      payload: { error: (e as Error).message },
-    });
-  }
-
-  revalidatePath("/admin");
-  revalidatePath(`/admin/operacoes/${operacaoId}`);
-  revalidatePath("/admin/operacoes");
-  revalidatePath("/painel/operacoes");
-  revalidatePath(`/painel/operacoes/${operacaoId}`);
-}
 
 /** Botão "Regenerar contrato" — útil se o primeiro deu erro ou dados mudaram. */
 export async function regenerateContractAction(operacaoId: string) {
@@ -232,38 +233,6 @@ export async function regenerateContractAction(operacaoId: string) {
   revalidatePath(`/admin/operacoes/${operacaoId}`);
   revalidatePath(`/painel/operacoes/${operacaoId}`);
   return { url };
-}
-
-export async function rejectOperacaoAction(formData: FormData) {
-  const admin = await requireAdmin();
-  const operacaoId = String(formData.get("operacaoId") || "");
-  const motivo = String(formData.get("motivo") || "").trim();
-
-  if (!operacaoId) throw new Error("operacaoId obrigatório");
-  if (!motivo) throw new Error("Motivo da recusa é obrigatório");
-
-  await db
-    .update(operacoes)
-    .set({
-      status: "recusada",
-      motivoRecusa: motivo,
-      aprovadoPorUserId: admin.id,
-      aprovadoEm: new Date(),
-      updatedAt: new Date(),
-    })
-    .where(eq(operacoes.id, operacaoId));
-
-  await db.insert(operacaoEvents).values({
-    operacaoId,
-    userId: admin.id,
-    type: "rejected_by_admin",
-    payload: { adminId: admin.id, motivo },
-  });
-
-  revalidatePath("/admin");
-  revalidatePath(`/admin/operacoes/${operacaoId}`);
-  revalidatePath("/admin/operacoes");
-  revalidatePath("/painel/operacoes");
 }
 
 /* =========================================

@@ -17,7 +17,9 @@ export default async function AdminPage() {
   ]);
 
   const recentes = recent.slice(0, 8);
-  const pendentes = recent.filter((o) => o.status === "em_analise");
+  const pendentes = recent.filter((o) =>
+    ["aguardando_aprovacao", "documentos_incompletos"].includes(o.status),
+  );
 
   return (
     <AdminShell active="/admin" userName={admin.nome}>
@@ -37,7 +39,7 @@ export default async function AdminPage() {
           label="Pendentes aprovação"
           value={String(stats.pendentesAprovacao)}
           tone={stats.pendentesAprovacao > 0 ? "warn" : "default"}
-          href="/admin/operacoes?status=em_analise"
+          href="/admin/operacoes?status=aguardando_aprovacao"
         />
         <StatCard
           label="Aprovadas / ativas"
@@ -107,7 +109,7 @@ export default async function AdminPage() {
             </p>
           </div>
           <Link
-            href="/admin/operacoes?status=em_analise"
+            href="/admin/operacoes?status=aguardando_aprovacao"
             className="btn-primary !h-10 !px-4 shrink-0"
           >
             Analisar agora <span className="arrow">→</span>

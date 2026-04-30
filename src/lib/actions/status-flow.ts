@@ -1,0 +1,348 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import {
+  construtoras,
+  imobiliarias,
+  operacaoEvents,
+  operacoes,
+  users,
+} from "@/db/schema";
+import { requireAdmin } from "@/lib/auth-user";
+import { notify } from "@/lib/notify";
+import { generateContractForOperacao } from "@/lib/actions/contract";
+
+type ChangeStatusInput = {
+  operacaoId: string;
+  newStatus:
+    | "documentos_incompletos"
+    | "pre_aprovada"
+    | "analise_final"
+    | "recusada"
+    | "enviada_para_assinatura"
+    | "enviada_para_pagamento"
+    | "realizada"
+    | "cancelada"
+    | "aguardando_aprovacao";
+  motivo?: string;
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  aguardando_aprovacao: "Aguardando aprovação",
+  documentos_incompletos: "Documentos incompletos",
+  pre_aprovada: "Pré-aprovada",
+  analise_final: "Análise final",
+  recusada: "Recusada",
+  enviada_para_assinatura: "Enviada para assinatura",
+  enviada_para_pagamento: "Enviada para pagamento",
+  realizada: "Realizada",
+  cancelada: "Cancelada",
+};
+
+export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
+  const admin = await requireAdmin();
+
+  // Carrega operação + cedente + construtora
+  const [op] = await db
+    .select()
+    .from(operacoes)
+    .where(eq(operacoes.id, input.operacaoId))
+    .limit(1);
+  if (!op) throw new Error("Operação não encontrada");
+
+  // Updates por status
+  const updates: Partial<typeof operacoes.$inferInsert> = {
+    status: input.newStatus,
+    updatedAt: new Date(),
+  };
+
+  if (input.newStatus === "documentos_incompletos") {
+    if (!input.motivo)
+      throw new Error("Motivo da pendência é obrigatório");
+    updates.motivoPendencia = input.motivo;
+    updates.motivoRecusa = null;
+  }
+  if (input.newStatus === "recusada" || input.newStatus === "cancelada") {
+    if (!input.motivo)
+      throw new Error("Motivo é obrigatório pra recusar/cancelar");
+    updates.motivoRecusa = input.motivo;
+  }
+  if (
+    input.newStatus === "pre_aprovada" ||
+    input.newStatus === "analise_final" ||
+    input.newStatus === "enviada_para_assinatura"
+  ) {
+    updates.aprovadoPorUserId = admin.id;
+    updates.aprovadoEm = new Date();
+    updates.motivoPendencia = null;
+  }
+  if (input.newStatus === "aguardando_aprovacao") {
+    // Quando admin reverte/corretor reenviou docs, limpa motivo
+    updates.motivoPendencia = null;
+  }
+  if (input.newStatus === "realizada") {
+    updates.liquidadoEm = new Date();
+  }
+
+  await db
+    .update(operacoes)
+    .set(updates)
+    .where(eq(operacoes.id, input.operacaoId));
+
+  // Audit log
+  await db.insert(operacaoEvents).values({
+    operacaoId: input.operacaoId,
+    userId: admin.id,
+    type: `status_changed_to_${input.newStatus}`,
+    payload: {
+      from: op.status,
+      to: input.newStatus,
+      motivo: input.motivo ?? null,
+      adminId: admin.id,
+    },
+  });
+
+  // Carrega usuários envolvidos pra notificações
+  const [cedente] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, op.corretorUserId))
+    .limit(1);
+
+  const [construtora] = await db
+    .select()
+    .from(construtoras)
+    .where(eq(construtoras.id, op.construtoraId))
+    .limit(1);
+
+  const construtoraOwner = construtora?.ownerUserId
+    ? (
+        await db
+          .select()
+          .from(users)
+          .where(eq(users.id, construtora.ownerUserId))
+          .limit(1)
+      )[0]
+    : null;
+
+  const linkCorretor = `/painel/operacoes/${op.id}`;
+  const linkConstrutora = `/painel/operacoes/${op.id}`;
+  const numero = op.numero;
+
+  // ─── Disparos por status ───
+  switch (input.newStatus) {
+    case "documentos_incompletos":
+      if (cedente) {
+        await notify({
+          userId: cedente.id,
+          type: "operacao_documentos_incompletos",
+          title: `Operação ${numero} · documentos incompletos`,
+          body:
+            (input.motivo ?? "Verifique a operação no seu painel.") +
+            "\nReenvie os documentos pra continuar a análise.",
+          link: linkCorretor,
+          operacaoId: op.id,
+          email: {
+            to: cedente.email,
+            subject: `Antecipaqui · Operação ${numero} precisa de correção`,
+            body: `Olá ${cedente.nome ?? ""}, sua operação ${numero} foi devolvida com a seguinte pendência:\n\n${input.motivo}\n\nAcesse seu painel pra reenviar.`,
+          },
+        });
+      }
+      break;
+
+    case "pre_aprovada":
+      if (construtoraOwner) {
+        await notify({
+          userId: construtoraOwner.id,
+          type: "operacao_pre_aprovada_construtora",
+          title: `Operação ${numero} aguarda sua confirmação`,
+          body: `A Antecipaqui pré-aprovou uma operação envolvendo sua construtora. Acesse o painel pra revisar.`,
+          link: linkConstrutora,
+          operacaoId: op.id,
+          email: {
+            to: construtoraOwner.email,
+            subject: `Antecipaqui · Operação ${numero} aguarda sua confirmação`,
+            body: `Sua confirmação é necessária pra a operação ${numero} prosseguir. Acesse o painel pra revisar a documentação.`,
+          },
+          sms: construtoraOwner.telefone
+            ? {
+                to: construtoraOwner.telefone,
+                message: `Antecipaqui: Operação ${numero} aguarda sua aprovação. Acesse o painel.`,
+              }
+            : undefined,
+        });
+      } else if (construtora?.email) {
+        // Construtora sem owner ainda — registra notificação no admin pra fazer outreach
+        console.log(
+          "[status] construtora sem owner, email manual necessário:",
+          construtora.email,
+        );
+      }
+      // Notifica também o cedente
+      if (cedente) {
+        await notify({
+          userId: cedente.id,
+          type: "operacao_pre_aprovada_cedente",
+          title: `Operação ${numero} pré-aprovada`,
+          body: `Sua operação foi pré-aprovada pela Antecipaqui e está aguardando confirmação da construtora.`,
+          link: linkCorretor,
+          operacaoId: op.id,
+          email: {
+            to: cedente.email,
+            subject: `Antecipaqui · Operação ${numero} pré-aprovada`,
+            body: `Sua operação ${numero} foi pré-aprovada e agora aguarda confirmação da construtora.`,
+          },
+        });
+      }
+      break;
+
+    case "analise_final":
+      // Notifica cedente que voltou pra admin
+      if (cedente) {
+        await notify({
+          userId: cedente.id,
+          type: "operacao_analise_final",
+          title: `Operação ${numero} em análise final`,
+          body: `A construtora confirmou. Sua operação está em análise final pela Antecipaqui.`,
+          link: linkCorretor,
+          operacaoId: op.id,
+        });
+      }
+      break;
+
+    case "recusada":
+      if (cedente) {
+        await notify({
+          userId: cedente.id,
+          type: "operacao_recusada",
+          title: `Operação ${numero} recusada`,
+          body: input.motivo ?? "Veja o motivo no seu painel.",
+          link: linkCorretor,
+          operacaoId: op.id,
+          email: {
+            to: cedente.email,
+            subject: `Antecipaqui · Operação ${numero} recusada`,
+            body: `Sua operação ${numero} foi recusada. Motivo: ${input.motivo ?? "não informado"}.`,
+          },
+        });
+      }
+      if (construtoraOwner) {
+        await notify({
+          userId: construtoraOwner.id,
+          type: "operacao_recusada_construtora",
+          title: `Operação ${numero} recusada`,
+          body: input.motivo ?? "",
+          link: linkConstrutora,
+          operacaoId: op.id,
+        });
+      }
+      break;
+
+    case "enviada_para_assinatura":
+      // Gera contrato (se não existir) e dispara notificações de "vai assinar"
+      try {
+        await generateContractForOperacao(op.id);
+        await db.insert(operacaoEvents).values({
+          operacaoId: op.id,
+          userId: admin.id,
+          type: "contract_generated",
+          payload: {},
+        });
+      } catch (e) {
+        console.error("[status] contract generation failed:", e);
+      }
+      if (cedente) {
+        await notify({
+          userId: cedente.id,
+          type: "operacao_enviada_assinatura",
+          title: `Operação ${numero} enviada para assinatura`,
+          body: `O contrato foi gerado e está sendo encaminhado pra assinatura.`,
+          link: linkCorretor,
+          operacaoId: op.id,
+          email: {
+            to: cedente.email,
+            subject: `Antecipaqui · Operação ${numero} pronta pra assinatura`,
+            body: `O contrato da operação ${numero} foi gerado e em breve você receberá o link pra assinar.`,
+          },
+        });
+      }
+      if (construtoraOwner) {
+        await notify({
+          userId: construtoraOwner.id,
+          type: "operacao_enviada_assinatura",
+          title: `Operação ${numero} aguarda sua assinatura`,
+          body: `O contrato foi gerado e em breve será encaminhado.`,
+          link: linkConstrutora,
+          operacaoId: op.id,
+          email: {
+            to: construtoraOwner.email,
+            subject: `Antecipaqui · Contrato da operação ${numero} pra assinatura`,
+            body: `O contrato da operação ${numero} está pronto. Em breve você receberá o link pra assinar.`,
+          },
+        });
+      }
+      break;
+
+    case "enviada_para_pagamento":
+      if (cedente) {
+        await notify({
+          userId: cedente.id,
+          type: "operacao_enviada_pagamento",
+          title: `Operação ${numero} aprovada — pagamento em processamento`,
+          body: `Seu valor entra na conta em até 1 dia útil.`,
+          link: linkCorretor,
+          operacaoId: op.id,
+          email: {
+            to: cedente.email,
+            subject: `Antecipaqui · Pagamento da operação ${numero} em andamento`,
+            body: `Boa notícia! Sua operação ${numero} foi totalmente assinada e o pagamento foi liberado.`,
+          },
+        });
+      }
+      break;
+
+    case "realizada":
+      if (cedente) {
+        await notify({
+          userId: cedente.id,
+          type: "operacao_realizada",
+          title: `Operação ${numero} realizada`,
+          body: `Pagamento confirmado.`,
+          link: linkCorretor,
+          operacaoId: op.id,
+          email: {
+            to: cedente.email,
+            subject: `Antecipaqui · Operação ${numero} concluída`,
+            body: `Sua operação ${numero} foi concluída com sucesso. Obrigado por usar a Antecipaqui!`,
+          },
+        });
+      }
+      break;
+
+    case "aguardando_aprovacao":
+      // Quando admin volta pra aguardando (ex: corretor reenviou docs)
+      if (cedente) {
+        await notify({
+          userId: cedente.id,
+          type: "operacao_em_analise",
+          title: `Operação ${numero} em análise`,
+          body: `Recebemos seus documentos e vamos analisar. Te avisamos em breve.`,
+          link: linkCorretor,
+          operacaoId: op.id,
+        });
+      }
+      break;
+  }
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/operacoes/${op.id}`);
+  revalidatePath("/admin/operacoes");
+  revalidatePath(`/painel/operacoes/${op.id}`);
+  revalidatePath("/painel/operacoes");
+  revalidatePath("/painel");
+
+  return { ok: true, newStatus: input.newStatus, label: STATUS_LABELS[input.newStatus] };
+}

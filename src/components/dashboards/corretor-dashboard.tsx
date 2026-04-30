@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { SairButton } from "@/components/sair-button";
+import { NotificationBell } from "@/components/notification-bell";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -79,6 +80,7 @@ export async function CorretorDashboard({ user }: { user: User }) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <NotificationBell />
           <SairButton />
           <UserButton />
         </div>

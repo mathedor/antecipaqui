@@ -11,12 +11,15 @@ export const metadata = {
 
 const STATUS_FILTERS = [
   { value: "", label: "Todas" },
-  { value: "em_analise", label: "Em análise" },
-  { value: "aprovada", label: "Aprovadas" },
-  { value: "em_assinatura", label: "Em assinatura" },
-  { value: "ativa", label: "Ativas" },
+  { value: "aguardando_aprovacao", label: "Aguardando aprovação" },
+  { value: "documentos_incompletos", label: "Docs incompletos" },
+  { value: "pre_aprovada", label: "Pré-aprovadas" },
+  { value: "analise_final", label: "Análise final" },
+  { value: "enviada_para_assinatura", label: "Em assinatura" },
+  { value: "enviada_para_pagamento", label: "Em pagamento" },
+  { value: "realizada", label: "Realizadas" },
   { value: "recusada", label: "Recusadas" },
-  { value: "liquidada", label: "Liquidadas" },
+  { value: "cancelada", label: "Canceladas" },
 ];
 
 type Search = { searchParams: Promise<{ status?: string }> };
