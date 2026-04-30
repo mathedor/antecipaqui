@@ -149,7 +149,7 @@ function ChartCard({
           )}
         </div>
         {total && (
-          <div className="font-mono tabular text-2xl md:text-3xl font-bold tracking-tight text-fg">
+          <div className="font-mono tabular text-base sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight leading-tight break-words text-fg">
             {total}
           </div>
         )}

@@ -213,16 +213,16 @@ function StatCard({
         : "text-fg-dim";
 
   const content = (
-    <div className={`rounded-2xl border p-5 ${baseClass} h-full transition-colors ${href ? "hover:border-accent cursor-pointer" : ""}`}>
+    <div className={`rounded-2xl border p-4 md:p-5 ${baseClass} h-full transition-colors ${href ? "hover:border-accent cursor-pointer" : ""}`}>
       <div
         className={`font-mono text-[10px] uppercase tracking-[0.18em] mb-2 ${labelColor}`}
       >
         {label}
       </div>
-      <div className="font-mono tabular text-2xl md:text-3xl font-bold tracking-tight text-fg">
+      <div className="font-mono tabular text-base sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-fg leading-tight break-words">
         {value}
       </div>
-      {sublabel && <div className="text-xs text-fg-muted mt-1">{sublabel}</div>}
+      {sublabel && <div className="text-[10px] md:text-xs text-fg-muted mt-1">{sublabel}</div>}
     </div>
   );
 

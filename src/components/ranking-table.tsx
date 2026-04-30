@@ -50,21 +50,21 @@ export function RankingTable({ rows, tipo }: Props) {
 
   return (
     <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm min-w-[760px]">
         <thead className="bg-bg-card border-b border-border">
           <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
-            <th className="px-4 py-3 text-left">#</th>
-            <th className="px-4 py-3 text-left">
+            <th className="px-3 md:px-4 py-3 text-left whitespace-nowrap">#</th>
+            <th className="px-3 md:px-4 py-3 text-left whitespace-nowrap">
               {tipo === "construtora"
                 ? "Construtora"
                 : "Imobiliária / Corretor"}
             </th>
-            <th className="px-4 py-3 text-right">Valor operado</th>
-            <th className="px-4 py-3 text-right">Pago</th>
-            <th className="px-4 py-3 text-right">Em aberto</th>
-            <th className="px-4 py-3 text-right">Ops</th>
-            <th className="px-4 py-3 text-center">Status</th>
-            <th className="px-4 py-3 text-right">Ações</th>
+            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Valor operado</th>
+            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Pago</th>
+            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Em aberto</th>
+            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Ops</th>
+            <th className="px-3 md:px-4 py-3 text-center whitespace-nowrap">Status</th>
+            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Ações</th>
           </tr>
         </thead>
         <tbody>

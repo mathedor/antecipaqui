@@ -4,6 +4,10 @@ import { Logo } from "@/components/logo";
 import { SairButton } from "@/components/sair-button";
 import { NotificationBell } from "@/components/notification-bell";
 import { VersionFooter } from "@/components/version-footer";
+import {
+  MobileBottomNav,
+  type MobileNavItem,
+} from "@/components/mobile-bottom-nav";
 
 type Role = "corretor" | "imobiliaria" | "construtora" | "admin";
 
@@ -44,20 +48,139 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
 };
 
 const ROLE_LABEL: Record<Role, string> = {
-  corretor: "corretor",
-  imobiliaria: "imobiliária",
-  construtora: "construtora",
-  admin: "admin",
+  corretor: "Imobiliária / Corretor",
+  imobiliaria: "Imobiliária / Corretor",
+  construtora: "Construtora",
+  admin: "Administrador",
 };
 
-/**
- * Shell do painel pós-login (corretor/imobiliária/construtora).
- * Usa NotificationBell + UserButton + nav role-based.
- *
- * Para admin, use AdminShell — tem nav própria e fica em /admin.
- *
- * `active` é o pathname pra destacar o item ativo (passe o pathname atual).
- */
+const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
+  corretor: [
+    { href: "/painel", label: "Painel", icon: "home" },
+    { href: "/painel/operacoes", label: "Ops", icon: "table" },
+    { href: "/painel/operacoes/nova", label: "Nova", icon: "doc" },
+    { href: "/painel/convites", label: "Convites", icon: "tag" },
+  ],
+  imobiliaria: [
+    { href: "/painel", label: "Painel", icon: "home" },
+    { href: "/painel/operacoes", label: "Ops", icon: "table" },
+    { href: "/painel/operacoes/nova", label: "Nova", icon: "doc" },
+    { href: "/painel/convites", label: "Convites", icon: "tag" },
+  ],
+  construtora: [
+    { href: "/painel", label: "Painel", icon: "home" },
+    { href: "/painel/operacoes", label: "Ops", icon: "table" },
+    { href: "/painel/duplicatas", label: "Dup.", icon: "wallet" },
+    { href: "/painel/cashback", label: "Cashback", icon: "money" },
+  ],
+  admin: [
+    { href: "/admin", label: "Painel", icon: "home" },
+    { href: "/admin/operacoes", label: "Ops", icon: "table" },
+    { href: "/admin/tickets", label: "Tickets", icon: "ticket" },
+  ],
+};
+
+const MOBILE_FULLMENU: Record<
+  Role,
+  { section: string; items: MobileNavItem[] }[]
+> = {
+  corretor: [
+    {
+      section: "principal",
+      items: [
+        { href: "/painel", label: "Painel", icon: "home" },
+        { href: "/painel/operacoes", label: "Operações", icon: "table" },
+        { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
+        { href: "/painel/convites", label: "Convites recebidos", icon: "tag" },
+      ],
+    },
+    {
+      section: "suporte",
+      items: [
+        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/notificacoes", label: "Notificações", icon: "doc" },
+      ],
+    },
+  ],
+  imobiliaria: [
+    {
+      section: "principal",
+      items: [
+        { href: "/painel", label: "Painel", icon: "home" },
+        { href: "/painel/operacoes", label: "Operações", icon: "table" },
+        { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
+        { href: "/painel/convites", label: "Convites recebidos", icon: "tag" },
+      ],
+    },
+    {
+      section: "suporte",
+      items: [
+        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/notificacoes", label: "Notificações", icon: "doc" },
+      ],
+    },
+  ],
+  construtora: [
+    {
+      section: "principal",
+      items: [
+        { href: "/painel", label: "Painel", icon: "home" },
+        { href: "/painel/operacoes", label: "Operações", icon: "table" },
+        {
+          href: "/painel/operacoes/lote",
+          label: "Cadastrar em lote",
+          icon: "doc",
+        },
+      ],
+    },
+    {
+      section: "financeiro",
+      items: [
+        { href: "/painel/duplicatas", label: "Duplicatas a pagar", icon: "wallet" },
+        { href: "/painel/cashback", label: "Cashback", icon: "money" },
+      ],
+    },
+    {
+      section: "suporte",
+      items: [
+        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/notificacoes", label: "Notificações", icon: "doc" },
+      ],
+    },
+  ],
+  admin: [
+    {
+      section: "principal",
+      items: [
+        { href: "/admin", label: "Dashboard", icon: "home" },
+        { href: "/admin/relatorios", label: "Relatórios", icon: "report" },
+        { href: "/admin/mural", label: "Mural de recados", icon: "tag" },
+      ],
+    },
+    {
+      section: "registros",
+      items: [
+        { href: "/admin/operacoes", label: "Operações", icon: "table" },
+        { href: "/admin/usuarios", label: "Imobiliárias / Corretores", icon: "list" },
+        { href: "/admin/construtoras", label: "Construtoras", icon: "list" },
+      ],
+    },
+    {
+      section: "suporte",
+      items: [
+        { href: "/admin/tickets", label: "Tickets", icon: "ticket" },
+        { href: "/notificacoes", label: "Notificações", icon: "doc" },
+      ],
+    },
+    {
+      section: "configurações",
+      items: [
+        { href: "/admin/configuracoes", label: "Parâmetros", icon: "config" },
+      ],
+    },
+  ],
+};
+
 export function PainelShell({
   children,
   role,
@@ -71,14 +194,16 @@ export function PainelShell({
 }) {
   const nav = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
   const homeHref = role === "admin" ? "/admin" : "/painel";
+  const userLabel = userName ?? ROLE_LABEL[role];
+  const roleLabel = ROLE_LABEL[role];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20 md:pb-0">
       <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border">
-        <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between gap-6">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 h-16 flex items-center justify-between gap-3 md:gap-6">
           <Link
             href={homeHref}
-            className="text-fg hover:text-accent transition-colors"
+            className="text-fg hover:text-accent transition-colors flex items-center"
           >
             <Logo size={32} />
           </Link>
@@ -103,40 +228,34 @@ export function PainelShell({
               );
             })}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <span className="hidden md:inline-flex chip">
               {ROLE_LABEL[role]}
               {userName ? ` · ${userName.split(" ")[0]}` : ""}
             </span>
             <NotificationBell />
-            <SairButton />
-            <UserButton />
+            <span className="hidden md:inline-flex">
+              <SairButton />
+            </span>
+            <span className="hidden md:inline-flex">
+              <UserButton />
+            </span>
           </div>
         </div>
-        {/* Nav mobile */}
-        <nav className="md:hidden border-t border-border overflow-x-auto">
-          <div className="mx-auto max-w-7xl px-3 py-2 flex gap-1">
-            {nav.map((item) => {
-              const isActive = active === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`px-3 h-9 inline-flex items-center text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
-                    isActive
-                      ? "text-fg bg-bg-card"
-                      : "text-fg-muted hover:text-fg"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
       </header>
-      <main className="mx-auto max-w-7xl px-6 py-8 md:py-12">{children}</main>
+
+      <main className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-12">
+        {children}
+      </main>
       <VersionFooter />
+
+      <MobileBottomNav
+        shortcuts={MOBILE_SHORTCUTS[role] ?? MOBILE_SHORTCUTS.corretor}
+        fullMenu={MOBILE_FULLMENU[role] ?? MOBILE_FULLMENU.corretor}
+        userLabel={userLabel}
+        roleLabel={roleLabel}
+        active={active ?? ""}
+      />
     </div>
   );
 }
