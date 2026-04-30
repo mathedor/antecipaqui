@@ -183,7 +183,15 @@ function fillMonthlySeries<
   return result;
 }
 
-export async function getAllOperacoes(filterStatus?: string) {
+export async function getAllOperacoes(filters?: {
+  status?: string;
+  from?: string;
+  to?: string;
+}) {
+  const filterStatus = filters?.status;
+  const from = filters?.from;
+  const to = filters?.to;
+
   const base = db
     .select({
       id: operacoes.id,
@@ -202,11 +210,57 @@ export async function getAllOperacoes(filterStatus?: string) {
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
     .leftJoin(users, eq(operacoes.corretorUserId, users.id));
 
-  return filterStatus
-    ? base
-        .where(eq(operacoes.status, filterStatus as never))
-        .orderBy(desc(operacoes.createdAt))
+  const conds = [];
+  if (filterStatus) conds.push(eq(operacoes.status, filterStatus as never));
+  if (from) conds.push(sql`${operacoes.createdAt} >= ${from}::timestamptz`);
+  if (to)
+    conds.push(
+      sql`${operacoes.createdAt} <= (${to}::date + interval '1 day')`,
+    );
+
+  return conds.length > 0
+    ? base.where(and(...conds)).orderBy(desc(operacoes.createdAt))
     : base.orderBy(desc(operacoes.createdAt));
+}
+
+/** Stats agregados pra topo da listagem admin de operações */
+export async function getAdminOperacoesStatBoxes() {
+  await requireAdmin();
+  const monthStart = (() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  })();
+
+  const all = await db
+    .select({
+      status: operacoes.status,
+      valorPresente: operacoes.valorPresente,
+      createdAt: operacoes.createdAt,
+    })
+    .from(operacoes);
+
+  const ativas = all.filter(
+    (o) => !["rascunho", "recusada", "cancelada"].includes(o.status),
+  );
+  const valorTotalAntecipado = ativas.reduce(
+    (s, o) => s + parseFloat(o.valorPresente),
+    0,
+  );
+  const operacoesNoMes = all.filter(
+    (o) => new Date(o.createdAt).toISOString() >= monthStart,
+  ).length;
+  const pendentesAprovacao = all.filter((o) =>
+    ["aguardando_aprovacao", "documentos_incompletos"].includes(o.status),
+  ).length;
+
+  return {
+    totalOperacoes: all.length,
+    valorTotalAntecipado,
+    operacoesNoMes,
+    pendentesAprovacao,
+  };
 }
 
 export async function getAdminOperacaoDetail(operacaoId: string) {

@@ -3,8 +3,15 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminRowActions } from "@/components/admin-row-actions";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import {
+  DateRangeFilter,
+  OperacoesStatBoxes,
+} from "@/components/operacoes-stats";
 import { formatBRL } from "@/lib/format";
-import { getAllOperacoes } from "@/lib/actions/admin";
+import {
+  getAdminOperacoesStatBoxes,
+  getAllOperacoes,
+} from "@/lib/actions/admin";
 
 export const metadata = {
   title: "Admin · Operações",
@@ -23,35 +30,54 @@ const STATUS_FILTERS = [
   { value: "cancelada", label: "Canceladas" },
 ];
 
-type Search = { searchParams: Promise<{ status?: string }> };
+type Search = {
+  searchParams: Promise<{ status?: string; from?: string; to?: string }>;
+};
 
 export default async function AdminOperacoesPage({ searchParams }: Search) {
   const admin = await requireAdmin();
   const params = await searchParams;
   const statusFilter = params.status || undefined;
-  const operacoes = await getAllOperacoes(statusFilter);
+  const from = params.from;
+  const to = params.to;
+
+  const [stats, operacoes] = await Promise.all([
+    getAdminOperacoesStatBoxes(),
+    getAllOperacoes({ status: statusFilter, from, to }),
+  ]);
 
   return (
     <AdminShell active="/admin/operacoes" userName={admin.nome}>
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="eyebrow mb-2">operações</div>
         <h1 className="text-display-md">
           Todas as <span className="text-gradient-blue">operações</span>
         </h1>
         <p className="mt-2 text-fg-muted">
           {operacoes.length}{" "}
-          {operacoes.length === 1 ? "operação" : "operações"}
-          {statusFilter ? ` filtradas por ${statusFilter}` : ""}
+          {operacoes.length === 1 ? "operação" : "operações"} no resultado
         </p>
       </div>
 
+      {/* Stats agregados (sempre totais, não respeitam filtros) */}
+      <OperacoesStatBoxes stats={stats} />
+
+      {/* Filtro por data */}
+      <DateRangeFilter preserveParams={["status"]} />
+
       {/* Filtros por status */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex items-center gap-2 flex-wrap mb-6">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim w-16 shrink-0">
+          Status
+        </span>
         {STATUS_FILTERS.map((f) => {
           const active = (statusFilter ?? "") === f.value;
-          const href = f.value
-            ? `/admin/operacoes?status=${f.value}`
-            : "/admin/operacoes";
+          const qs = new URLSearchParams();
+          if (f.value) qs.set("status", f.value);
+          if (from) qs.set("from", from);
+          if (to) qs.set("to", to);
+          const query = qs.toString();
+          const href = `/admin/operacoes${query ? `?${query}` : ""}`;
           return (
             <Link
               key={f.value}

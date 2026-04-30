@@ -8,51 +8,106 @@ import {
 } from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PainelShell } from "@/components/painel-shell";
+import {
+  DateRangeFilter,
+  OperacoesStatBoxes,
+} from "@/components/operacoes-stats";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
   title: "Operações",
 };
 
-export default async function OperacoesPage() {
+const PENDENTE_STATUSES = [
+  "aguardando_aprovacao",
+  "documentos_incompletos",
+];
+const ATIVOS_STATUSES = [
+  "aguardando_aprovacao",
+  "documentos_incompletos",
+  "pre_aprovada",
+  "analise_final",
+  "enviada_para_assinatura",
+  "enviada_para_pagamento",
+  "realizada",
+];
+
+type Search = {
+  searchParams: Promise<{ from?: string; to?: string }>;
+};
+
+export default async function OperacoesPage({ searchParams }: Search) {
   const user = await getCurrentDbUser();
   if (!user) redirect("/entrar");
 
   const isConstrutora = user.role === "construtora";
+  const { from, to } = await searchParams;
 
-  let operacoes: Array<{
+  let allOps: Array<{
     id: string;
     numero: string;
     status: string;
     valorComissao: string;
     valorPresente: string;
     counterpartyLabel: string | null;
+    createdAt: Date | string;
   }> = [];
 
   if (isConstrutora) {
     const c = await getConstrutoraByOwnerId(user.id);
     if (c) {
       const rows = await getOperacoesByConstrutora(c.id);
-      operacoes = rows.map((r) => ({
+      allOps = rows.map((r) => ({
         id: r.id,
         numero: r.numero,
         status: r.status,
         valorComissao: r.valorComissao,
         valorPresente: r.valorPresente,
         counterpartyLabel: r.corretorNome,
+        createdAt: r.createdAt,
       }));
     }
   } else {
     const rows = await getOperacoesByCorretor(user.id);
-    operacoes = rows.map((r) => ({
+    allOps = rows.map((r) => ({
       id: r.id,
       numero: r.numero,
       status: r.status,
       valorComissao: r.valorComissao,
       valorPresente: r.valorPresente,
       counterpartyLabel: r.construtoraNome,
+      createdAt: r.createdAt,
     }));
   }
+
+  // Stats agregados (sobre TODAS as operações, ignorando o filtro de data)
+  const ativas = allOps.filter((o) => ATIVOS_STATUSES.includes(o.status));
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const stats = {
+    totalOperacoes: allOps.length,
+    valorTotalAntecipado: ativas.reduce(
+      (s, o) => s + parseFloat(o.valorPresente),
+      0,
+    ),
+    operacoesNoMes: allOps.filter(
+      (o) => new Date(o.createdAt) >= monthStart,
+    ).length,
+    pendentesAprovacao: allOps.filter((o) =>
+      PENDENTE_STATUSES.includes(o.status),
+    ).length,
+  };
+
+  // Aplica filtro de data localmente (a query já trouxe tudo)
+  const fromDate = from ? new Date(from + "T00:00:00") : null;
+  const toDate = to ? new Date(to + "T23:59:59") : null;
+  const operacoes = allOps.filter((o) => {
+    const d = new Date(o.createdAt);
+    if (fromDate && d < fromDate) return false;
+    if (toDate && d > toDate) return false;
+    return true;
+  });
 
   const counterpartyHeader = isConstrutora
     ? "Imobiliária / Corretor"
@@ -68,20 +123,16 @@ export default async function OperacoesPage() {
   ) as "construtora" | "corretor" | "imobiliaria";
 
   return (
-    <PainelShell
-      role={role}
-      userName={user.nome}
-      active="/painel/operacoes"
-    >
-      <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
+    <PainelShell role={role} userName={user.nome} active="/painel/operacoes">
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-display-md">
             {isConstrutora ? "Operações " : "Suas "}
             <span className="text-gradient-blue">{titleLabel}</span>
           </h1>
           <p className="mt-2 text-fg-muted">
-            Total: {operacoes.length}{" "}
-            {operacoes.length === 1 ? "operação" : "operações"}
+            {operacoes.length}{" "}
+            {operacoes.length === 1 ? "operação" : "operações"} no resultado
           </p>
         </div>
         {!isConstrutora && (
@@ -94,8 +145,19 @@ export default async function OperacoesPage() {
         )}
       </div>
 
+      <OperacoesStatBoxes stats={stats} />
+      <DateRangeFilter />
+
       {operacoes.length === 0 ? (
-        <EmptyState isConstrutora={isConstrutora} />
+        allOps.length === 0 ? (
+          <EmptyState isConstrutora={isConstrutora} />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border-strong bg-bg-card p-10 text-center">
+            <p className="text-fg-muted">
+              Nenhuma operação no período selecionado.
+            </p>
+          </div>
+        )
       ) : (
         <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
           <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border bg-bg-card">
@@ -150,8 +212,8 @@ function EmptyState({ isConstrutora }: { isConstrutora: boolean }) {
           Nenhuma operação vinculada
         </h2>
         <p className="mt-3 text-fg-muted max-w-md mx-auto">
-          Quando um corretor antecipar uma comissão vinculada à sua
-          construtora, ela vai aparecer aqui.
+          Quando uma imobiliária / corretor antecipar uma comissão vinculada à
+          sua construtora, ela vai aparecer aqui.
         </p>
       </div>
     );
