@@ -4,6 +4,7 @@ import { TextReveal } from "@/components/text-reveal";
 import { TypeText } from "@/components/type-text";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { Calculadora } from "@/components/calculadora";
+import { CtaCadastro, CtaSimular } from "@/components/cta-buttons";
 import { LINKS } from "@/lib/links";
 
 const stats = [
@@ -13,13 +14,23 @@ const stats = [
   { value: 0, suffix: "", label: "papelada física" },
 ];
 
-const perfis = [
+type Perfil = {
+  num: string;
+  title: string;
+  body: string;
+  cta: string;
+  href?: string;
+  signup?: boolean;
+  accent?: boolean;
+};
+
+const perfis: Perfil[] = [
   {
     num: "01",
     title: "Corretor",
     body: "Vendeu? Recebe a comissão hoje. Antecipa até 4 parcelas (120 dias). Cadastra a operação, envia os contratos e recebe o valor presente direto na sua conta.",
     cta: "É meu caso",
-    href: LINKS.cadastrar,
+    signup: true,
     accent: true,
   },
   {
@@ -27,7 +38,7 @@ const perfis = [
     title: "Imobiliária",
     body: "Antecipe as comissões da sua equipe sem comprometer o caixa. Mantenha seus corretores motivados com pagamento à vista.",
     cta: "Cadastrar minha imobiliária",
-    href: LINKS.cadastrar,
+    signup: true,
   },
   {
     num: "03",
@@ -135,12 +146,10 @@ export default function Home() {
             className="fade-up mt-10 flex flex-wrap items-center gap-4"
             style={{ animationDelay: "950ms" }}
           >
-            <Link href={LINKS.cadastrar} className="btn-primary">
+            <CtaCadastro className="btn-primary">
               Cadastre-se grátis <span className="arrow">→</span>
-            </Link>
-            <Link href={LINKS.simulador} className="btn-ghost">
-              Simular agora
-            </Link>
+            </CtaCadastro>
+            <CtaSimular className="btn-ghost">Simular agora</CtaSimular>
           </div>
 
           <Reveal className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 border-t border-border pt-10 reveal-stagger">
@@ -272,15 +281,34 @@ export default function Home() {
                 >
                   {p.body}
                 </p>
-                <Link
-                  href={p.href}
-                  className={`mt-7 inline-flex items-center gap-2 text-sm font-medium transition-colors ${
-                    p.accent ? "text-accent hover:text-white" : "text-fg hover:text-accent"
-                  }`}
-                >
-                  {p.cta}
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
-                </Link>
+                {p.signup ? (
+                  <CtaCadastro
+                    className={`mt-7 inline-flex items-center gap-2 text-sm font-medium transition-colors ${
+                      p.accent
+                        ? "text-accent hover:text-white"
+                        : "text-fg hover:text-accent"
+                    }`}
+                  >
+                    {p.cta}
+                    <span className="transition-transform group-hover:translate-x-1">
+                      →
+                    </span>
+                  </CtaCadastro>
+                ) : (
+                  <Link
+                    href={p.href!}
+                    className={`mt-7 inline-flex items-center gap-2 text-sm font-medium transition-colors ${
+                      p.accent
+                        ? "text-accent hover:text-white"
+                        : "text-fg hover:text-accent"
+                    }`}
+                  >
+                    {p.cta}
+                    <span className="transition-transform group-hover:translate-x-1">
+                      →
+                    </span>
+                  </Link>
+                )}
               </div>
             ))}
           </Reveal>
@@ -370,15 +398,12 @@ export default function Home() {
                 primeira operação ainda hoje.
               </p>
               <div className="mt-10 flex flex-wrap gap-4">
-                <Link href={LINKS.cadastrar} className="btn-primary">
+                <CtaCadastro className="btn-primary">
                   Cadastre-se grátis <span className="arrow">→</span>
-                </Link>
-                <Link
-                  href={LINKS.simulador}
-                  className="btn-ghost !bg-white/10 !border-white/20 !text-fg-inverse hover:!bg-white/20 hover:!border-accent hover:!text-accent"
-                >
+                </CtaCadastro>
+                <CtaSimular className="btn-ghost !bg-white/10 !border-white/20 !text-fg-inverse hover:!bg-white/20 hover:!border-accent hover:!text-accent">
                   Simular antes
-                </Link>
+                </CtaSimular>
               </div>
             </div>
           </div>

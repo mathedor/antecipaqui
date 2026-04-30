@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { CtaCadastro, CtaEntrar, CtaSimular } from "./cta-buttons";
 import { LINKS, WHATSAPP_LINKS, WHATSAPP_DISPLAY } from "@/lib/links";
 
 export function SiteFooter() {
@@ -29,7 +30,7 @@ export function SiteFooter() {
             </h4>
             <ul className="space-y-2 text-fg-muted text-sm">
               <li><Link href={LINKS.comoFunciona} className="hover:text-fg transition-colors">Como funciona</Link></li>
-              <li><Link href={LINKS.simulador} className="hover:text-fg transition-colors">Simulador</Link></li>
+              <li><CtaSimular className="hover:text-fg transition-colors cursor-pointer">Simulador</CtaSimular></li>
               <li><Link href={LINKS.paraConstrutoras} className="hover:text-fg transition-colors">Para construtoras</Link></li>
               <li><Link href={LINKS.perguntas} className="hover:text-fg transition-colors">Perguntas</Link></li>
             </ul>
@@ -40,8 +41,8 @@ export function SiteFooter() {
               Conta
             </h4>
             <ul className="space-y-2 text-fg-muted text-sm">
-              <li><Link href={LINKS.entrar} className="hover:text-fg transition-colors">Entrar</Link></li>
-              <li><Link href={LINKS.cadastrar} className="hover:text-fg transition-colors">Cadastre-se</Link></li>
+              <li><CtaEntrar className="hover:text-fg transition-colors cursor-pointer">Entrar</CtaEntrar></li>
+              <li><CtaCadastro className="hover:text-fg transition-colors cursor-pointer">Cadastre-se</CtaCadastro></li>
             </ul>
           </div>
 

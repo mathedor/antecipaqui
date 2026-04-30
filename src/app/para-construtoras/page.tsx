@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { Reveal } from "@/components/reveal";
 import { TextReveal } from "@/components/text-reveal";
-import { LINKS } from "@/lib/links";
+import { CtaCadastro, CtaSimular } from "@/components/cta-buttons";
 
 export const metadata = {
   title: "Para construtoras",
@@ -83,12 +82,10 @@ export default function ParaConstrutorasPage() {
             className="fade-up mt-10 flex flex-wrap items-center gap-4"
             style={{ animationDelay: "850ms" }}
           >
-            <Link href={LINKS.cadastrar} className="btn-primary">
+            <CtaCadastro className="btn-primary">
               Cadastrar minha construtora <span className="arrow">→</span>
-            </Link>
-            <Link href={LINKS.simulador} className="btn-ghost">
-              Ver simulador
-            </Link>
+            </CtaCadastro>
+            <CtaSimular className="btn-ghost">Ver simulador</CtaSimular>
           </div>
         </div>
       </section>
@@ -182,9 +179,9 @@ export default function ParaConstrutorasPage() {
                 seus corretores. Time comercial mais feliz, fluxo intacto.
               </p>
               <div className="mt-10 flex flex-wrap gap-4">
-                <Link href={LINKS.cadastrar} className="btn-primary">
+                <CtaCadastro className="btn-primary">
                   Cadastrar construtora <span className="arrow">→</span>
-                </Link>
+                </CtaCadastro>
               </div>
             </div>
           </div>

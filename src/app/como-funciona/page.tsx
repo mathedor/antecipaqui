@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Reveal } from "@/components/reveal";
 import { TextReveal } from "@/components/text-reveal";
 import { Calculadora } from "@/components/calculadora";
+import { CtaCadastro } from "@/components/cta-buttons";
 import { LINKS } from "@/lib/links";
 
 export const metadata = {
@@ -196,9 +197,9 @@ export default function ComoFuncionaPage() {
               </TextReveal>
             </h2>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <Link href={LINKS.cadastrar} className="btn-primary">
+              <CtaCadastro className="btn-primary">
                 Cadastre-se grátis <span className="arrow">→</span>
-              </Link>
+              </CtaCadastro>
               <Link href={LINKS.perguntas} className="btn-ghost">
                 Tenho perguntas
               </Link>

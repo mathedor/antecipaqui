@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { LINKS } from "@/lib/links";
+import { CtaCadastro } from "@/components/cta-buttons";
 
 const groups = [
   {
@@ -126,9 +125,9 @@ export default function PerguntasPage() {
             durante o processo.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link href={LINKS.cadastrar} className="btn-primary">
+            <CtaCadastro className="btn-primary">
               Cadastre-se <span className="arrow">→</span>
-            </Link>
+            </CtaCadastro>
           </div>
         </div>
       </section>

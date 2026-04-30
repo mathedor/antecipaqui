@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { formatBRL, valorPresenteParcelasIguais } from "@/lib/format";
-import { LINKS } from "@/lib/links";
+import { CtaCadastro } from "@/components/cta-buttons";
 
 const TAXA_MENSAL = 0.06; // 6% a.m. — taxa média informada
 
@@ -168,12 +167,9 @@ export function Calculadora() {
               />
             </div>
 
-            <Link
-              href={LINKS.cadastrar}
-              className="btn-primary !w-full justify-center mt-8 !h-12"
-            >
+            <CtaCadastro className="btn-primary !w-full justify-center mt-8 !h-12">
               Quero antecipar minha comissão <span className="arrow">→</span>
-            </Link>
+            </CtaCadastro>
             <p className="mt-3 text-[10px] text-fg-inverse/50 text-center font-mono">
               Cadastro grátis · sem cartão · sem compromisso
             </p>
