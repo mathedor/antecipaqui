@@ -33,11 +33,12 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/suporte", label: "Suporte" },
   ],
   admin: [
-    { href: "/admin", label: "Dashboard" },
     { href: "/admin/operacoes", label: "Operações" },
     { href: "/admin/usuarios", label: "Imobiliárias / Corretores" },
     { href: "/admin/construtoras", label: "Construtoras" },
     { href: "/admin/tickets", label: "Tickets" },
+    { href: "/admin/mural", label: "Mural" },
+    { href: "/admin/relatorios", label: "Relatórios" },
     { href: "/admin/configuracoes", label: "Configurações" },
   ],
 };
