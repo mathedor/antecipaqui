@@ -87,6 +87,12 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/admin/construtoras/${id}/editar`}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"
+          >
+            ✎ Editar
+          </Link>
           {construtora.isActive ? (
             <form action={block}>
               <button

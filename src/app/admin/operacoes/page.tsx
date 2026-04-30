@@ -73,39 +73,45 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
             <div className="col-span-2">Número</div>
             <div className="col-span-3">Imobiliária / Corretor</div>
             <div className="col-span-3">Construtora</div>
-            <div className="col-span-1 text-right">Comissão</div>
             <div className="col-span-1 text-right">VP</div>
             <div className="col-span-2">Status</div>
+            <div className="col-span-1 text-right">Ações</div>
           </div>
           <ul>
             {operacoes.map((op) => (
-              <li key={op.id} className="border-b border-border last:border-0">
+              <li
+                key={op.id}
+                className="grid grid-cols-12 gap-3 px-6 py-4 hover:bg-bg-card transition-colors items-center border-b border-border last:border-0"
+              >
                 <Link
                   href={`/admin/operacoes/${op.id}`}
-                  className="grid grid-cols-12 gap-3 px-6 py-4 hover:bg-bg-card transition-colors group items-center"
+                  className="col-span-2 font-mono text-sm text-fg hover:text-accent"
                 >
-                  <div className="col-span-2 font-mono text-sm text-fg">
-                    {op.numero}
-                  </div>
-                  <div className="col-span-5 md:col-span-3 text-sm truncate">
-                    <div className="text-fg truncate">{op.corretorNome ?? "—"}</div>
-                    <div className="font-mono text-[10px] text-fg-dim truncate">
-                      {op.corretorEmail}
-                    </div>
-                  </div>
-                  <div className="hidden md:block col-span-3 text-sm text-fg-muted truncate">
-                    {op.construtoraNome ?? "—"}
-                  </div>
-                  <div className="hidden md:block col-span-1 text-right font-mono tabular text-xs text-fg-muted">
-                    {formatBRL(parseFloat(op.valorComissao))}
-                  </div>
-                  <div className="hidden md:block col-span-1 text-right font-mono tabular text-xs text-fg font-semibold">
-                    {formatBRL(parseFloat(op.valorPresente))}
-                  </div>
-                  <div className="col-span-5 md:col-span-2 flex justify-end md:justify-start">
-                    <OperacaoStatusBadge status={op.status} />
-                  </div>
+                  {op.numero}
                 </Link>
+                <div className="col-span-5 md:col-span-3 text-sm truncate">
+                  <div className="text-fg truncate">{op.corretorNome ?? "—"}</div>
+                  <div className="font-mono text-[10px] text-fg-dim truncate">
+                    {op.corretorEmail}
+                  </div>
+                </div>
+                <div className="hidden md:block col-span-3 text-sm text-fg-muted truncate">
+                  {op.construtoraNome ?? "—"}
+                </div>
+                <div className="hidden md:block col-span-1 text-right font-mono tabular text-xs text-fg font-semibold">
+                  {formatBRL(parseFloat(op.valorPresente))}
+                </div>
+                <div className="col-span-5 md:col-span-2 flex justify-end md:justify-start">
+                  <OperacaoStatusBadge status={op.status} />
+                </div>
+                <div className="hidden md:flex col-span-1 justify-end gap-2">
+                  <Link
+                    href={`/admin/operacoes/${op.id}/editar`}
+                    className="text-xs text-accent hover:underline"
+                  >
+                    editar
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>

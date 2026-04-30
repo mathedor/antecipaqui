@@ -46,43 +46,49 @@ export default async function AdminConstrutorasPage() {
           <div className="col-span-3">CNPJ</div>
           <div className="col-span-2">Dono</div>
           <div className="col-span-2">Status</div>
-          <div className="col-span-1"></div>
+          <div className="col-span-1 text-right">Ações</div>
         </div>
         <ul>
           {list.map((c) => {
             const status =
               STATUS_DISPLAY[c.onboardingStatus] ?? STATUS_DISPLAY.pendente;
             return (
-              <li key={c.id} className="border-b border-border last:border-0">
+              <li
+                key={c.id}
+                className="grid grid-cols-12 gap-3 px-6 py-4 hover:bg-bg-card transition-colors items-center border-b border-border last:border-0"
+              >
                 <Link
                   href={`/admin/construtoras/${c.id}`}
-                  className="grid grid-cols-12 gap-3 px-6 py-4 hover:bg-bg-card transition-colors group items-center"
+                  className="col-span-7 md:col-span-4 text-sm text-fg truncate hover:text-accent"
                 >
-                  <div className="col-span-7 md:col-span-4 text-sm text-fg truncate">
-                    <div className="truncate">{c.razaoSocial}</div>
-                    {c.nomeFantasia && (
-                      <div className="text-fg-muted text-xs truncate">
-                        {c.nomeFantasia}
-                      </div>
-                    )}
-                  </div>
-                  <div className="hidden md:block col-span-3 font-mono text-xs text-fg-muted">
-                    {c.cnpj}
-                  </div>
-                  <div className="hidden md:block col-span-2 text-xs text-fg-muted">
-                    {c.ownerUserId ? "✓ tem" : "—"}
-                  </div>
-                  <div className="col-span-4 md:col-span-2">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono ${status.class}`}
-                    >
-                      {status.label}
-                    </span>
-                  </div>
-                  <div className="hidden md:block col-span-1 text-right text-fg-dim group-hover:text-accent group-hover:translate-x-1 transition-all">
-                    →
-                  </div>
+                  <div className="truncate">{c.razaoSocial}</div>
+                  {c.nomeFantasia && (
+                    <div className="text-fg-muted text-xs truncate">
+                      {c.nomeFantasia}
+                    </div>
+                  )}
                 </Link>
+                <div className="hidden md:block col-span-3 font-mono text-xs text-fg-muted">
+                  {c.cnpj}
+                </div>
+                <div className="hidden md:block col-span-2 text-xs text-fg-muted">
+                  {c.ownerUserId ? "✓ tem" : "—"}
+                </div>
+                <div className="col-span-4 md:col-span-2">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono ${status.class}`}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+                <div className="hidden md:flex col-span-1 justify-end gap-2">
+                  <Link
+                    href={`/admin/construtoras/${c.id}/editar`}
+                    className="text-xs text-accent hover:underline"
+                  >
+                    editar
+                  </Link>
+                </div>
               </li>
             );
           })}

@@ -60,42 +60,48 @@ export default async function AdminUsuariosPage() {
           <div className="col-span-3">Email</div>
           <div className="col-span-2">Tipo</div>
           <div className="col-span-2">Status</div>
-          <div className="col-span-1 text-right">Operações</div>
-          <div className="col-span-1"></div>
+          <div className="col-span-1 text-right">Ops</div>
+          <div className="col-span-1 text-right">Ações</div>
         </div>
         <ul>
           {all.map((u) => {
             const status =
               STATUS_DISPLAY[u.onboardingStatus] ?? STATUS_DISPLAY.pendente;
             return (
-              <li key={u.id} className="border-b border-border last:border-0">
+              <li
+                key={u.id}
+                className="grid grid-cols-12 gap-3 px-6 py-4 hover:bg-bg-card transition-colors items-center border-b border-border last:border-0"
+              >
                 <Link
                   href={`/admin/usuarios/${u.id}`}
-                  className="grid grid-cols-12 gap-3 px-6 py-4 hover:bg-bg-card transition-colors group items-center"
+                  className="col-span-6 md:col-span-3 text-sm text-fg truncate hover:text-accent"
                 >
-                  <div className="col-span-6 md:col-span-3 text-sm text-fg truncate">
-                    {u.nome ?? "(sem nome)"}
-                  </div>
-                  <div className="hidden md:block col-span-3 font-mono text-xs text-fg-muted truncate">
-                    {u.email}
-                  </div>
-                  <div className="col-span-3 md:col-span-2 text-sm text-fg-muted">
-                    {ROLE_LABEL[u.role] ?? u.role}
-                  </div>
-                  <div className="col-span-3 md:col-span-2">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono ${status.class}`}
-                    >
-                      {status.label}
-                    </span>
-                  </div>
-                  <div className="hidden md:block col-span-1 text-right text-sm tabular font-mono">
-                    {u.totalOperacoes}
-                  </div>
-                  <div className="hidden md:block col-span-1 text-right text-fg-dim group-hover:text-accent group-hover:translate-x-1 transition-all">
-                    →
-                  </div>
+                  {u.nome ?? "(sem nome)"}
                 </Link>
+                <div className="hidden md:block col-span-3 font-mono text-xs text-fg-muted truncate">
+                  {u.email}
+                </div>
+                <div className="col-span-3 md:col-span-2 text-sm text-fg-muted">
+                  {ROLE_LABEL[u.role] ?? u.role}
+                </div>
+                <div className="col-span-3 md:col-span-2">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono ${status.class}`}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+                <div className="hidden md:block col-span-1 text-right text-sm tabular font-mono">
+                  {u.totalOperacoes}
+                </div>
+                <div className="hidden md:flex col-span-1 justify-end gap-2">
+                  <Link
+                    href={`/admin/usuarios/${u.id}/editar`}
+                    className="text-xs text-accent hover:underline whitespace-nowrap"
+                  >
+                    editar
+                  </Link>
+                </div>
               </li>
             );
           })}

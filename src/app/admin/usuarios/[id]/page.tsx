@@ -86,6 +86,12 @@ export default async function AdminUsuarioDetail({ params }: Params) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/admin/usuarios/${id}/editar`}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"
+          >
+            ✎ Editar
+          </Link>
           {user.isActive ? (
             <form action={block}>
               <button

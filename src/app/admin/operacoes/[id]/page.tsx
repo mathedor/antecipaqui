@@ -121,6 +121,12 @@ export default async function AdminOperacaoDetail({ params }: Params) {
             )}
           </p>
         </div>
+        <Link
+          href={`/admin/operacoes/${op.id}/editar`}
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"
+        >
+          ✎ Editar valores
+        </Link>
       </div>
 
       {/* Banners de motivo */}

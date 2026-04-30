@@ -1,0 +1,236 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import {
+  construtoras,
+  imobiliarias,
+  operacoes,
+  parcelasComissao,
+  users,
+} from "@/db/schema";
+import { requireAdmin } from "@/lib/auth-user";
+import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
+import { parseBRLNumber, valorPresente } from "@/lib/format";
+
+/* =============================================================
+   USUÁRIO — editar
+   ============================================================= */
+
+export type EditUserState =
+  | { ok: false; error: string }
+  | { ok: true }
+  | null;
+
+export async function editUserAction(
+  _prev: EditUserState,
+  formData: FormData,
+): Promise<EditUserState> {
+  await requireAdmin();
+  const userId = String(formData.get("userId") || "").trim();
+  if (!userId) return { ok: false, error: "userId obrigatório" };
+
+  const nome = String(formData.get("nome") || "").trim() || null;
+  const telefone = String(formData.get("telefone") || "").trim() || null;
+  const role = String(formData.get("role") || "").trim();
+
+  if (!["corretor", "imobiliaria", "construtora"].includes(role))
+    return { ok: false, error: "Role inválida" };
+
+  await db
+    .update(users)
+    .set({ nome, telefone, role: role as never, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+
+  // Imobiliária do usuário (se existir)
+  const razaoSocial = String(formData.get("imobRazaoSocial") || "").trim();
+  if (razaoSocial) {
+    const cnpj = unmaskCNPJ(String(formData.get("imobCnpj") || ""));
+    const update = {
+      razaoSocial,
+      nomeFantasia: String(formData.get("imobNomeFantasia") || "").trim() || null,
+      cnpj,
+      creciResponsavel:
+        String(formData.get("imobCreci") || "").trim() || null,
+      telefone: String(formData.get("imobTelefone") || "").trim() || null,
+      cep: String(formData.get("imobCep") || "").trim() || null,
+      endereco: String(formData.get("imobEndereco") || "").trim() || null,
+      cidade: String(formData.get("imobCidade") || "").trim() || null,
+      uf: String(formData.get("imobUf") || "").trim() || null,
+      bancoNome: String(formData.get("imobBancoNome") || "").trim() || null,
+      bancoCodigo: String(formData.get("imobBancoCodigo") || "").trim() || null,
+      bancoAgencia:
+        String(formData.get("imobBancoAgencia") || "").trim() || null,
+      bancoConta: String(formData.get("imobBancoConta") || "").trim() || null,
+      updatedAt: new Date(),
+    };
+    if (cnpj && !isValidCNPJ(cnpj))
+      return { ok: false, error: "CNPJ da imobiliária inválido" };
+
+    const existing = await db
+      .select()
+      .from(imobiliarias)
+      .where(eq(imobiliarias.ownerUserId, userId))
+      .limit(1);
+    if (existing[0]) {
+      await db
+        .update(imobiliarias)
+        .set(update)
+        .where(eq(imobiliarias.id, existing[0].id));
+    }
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${userId}`);
+  redirect(`/admin/usuarios/${userId}`);
+}
+
+/* =============================================================
+   CONSTRUTORA — editar
+   ============================================================= */
+
+export type EditConstrutoraState =
+  | { ok: false; error: string }
+  | { ok: true }
+  | null;
+
+export async function editConstrutoraAction(
+  _prev: EditConstrutoraState,
+  formData: FormData,
+): Promise<EditConstrutoraState> {
+  await requireAdmin();
+  const construtoraId = String(formData.get("construtoraId") || "").trim();
+  if (!construtoraId) return { ok: false, error: "construtoraId obrigatório" };
+
+  const cnpj = unmaskCNPJ(String(formData.get("cnpj") || ""));
+  if (!isValidCNPJ(cnpj)) return { ok: false, error: "CNPJ inválido" };
+
+  await db
+    .update(construtoras)
+    .set({
+      razaoSocial: String(formData.get("razaoSocial") || "").trim(),
+      nomeFantasia:
+        String(formData.get("nomeFantasia") || "").trim() || null,
+      cnpj,
+      telefone: String(formData.get("telefone") || "").trim() || null,
+      email: String(formData.get("email") || "").trim() || null,
+      cep: String(formData.get("cep") || "").trim() || null,
+      endereco: String(formData.get("endereco") || "").trim() || null,
+      cidade: String(formData.get("cidade") || "").trim() || null,
+      uf: String(formData.get("uf") || "").trim() || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(construtoras.id, construtoraId));
+
+  revalidatePath("/admin/construtoras");
+  revalidatePath(`/admin/construtoras/${construtoraId}`);
+  redirect(`/admin/construtoras/${construtoraId}`);
+}
+
+/* =============================================================
+   OPERAÇÃO — editar valores e parcelas
+   ============================================================= */
+
+export type EditOperacaoState =
+  | { ok: false; error: string }
+  | { ok: true }
+  | null;
+
+const TAXA_MENSAL_DEFAULT = 0.06;
+
+function monthsBetween(from: Date, to: Date) {
+  const y = to.getFullYear() - from.getFullYear();
+  const m = to.getMonth() - from.getMonth();
+  const dayFrac = (to.getDate() - from.getDate()) / 30;
+  return y * 12 + m + dayFrac;
+}
+
+export async function editOperacaoAction(
+  _prev: EditOperacaoState,
+  formData: FormData,
+): Promise<EditOperacaoState> {
+  await requireAdmin();
+  const operacaoId = String(formData.get("operacaoId") || "").trim();
+  if (!operacaoId) return { ok: false, error: "operacaoId obrigatório" };
+
+  const valorVenda = parseBRLNumber(String(formData.get("valorVenda") || ""));
+  const valorComissao = parseBRLNumber(
+    String(formData.get("valorComissao") || ""),
+  );
+  const dataVenda = String(formData.get("dataVenda") || "").trim();
+
+  if (!valorVenda || valorVenda <= 0)
+    return { ok: false, error: "Valor da venda inválido" };
+  if (!valorComissao || valorComissao <= 0)
+    return { ok: false, error: "Valor da comissão inválido" };
+  if (valorComissao > valorVenda)
+    return { ok: false, error: "Comissão maior que valor da venda" };
+  if (!dataVenda) return { ok: false, error: "Data da venda obrigatória" };
+
+  const parcelasJson = String(formData.get("parcelas") || "[]");
+  let parcelasRaw: { valor: unknown; vencimento: unknown }[] = [];
+  try {
+    parcelasRaw = JSON.parse(parcelasJson);
+  } catch {
+    return { ok: false, error: "Parcelas inválidas" };
+  }
+  if (!Array.isArray(parcelasRaw) || parcelasRaw.length === 0)
+    return { ok: false, error: "Adicione pelo menos uma parcela" };
+  if (parcelasRaw.length > 4)
+    return { ok: false, error: "Limite máximo de 4 parcelas" };
+
+  const parcelas = parcelasRaw.map((p) => ({
+    valor:
+      typeof p.valor === "number" ? p.valor : parseBRLNumber(String(p.valor)),
+    vencimento: String(p.vencimento ?? ""),
+  }));
+
+  const totalParcelas = parcelas.reduce((s, p) => s + p.valor, 0);
+  if (Math.abs(totalParcelas - valorComissao) > 0.5)
+    return {
+      ok: false,
+      error: `Soma das parcelas (${totalParcelas.toFixed(2)}) não bate com a comissão (${valorComissao.toFixed(2)})`,
+    };
+
+  // Recalcula VP
+  const today = new Date();
+  const arr = parcelas.map((p) => ({
+    valor: p.valor,
+    mesesAteVencimento: Math.max(monthsBetween(today, new Date(p.vencimento)), 0),
+  }));
+  const vp = valorPresente(arr, TAXA_MENSAL_DEFAULT);
+  const desagio = valorComissao - vp;
+
+  await db
+    .update(operacoes)
+    .set({
+      valorVenda: String(valorVenda.toFixed(2)),
+      valorComissao: String(valorComissao.toFixed(2)),
+      valorPresente: String(vp.toFixed(2)),
+      desagio: String(desagio.toFixed(2)),
+      dataVenda,
+      numeroParcelas: parcelas.length,
+      updatedAt: new Date(),
+    })
+    .where(eq(operacoes.id, operacaoId));
+
+  // Substitui parcelas (delete + insert) — simples e correto
+  await db
+    .delete(parcelasComissao)
+    .where(eq(parcelasComissao.operacaoId, operacaoId));
+  await db.insert(parcelasComissao).values(
+    parcelas.map((p, i) => ({
+      operacaoId,
+      numero: i + 1,
+      valor: String(p.valor.toFixed(2)),
+      vencimento: p.vencimento,
+      status: "a_vencer" as const,
+    })),
+  );
+
+  revalidatePath("/admin/operacoes");
+  revalidatePath(`/admin/operacoes/${operacaoId}`);
+  redirect(`/admin/operacoes/${operacaoId}`);
+}
