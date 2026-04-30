@@ -466,6 +466,68 @@ export const operacaoEvents = pgTable(
 );
 
 /* =========================================
+   PENDING OPERAÇÕES — lote da construtora
+   (aguardando o corretor logar + completar)
+   ========================================= */
+
+export const pendingOperacaoStatusEnum = pgEnum("pending_operacao_status", [
+  "aguardando_cedente",
+  "reivindicada",
+  "descartada",
+]);
+
+export const pendingOperacoes = pgTable(
+  "pending_operacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    construtoraId: uuid("construtora_id")
+      .notNull()
+      .references(() => construtoras.id, { onDelete: "cascade" }),
+    imobiliariaId: uuid("imobiliaria_id").references(() => imobiliarias.id, {
+      onDelete: "set null",
+    }),
+    corretorEmail: text("corretor_email").notNull(),
+    corretorNome: text("corretor_nome"),
+    corretorCnpj: text("corretor_cnpj"),
+    corretorTelefone: text("corretor_telefone"),
+    valorVenda: numeric("valor_venda", { precision: 15, scale: 2 }).notNull(),
+    valorComissao: numeric("valor_comissao", { precision: 15, scale: 2 })
+      .notNull(),
+    numeroParcelas: integer("numero_parcelas").notNull(),
+    dataPrimeiraParcela: date("data_primeira_parcela").notNull(),
+    dataVenda: date("data_venda"),
+    observacoes: text("observacoes"),
+    status: pendingOperacaoStatusEnum("status")
+      .notNull()
+      .default("aguardando_cedente"),
+    reivindicadoPorUserId: text("reivindicado_por_user_id").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    reivindicadoEm: timestamp("reivindicado_em", { withTimezone: true }),
+    operacaoId: uuid("operacao_id").references(() => operacoes.id, {
+      onDelete: "set null",
+    }),
+    inviteToken: text("invite_token").notNull().unique(),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("pending_construtora_idx").on(t.construtoraId),
+    index("pending_email_status_idx").on(t.corretorEmail, t.status),
+  ],
+);
+
+export type PendingOperacao = typeof pendingOperacoes.$inferSelect;
+
+/* =========================================
    MURAL DE RECADOS (admin → imob/construtora)
    ========================================= */
 

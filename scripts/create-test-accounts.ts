@@ -106,16 +106,36 @@ async function findClerkUserByEmail(email: string) {
   return null;
 }
 
+async function markPrimaryEmailVerified(userId: string) {
+  // Lista email addresses do user e marca todos como verified
+  const u = (await clerkRequest(`/users/${userId}`, "GET")) as {
+    email_addresses?: Array<{ id: string; verification?: { status: string } }>;
+  };
+  for (const e of u.email_addresses ?? []) {
+    if (e.verification?.status === "verified") continue;
+    try {
+      await clerkRequest(`/email_addresses/${e.id}`, "PATCH", {
+        verified: true,
+      });
+      console.log(`  ✓ email ${e.id.slice(0, 12)}… marcado como verificado`);
+    } catch (err) {
+      console.warn("  ⚠ falhou ao verificar email:", (err as Error).message);
+    }
+  }
+}
+
 async function createOrGetClerkUser(spec: AccountSpec) {
   const existing = await findClerkUserByEmail(spec.email);
   if (existing) {
     console.log(`  ↳ Clerk: user já existe (${spec.email})`);
-    return existing as { id: string };
+    const u = existing as { id: string };
+    await markPrimaryEmailVerified(u.id);
+    return u;
   }
   // Username gerado a partir do email (parte antes do @, sem +)
   const username = spec.email.split("@")[0].replace(/\+/g, "_");
   console.log(`  ↳ Clerk: criando user ${spec.email} (user ${username})`);
-  const created = await clerkRequest("/users", "POST", {
+  const created = (await clerkRequest("/users", "POST", {
     email_address: [spec.email],
     username,
     password: spec.password,
@@ -123,8 +143,9 @@ async function createOrGetClerkUser(spec: AccountSpec) {
     last_name: spec.lastName,
     skip_password_checks: true,
     skip_password_requirement: false,
-  });
-  return created as { id: string };
+  })) as { id: string };
+  await markPrimaryEmailVerified(created.id);
+  return created;
 }
 
 async function main() {
