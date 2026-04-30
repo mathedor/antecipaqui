@@ -305,6 +305,17 @@ export const parcelasComissao = pgTable(
    CONTRATOS (gerados após aprovação)
    ========================================= */
 
+export type ContratoSignerRole = "cedente" | "construtora" | "antecipaqui";
+
+export type ContratoSigner = {
+  role: ContratoSignerRole;
+  zapsignToken: string;
+  name: string;
+  email: string;
+  signUrl: string;
+  signedAt: string | null; // ISO string quando assinado
+};
+
 export const contratos = pgTable(
   "contratos",
   {
@@ -320,6 +331,8 @@ export const contratos = pgTable(
     corretorSignedAt: timestamp("corretor_signed_at", { withTimezone: true }),
     construtoraSignedAt: timestamp("construtora_signed_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    // Cada signer (cedente, construtora, antecipaqui) com sign_url + signedAt
+    signers: jsonb("signers").$type<ContratoSigner[]>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

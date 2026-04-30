@@ -125,6 +125,8 @@ export default async function OperacaoDetailPage({ params }: Params) {
               pdfUrl={contrato.pdfUrl}
               createdAt={contrato.createdAt}
               status={contrato.status}
+              signers={contrato.signers}
+              zapsignDocumentToken={contrato.zapsignDocumentToken}
               operacaoId={op.id}
             />
           </div>

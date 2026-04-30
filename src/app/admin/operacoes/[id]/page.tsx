@@ -154,6 +154,8 @@ export default async function AdminOperacaoDetail({ params }: Params) {
             pdfUrl={contrato.pdfUrl}
             createdAt={contrato.createdAt}
             status={contrato.status}
+            signers={contrato.signers}
+            zapsignDocumentToken={contrato.zapsignDocumentToken}
             adminMode
             operacaoId={op.id}
           />

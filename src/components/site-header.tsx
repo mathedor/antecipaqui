@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
 import { Logo } from "./logo";
 import { MobileMenu } from "./mobile-menu";
 import { LINKS } from "@/lib/links";
@@ -15,6 +16,7 @@ const nav = [
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -53,15 +55,35 @@ export function SiteHeader() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href={LINKS.entrar}
-              className="text-sm font-medium text-fg-muted hover:text-fg transition-colors px-4 h-10 inline-flex items-center"
-            >
-              Entrar
-            </Link>
-            <Link href={LINKS.cadastrar} className="btn-primary !h-10 !px-5">
-              Cadastre-se <span className="arrow">→</span>
-            </Link>
+            {!isLoaded ? null : isSignedIn ? (
+              <Link href="/painel" className="btn-primary !h-10 !px-5">
+                Acessar painel <span className="arrow">→</span>
+              </Link>
+            ) : (
+              <>
+                <SignInButton
+                  mode="modal"
+                  forceRedirectUrl="/painel"
+                  signUpForceRedirectUrl="/painel"
+                >
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-fg-muted hover:text-fg transition-colors px-4 h-10 inline-flex items-center"
+                  >
+                    Entrar
+                  </button>
+                </SignInButton>
+                <SignUpButton
+                  mode="modal"
+                  forceRedirectUrl="/painel"
+                  signInForceRedirectUrl="/painel"
+                >
+                  <button type="button" className="btn-primary !h-10 !px-5">
+                    Cadastre-se <span className="arrow">→</span>
+                  </button>
+                </SignUpButton>
+              </>
+            )}
           </div>
         </div>
       </header>

@@ -14,7 +14,11 @@ export default function CadastrarPage() {
         <div className="flex justify-center mb-6">
           <Logo size={40} />
         </div>
-        <SignUp signInUrl="/entrar" />
+        <SignUp
+          signInUrl="/entrar"
+          forceRedirectUrl="/painel"
+          signInForceRedirectUrl="/painel"
+        />
         <p className="mt-6 text-center text-xs text-fg-dim max-w-sm leading-relaxed">
           Após criar sua conta você escolhe seu perfil (corretor / imobiliária /
           construtora) e completa o KYC. Leva 5 minutos.

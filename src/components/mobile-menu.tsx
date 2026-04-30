@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
 import { Logo } from "./logo";
 import { LINKS } from "@/lib/links";
 
@@ -14,6 +15,7 @@ const navItems = [
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -114,20 +116,44 @@ export function MobileMenu() {
         </nav>
 
         <div className="relative p-6 border-t border-border space-y-3">
-          <Link
-            href={LINKS.cadastrar}
-            onClick={() => setOpen(false)}
-            className="btn-primary !w-full justify-center"
-          >
-            Cadastre-se grátis <span className="arrow">→</span>
-          </Link>
-          <Link
-            href={LINKS.entrar}
-            onClick={() => setOpen(false)}
-            className="btn-ghost !w-full justify-center"
-          >
-            Já tenho conta — Entrar
-          </Link>
+          {!isLoaded ? null : isSignedIn ? (
+            <Link
+              href="/painel"
+              onClick={() => setOpen(false)}
+              className="btn-primary !w-full justify-center"
+            >
+              Acessar painel <span className="arrow">→</span>
+            </Link>
+          ) : (
+            <>
+              <SignUpButton
+                mode="modal"
+                forceRedirectUrl="/painel"
+                signInForceRedirectUrl="/painel"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="btn-primary !w-full justify-center"
+                >
+                  Cadastre-se grátis <span className="arrow">→</span>
+                </button>
+              </SignUpButton>
+              <SignInButton
+                mode="modal"
+                forceRedirectUrl="/painel"
+                signUpForceRedirectUrl="/painel"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="btn-ghost !w-full justify-center"
+                >
+                  Já tenho conta — Entrar
+                </button>
+              </SignInButton>
+            </>
+          )}
         </div>
       </aside>
     </>

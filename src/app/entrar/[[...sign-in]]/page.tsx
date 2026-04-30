@@ -14,7 +14,11 @@ export default function EntrarPage() {
         <div className="flex justify-center mb-6">
           <Logo size={40} />
         </div>
-        <SignIn signUpUrl="/cadastre-se" />
+        <SignIn
+          signUpUrl="/cadastre-se"
+          forceRedirectUrl="/painel"
+          signUpForceRedirectUrl="/painel"
+        />
         <p className="mt-6 text-center text-xs text-fg-dim max-w-sm">
           Sua conta é protegida com criptografia de ponta. Em conformidade com
           a LGPD.

@@ -12,8 +12,20 @@ import {
   operacoes,
   parcelasComissao,
   users,
+  type ContratoSigner,
 } from "@/db/schema";
 import { ContractDocument, type ContractData } from "@/lib/contract-pdf";
+import {
+  createZapsignDocument,
+  getAntecipaquiSigner,
+  type ZapsignSignerInput,
+} from "@/lib/zapsign";
+
+function digitsOnly(s: string | null | undefined): string | undefined {
+  if (!s) return undefined;
+  const d = s.replace(/\D/g, "");
+  return d.length >= 10 ? d.slice(-11) : undefined;
+}
 
 function monthsBetween(from: Date, to: Date) {
   const y = to.getFullYear() - from.getFullYear();
@@ -38,7 +50,11 @@ function getLogoUrl() {
  */
 export async function generateContractForOperacao(
   operacaoId: string,
-): Promise<{ contratoId: string; url: string }> {
+): Promise<{
+  contratoId: string;
+  url: string;
+  zapsignDocumentToken: string | null;
+}> {
   // Carrega tudo
   const [op] = await db
     .select()
@@ -140,6 +156,75 @@ export async function generateContractForOperacao(
     addRandomSuffix: false,
   });
 
+  // Carrega construtora-owner pra ser signer (se existir cadastrado)
+  const construtoraOwner = construtora.ownerUserId
+    ? (
+        await db
+          .select()
+          .from(users)
+          .where(eq(users.id, construtora.ownerUserId))
+          .limit(1)
+      )[0]
+    : null;
+
+  // Resolve email da construtora pro signer: prefere owner, senão construtora.email
+  const construtoraSignerEmail =
+    construtoraOwner?.email ?? construtora.email ?? null;
+  const construtoraSignerName =
+    construtoraOwner?.nome ?? construtora.razaoSocial;
+
+  // Monta signers — Antecipaqui sempre, cedente sempre, construtora se tiver email
+  const antecipaqui = getAntecipaquiSigner();
+  const signersInput: ZapsignSignerInput[] = [
+    {
+      role: "cedente",
+      name: cedenteUser.nome ?? cedenteUser.email,
+      email: cedenteUser.email,
+      phoneNumber: digitsOnly(cedenteUser.telefone ?? imob?.telefone),
+    },
+  ];
+  if (construtoraSignerEmail) {
+    signersInput.push({
+      role: "construtora",
+      name: construtoraSignerName,
+      email: construtoraSignerEmail,
+      phoneNumber: digitsOnly(construtora.telefone),
+    });
+  }
+  signersInput.push({
+    role: "antecipaqui",
+    name: antecipaqui.name,
+    email: antecipaqui.email,
+  });
+
+  // Cria documento ZapSign (se falhar, ainda persistimos contrato como "gerado"
+  // — admin pode regerar depois). external_id = numero da operação pra audit.
+  let zapsignDocumentToken: string | null = null;
+  let signersData: ContratoSigner[] | null = null;
+  try {
+    const zapDoc = await createZapsignDocument({
+      name: `Antecipaqui · Cessão de Comissão · ${op.numero}`,
+      urlPdf: blob.url,
+      externalId: op.numero,
+      signers: signersInput,
+    });
+    zapsignDocumentToken = zapDoc.token;
+
+    // Mapeia signers da resposta (mesma ordem que enviamos)
+    signersData = zapDoc.signers.map((s, i) => ({
+      role: signersInput[i].role,
+      zapsignToken: s.token,
+      name: s.name,
+      email: s.email,
+      signUrl: s.sign_url,
+      signedAt: s.signed_at ?? null,
+    }));
+  } catch (e) {
+    console.error("[contract/zapsign] failed to create document:", e);
+    // não rethrow — contrato fica como "gerado" sem ZapSign,
+    // admin pode regerar via botão
+  }
+
   // Persiste em contratos
   // Se já existir, atualiza; caso contrário cria
   const [existing] = await db
@@ -148,13 +233,19 @@ export async function generateContractForOperacao(
     .where(eq(contratos.operacaoId, operacaoId))
     .limit(1);
 
+  const newStatus: "gerado" | "enviado_assinatura" = zapsignDocumentToken
+    ? "enviado_assinatura"
+    : "gerado";
+
   let contratoId: string;
   if (existing) {
     await db
       .update(contratos)
       .set({
         pdfUrl: blob.url,
-        status: "gerado",
+        status: newStatus,
+        zapsignDocumentToken: zapsignDocumentToken ?? existing.zapsignDocumentToken,
+        signers: signersData ?? existing.signers,
         updatedAt: new Date(),
       })
       .where(eq(contratos.id, existing.id));
@@ -165,13 +256,15 @@ export async function generateContractForOperacao(
       .values({
         operacaoId,
         pdfUrl: blob.url,
-        status: "gerado",
+        status: newStatus,
+        zapsignDocumentToken,
+        signers: signersData,
       })
       .returning({ id: contratos.id });
     contratoId = created.id;
   }
 
-  return { contratoId, url: blob.url };
+  return { contratoId, url: blob.url, zapsignDocumentToken };
 }
 
 export async function getContratoForOperacao(operacaoId: string) {
