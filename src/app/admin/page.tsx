@@ -2,8 +2,13 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { AdminCharts } from "@/components/dashboard-charts";
 import { formatBRL } from "@/lib/format";
-import { getAdminStats, getAllOperacoes } from "@/lib/actions/admin";
+import {
+  getAdminMonthlyStats,
+  getAdminStats,
+  getAllOperacoes,
+} from "@/lib/actions/admin";
 
 export const metadata = {
   title: "Admin · Dashboard",
@@ -11,9 +16,10 @@ export const metadata = {
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
-  const [stats, recent] = await Promise.all([
+  const [stats, recent, monthly] = await Promise.all([
     getAdminStats(),
     getAllOperacoes(),
+    getAdminMonthlyStats(),
   ]);
 
   const recentes = recent.slice(0, 8);
@@ -23,7 +29,7 @@ export default async function AdminPage() {
 
   return (
     <AdminShell active="/admin" userName={admin.nome}>
-      <div className="mb-10">
+      <div className="mb-8">
         <div className="eyebrow mb-2">painel administrativo</div>
         <h1 className="text-display-md">
           Operação <span className="text-gradient-blue">geral</span>
@@ -31,6 +37,11 @@ export default async function AdminPage() {
         <p className="mt-2 text-fg-muted">
           Visão consolidada de todas as operações do sistema.
         </p>
+      </div>
+
+      {/* Gráficos — 12 meses */}
+      <div className="mb-10">
+        <AdminCharts data={monthly} />
       </div>
 
       {/* Stats top — 5 cards */}

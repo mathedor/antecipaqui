@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {
   getConstrutoraByOwnerId,
+  getConstrutoraMonthlyStats,
   getDashboardStatsForConstrutora,
   getOperacoesByConstrutora,
 } from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PainelShell } from "@/components/painel-shell";
+import { ConstrutoraCharts } from "@/components/dashboard-charts";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -21,12 +23,15 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
   const podeOperar = user.onboardingStatus !== "pendente";
   const status = STATUS_LABEL[user.onboardingStatus] ?? STATUS_LABEL.pendente;
 
-  const [stats, operacoes] = await Promise.all([
+  const [stats, operacoes, monthly] = await Promise.all([
     construtora
       ? getDashboardStatsForConstrutora(construtora.id)
       : Promise.resolve(null),
     construtora
       ? getOperacoesByConstrutora(construtora.id)
+      : Promise.resolve([]),
+    construtora
+      ? getConstrutoraMonthlyStats(construtora.id)
       : Promise.resolve([]),
   ]);
 
@@ -84,6 +89,13 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
           <Link href="/painel/onboarding" className="btn-primary mt-5 !h-11 !px-5">
             Iniciar cadastro <span className="arrow">→</span>
           </Link>
+        </div>
+      )}
+
+      {/* Gráficos — 12 meses */}
+      {podeOperar && monthly.length > 0 && (
+        <div className="mb-8">
+          <ConstrutoraCharts data={monthly} />
         </div>
       )}
 

@@ -551,6 +551,71 @@ export async function getDashboardStatsForConstrutora(construtoraId: string) {
   };
 }
 
+/**
+ * Agregação dos últimos 12 meses pro dashboard da construtora.
+ * Retorna SEMPRE 12 meses, formato { month, label, operacoes,
+ * valorAntecipado, valorComissao }.
+ */
+export async function getConstrutoraMonthlyStats(construtoraId: string) {
+  const rows = await db.execute(sql`
+    SELECT
+      to_char(date_trunc('month', created_at), 'YYYY-MM') AS month,
+      COUNT(*)::int AS operacoes,
+      COALESCE(SUM(valor_presente), 0)::float AS valor_antecipado,
+      COALESCE(SUM(valor_comissao), 0)::float AS valor_comissao
+    FROM operacoes
+    WHERE construtora_id = ${construtoraId}
+      AND created_at >= date_trunc('month', now()) - interval '11 months'
+      AND status NOT IN ('rascunho', 'recusada', 'cancelada')
+    GROUP BY date_trunc('month', created_at)
+  `);
+
+  const list = (
+    rows as unknown as Array<{
+      month: string;
+      operacoes: number;
+      valor_antecipado: number;
+      valor_comissao: number;
+    }>
+  ).map((r) => ({
+    month: r.month,
+    operacoes: Number(r.operacoes),
+    valorAntecipado: Number(r.valor_antecipado),
+    valorComissao: Number(r.valor_comissao),
+  }));
+
+  const map = new Map(list.map((r) => [r.month, r]));
+  const now = new Date();
+  now.setDate(1);
+  now.setHours(0, 0, 0, 0);
+
+  const result: Array<{
+    month: string;
+    label: string;
+    operacoes: number;
+    valorAntecipado: number;
+    valorComissao: number;
+  }> = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - i);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d
+      .toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })
+      .replace(".", "")
+      .replace(" de ", "/");
+    const found = map.get(monthKey);
+    result.push({
+      month: monthKey,
+      label,
+      operacoes: found?.operacoes ?? 0,
+      valorAntecipado: found?.valorAntecipado ?? 0,
+      valorComissao: found?.valorComissao ?? 0,
+    });
+  }
+  return result;
+}
+
 export async function getDuplicatasParaPagar(construtoraId: string) {
   // Lista todas as parcelas das operações ativas, ordenadas por vencimento
   return db
