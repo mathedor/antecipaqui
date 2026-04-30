@@ -88,7 +88,39 @@ export async function getCurrentDbUser(): Promise<User | null> {
     .onConflictDoNothing()
     .returning();
 
-  return inserted[0] ?? null;
+  if (inserted[0]) return inserted[0];
+
+  // Conflict (id ou email único já existia) — busca a row atual.
+  // Cobre race entre 2 requests simultâneos da mesma sessão E o caso
+  // do email já existir vinculado a outro userId.
+  const fallback = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (fallback[0]) return fallback[0];
+
+  // Última tentativa: pelo email (caso o ID tenha mudado no Clerk).
+  if (email) {
+    const byEmail = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    if (byEmail[0]) {
+      console.warn(
+        "[auth] user com email existente já tem outro Clerk id; retornando o existente",
+        { email, oldId: byEmail[0].id, newId: userId },
+      );
+      return byEmail[0];
+    }
+  }
+
+  console.error("[auth] não conseguiu obter/criar user no DB", {
+    userId,
+    email,
+  });
+  return null;
 }
 
 export async function requireDbUser(): Promise<User> {
