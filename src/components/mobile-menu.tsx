@@ -116,7 +116,7 @@ export function MobileMenu() {
         </nav>
 
         <div className="relative p-6 border-t border-border space-y-3">
-          {!isLoaded ? null : isSignedIn ? (
+          {isLoaded && isSignedIn ? (
             <Link
               href="/painel"
               onClick={() => setOpen(false)}

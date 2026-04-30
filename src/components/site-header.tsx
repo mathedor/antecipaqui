@@ -55,11 +55,13 @@ export function SiteHeader() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            {!isLoaded ? null : isSignedIn ? (
+            {isLoaded && isSignedIn ? (
               <Link href="/painel" className="btn-primary !h-10 !px-5">
                 Acessar painel <span className="arrow">→</span>
               </Link>
             ) : (
+              // Default: mostra os botões mesmo enquanto Clerk carrega.
+              // Se já estiver logado, hidratação troca pelo botão Acessar painel.
               <>
                 <SignInButton
                   mode="modal"
