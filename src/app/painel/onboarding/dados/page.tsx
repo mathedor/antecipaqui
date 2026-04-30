@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { construtoras, documentos, imobiliarias } from "@/db/schema";
 import { Logo } from "@/components/logo";
 import { OnboardingProgress } from "@/components/onboarding-progress";
 import { OnboardingForm } from "@/components/onboarding-form";
@@ -23,6 +26,73 @@ export default async function OnboardingDadosPage() {
   if (user.onboardingStatus === "aprovado") redirect("/painel");
 
   const title = TITLES[user.role as keyof typeof TITLES] ?? "Dados";
+
+  // Busca dados existentes pra pré-popular caso o user volte aqui
+  // (validação falhou ou está completando docs depois).
+  const isImob = user.role === "corretor" || user.role === "imobiliaria";
+  const [imobExist, constrExist, userDocs] = await Promise.all([
+    isImob
+      ? db
+          .select()
+          .from(imobiliarias)
+          .where(eq(imobiliarias.ownerUserId, user.id))
+          .limit(1)
+          .then((r) => r[0] ?? null)
+      : Promise.resolve(null),
+    user.role === "construtora"
+      ? db
+          .select()
+          .from(construtoras)
+          .where(eq(construtoras.ownerUserId, user.id))
+          .limit(1)
+          .then((r) => r[0] ?? null)
+      : Promise.resolve(null),
+    db
+      .select()
+      .from(documentos)
+      .where(eq(documentos.userId, user.id)),
+  ]);
+
+  const empresa = imobExist ?? constrExist;
+  const docByTipo = new Map(userDocs.map((d) => [d.tipo, d]));
+
+  const initialValues = {
+    nome: user.nome ?? "",
+    telefone: user.telefone ?? empresa?.telefone ?? "",
+    razaoSocial: empresa?.razaoSocial ?? "",
+    nomeFantasia: empresa?.nomeFantasia ?? "",
+    cnpj: empresa?.cnpj ?? "",
+    creci: imobExist?.creciResponsavel ?? "",
+    email: constrExist?.email ?? "",
+    cep: empresa?.cep ?? "",
+    endereco: empresa?.endereco ?? "",
+    cidade: empresa?.cidade ?? "",
+    uf: empresa?.uf ?? "",
+    bancoNome: imobExist?.bancoNome ?? "",
+    bancoCodigo: imobExist?.bancoCodigo ?? "",
+    bancoAgencia: imobExist?.bancoAgencia ?? "",
+    bancoConta: imobExist?.bancoConta ?? "",
+  };
+  const initialDocs = {
+    contratoSocial: docByTipo.get("contrato_social")
+      ? {
+          url: docByTipo.get("contrato_social")!.url,
+          name: docByTipo.get("contrato_social")!.nomeOriginal,
+        }
+      : null,
+    comprovanteEndereco: docByTipo.get("comprovante_endereco")
+      ? {
+          url: docByTipo.get("comprovante_endereco")!.url,
+          name: docByTipo.get("comprovante_endereco")!.nomeOriginal,
+        }
+      : null,
+    creci: docByTipo.get("creci")
+      ? {
+          url: docByTipo.get("creci")!.url,
+          name: docByTipo.get("creci")!.nomeOriginal,
+        }
+      : null,
+  };
 
   return (
     <section className="min-h-[80vh] flex items-center justify-center px-6 py-16 relative">
@@ -55,7 +125,8 @@ export default async function OnboardingDadosPage() {
           <div className="mt-8">
             <OnboardingForm
               role={user.role as "corretor" | "imobiliaria" | "construtora"}
-              defaultName={user.nome ?? ""}
+              initialValues={initialValues}
+              initialDocs={initialDocs}
             />
           </div>
         </div>

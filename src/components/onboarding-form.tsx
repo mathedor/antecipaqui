@@ -7,25 +7,167 @@ import {
   type SaveCompanyState,
 } from "@/lib/actions/onboarding";
 import { maskCNPJ, maskCEP, maskPhone, UF_LIST } from "@/lib/cnpj";
+import { buscarCep, unmaskCep } from "@/lib/cep";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
+
+type InitialValues = {
+  nome: string;
+  telefone: string;
+  razaoSocial: string;
+  nomeFantasia: string;
+  cnpj: string;
+  creci: string;
+  email: string;
+  cep: string;
+  endereco: string;
+  cidade: string;
+  uf: string;
+  bancoNome: string;
+  bancoCodigo: string;
+  bancoAgencia: string;
+  bancoConta: string;
+};
+
+type InitialDocs = {
+  contratoSocial: { url: string; name: string } | null;
+  comprovanteEndereco: { url: string; name: string } | null;
+  creci: { url: string; name: string } | null;
+};
 
 type Props = {
   role: "corretor" | "imobiliaria" | "construtora";
-  defaultName?: string;
+  initialValues?: Partial<InitialValues>;
+  initialDocs?: InitialDocs;
 };
 
-export function OnboardingForm({ role, defaultName = "" }: Props) {
+const EMPTY_VALUES: InitialValues = {
+  nome: "",
+  telefone: "",
+  razaoSocial: "",
+  nomeFantasia: "",
+  cnpj: "",
+  creci: "",
+  email: "",
+  cep: "",
+  endereco: "",
+  cidade: "",
+  uf: "",
+  bancoNome: "",
+  bancoCodigo: "",
+  bancoAgencia: "",
+  bancoConta: "",
+};
+
+export function OnboardingForm({
+  role,
+  initialValues,
+  initialDocs,
+}: Props) {
   const [state, action, pending] = useActionState<SaveCompanyState, FormData>(
     saveCompanyDataAction,
     null,
   );
   const router = useRouter();
-  const [cnpj, setCnpj] = useState("");
-  const [cep, setCep] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [docContratoSocial, setDocContratoSocial] = useState<UploadedBlob | null>(null);
-  const [docComprovEndereco, setDocComprovEndereco] = useState<UploadedBlob | null>(null);
-  const [docCreci, setDocCreci] = useState<UploadedBlob | null>(null);
+  // Se a action retornou values (caso de erro), prioriza eles. Senão usa
+  // o que veio do server (DB) ou vazio.
+  const submitted =
+    state && !state.ok && state.values ? state.values : null;
+  const init = {
+    ...EMPTY_VALUES,
+    ...initialValues,
+    ...(submitted ?? {}),
+  };
+
+  // Docs: prioriza submitted (do action), depois initialDocs (do DB)
+  function docInitial(
+    urlKey: string,
+    nameKey: string,
+    fallback: { url: string; name: string } | null,
+  ) {
+    const url = submitted?.[urlKey];
+    if (url) return { url, name: submitted?.[nameKey] ?? "arquivo" };
+    return fallback;
+  }
+  const initContratoSocial = docInitial(
+    "doc_contrato_social",
+    "doc_contrato_social_nome",
+    initialDocs?.contratoSocial ?? null,
+  );
+  const initComprovEnd = docInitial(
+    "doc_comprovante_endereco",
+    "doc_comprovante_endereco_nome",
+    initialDocs?.comprovanteEndereco ?? null,
+  );
+  const initCreci = docInitial(
+    "doc_creci",
+    "doc_creci_nome",
+    initialDocs?.creci ?? null,
+  );
+
+  // Campos com máscara — controlled, com defaults persistidos do server
+  const [cnpj, setCnpj] = useState(init.cnpj ? maskCNPJ(init.cnpj) : "");
+  const [cep, setCep] = useState(init.cep ? maskCEP(init.cep) : "");
+  const [endereco, setEndereco] = useState(init.endereco);
+  const [cidade, setCidade] = useState(init.cidade);
+  const [uf, setUf] = useState(init.uf);
+  const [cepBuscando, setCepBuscando] = useState(false);
+  const [cepErro, setCepErro] = useState<string | null>(null);
+
+  // Quando CEP fica com 8 dígitos, busca automaticamente
+  async function handleCepChange(raw: string) {
+    const masked = maskCEP(raw);
+    setCep(masked);
+    setCepErro(null);
+    if (unmaskCep(masked).length === 8) {
+      setCepBuscando(true);
+      const info = await buscarCep(masked);
+      setCepBuscando(false);
+      if (!info) {
+        setCepErro("CEP não encontrado");
+        return;
+      }
+      // Só preenche se o campo está vazio (não sobrescreve digitação manual)
+      if (info.logradouro && !endereco) setEndereco(info.logradouro);
+      if (info.cidade) setCidade(info.cidade);
+      if (info.uf) setUf(info.uf);
+    }
+  }
+  const [telefone, setTelefone] = useState(
+    init.telefone ? maskPhone(init.telefone) : "",
+  );
+
+  const [docContratoSocial, setDocContratoSocial] =
+    useState<UploadedBlob | null>(
+      initContratoSocial
+        ? {
+            url: initContratoSocial.url,
+            pathname: initContratoSocial.url,
+            size: 0,
+            name: initContratoSocial.name,
+          }
+        : null,
+    );
+  const [docComprovEndereco, setDocComprovEndereco] =
+    useState<UploadedBlob | null>(
+      initComprovEnd
+        ? {
+            url: initComprovEnd.url,
+            pathname: initComprovEnd.url,
+            size: 0,
+            name: initComprovEnd.name,
+          }
+        : null,
+    );
+  const [docCreci, setDocCreci] = useState<UploadedBlob | null>(
+    initCreci
+      ? {
+          url: initCreci.url,
+          pathname: initCreci.url,
+          size: 0,
+          name: initCreci.name,
+        }
+      : null,
+  );
 
   useEffect(() => {
     if (state?.ok) router.push(state.redirectTo);
@@ -33,6 +175,7 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
 
   const isCorretor = role === "corretor";
   const isConstrutora = role === "construtora";
+  const hasInitial = Boolean(initialValues && (init.razaoSocial || init.cnpj));
 
   return (
     <form action={action} className="space-y-5">
@@ -41,12 +184,18 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
           {state.error}
         </div>
       )}
+      {hasInitial && !state && (
+        <div className="rounded-xl border border-accent/30 bg-accent-soft text-accent p-4 text-sm">
+          Cadastro recuperado — atualize os campos que faltavam ou estão
+          incorretos e envie de novo.
+        </div>
+      )}
 
       <Field
         name="nome"
         label="Seu nome (responsável)"
         required
-        defaultValue={defaultName}
+        defaultValue={init.nome}
       />
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -54,10 +203,12 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
           name="razaoSocial"
           label={isCorretor ? "Razão social (ou seu nome)" : "Razão social"}
           required
+          defaultValue={init.razaoSocial}
         />
         <Field
           name="nomeFantasia"
           label="Nome fantasia (opcional)"
+          defaultValue={init.nomeFantasia}
         />
       </div>
 
@@ -86,6 +237,7 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
         <Field
           name="creci"
           label={isCorretor ? "CRECI (responsável técnico)" : "CRECI da imobiliária"}
+          defaultValue={init.creci}
         />
       )}
 
@@ -95,6 +247,7 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
           label="Email da empresa (opcional)"
           type="email"
           placeholder="contato@suaempresa.com.br"
+          defaultValue={init.email}
         />
       )}
 
@@ -114,12 +267,14 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
               label="Banco"
               required
               placeholder="Ex: Banco C6 S.A."
+              defaultValue={init.bancoNome}
             />
             <Field
               name="bancoCodigo"
               label="Código (3 dígitos)"
               placeholder="336"
               inputMode="numeric"
+              defaultValue={init.bancoCodigo}
             />
           </div>
           <div className="grid sm:grid-cols-2 gap-4 mt-4">
@@ -129,12 +284,14 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
               required
               placeholder="0001"
               inputMode="numeric"
+              defaultValue={init.bancoAgencia}
             />
             <Field
               name="bancoConta"
               label="Conta corrente"
               required
               placeholder="40574449-8"
+              defaultValue={init.bancoConta}
             />
           </div>
         </div>
@@ -144,49 +301,67 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-3">
           endereço
         </div>
-        <div className="grid sm:grid-cols-3 gap-4 mb-4">
+        <p className="text-xs text-fg-muted mb-3">
+          Digite o CEP e os campos abaixo são preenchidos automaticamente.
+        </p>
+        <div className="mb-4">
           <Field
             name="cep"
-            label="CEP"
+            label={`CEP${cepBuscando ? " · buscando…" : ""}`}
             value={cep}
-            onChange={(e) => setCep(maskCEP(e.target.value))}
+            onChange={(e) => handleCepChange(e.target.value)}
             required
             placeholder="00000-000"
             inputMode="numeric"
+            className="sm:max-w-xs"
           />
+          {cepErro && (
+            <p className="mt-1 text-xs text-warn">{cepErro} — preencha manual abaixo.</p>
+          )}
+        </div>
+        <Field
+          name="endereco"
+          label="Endereço completo"
+          required
+          value={endereco}
+          onChange={(e) => setEndereco(e.target.value)}
+        />
+        <div className="grid sm:grid-cols-3 gap-4 mt-4">
           <Field
             name="cidade"
             label="Cidade"
             required
+            value={cidade}
+            onChange={(e) => setCidade(e.target.value)}
             className="sm:col-span-2"
           />
-        </div>
-        <Field name="endereco" label="Endereço completo" required />
-        <div className="mt-4">
-          <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
-            UF<span className="ml-1 text-accent">*</span>
-          </label>
-          <select
-            name="uf"
-            required
-            defaultValue=""
-            className="w-full sm:w-32 h-12 rounded-xl bg-bg border border-border-strong px-4 text-fg focus:border-accent outline-none transition-colors appearance-none cursor-pointer"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5L6 6.5L11 1.5' stroke='%235a6571' stroke-width='1.5' fill='none'/></svg>\")",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right 16px center",
-            }}
-          >
-            <option value="" disabled>
-              UF
-            </option>
-            {UF_LIST.map((uf) => (
-              <option key={uf} value={uf}>
-                {uf}
+          <div>
+            <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
+              UF<span className="ml-1 text-accent">*</span>
+            </label>
+            <select
+              name="uf"
+              required
+              value={uf}
+              onChange={(e) => setUf(e.target.value)}
+              className="w-full h-12 rounded-xl bg-bg border border-border-strong px-4 text-fg focus:border-accent outline-none transition-colors appearance-none cursor-pointer"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5L6 6.5L11 1.5' stroke='%235a6571' stroke-width='1.5' fill='none'/></svg>\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 16px center",
+              }}
+            >
+              <option value="" disabled>
+                UF
               </option>
-            ))}
-          </select>
+              {UF_LIST.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -202,6 +377,7 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
             required
             folder="kyc/contrato-social"
             description="Última alteração contratual atualizada na Junta Comercial."
+            initial={initContratoSocial}
             onChange={setDocContratoSocial}
           />
           <FileUploadField
@@ -210,6 +386,7 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
             required
             folder="kyc/comprovante-endereco"
             description="Conta de luz, água, telefone ou contrato de locação — últimos 90 dias."
+            initial={initComprovEnd}
             onChange={setDocComprovEndereco}
           />
           {!isConstrutora && (
@@ -219,13 +396,26 @@ export function OnboardingForm({ role, defaultName = "" }: Props) {
               required
               folder="kyc/creci"
               description="Carteira ou certidão de regularidade do CRECI."
+              initial={initCreci}
               onChange={setDocCreci}
             />
           )}
           {/* Hidden inputs com nome do arquivo (pra exibir lindo no painel admin) */}
-          <input type="hidden" name="doc_contrato_social_nome" value={docContratoSocial?.name ?? ""} />
-          <input type="hidden" name="doc_comprovante_endereco_nome" value={docComprovEndereco?.name ?? ""} />
-          <input type="hidden" name="doc_creci_nome" value={docCreci?.name ?? ""} />
+          <input
+            type="hidden"
+            name="doc_contrato_social_nome"
+            value={docContratoSocial?.name ?? ""}
+          />
+          <input
+            type="hidden"
+            name="doc_comprovante_endereco_nome"
+            value={docComprovEndereco?.name ?? ""}
+          />
+          <input
+            type="hidden"
+            name="doc_creci_nome"
+            value={docCreci?.name ?? ""}
+          />
         </div>
       </div>
 

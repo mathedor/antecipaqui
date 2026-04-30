@@ -58,9 +58,42 @@ export async function selectRoleAction(formData: FormData) {
 }
 
 export type SaveCompanyState =
-  | { ok: false; error: string }
+  | { ok: false; error: string; values?: Record<string, string> }
   | { ok: true; redirectTo: string }
   | null;
+
+function snapshotValues(formData: FormData): Record<string, string> {
+  const keys = [
+    "nome",
+    "telefone",
+    "razaoSocial",
+    "nomeFantasia",
+    "cnpj",
+    "cep",
+    "endereco",
+    "cidade",
+    "uf",
+    "creci",
+    "email",
+    "bancoNome",
+    "bancoCodigo",
+    "bancoAgencia",
+    "bancoConta",
+    "doc_contrato_social",
+    "doc_comprovante_endereco",
+    "doc_creci",
+    "doc_contrato_social_nome",
+    "doc_comprovante_endereco_nome",
+    "doc_creci_nome",
+  ];
+  const out: Record<string, string> = {};
+  for (const k of keys) out[k] = String(formData.get(k) ?? "");
+  return out;
+}
+
+function fail(error: string, formData: FormData): SaveCompanyState {
+  return { ok: false, error, values: snapshotValues(formData) };
+}
 
 export async function saveCompanyDataAction(
   _prev: SaveCompanyState,
@@ -90,26 +123,25 @@ export async function saveCompanyDataAction(
   const bancoConta = String(formData.get("bancoConta") || "").trim() || null;
 
   // Validações
-  if (!nome) return { ok: false, error: "Nome é obrigatório" };
-  if (!razaoSocial) return { ok: false, error: "Razão social é obrigatória" };
-  if (!isValidCNPJ(cnpj)) return { ok: false, error: "CNPJ inválido" };
+  if (!nome) return fail("Nome é obrigatório", formData);
+  if (!razaoSocial) return fail("Razão social é obrigatória", formData);
+  if (!isValidCNPJ(cnpj)) return fail("CNPJ inválido", formData);
   if (!cep || cep.replace(/\D/g, "").length !== 8) {
-    return { ok: false, error: "CEP inválido" };
+    return fail("CEP inválido", formData);
   }
-  if (!endereco) return { ok: false, error: "Endereço é obrigatório" };
-  if (!cidade) return { ok: false, error: "Cidade é obrigatória" };
-  if (uf.length !== 2) return { ok: false, error: "UF inválida" };
-  if (!telefone) return { ok: false, error: "Telefone é obrigatório" };
+  if (!endereco) return fail("Endereço é obrigatório", formData);
+  if (!cidade) return fail("Cidade é obrigatória", formData);
+  if (uf.length !== 2) return fail("UF inválida", formData);
+  if (!telefone) return fail("Telefone é obrigatório", formData);
 
   if (
     user.role === "corretor" || user.role === "imobiliaria"
   ) {
     if (!bancoNome || !bancoAgencia || !bancoConta) {
-      return {
-        ok: false,
-        error:
-          "Dados bancários (banco, agência e conta) são obrigatórios pra corretor/imobiliária — necessários no contrato",
-      };
+      return fail(
+        "Dados bancários (banco, agência e conta) são obrigatórios pra corretor/imobiliária — necessários no contrato",
+        formData,
+      );
     }
   }
 

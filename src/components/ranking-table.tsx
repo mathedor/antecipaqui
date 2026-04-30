@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { formatBRL } from "@/lib/format";
 import {
   buildWhatsappLink,
@@ -21,13 +24,11 @@ type RankingRow = {
 
 type Props = {
   rows: RankingRow[];
-  /** Tipo determina pra onde o botão "ver cadastro" leva */
   tipo: "construtora" | "imobiliaria";
 };
 
-const ROW_VARIANT_HEADER: Record<string, string> = {};
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.antecipaqui.digital";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.antecipaqui.digital";
 
 function whatsappMessageFor(row: RankingRow, tipo: Props["tipo"]) {
   const nome = row.nome.split(" ")[0];
@@ -37,7 +38,45 @@ function whatsappMessageFor(row: RankingRow, tipo: Props["tipo"]) {
   return `Olá ${nome}, aqui é da Antecipaqui!\n\nEstamos passando pra acompanhar suas operações de antecipação. Qualquer dúvida ou nova operação, é só falar com a gente.\n\n${SITE_URL}/painel`;
 }
 
+type SortKey =
+  | "nome"
+  | "valorOperado"
+  | "valorPago"
+  | "valorAberto"
+  | "qtdOperacoes"
+  | "isActive";
+
 export function RankingTable({ rows, tipo }: Props) {
+  const [sortKey, setSortKey] = useState<SortKey>("valorOperado");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      // Strings: default asc; números/bool: default desc
+      setSortDir(
+        key === "nome" || key === "isActive" ? "asc" : "desc",
+      );
+    }
+  }
+
+  const sorted = useMemo(() => {
+    const copy = [...rows];
+    copy.sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      let cmp = 0;
+      if (typeof av === "number" && typeof bv === "number") cmp = av - bv;
+      else if (typeof av === "boolean" && typeof bv === "boolean")
+        cmp = av === bv ? 0 : av ? 1 : -1;
+      else cmp = String(av ?? "").localeCompare(String(bv ?? ""), "pt-BR");
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return copy;
+  }, [rows, sortKey, sortDir]);
+
   if (rows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border-strong bg-bg-card p-10 text-center">
@@ -48,27 +87,96 @@ export function RankingTable({ rows, tipo }: Props) {
     );
   }
 
+  function Th({
+    field,
+    align = "left",
+    children,
+  }: {
+    field: SortKey | null;
+    align?: "left" | "right" | "center";
+    children: React.ReactNode;
+  }) {
+    const alignCls =
+      align === "right"
+        ? "text-right"
+        : align === "center"
+          ? "text-center"
+          : "text-left";
+    if (field === null) {
+      return (
+        <th
+          className={`px-3 md:px-4 py-3 ${alignCls} whitespace-nowrap`}
+        >
+          {children}
+        </th>
+      );
+    }
+    const active = sortKey === field;
+    return (
+      <th
+        onClick={() => handleSort(field)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleSort(field);
+          }
+        }}
+        className={`px-3 md:px-4 py-3 ${alignCls} whitespace-nowrap cursor-pointer select-none hover:text-fg transition-colors`}
+      >
+        <span
+          className={`inline-flex items-center gap-1 ${
+            align === "right" ? "flex-row-reverse" : ""
+          } ${active ? "text-fg" : ""}`}
+        >
+          {children}
+          <span
+            className={`text-[8px] leading-none transition-opacity ${
+              active ? "opacity-100" : "opacity-30"
+            }`}
+            aria-hidden
+          >
+            {active ? (sortDir === "desc" ? "▼" : "▲") : "▼"}
+          </span>
+        </span>
+      </th>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
       <table className="w-full text-sm min-w-[760px]">
         <thead className="bg-bg-card border-b border-border">
           <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
-            <th className="px-3 md:px-4 py-3 text-left whitespace-nowrap">#</th>
-            <th className="px-3 md:px-4 py-3 text-left whitespace-nowrap">
+            <Th field={null}>#</Th>
+            <Th field="nome">
               {tipo === "construtora"
                 ? "Construtora"
                 : "Imobiliária / Corretor"}
-            </th>
-            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Valor operado</th>
-            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Pago</th>
-            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Em aberto</th>
-            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Ops</th>
-            <th className="px-3 md:px-4 py-3 text-center whitespace-nowrap">Status</th>
-            <th className="px-3 md:px-4 py-3 text-right whitespace-nowrap">Ações</th>
+            </Th>
+            <Th field="valorOperado" align="right">
+              Valor operado
+            </Th>
+            <Th field="valorPago" align="right">
+              Pago
+            </Th>
+            <Th field="valorAberto" align="right">
+              Em aberto
+            </Th>
+            <Th field="qtdOperacoes" align="right">
+              Ops
+            </Th>
+            <Th field="isActive" align="center">
+              Status
+            </Th>
+            <Th field={null} align="right">
+              Ações
+            </Th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => {
+          {sorted.map((r, i) => {
             const phone = normalizePhoneBR(r.telefone);
             const waLink = phone
               ? buildWhatsappLink(r.telefone, whatsappMessageFor(r, tipo))
@@ -82,28 +190,28 @@ export function RankingTable({ rows, tipo }: Props) {
                 key={r.id}
                 className="border-b border-border last:border-0 hover:bg-bg-card transition-colors"
               >
-                <td className="px-4 py-3 font-mono text-xs text-fg-dim">
+                <td className="px-3 md:px-4 py-3 font-mono text-xs text-fg-dim">
                   {i + 1}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 md:px-4 py-3">
                   <div className="font-semibold text-fg">{r.nome}</div>
                   <div className="text-[11px] text-fg-muted font-mono">
                     {r.documento || r.email || "—"}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right font-mono tabular text-fg font-semibold">
+                <td className="px-3 md:px-4 py-3 text-right font-mono tabular text-fg font-semibold">
                   {formatBRL(r.valorOperado)}
                 </td>
-                <td className="px-4 py-3 text-right font-mono tabular text-success">
+                <td className="px-3 md:px-4 py-3 text-right font-mono tabular text-success">
                   {formatBRL(r.valorPago)}
                 </td>
-                <td className="px-4 py-3 text-right font-mono tabular text-warn">
+                <td className="px-3 md:px-4 py-3 text-right font-mono tabular text-warn">
                   {formatBRL(r.valorAberto)}
                 </td>
-                <td className="px-4 py-3 text-right font-mono tabular text-fg-muted">
+                <td className="px-3 md:px-4 py-3 text-right font-mono tabular text-fg-muted">
                   {r.qtdOperacoes}
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-3 md:px-4 py-3 text-center">
                   {r.isActive ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-green-50 text-success border-green-200">
                       ativo
@@ -114,7 +222,7 @@ export function RankingTable({ rows, tipo }: Props) {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 md:px-4 py-3">
                   <div className="flex items-center justify-end gap-1.5">
                     {waLink ? (
                       <a

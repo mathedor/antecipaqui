@@ -25,6 +25,9 @@ type Props = {
   maxMB?: number;
   /** Callback opcional pra notificar parent quando upload conclui */
   onChange?: (blob: UploadedBlob | null) => void;
+  /** Se passado, mostra como "já enviado" — usuário pode substituir.
+   *  URL é submetida como hidden value pra preservar o arquivo. */
+  initial?: { url: string; name: string } | null;
 };
 
 export function FileUploadField({
@@ -36,13 +39,23 @@ export function FileUploadField({
   accept = "application/pdf,image/jpeg,image/png,image/webp",
   maxMB = 15,
   onChange,
+  initial = null,
 }: Props) {
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [blob, setBlob] = useState<UploadedBlob | null>(null);
+  const [blob, setBlob] = useState<UploadedBlob | null>(
+    initial
+      ? {
+          url: initial.url,
+          pathname: initial.url,
+          size: 0,
+          name: initial.name,
+        }
+      : null,
+  );
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<"idle" | "uploading" | "done" | "error">(
-    "idle",
+    initial ? "done" : "idle",
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
