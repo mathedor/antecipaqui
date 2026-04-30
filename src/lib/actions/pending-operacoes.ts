@@ -1,20 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import crypto from "node:crypto";
 import { db } from "@/db";
 import {
   construtoras,
+  documentos,
   imobiliarias,
+  operacaoEvents,
+  operacoes,
+  parcelasComissao,
   pendingOperacoes,
   users,
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { sendEmail } from "@/lib/email";
-import { parseBRLNumber } from "@/lib/format";
+import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { notify } from "@/lib/notify";
+import { getTaxaMensal } from "@/lib/actions/settings";
 
 type LinhaPayload = {
   imobiliariaId?: string | null;
@@ -310,3 +315,344 @@ export async function listPendingByCurrentConstrutora() {
     .where(eq(pendingOperacoes.construtoraId, c.id))
     .orderBy(desc(pendingOperacoes.createdAt));
 }
+
+/* ============================================================
+   CORRETOR — listar e completar convites
+   ============================================================ */
+
+/**
+ * Lista convites pendentes pro user atual (match por email).
+ * Retorna também dados da construtora.
+ */
+export async function listMyConvites() {
+  const user = await getCurrentDbUser();
+  if (!user) return [];
+
+  const rows = await db
+    .select({
+      id: pendingOperacoes.id,
+      corretorEmail: pendingOperacoes.corretorEmail,
+      corretorNome: pendingOperacoes.corretorNome,
+      valorVenda: pendingOperacoes.valorVenda,
+      valorComissao: pendingOperacoes.valorComissao,
+      numeroParcelas: pendingOperacoes.numeroParcelas,
+      dataPrimeiraParcela: pendingOperacoes.dataPrimeiraParcela,
+      dataVenda: pendingOperacoes.dataVenda,
+      observacoes: pendingOperacoes.observacoes,
+      status: pendingOperacoes.status,
+      createdAt: pendingOperacoes.createdAt,
+      construtoraId: pendingOperacoes.construtoraId,
+      construtoraNome: construtoras.razaoSocial,
+      construtoraCnpj: construtoras.cnpj,
+      construtoraEmail: construtoras.email,
+      construtoraTelefone: construtoras.telefone,
+    })
+    .from(pendingOperacoes)
+    .leftJoin(
+      construtoras,
+      eq(pendingOperacoes.construtoraId, construtoras.id),
+    )
+    .where(
+      and(
+        eq(pendingOperacoes.corretorEmail, user.email.toLowerCase()),
+        eq(pendingOperacoes.status, "aguardando_cedente"),
+      ),
+    )
+    .orderBy(desc(pendingOperacoes.createdAt));
+
+  return rows;
+}
+
+export async function getConviteById(id: string) {
+  const user = await getCurrentDbUser();
+  if (!user) return null;
+
+  const [row] = await db
+    .select({
+      id: pendingOperacoes.id,
+      corretorEmail: pendingOperacoes.corretorEmail,
+      corretorNome: pendingOperacoes.corretorNome,
+      valorVenda: pendingOperacoes.valorVenda,
+      valorComissao: pendingOperacoes.valorComissao,
+      numeroParcelas: pendingOperacoes.numeroParcelas,
+      dataPrimeiraParcela: pendingOperacoes.dataPrimeiraParcela,
+      dataVenda: pendingOperacoes.dataVenda,
+      observacoes: pendingOperacoes.observacoes,
+      status: pendingOperacoes.status,
+      construtoraId: pendingOperacoes.construtoraId,
+      construtoraNome: construtoras.razaoSocial,
+      construtoraCnpj: construtoras.cnpj,
+    })
+    .from(pendingOperacoes)
+    .leftJoin(
+      construtoras,
+      eq(pendingOperacoes.construtoraId, construtoras.id),
+    )
+    .where(eq(pendingOperacoes.id, id))
+    .limit(1);
+
+  if (!row) return null;
+  // Authz: só o dono do email pode ver
+  if (row.corretorEmail !== user.email.toLowerCase()) return null;
+  return row;
+}
+
+/**
+ * Conta de convites pendentes pro user atual (pra badge no menu/banner).
+ */
+export async function getMyConvitesCount() {
+  const user = await getCurrentDbUser();
+  if (!user) return 0;
+  const rows = await db
+    .select({ id: pendingOperacoes.id })
+    .from(pendingOperacoes)
+    .where(
+      and(
+        eq(pendingOperacoes.corretorEmail, user.email.toLowerCase()),
+        eq(pendingOperacoes.status, "aguardando_cedente"),
+      ),
+    );
+  return rows.length;
+}
+
+export type CompletarConviteState =
+  | { ok: false; error: string }
+  | { ok: true; operacaoId: string }
+  | null;
+
+function monthsBetween(from: Date, to: Date) {
+  const years = to.getFullYear() - from.getFullYear();
+  const months = to.getMonth() - from.getMonth();
+  const dayFrac = (to.getDate() - from.getDate()) / 30;
+  return Math.max(years * 12 + months + dayFrac, 0);
+}
+
+/**
+ * Completa um convite: anexa docs, cria operação real, vincula
+ * pending → operação, redireciona pra detalhe.
+ */
+export async function completarConviteAction(
+  _prev: CompletarConviteState,
+  formData: FormData,
+): Promise<CompletarConviteState> {
+  const user = await getCurrentDbUser();
+  if (!user) return { ok: false, error: "Não autenticado" };
+  if (user.role !== "corretor" && user.role !== "imobiliaria")
+    return { ok: false, error: "Apenas corretor/imobiliária pode completar" };
+  if (user.onboardingStatus === "pendente")
+    return {
+      ok: false,
+      error: "Complete seu cadastro antes de aceitar operações",
+    };
+
+  // Validação de docs KYC (mesmo do createOperacao)
+  const userDocs = await db
+    .select({ tipo: documentos.tipo })
+    .from(documentos)
+    .where(eq(documentos.userId, user.id));
+  const tiposKyc = new Set(userDocs.map((d) => d.tipo));
+  const faltam: string[] = [];
+  if (!tiposKyc.has("contrato_social")) faltam.push("contrato social");
+  if (!tiposKyc.has("comprovante_endereco"))
+    faltam.push("comprovante de endereço");
+  if (faltam.length > 0)
+    return {
+      ok: false,
+      error: `Antes de aceitar a operação, envie: ${faltam.join(" e ")}.`,
+    };
+
+  const pendingId = String(formData.get("pendingId") || "").trim();
+  if (!pendingId) return { ok: false, error: "ID do convite obrigatório" };
+
+  const [pending] = await db
+    .select()
+    .from(pendingOperacoes)
+    .where(eq(pendingOperacoes.id, pendingId))
+    .limit(1);
+  if (!pending) return { ok: false, error: "Convite não encontrado" };
+  if (pending.corretorEmail !== user.email.toLowerCase())
+    return { ok: false, error: "Esse convite não é pra você" };
+  if (pending.status !== "aguardando_cedente")
+    return { ok: false, error: "Convite já foi processado" };
+
+  // Documentos da operação (3 obrigatórios)
+  const docContratoVendaUrl = String(
+    formData.get("doc_contrato_venda") || "",
+  ).trim();
+  const docContratoComissaoUrl = String(
+    formData.get("doc_contrato_comissao") || "",
+  ).trim();
+  const docNotaFiscalUrl = String(
+    formData.get("doc_nota_fiscal") || "",
+  ).trim();
+  if (!docContratoVendaUrl)
+    return { ok: false, error: "Anexe o contrato de compra e venda" };
+  if (!docContratoComissaoUrl)
+    return { ok: false, error: "Anexe o contrato de comissionamento" };
+  if (!docNotaFiscalUrl)
+    return { ok: false, error: "Anexe a nota fiscal da comissão" };
+
+  // Imobiliária do user (se for PJ)
+  const [imob] = await db
+    .select()
+    .from(imobiliarias)
+    .where(eq(imobiliarias.ownerUserId, user.id))
+    .limit(1);
+
+  // Gera parcelas (1ª na data informada, demais +1 mês)
+  const valorComissao = parseFloat(pending.valorComissao);
+  const numero = pending.numeroParcelas;
+  const valorParcela = valorComissao / numero;
+  const start = new Date(pending.dataPrimeiraParcela + "T00:00:00");
+
+  // Limita 4 parcelas / 120 dias
+  if (numero > 4)
+    return { ok: false, error: "Limite máximo de 4 parcelas (120 dias)" };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const limite120 = new Date(today);
+  limite120.setDate(limite120.getDate() + 120);
+
+  const parcelasArr = Array.from({ length: numero }, (_, i) => {
+    const v = new Date(start);
+    v.setMonth(v.getMonth() + i);
+    return {
+      numero: i + 1,
+      valor: Number(valorParcela.toFixed(2)),
+      vencimento: v.toISOString().slice(0, 10),
+    };
+  });
+
+  if (parcelasArr.some((p) => new Date(p.vencimento + "T00:00:00") > limite120))
+    return {
+      ok: false,
+      error: "Parcelas devem vencer dentro de 120 dias da data de hoje",
+    };
+
+  const taxaMensal = await getTaxaMensal();
+  const parcelasComMeses = parcelasArr.map((p) => ({
+    valor: p.valor,
+    mesesAteVencimento: Math.max(
+      monthsBetween(today, new Date(p.vencimento + "T00:00:00")),
+      0,
+    ),
+  }));
+  const vp = valorPresente(parcelasComMeses, taxaMensal);
+  const desagio = valorComissao - vp;
+
+  // Gera número da operação
+  const year = new Date().getFullYear();
+  const [{ count: opCount }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(operacoes);
+  const opNumero = `OP-${year}-${String(opCount + 1).padStart(4, "0")}`;
+
+  // Cria operação
+  const [op] = await db
+    .insert(operacoes)
+    .values({
+      numero: opNumero,
+      corretorUserId: user.id,
+      imobiliariaId: imob?.id ?? null,
+      construtoraId: pending.construtoraId,
+      valorVenda: pending.valorVenda,
+      valorComissao: pending.valorComissao,
+      dataVenda: pending.dataVenda ?? new Date().toISOString().slice(0, 10),
+      numeroParcelas: numero,
+      taxaMensal: String(taxaMensal),
+      valorPresente: String(vp.toFixed(2)),
+      desagio: String(desagio.toFixed(2)),
+      status: "aguardando_aprovacao",
+    })
+    .returning();
+
+  // Parcelas
+  await db.insert(parcelasComissao).values(
+    parcelasArr.map((p) => ({
+      operacaoId: op.id,
+      numero: p.numero,
+      valor: String(p.valor.toFixed(2)),
+      vencimento: p.vencimento,
+      status: "a_vencer" as const,
+    })),
+  );
+
+  // Documentos
+  const docNomes = [
+    {
+      tipo: "contrato_venda" as const,
+      url: docContratoVendaUrl,
+      nome: String(formData.get("doc_contrato_venda_nome") || "contrato_venda.pdf"),
+    },
+    {
+      tipo: "contrato_comissao" as const,
+      url: docContratoComissaoUrl,
+      nome: String(formData.get("doc_contrato_comissao_nome") || "contrato_comissao.pdf"),
+    },
+    {
+      tipo: "nota_fiscal" as const,
+      url: docNotaFiscalUrl,
+      nome: String(formData.get("doc_nota_fiscal_nome") || "nota_fiscal.pdf"),
+    },
+  ];
+  await db.insert(documentos).values(
+    docNomes.map((d) => ({
+      tipo: d.tipo,
+      url: d.url,
+      nomeOriginal: d.nome,
+      userId: user.id,
+      operacaoId: op.id,
+    })),
+  );
+
+  // Audit
+  await db.insert(operacaoEvents).values({
+    operacaoId: op.id,
+    userId: user.id,
+    type: "operacao_created",
+    payload: {
+      origem: "convite",
+      pendingId: pending.id,
+      construtoraId: pending.construtoraId,
+    },
+  });
+
+  // Atualiza pending
+  await db
+    .update(pendingOperacoes)
+    .set({
+      status: "reivindicada",
+      reivindicadoPorUserId: user.id,
+      reivindicadoEm: new Date(),
+      operacaoId: op.id,
+      updatedAt: new Date(),
+    })
+    .where(eq(pendingOperacoes.id, pending.id));
+
+  // Notifica a construtora que o cedente completou
+  const [c] = await db
+    .select()
+    .from(construtoras)
+    .where(eq(construtoras.id, pending.construtoraId))
+    .limit(1);
+  if (c?.ownerUserId) {
+    await notify({
+      userId: c.ownerUserId,
+      type: "convite_aceito",
+      title: `${user.nome ?? user.email} completou a operação ${opNumero}`,
+      body: `A operação que você cadastrou em lote agora está em análise da Antecipaqui.`,
+      link: `/painel/operacoes/${op.id}`,
+      operacaoId: op.id,
+    });
+  }
+
+  // Notifica admins (mesma rota que createOperacao não notifica admin
+  // hoje, mas vou seguir o padrão de não criar barulho extra)
+
+  revalidatePath("/painel");
+  revalidatePath("/painel/convites");
+  revalidatePath("/painel/operacoes");
+  return { ok: true, operacaoId: op.id };
+}
+

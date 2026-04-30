@@ -10,6 +10,7 @@ import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PainelShell } from "@/components/painel-shell";
 import { MuralOverlay } from "@/components/mural-overlay";
 import { getMuralForCurrentUser } from "@/lib/actions/mural";
+import { getMyConvitesCount } from "@/lib/actions/pending-operacoes";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -38,10 +39,11 @@ export async function CorretorDashboard({ user }: { user: User }) {
   const status = STATUS_LABEL[user.onboardingStatus] ?? STATUS_LABEL.pendente;
   const podeOperar = user.onboardingStatus !== "pendente";
 
-  const [stats, operacoes, muralMsgs] = await Promise.all([
+  const [stats, operacoes, muralMsgs, convitesCount] = await Promise.all([
     podeOperar ? getDashboardStats(user.id) : Promise.resolve(null),
     podeOperar ? getOperacoesByCorretor(user.id) : Promise.resolve([]),
     getMuralForCurrentUser(),
+    getMyConvitesCount(),
   ]);
 
   const operacoesRecentes = operacoes.slice(0, 5);
@@ -99,6 +101,32 @@ export async function CorretorDashboard({ user }: { user: User }) {
           </p>
           <Link href="/painel/onboarding" className="btn-primary mt-5 !h-11 !px-5">
             Iniciar cadastro <span className="arrow">→</span>
+          </Link>
+        </div>
+      )}
+
+      {podeOperar && convitesCount > 0 && (
+        <div className="rounded-2xl border border-accent/30 bg-accent-soft p-5 md:p-6 mb-6 flex items-start gap-4 flex-wrap">
+          <span className="size-10 rounded-full bg-accent text-white flex items-center justify-center text-lg shrink-0">
+            📨
+          </span>
+          <div className="flex-1 min-w-[16rem]">
+            <h2 className="font-bold text-fg">
+              {convitesCount}{" "}
+              {convitesCount === 1
+                ? "operação aguardando você"
+                : "operações aguardando você"}
+            </h2>
+            <p className="mt-1 text-sm text-fg-muted">
+              Construtoras já cadastraram operações pra você. Anexe os contratos
+              e nota fiscal pra mandar pra análise da Antecipaqui.
+            </p>
+          </div>
+          <Link
+            href="/painel/convites"
+            className="btn-primary !h-10 !px-5 shrink-0"
+          >
+            Ver convites <span className="arrow">→</span>
           </Link>
         </div>
       )}

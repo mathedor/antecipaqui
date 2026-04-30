@@ -3,6 +3,7 @@ import { UserButton } from "@clerk/nextjs";
 import { SairButton } from "@/components/sair-button";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notification-bell";
+import { VersionFooter } from "@/components/version-footer";
 
 const nav = [
   { href: "/admin", label: "Dashboard" },
@@ -59,6 +60,7 @@ export function AdminShell({
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-6 py-8 md:py-12">{children}</main>
+      <VersionFooter />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { UserButton } from "@clerk/nextjs";
 import { Logo } from "@/components/logo";
 import { SairButton } from "@/components/sair-button";
 import { NotificationBell } from "@/components/notification-bell";
+import { VersionFooter } from "@/components/version-footer";
 
 type Role = "corretor" | "imobiliaria" | "construtora" | "admin";
 
@@ -13,12 +14,14 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
+    { href: "/painel/convites", label: "Convites" },
     { href: "/painel/suporte", label: "Suporte" },
   ],
   imobiliaria: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
+    { href: "/painel/convites", label: "Convites" },
     { href: "/painel/suporte", label: "Suporte" },
   ],
   construtora: [
@@ -132,6 +135,7 @@ export function PainelShell({
         </nav>
       </header>
       <main className="mx-auto max-w-7xl px-6 py-8 md:py-12">{children}</main>
+      <VersionFooter />
     </div>
   );
 }

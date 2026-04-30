@@ -66,7 +66,12 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-14 pt-6 border-t border-border flex flex-col md:flex-row md:justify-between gap-3 text-[11px] text-fg-dim">
-          <span>© {year} Antecipaqui. Todos os direitos reservados.</span>
+          <span>
+            © {year} Antecipaqui. Todos os direitos reservados.
+            <span className="font-mono ml-2">
+              · v.{process.env.NEXT_PUBLIC_APP_VERSION ?? "dev"}
+            </span>
+          </span>
           <span className="font-mono">CNPJ XX.XXX.XXX/0001-XX · operação financeira regulada</span>
         </div>
       </div>
