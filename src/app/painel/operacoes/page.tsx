@@ -7,6 +7,7 @@ import {
   getOperacoesByCorretor,
 } from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { PainelShell } from "@/components/painel-shell";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -56,16 +57,22 @@ export default async function OperacoesPage() {
   const counterpartyHeader = isConstrutora ? "Corretor" : "Construtora";
   const titleLabel = isConstrutora ? "vinculadas a você" : "operações";
 
+  const role = (
+    isConstrutora
+      ? "construtora"
+      : user.role === "imobiliaria"
+        ? "imobiliaria"
+        : "corretor"
+  ) as "construtora" | "corretor" | "imobiliaria";
+
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:py-16">
+    <PainelShell
+      role={role}
+      userName={user.nome}
+      active="/painel/operacoes"
+    >
       <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
         <div>
-          <Link
-            href="/painel"
-            className="font-mono text-[11px] uppercase tracking-wider text-fg-muted hover:text-fg transition-colors mb-2 inline-block"
-          >
-            ← painel
-          </Link>
           <h1 className="text-display-md">
             {isConstrutora ? "Operações " : "Suas "}
             <span className="text-gradient-blue">{titleLabel}</span>
@@ -128,7 +135,7 @@ export default async function OperacoesPage() {
           </ul>
         </div>
       )}
-    </section>
+    </PainelShell>
   );
 }
 

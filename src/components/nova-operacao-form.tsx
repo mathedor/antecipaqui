@@ -8,7 +8,7 @@ import {
 } from "@/lib/actions/operacoes";
 import { ConstrutoraModal } from "./construtora-modal";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
-import { formatBRL, valorPresente } from "@/lib/format";
+import { formatBRL, parseBRLNumber, valorPresente } from "@/lib/format";
 
 type Construtora = {
   id: string;
@@ -25,6 +25,26 @@ const TAXA_MENSAL = 0.06;
 
 type Parcela = { valor: string; vencimento: string };
 
+function maskCurrency(value: string): string {
+  // Aceita "1234.56", "1234,56", "1234" — sempre devolve "X.XXX,XX"
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  const num = parseInt(digits, 10) / 100;
+  return num.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** Formata número direto pra máscara BR (ex: 5000 → "5.000,00"). */
+function numberToMask(n: number): string {
+  if (!Number.isFinite(n)) return "";
+  return n.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 function genParcelas(
   total: number,
   numero: number,
@@ -37,26 +57,10 @@ function genParcelas(
     const v = new Date(start);
     v.setMonth(v.getMonth() + i + 1);
     return {
-      valor: valor.toFixed(2),
+      valor: numberToMask(valor),
       vencimento: v.toISOString().slice(0, 10),
     };
   });
-}
-
-function maskCurrency(value: string): string {
-  // Aceita "1234.56", "1234,56", "1234"
-  const digits = value.replace(/\D/g, "");
-  if (!digits) return "";
-  const num = parseInt(digits, 10) / 100;
-  return num.toLocaleString("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function unmaskCurrency(value: string): number {
-  const cleaned = value.replace(/\./g, "").replace(",", ".");
-  return parseFloat(cleaned) || 0;
 }
 
 function monthsBetween(from: Date, to: Date) {
@@ -88,7 +92,7 @@ export function NovaOperacaoForm({ construtoras }: Props) {
   const [docContratoComissao, setDocContratoComissao] = useState<UploadedBlob | null>(null);
   const [docNotaFiscal, setDocNotaFiscal] = useState<UploadedBlob | null>(null);
 
-  const valorComissaoNum = unmaskCurrency(valorComissao);
+  const valorComissaoNum = parseBRLNumber(valorComissao);
 
   // Auto-gera parcelas iguais quando muda comissão / numParcelas / dataVenda
   useEffect(() => {
@@ -111,7 +115,7 @@ export function NovaOperacaoForm({ construtoras }: Props) {
       return { vp: 0, desagio: 0, percentDesagio: 0 };
     const today = new Date();
     const arr = parcelas.map((p) => ({
-      valor: parseFloat(p.valor),
+      valor: parseBRLNumber(p.valor),
       mesesAteVencimento: Math.max(monthsBetween(today, new Date(p.vencimento)), 0),
     }));
     const v = valorPresente(arr, TAXA_MENSAL);
@@ -291,11 +295,16 @@ export function NovaOperacaoForm({ construtoras }: Props) {
                       </span>
                       <input
                         type="text"
-                        inputMode="decimal"
+                        inputMode="numeric"
                         value={p.valor}
                         onChange={(e) =>
-                          updateParcela(i, "valor", e.target.value.replace(",", "."))
+                          updateParcela(
+                            i,
+                            "valor",
+                            maskCurrency(e.target.value),
+                          )
                         }
+                        placeholder="0,00"
                         className="w-full h-10 rounded-lg bg-bg border border-border pl-8 pr-3 text-sm text-fg focus:border-accent outline-none transition-colors tabular text-right"
                       />
                     </div>

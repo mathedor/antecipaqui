@@ -5,6 +5,8 @@ import {
   markAllNotificationsReadAction,
 } from "@/lib/actions/notifications";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { PainelShell } from "@/components/painel-shell";
+import { AdminShell } from "@/components/admin-shell";
 
 export const metadata = { title: "Notificações" };
 
@@ -31,17 +33,10 @@ export default async function NotificacoesPage() {
     await markAllNotificationsReadAction();
   }
 
-  const backHref = user.role === "admin" ? "/admin" : "/painel";
+  const isAdmin = user.role === "admin";
 
-  return (
-    <section className="mx-auto max-w-3xl px-6 py-12 md:py-16 min-h-[60vh]">
-      <Link
-        href={backHref}
-        className="font-mono text-[11px] uppercase tracking-wider text-fg-muted hover:text-fg transition-colors mb-3 inline-block"
-      >
-        ← {user.role === "admin" ? "admin" : "painel"}
-      </Link>
-
+  const content = (
+    <div className="max-w-3xl mx-auto">
       <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
         <div>
           <h1 className="text-display-md">
@@ -103,7 +98,27 @@ export default async function NotificacoesPage() {
           ))}
         </ul>
       )}
-    </section>
+    </div>
+  );
+
+  if (isAdmin) {
+    return (
+      <AdminShell active="" userName={user.nome}>
+        {content}
+      </AdminShell>
+    );
+  }
+  const role = (
+    user.role === "construtora"
+      ? "construtora"
+      : user.role === "imobiliaria"
+        ? "imobiliaria"
+        : "corretor"
+  ) as "construtora" | "corretor" | "imobiliaria";
+  return (
+    <PainelShell role={role} userName={user.nome}>
+      {content}
+    </PainelShell>
   );
 }
 

@@ -15,7 +15,7 @@ import {
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
-import { valorPresente } from "@/lib/format";
+import { parseBRLNumber, valorPresente } from "@/lib/format";
 
 const TAXA_MENSAL_DEFAULT = 0.06;
 
@@ -118,13 +118,13 @@ export async function createOperacaoAction(
   }
 
   const construtoraId = String(formData.get("construtoraId") || "").trim();
-  const valorVendaStr = String(formData.get("valorVenda") || "").replace(",", ".");
-  const valorComissaoStr = String(formData.get("valorComissao") || "").replace(",", ".");
   const dataVenda = String(formData.get("dataVenda") || "").trim();
   const parcelasJson = String(formData.get("parcelas") || "[]");
 
-  const valorVenda = parseFloat(valorVendaStr);
-  const valorComissao = parseFloat(valorComissaoStr);
+  const valorVenda = parseBRLNumber(String(formData.get("valorVenda") || ""));
+  const valorComissao = parseBRLNumber(
+    String(formData.get("valorComissao") || ""),
+  );
 
   if (!construtoraId) return { ok: false, error: "Selecione a construtora" };
   if (!Number.isFinite(valorVenda) || valorVenda <= 0)
@@ -135,16 +135,23 @@ export async function createOperacaoAction(
     return { ok: false, error: "Comissão maior que valor da venda" };
   if (!dataVenda) return { ok: false, error: "Data da venda obrigatória" };
 
-  let parcelas: ParcelaInput[] = [];
+  let parcelasRaw: { valor: unknown; vencimento: unknown }[] = [];
   try {
-    parcelas = JSON.parse(parcelasJson);
+    parcelasRaw = JSON.parse(parcelasJson);
   } catch {
     return { ok: false, error: "Parcelas inválidas" };
   }
-  if (!Array.isArray(parcelas) || parcelas.length === 0)
+  if (!Array.isArray(parcelasRaw) || parcelasRaw.length === 0)
     return { ok: false, error: "Adicione pelo menos uma parcela" };
-  if (parcelas.length > 4)
+  if (parcelasRaw.length > 4)
     return { ok: false, error: "Limite máximo de 4 parcelas (120 dias)" };
+
+  // Normaliza valor (aceita string mascarada BR ou número) e vencimento
+  const parcelas: ParcelaInput[] = parcelasRaw.map((p) => ({
+    valor:
+      typeof p.valor === "number" ? p.valor : parseBRLNumber(String(p.valor)),
+    vencimento: String(p.vencimento ?? ""),
+  }));
 
   // Valida que nenhuma parcela passa de 120 dias do hoje
   const hoje = new Date();
@@ -168,6 +175,24 @@ export async function createOperacaoAction(
       error: `Soma das parcelas (R$ ${totalParcelas.toFixed(2)}) não bate com a comissão (R$ ${valorComissao.toFixed(2)})`,
     };
   }
+
+  // Documentos obrigatórios (validados antes de inserir a operação)
+  const docContratoVendaUrl = String(
+    formData.get("doc_contrato_venda") || "",
+  ).trim();
+  const docContratoComissaoUrl = String(
+    formData.get("doc_contrato_comissao") || "",
+  ).trim();
+  const docNotaFiscalUrl = String(
+    formData.get("doc_nota_fiscal") || "",
+  ).trim();
+
+  if (!docContratoVendaUrl)
+    return { ok: false, error: "Anexe o contrato de compra e venda" };
+  if (!docContratoComissaoUrl)
+    return { ok: false, error: "Anexe o contrato de comissionamento" };
+  if (!docNotaFiscalUrl)
+    return { ok: false, error: "Anexe a nota fiscal da comissão" };
 
   // Imobiliária do user (se for corretor / imobiliária)
   const imob = (
@@ -218,24 +243,24 @@ export async function createOperacaoAction(
     })),
   );
 
-  // Documentos da operação (URLs do Vercel Blob)
+  // Documentos da operação (URLs do Vercel Blob — já validadas acima)
   const docRows = [
     {
       tipo: "contrato_venda" as const,
-      url: String(formData.get("doc_contrato_venda") || ""),
+      url: docContratoVendaUrl,
       nome: String(formData.get("doc_contrato_venda_nome") || "contrato_venda.pdf"),
     },
     {
       tipo: "contrato_comissao" as const,
-      url: String(formData.get("doc_contrato_comissao") || ""),
+      url: docContratoComissaoUrl,
       nome: String(formData.get("doc_contrato_comissao_nome") || "contrato_comissao.pdf"),
     },
     {
       tipo: "nota_fiscal" as const,
-      url: String(formData.get("doc_nota_fiscal") || ""),
+      url: docNotaFiscalUrl,
       nome: String(formData.get("doc_nota_fiscal_nome") || "nota_fiscal.pdf"),
     },
-  ].filter((d) => d.url);
+  ];
 
   if (docRows.length > 0) {
     await db.insert(documentos).values(

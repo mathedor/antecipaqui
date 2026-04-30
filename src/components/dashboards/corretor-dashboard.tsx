@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { imobiliarias } from "@/db/schema";
@@ -8,8 +7,7 @@ import {
   getOperacoesByCorretor,
 } from "@/lib/actions/operacoes";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
-import { SairButton } from "@/components/sair-button";
-import { NotificationBell } from "@/components/notification-bell";
+import { PainelShell } from "@/components/painel-shell";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -45,8 +43,12 @@ export async function CorretorDashboard({ user }: { user: User }) {
 
   const operacoesRecentes = operacoes.slice(0, 5);
 
+  const role = (user.role === "imobiliaria" ? "imobiliaria" : "corretor") as
+    | "corretor"
+    | "imobiliaria";
+
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:py-16 min-h-[60vh]">
+    <PainelShell role={role} userName={user.nome} active="/painel">
       <div className="flex items-start justify-between gap-4 flex-wrap mb-10">
         <div>
           <div className="eyebrow mb-2">painel</div>
@@ -78,11 +80,6 @@ export async function CorretorDashboard({ user }: { user: User }) {
               </span>
             </span>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <NotificationBell />
-          <SairButton />
-          <UserButton />
         </div>
       </div>
 
@@ -248,15 +245,12 @@ export async function CorretorDashboard({ user }: { user: User }) {
         </div>
       )}
 
-      <div className="mt-8 flex justify-between items-center">
-        <Link href="/" className="link-underline text-fg-muted hover:text-fg">
-          ← Home
-        </Link>
+      <div className="mt-8 flex justify-end items-center">
         <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
           user · {user.id.slice(0, 12)}…
         </span>
       </div>
-    </section>
+    </PainelShell>
   );
 }
 

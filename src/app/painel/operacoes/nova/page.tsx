@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { listConstrutorasForSelect } from "@/lib/actions/operacoes";
 import { NovaOperacaoForm } from "@/components/nova-operacao-form";
+import { PainelShell } from "@/components/painel-shell";
 
 export const metadata = {
   title: "Nova operação",
@@ -18,16 +18,18 @@ export default async function NovaOperacaoPage() {
 
   const construtoras = await listConstrutorasForSelect();
 
+  const role = (user.role === "imobiliaria" ? "imobiliaria" : "corretor") as
+    | "corretor"
+    | "imobiliaria";
+
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:py-16">
+    <PainelShell
+      role={role}
+      userName={user.nome}
+      active="/painel/operacoes/nova"
+    >
       <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
         <div>
-          <Link
-            href="/painel/operacoes"
-            className="font-mono text-[11px] uppercase tracking-wider text-fg-muted hover:text-fg transition-colors mb-2 inline-block"
-          >
-            ← operações
-          </Link>
           <h1 className="text-display-md">
             Nova <span className="text-gradient-blue">operação</span>
           </h1>
@@ -39,6 +41,6 @@ export default async function NovaOperacaoPage() {
       </div>
 
       <NovaOperacaoForm construtoras={construtoras} />
-    </section>
+    </PainelShell>
   );
 }

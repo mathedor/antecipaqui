@@ -5,6 +5,7 @@ import {
   getConstrutoraByOwnerId,
   getDuplicatasParaPagar,
 } from "@/lib/actions/operacoes";
+import { PainelShell } from "@/components/painel-shell";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -78,14 +79,11 @@ export default async function DuplicatasPage() {
   };
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:py-16 min-h-[60vh]">
-      <Link
-        href="/painel"
-        className="font-mono text-[11px] uppercase tracking-wider text-fg-muted hover:text-fg transition-colors mb-3 inline-block"
-      >
-        ← painel
-      </Link>
-
+    <PainelShell
+      role="construtora"
+      userName={user.nome}
+      active="/painel/duplicatas"
+    >
       <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
         <div>
           <h1 className="text-display-md">
@@ -180,7 +178,7 @@ export default async function DuplicatasPage() {
           ))}
         </div>
       )}
-    </section>
+    </PainelShell>
   );
 }
 

@@ -103,8 +103,11 @@ export function FileUploadField({
         {required && <span className="ml-1 text-accent">*</span>}
       </label>
 
-      {/* Hidden input com a URL pra submit no form action */}
-      <input type="hidden" name={name} value={blob?.url ?? ""} required={required} />
+      {/* Hidden input com a URL pra submit no form action.
+          NÃO usa `required` em hidden — Chrome/Firefox bloqueiam submit
+          silenciosamente em hidden required vazios. A validação do
+          obrigatório é feita pelo botão (disabled) + server action. */}
+      <input type="hidden" name={name} value={blob?.url ?? ""} />
 
       {status === "idle" && (
         <label

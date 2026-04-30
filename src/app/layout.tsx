@@ -3,8 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
 import "./globals.css";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
+import {
+  MarketingHeader,
+  MarketingFooter,
+} from "@/components/route-aware-chrome";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 
 const sans = Geist({
@@ -56,9 +58,9 @@ export default function RootLayout({
         className={`${sans.variable} ${mono.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col bg-bg text-fg pb-14 md:pb-0">
-          <SiteHeader />
+          <MarketingHeader />
           <main className="flex-1 relative z-10">{children}</main>
-          <SiteFooter />
+          <MarketingFooter />
         </body>
       </html>
     </ClerkProvider>

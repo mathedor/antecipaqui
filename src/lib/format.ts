@@ -30,6 +30,26 @@ export function formatPercent(v: number) {
 }
 
 /**
+ * Parser de moeda BR: aceita "1.500.000,00", "1500000,00", "1500000.00",
+ * "1500000" e retorna número. Trata tanto formato BR (ponto = milhar,
+ * vírgula = decimal) quanto formato US.
+ */
+export function parseBRLNumber(input: string): number {
+  if (!input) return 0;
+  const trimmed = String(input).trim();
+  if (!trimmed) return 0;
+
+  const hasComma = trimmed.includes(",");
+  // Se tem vírgula, assume formato BR: pontos são milhares.
+  // Se não tem vírgula, deixa parseFloat (cobre "1500000" e "1500000.00").
+  const normalized = hasComma
+    ? trimmed.replace(/\./g, "").replace(",", ".")
+    : trimmed;
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
  * Calcula o valor presente líquido de uma operação parcelada.
  * Cada parcela é trazida a valor presente usando juros compostos mensais.
  *

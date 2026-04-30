@@ -6,6 +6,7 @@ import { getContratoForOperacao } from "@/lib/actions/contract";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PrintButton } from "@/components/print-button";
 import { ContratoCard } from "@/components/contrato-card";
+import { PainelShell } from "@/components/painel-shell";
 import { formatBRL, formatPercent } from "@/lib/format";
 
 export const metadata = {
@@ -77,8 +78,20 @@ export default async function OperacaoDetailPage({ params }: Params) {
   const totalVP = parcelasComCalculo.reduce((s, p) => s + p.vp, 0);
   const totalJuros = parcelasComCalculo.reduce((s, p) => s + p.juros, 0);
 
+  const role = (
+    user.role === "construtora"
+      ? "construtora"
+      : user.role === "imobiliaria"
+        ? "imobiliaria"
+        : "corretor"
+  ) as "construtora" | "corretor" | "imobiliaria";
+
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:py-16 print:py-4 print:px-0">
+    <PainelShell
+      role={role}
+      userName={user.nome}
+      active="/painel/operacoes"
+    >
       <div className="flex items-center justify-between mb-6 print:hidden">
         <Link
           href="/painel/operacoes"
@@ -286,7 +299,7 @@ export default async function OperacaoDetailPage({ params }: Params) {
           body { background: white !important; color: black !important; }
         }
       `}</style>
-    </section>
+    </PainelShell>
   );
 }
 
