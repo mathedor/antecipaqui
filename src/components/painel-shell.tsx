@@ -13,22 +13,26 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
+    { href: "/painel/suporte", label: "Suporte" },
   ],
   imobiliaria: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
+    { href: "/painel/suporte", label: "Suporte" },
   ],
   construtora: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/duplicatas", label: "Duplicatas" },
+    { href: "/painel/suporte", label: "Suporte" },
   ],
   admin: [
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/operacoes", label: "Operações" },
     { href: "/admin/usuarios", label: "Imobiliárias / Corretores" },
     { href: "/admin/construtoras", label: "Construtoras" },
+    { href: "/admin/tickets", label: "Tickets" },
   ],
 };
 

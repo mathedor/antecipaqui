@@ -9,6 +9,7 @@ const nav = [
   { href: "/admin/operacoes", label: "Operações" },
   { href: "/admin/usuarios", label: "Imobiliárias / Corretores" },
   { href: "/admin/construtoras", label: "Construtoras" },
+  { href: "/admin/tickets", label: "Tickets" },
 ];
 
 export function AdminShell({
