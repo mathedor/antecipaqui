@@ -53,16 +53,16 @@ export function AdminTaxaForm({ taxaAtual, updatedAt }: Props) {
           Taxa mensal sugerida (%)
           <span className="ml-1 text-accent">*</span>
         </label>
-        <div className="relative max-w-xs">
+        <div className="flex items-stretch max-w-xs rounded-xl border border-border-strong overflow-hidden focus-within:border-accent transition-colors">
           <input
             name="taxaMensal"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
             inputMode="decimal"
             placeholder="6,00"
-            className="form-input !pr-12 tabular text-right"
+            className="flex-1 min-w-0 bg-bg h-12 px-4 text-fg placeholder:text-fg-dim outline-none tabular text-right"
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted text-sm font-mono pointer-events-none">
+          <span className="bg-bg-soft px-3 flex items-center text-fg-muted text-sm font-mono border-l border-border-strong shrink-0">
             % a.m.
           </span>
         </div>
