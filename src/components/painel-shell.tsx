@@ -25,6 +25,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/duplicatas", label: "Duplicatas" },
+    { href: "/painel/cashback", label: "Cashback" },
     { href: "/painel/suporte", label: "Suporte" },
   ],
   admin: [

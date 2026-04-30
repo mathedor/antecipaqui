@@ -33,6 +33,10 @@ type ChangeStatusInput = {
    *  e quer ajustar a taxa específica daquela operação. Recalcula VP +
    *  deságio. Validada server-side (0,5%–20%). */
   novaTaxaMensal?: number;
+  /** Cashback pra construtora (decimal, 0.02 = 2%). Aplicado quando
+   *  admin marca como enviada_para_pagamento (aprovação final).
+   *  Limites: 0 < x <= 0.20. NÃO é visível pra corretor/imobiliária. */
+  cashbackPercent?: number;
 };
 
 function monthsBetween(from: Date, to: Date) {
@@ -124,6 +128,23 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
   }
   if (input.newStatus === "realizada") {
     updates.liquidadoEm = new Date();
+  }
+
+  // Cashback pra construtora — aplicado SÓ na aprovação final
+  // (transição pra enviada_para_pagamento). Visível só pra construtora.
+  if (
+    input.newStatus === "enviada_para_pagamento" &&
+    typeof input.cashbackPercent === "number" &&
+    input.cashbackPercent > 0
+  ) {
+    if (input.cashbackPercent > 0.2) {
+      throw new Error("Cashback inválido (limite 20%)");
+    }
+    const valorPresenteAtual = parseFloat(op.valorPresente);
+    const cashbackValor =
+      Math.round(valorPresenteAtual * input.cashbackPercent * 100) / 100;
+    updates.cashbackPercent = String(input.cashbackPercent);
+    updates.cashbackValor = String(cashbackValor.toFixed(2));
   }
 
   await db
@@ -340,6 +361,25 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
             subject: `Antecipaqui · Pagamento da operação ${numero} em andamento`,
             body: `Boa notícia! Sua operação ${numero} foi totalmente assinada e o pagamento foi liberado.`,
           },
+        });
+      }
+      // Cashback (privado pra construtora) — só notifica se foi concedido
+      if (
+        construtoraOwner &&
+        typeof input.cashbackPercent === "number" &&
+        input.cashbackPercent > 0
+      ) {
+        const valorCashback =
+          Math.round(
+            parseFloat(op.valorPresente) * input.cashbackPercent * 100,
+          ) / 100;
+        await notify({
+          userId: construtoraOwner.id,
+          type: "cashback_concedido",
+          title: `Cashback concedido · operação ${numero}`,
+          body: `A Antecipaqui creditou R$ ${valorCashback.toFixed(2)} de cashback (${(input.cashbackPercent * 100).toFixed(2).replace(".", ",")}%) na operação ${numero}. Veja o saldo e solicite saque na aba Cashback.`,
+          link: "/painel/cashback",
+          operacaoId: op.id,
         });
       }
       break;

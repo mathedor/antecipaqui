@@ -8,6 +8,8 @@ import {
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PainelShell } from "@/components/painel-shell";
 import { ConstrutoraCharts } from "@/components/dashboard-charts";
+import { MuralOverlay } from "@/components/mural-overlay";
+import { getMuralForCurrentUser } from "@/lib/actions/mural";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -23,7 +25,7 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
   const podeOperar = user.onboardingStatus !== "pendente";
   const status = STATUS_LABEL[user.onboardingStatus] ?? STATUS_LABEL.pendente;
 
-  const [stats, operacoes, monthly] = await Promise.all([
+  const [stats, operacoes, monthly, muralMsgs] = await Promise.all([
     construtora
       ? getDashboardStatsForConstrutora(construtora.id)
       : Promise.resolve(null),
@@ -33,6 +35,7 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
     construtora
       ? getConstrutoraMonthlyStats(construtora.id)
       : Promise.resolve([]),
+    getMuralForCurrentUser(),
   ]);
 
   const operacoesRecentes = operacoes.slice(0, 5);
@@ -42,6 +45,7 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
 
   return (
     <PainelShell role="construtora" userName={user.nome} active="/painel">
+      <MuralOverlay messages={muralMsgs} />
       <div className="flex items-start justify-between gap-4 flex-wrap mb-10">
         <div>
           <div className="eyebrow mb-2">painel · construtora</div>

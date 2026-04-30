@@ -260,6 +260,14 @@ export const operacoes = pgTable(
     aprovadoPorUserId: text("aprovado_por_user_id").references(() => users.id),
     aprovadoEm: timestamp("aprovado_em", { withTimezone: true }),
     liquidadoEm: timestamp("liquidado_em", { withTimezone: true }),
+    // Cashback pra construtora — decidido pelo admin na aprovação final.
+    // Valor é congelado quando concedido. Visível só pra construtora + admin.
+    cashbackPercent: numeric("cashback_percent", { precision: 5, scale: 4 }),
+    cashbackValor: numeric("cashback_valor", { precision: 14, scale: 2 }),
+    /** Marcado quando admin finaliza um ticket de saque que incluía esta op */
+    cashbackSacadoEm: timestamp("cashback_sacado_em", { withTimezone: true }),
+    /** Ticket que registrou o saque (audit + valor pago + data) */
+    cashbackSacadoTicketId: uuid("cashback_sacado_ticket_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -395,6 +403,10 @@ export const tickets = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     assunto: text("assunto").notNull(),
     status: ticketStatusEnum("status").notNull().default("aberto"),
+    /** "geral" = ticket comum; "cashback" = solicitação de saque de cashback */
+    categoria: text("categoria").notNull().default("geral"),
+    /** Payload livre — usado pra cashback: { valorSolicitado, dadosBancarios } */
+    extra: jsonb("extra"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -406,6 +418,7 @@ export const tickets = pgTable(
   (t) => [
     index("tickets_user_idx").on(t.userId),
     index("tickets_status_idx").on(t.status),
+    index("tickets_categoria_idx").on(t.categoria),
   ],
 );
 
@@ -451,6 +464,39 @@ export const operacaoEvents = pgTable(
   },
   (t) => [index("operacao_events_operacao_idx").on(t.operacaoId)],
 );
+
+/* =========================================
+   MURAL DE RECADOS (admin → imob/construtora)
+   ========================================= */
+
+export const muralAudienceEnum = pgEnum("mural_audience", [
+  "imobiliaria",
+  "construtora",
+  "both",
+]);
+
+export const muralMessages = pgTable(
+  "mural_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    titulo: text("titulo"),
+    body: text("body").notNull(),
+    audience: muralAudienceEnum("audience").notNull(),
+    active: boolean("active").notNull().default(true),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("mural_audience_idx").on(t.audience, t.active)],
+);
+export type MuralMessage = typeof muralMessages.$inferSelect;
 
 /* =========================================
    SYSTEM SETTINGS — configurações administrativas (key/value)

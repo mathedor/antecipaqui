@@ -157,10 +157,14 @@ export default async function AdminOperacaoDetail({ params }: Params) {
           currentStatus={op.status}
           currentTaxaMensal={parseFloat(op.taxaMensal)}
           valorComissao={parseFloat(op.valorComissao)}
+          valorPresente={parseFloat(op.valorPresente)}
           parcelas={op.parcelas.map((p) => ({
             valor: p.valor,
             vencimento: p.vencimento,
           }))}
+          currentCashbackPercent={
+            op.cashbackPercent ? parseFloat(op.cashbackPercent) : null
+          }
         />
       </div>
 

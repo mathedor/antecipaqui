@@ -27,6 +27,8 @@ type TransitionDef = {
   motivoLabel?: string;
   /** Se true, abre painel pra admin ajustar a taxa antes de aprovar */
   ajustaTaxa?: boolean;
+  /** Se true, abre painel pra admin definir cashback da construtora */
+  ajustaCashback?: boolean;
   confirm?: string;
 };
 
@@ -103,10 +105,10 @@ const TRANSITIONS: Partial<Record<Status, TransitionDef[]>> = {
   ],
   enviada_para_assinatura: [
     {
-      label: "✓ Assinaturas concluídas — pagar",
+      label: "✓ Assinaturas concluídas — aprovar pagamento",
       to: "enviada_para_pagamento",
       variant: "success",
-      confirm: "Confirma que todos assinaram e a operação vai pra pagamento?",
+      ajustaCashback: true,
     },
     {
       label: "✕ Cancelar",
@@ -144,8 +146,12 @@ type Props = {
   currentTaxaMensal: number;
   /** Comissão total — pra preview de novo deságio. */
   valorComissao: number;
+  /** Valor presente da operação — base do cashback. */
+  valorPresente: number;
   /** Parcelas pra recalcular VP no preview client-side. */
   parcelas: Array<{ valor: string; vencimento: string }>;
+  /** Cashback já cadastrado (decimal). Mostra como default no input. */
+  currentCashbackPercent?: number | null;
 };
 
 function monthsBetween(from: Date, to: Date) {
@@ -160,7 +166,9 @@ export function AdminStatusFlow({
   currentStatus,
   currentTaxaMensal,
   valorComissao,
+  valorPresente: valorPresenteInicial,
   parcelas,
+  currentCashbackPercent,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -172,9 +180,21 @@ export function AdminStatusFlow({
     to: TargetStatus;
     label: string;
   } | null>(null);
+  const [activeCashback, setActiveCashback] = useState<{
+    to: TargetStatus;
+    label: string;
+  } | null>(null);
   const [motivoText, setMotivoText] = useState("");
   const [taxaInput, setTaxaInput] = useState(
     String((currentTaxaMensal * 100).toFixed(2)),
+  );
+  const [cashbackEnabled, setCashbackEnabled] = useState(
+    !!currentCashbackPercent,
+  );
+  const [cashbackInput, setCashbackInput] = useState(
+    currentCashbackPercent
+      ? String((currentCashbackPercent * 100).toFixed(2))
+      : "1,00",
   );
 
   const transitions = TRANSITIONS[currentStatus as Status] ?? [];
@@ -205,7 +225,11 @@ export function AdminStatusFlow({
 
   function executeTransition(
     to: TargetStatus,
-    extras: { motivo?: string; novaTaxaMensal?: number } = {},
+    extras: {
+      motivo?: string;
+      novaTaxaMensal?: number;
+      cashbackPercent?: number;
+    } = {},
   ) {
     startTransition(async () => {
       try {
@@ -216,6 +240,7 @@ export function AdminStatusFlow({
         });
         setActiveMotivo(null);
         setActiveTaxa(null);
+        setActiveCashback(null);
         setMotivoText("");
         router.refresh();
       } catch (e) {
@@ -232,6 +257,10 @@ export function AdminStatusFlow({
     if (t.ajustaTaxa) {
       setActiveTaxa({ to: t.to, label: t.label });
       setTaxaInput(String((currentTaxaMensal * 100).toFixed(2)));
+      return;
+    }
+    if (t.ajustaCashback) {
+      setActiveCashback({ to: t.to, label: t.label });
       return;
     }
     if (t.confirm && !confirm(t.confirm)) return;
@@ -252,7 +281,23 @@ export function AdminStatusFlow({
     );
   }
 
-  const noPanel = !activeMotivo && !activeTaxa;
+  const noPanel = !activeMotivo && !activeTaxa && !activeCashback;
+
+  // Preview do cashback (% sobre VP da operação)
+  const cashbackPreview = (() => {
+    if (!cashbackEnabled) return { percent: 0, valor: 0, invalida: false };
+    const cleaned = cashbackInput.replace(",", ".").replace("%", "").trim();
+    const n = parseFloat(cleaned);
+    if (!Number.isFinite(n) || n <= 0)
+      return { percent: 0, valor: 0, invalida: true };
+    const pct = n >= 0.5 ? n / 100 : n;
+    if (pct > 0.2) return { percent: pct, valor: 0, invalida: true };
+    return {
+      percent: pct,
+      valor: Math.round(valorPresenteInicial * pct * 100) / 100,
+      invalida: false,
+    };
+  })();
 
   return (
     <div className="rounded-2xl border border-accent/30 bg-accent-soft p-5 md:p-6">
@@ -430,6 +475,112 @@ export function AdminStatusFlow({
             <button
               type="button"
               onClick={() => setActiveTaxa(null)}
+              disabled={pending}
+              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl border border-border text-fg-muted hover:text-fg font-medium text-sm transition-colors disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeCashback && (
+        <div className="space-y-4">
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-wider text-fg-dim mb-1">
+              ação · aprovação final
+            </div>
+            <div className="font-bold">{activeCashback.label}</div>
+            <p className="text-xs text-fg-muted mt-1">
+              Antes de aprovar pra pagamento, você pode dar cashback pra
+              construtora. Esse benefício é privado — só a construtora e o
+              admin enxergam.
+            </p>
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={cashbackEnabled}
+              onChange={(e) => setCashbackEnabled(e.target.checked)}
+              className="size-4 accent-current text-accent"
+            />
+            <span className="text-sm font-medium">Dar cashback</span>
+          </label>
+
+          {cashbackEnabled && (
+            <div>
+              <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
+                Percentual de cashback (%)
+              </label>
+              <div className="relative max-w-xs">
+                <input
+                  value={cashbackInput}
+                  onChange={(e) => setCashbackInput(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="1,00"
+                  autoFocus
+                  className="form-input !pr-12 tabular text-right"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted text-sm font-mono pointer-events-none">
+                  %
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-fg-muted">
+                Limite máximo: 20%. Calculado sobre o valor presente da
+                operação.
+              </p>
+
+              {!cashbackPreview.invalida && cashbackPreview.percent > 0 && (
+                <div className="mt-3 rounded-xl border border-success/30 bg-green-50 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      cashback que será concedido
+                    </span>
+                    <span className="font-mono tabular text-base font-bold text-success">
+                      {formatBRL(cashbackPreview.valor)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-fg-muted">
+                    {(cashbackPreview.percent * 100)
+                      .toFixed(2)
+                      .replace(".", ",")}
+                    % de {formatBRL(valorPresenteInicial)} (valor presente)
+                  </p>
+                </div>
+              )}
+              {cashbackPreview.invalida && (
+                <div className="mt-3 rounded-xl border border-danger/40 bg-red-50 text-danger p-3 text-sm">
+                  Percentual inválido (entre 0,01% e 20%).
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (cashbackEnabled && cashbackPreview.invalida) {
+                  alert("Percentual de cashback inválido.");
+                  return;
+                }
+                executeTransition(activeCashback.to, {
+                  cashbackPercent: cashbackEnabled
+                    ? cashbackPreview.percent
+                    : undefined,
+                });
+              }}
+              disabled={
+                pending || (cashbackEnabled && cashbackPreview.invalida)
+              }
+              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-success text-white font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-60"
+            >
+              {pending ? "Salvando..." : "Aprovar e enviar pra pagamento"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveCashback(null)}
               disabled={pending}
               className="inline-flex items-center gap-2 h-11 px-5 rounded-xl border border-border text-fg-muted hover:text-fg font-medium text-sm transition-colors disabled:opacity-60"
             >

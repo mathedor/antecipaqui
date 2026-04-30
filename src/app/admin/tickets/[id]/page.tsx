@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
 import { TicketThread } from "@/components/ticket-thread";
+import { CashbackSaqueAdminPanel } from "@/components/cashback-saque-admin-panel";
 import { getTicketDetail } from "@/lib/actions/tickets";
 
 export const metadata = {
@@ -91,6 +92,14 @@ export default async function AdminTicketDetailPage({ params }: Params) {
             </Link>
           </div>
         </div>
+      )}
+
+      {detail.ticket.categoria === "cashback" && (
+        <CashbackSaqueAdminPanel
+          ticketId={detail.ticket.id}
+          ticketStatus={detail.ticket.status}
+          extra={detail.ticket.extra as Record<string, unknown> | null}
+        />
       )}
 
       <TicketThread
