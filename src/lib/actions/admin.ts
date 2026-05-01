@@ -203,10 +203,16 @@ export async function getAllOperacoes(filters?: {
   status?: string;
   from?: string;
   to?: string;
+  q?: string;
+  minValor?: number;
+  maxValor?: number;
 }) {
   const filterStatus = filters?.status;
   const from = filters?.from;
   const to = filters?.to;
+  const q = filters?.q?.trim();
+  const minValor = filters?.minValor;
+  const maxValor = filters?.maxValor;
 
   const base = db
     .select({
@@ -235,6 +241,21 @@ export async function getAllOperacoes(filters?: {
     conds.push(
       sql`${operacoes.createdAt} <= (${to}::date + interval '1 day')`,
     );
+  if (q) {
+    const like = `%${q}%`;
+    conds.push(
+      sql`(${operacoes.numero} ILIKE ${like}
+        OR ${construtoras.razaoSocial} ILIKE ${like}
+        OR ${users.nome} ILIKE ${like}
+        OR ${users.email} ILIKE ${like})`,
+    );
+  }
+  if (typeof minValor === "number" && Number.isFinite(minValor)) {
+    conds.push(sql`${operacoes.valorPresente} >= ${minValor}`);
+  }
+  if (typeof maxValor === "number" && Number.isFinite(maxValor)) {
+    conds.push(sql`${operacoes.valorPresente} <= ${maxValor}`);
+  }
 
   return conds.length > 0
     ? base.where(and(...conds)).orderBy(desc(operacoes.createdAt))

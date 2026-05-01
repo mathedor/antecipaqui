@@ -23,7 +23,7 @@ const STATUS_FILTERS = [
 ];
 
 type Search = {
-  searchParams: Promise<{ tipo?: string; status?: string }>;
+  searchParams: Promise<{ tipo?: string; status?: string; q?: string }>;
 };
 
 export default async function AdminUsuariosPage({ searchParams }: Search) {
@@ -31,8 +31,10 @@ export default async function AdminUsuariosPage({ searchParams }: Search) {
   const params = await searchParams;
   const tipoFiltro = params.tipo ?? "";
   const statusFiltro = params.status ?? "";
+  const q = params.q ?? "";
 
   const all = await listAllUsers();
+  const qLower = q.trim().toLowerCase();
 
   const filtered = all.filter((u) => {
     // Filtro de tipo
@@ -47,6 +49,10 @@ export default async function AdminUsuariosPage({ searchParams }: Search) {
     if (statusFiltro === "completo" && !u.cadastroCompleto) return false;
     if (statusFiltro === "pendente" && u.cadastroCompleto) return false;
     if (statusFiltro === "bloqueado" && u.isActive) return false;
+    if (qLower) {
+      const hay = `${u.nome ?? ""} ${u.email}`.toLowerCase();
+      if (!hay.includes(qLower)) return false;
+    }
     return true;
   });
 
@@ -70,6 +76,30 @@ export default async function AdminUsuariosPage({ searchParams }: Search) {
           {adminUsers.length === 1 ? "" : "s"}
         </p>
       </div>
+
+      <form
+        method="get"
+        className="rounded-2xl border border-border bg-bg-elev p-4 mb-3"
+      >
+        <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+          Buscar (nome ou email)
+        </label>
+        <div className="flex gap-2">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Ex: Maria ou maria@..."
+            className="form-input flex-1"
+          />
+          {tipoFiltro && <input type="hidden" name="tipo" value={tipoFiltro} />}
+          {statusFiltro && (
+            <input type="hidden" name="status" value={statusFiltro} />
+          )}
+          <button type="submit" className="btn-primary !h-12 !px-5">
+            Buscar
+          </button>
+        </div>
+      </form>
 
       {/* Filtros */}
       <div className="space-y-3 mb-6">

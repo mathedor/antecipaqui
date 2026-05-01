@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DataTable, sumBy } from "@/components/data-table";
 import { AdminRowActions } from "@/components/admin-row-actions";
 import { AdminCobrarButton } from "@/components/admin-cobrar-button";
+import { ExportCsvButton } from "@/components/export-csv-button";
 import { formatBRL } from "@/lib/format";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -27,7 +28,35 @@ type Row = {
 
 export function AdminUsuariosTable({ rows }: { rows: Row[] }) {
   return (
-    <DataTable<Row>
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <ExportCsvButton
+          filename={`usuarios-${new Date().toISOString().slice(0, 10)}`}
+          headers={[
+            "Nome",
+            "Email",
+            "Tipo",
+            "Status",
+            "Operações",
+            "Valor operado (R$)",
+          ]}
+          getRows={() =>
+            rows.map((r) => [
+              r.nome ?? "",
+              r.email,
+              ROLE_LABEL[r.role] ?? r.role,
+              !r.isActive
+                ? "bloqueado"
+                : r.cadastroCompleto
+                  ? "completo"
+                  : "pendente",
+              r.totalOperacoes,
+              r.valorOperado.toFixed(2),
+            ])
+          }
+        />
+      </div>
+      <DataTable<Row>
       rows={rows}
       getKey={(r) => r.id}
       initialSort={{ key: "valorOperado", dir: "desc" }}
@@ -124,6 +153,7 @@ export function AdminUsuariosTable({ rows }: { rows: Row[] }) {
         </AdminRowActions>
       )}
     />
+    </div>
   );
 }
 

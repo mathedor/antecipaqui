@@ -5,6 +5,7 @@ import {
   createConstrutoraAction,
   type CreateConstrutoraState,
 } from "@/lib/actions/operacoes";
+import { CepAddressFields } from "@/components/cep-address-fields";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
 
 type Props = {
@@ -119,6 +120,9 @@ export function ConstrutoraModal({ open, onClose, onCreated }: Props) {
                 type="email"
                 placeholder="contato@..."
               />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <CepAddressFields optional />
             </div>
             <p className="text-[11px] text-fg-dim leading-relaxed">
               A construtora vai receber um email automático com convite pra

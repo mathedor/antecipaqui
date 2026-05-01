@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DataTable, sumBy } from "@/components/data-table";
 import { AdminRowActions } from "@/components/admin-row-actions";
 import { AdminCobrarButton } from "@/components/admin-cobrar-button";
+import { ExportCsvButton } from "@/components/export-csv-button";
 import { formatBRL } from "@/lib/format";
 
 type Row = {
@@ -21,7 +22,37 @@ type Row = {
 
 export function AdminConstrutorasTable({ rows }: { rows: Row[] }) {
   return (
-    <DataTable<Row>
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <ExportCsvButton
+          filename={`construtoras-${new Date().toISOString().slice(0, 10)}`}
+          headers={[
+            "Razão social",
+            "Nome fantasia",
+            "CNPJ",
+            "Tem responsável",
+            "Status",
+            "Operações",
+            "Valor operado (R$)",
+          ]}
+          getRows={() =>
+            rows.map((r) => [
+              r.razaoSocial,
+              r.nomeFantasia ?? "",
+              r.cnpj,
+              r.ownerUserId ? "sim" : "não",
+              !r.isActive
+                ? "bloqueada"
+                : r.cadastroCompleto
+                  ? "completo"
+                  : "pendente",
+              r.totalOperacoes,
+              r.valorOperado.toFixed(2),
+            ])
+          }
+        />
+      </div>
+      <DataTable<Row>
       rows={rows}
       getKey={(r) => r.id}
       initialSort={{ key: "valorOperado", dir: "desc" }}
@@ -119,6 +150,7 @@ export function AdminConstrutorasTable({ rows }: { rows: Row[] }) {
         </AdminRowActions>
       )}
     />
+    </div>
   );
 }
 

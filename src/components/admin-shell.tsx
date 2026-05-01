@@ -30,6 +30,7 @@ const nav: AdminNavItem[] = [
     matchPrefix: ["/admin/relatorios"],
     items: [
       { href: "/admin/relatorios", label: "Visão geral" },
+      { href: "/admin/relatorios/indices", label: "Índices" },
       {
         href: "/admin/relatorios/construtoras",
         label: "Ranking de construtoras",
@@ -38,6 +39,8 @@ const nav: AdminNavItem[] = [
         href: "/admin/relatorios/imobiliarias",
         label: "Ranking de imobiliárias / corretores",
       },
+      { href: "/admin/relatorios/logs", label: "Logs de auditoria" },
+      { href: "/admin/relatorios/saude", label: "Saúde do sistema" },
     ],
   },
   { type: "link", href: "/admin/configuracoes", label: "Configurações" },

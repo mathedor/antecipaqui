@@ -59,8 +59,14 @@ export async function createConstrutoraAction(
     String(formData.get("nomeFantasia") || "").trim() || null;
   const cnpjRaw = String(formData.get("cnpj") || "");
   const cnpj = unmaskCNPJ(cnpjRaw);
-  const telefone = String(formData.get("telefone") || "").trim();
+  const telefone = String(formData.get("telefone") || "")
+    .replace(/\D/g, "");
   const email = String(formData.get("email") || "").trim();
+  const cep = String(formData.get("cep") || "").trim() || null;
+  const endereco = String(formData.get("endereco") || "").trim() || null;
+  const cidade = String(formData.get("cidade") || "").trim() || null;
+  const uf =
+    String(formData.get("uf") || "").trim().toUpperCase() || null;
 
   if (!razaoSocial) return { ok: false, error: "Razão social é obrigatória" };
   if (!isValidCNPJ(cnpj)) return { ok: false, error: "CNPJ inválido" };
@@ -88,6 +94,10 @@ export async function createConstrutoraAction(
       cnpj,
       telefone,
       email,
+      cep,
+      endereco,
+      cidade,
+      uf,
       registeredByUserId: user.id,
       onboardingStatus: "pendente",
     })
