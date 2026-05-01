@@ -2,18 +2,9 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { getSystemHealth } from "@/lib/actions/reports-extra";
+import { EnvVarsList } from "@/components/env-var-help";
 
 export const metadata = { title: "Admin · Saúde do sistema" };
-
-const ENV_LABELS: Record<string, string> = {
-  blobToken: "Vercel Blob (BLOB_READ_WRITE_TOKEN)",
-  databaseUrl: "Postgres (DATABASE_URL)",
-  clerkSecretKey: "Clerk auth (CLERK_SECRET_KEY)",
-  resendApiKey: "Resend email (RESEND_API_KEY)",
-  twilioSid: "Twilio SMS (TWILIO_ACCOUNT_SID)",
-  zapsignToken: "ZapSign (ZAPSIGN_API_TOKEN)",
-  siteUrl: "Site URL (NEXT_PUBLIC_SITE_URL)",
-};
 
 export default async function AdminSaudePage() {
   const admin = await requireAdmin();
@@ -77,33 +68,7 @@ export default async function AdminSaudePage() {
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-4">
             configuração de env vars
           </div>
-          <ul className="space-y-2">
-            {envEntries.map(([key, ok]) => (
-              <li
-                key={key}
-                className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg border ${
-                  ok
-                    ? "border-success/30 bg-green-50"
-                    : "border-danger/30 bg-red-50"
-                }`}
-              >
-                <span className="text-sm text-fg truncate">
-                  {ENV_LABELS[key]}
-                </span>
-                <span
-                  className={`font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded ${
-                    ok ? "text-success" : "text-danger"
-                  }`}
-                >
-                  {ok ? "✓ ok" : "✕ ausente"}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-[11px] text-fg-muted">
-            ✕ ausente significa que o serviço relacionado vai falhar. Configure
-            no Vercel → Settings → Environment Variables.
-          </p>
+          <EnvVarsList env={health.env} />
         </section>
 
         {/* === Atividade últimas 24h === */}
