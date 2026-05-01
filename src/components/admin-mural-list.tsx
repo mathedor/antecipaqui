@@ -7,6 +7,7 @@ import {
   toggleMuralMessageActiveAction,
 } from "@/lib/actions/mural";
 import { AdminMuralForm } from "@/components/admin-mural-form";
+import { useFeedback } from "@/components/feedback-provider";
 import type { MuralMessage } from "@/db/schema";
 
 const AUDIENCE_LABEL: Record<string, string> = {
@@ -34,17 +35,25 @@ function formatDateTime(d: Date | string) {
 
 export function AdminMuralList({ messages }: { messages: MuralMessage[] }) {
   const router = useRouter();
+  const { confirm, alertSuccess, alertError } = useFeedback();
   const [pending, start] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  function handleDelete(id: string) {
-    if (!confirm("Excluir esse recado? Não tem como reverter.")) return;
+  async function handleDelete(id: string) {
+    const ok = await confirm({
+      title: "Excluir recado",
+      message: "Excluir esse recado? Não tem como reverter.",
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!ok) return;
     start(async () => {
       try {
         await deleteMuralMessageAction(id);
+        await alertSuccess("Recado excluído.", "Recado removido");
         router.refresh();
       } catch (e) {
-        alert("Erro: " + (e as Error).message);
+        await alertError((e as Error).message);
       }
     });
   }
@@ -53,9 +62,13 @@ export function AdminMuralList({ messages }: { messages: MuralMessage[] }) {
     start(async () => {
       try {
         await toggleMuralMessageActiveAction(id, !current);
+        await alertSuccess(
+          current ? "Recado desativado." : "Recado ativado.",
+          "Status atualizado",
+        );
         router.refresh();
       } catch (e) {
-        alert("Erro: " + (e as Error).message);
+        await alertError((e as Error).message);
       }
     });
   }

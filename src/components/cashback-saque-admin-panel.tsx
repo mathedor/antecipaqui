@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { confirmarSaqueAction } from "@/lib/actions/cashback";
+import { useFeedback } from "@/components/feedback-provider";
 
 type Props = {
   ticketId: string;
@@ -32,6 +33,7 @@ export function CashbackSaqueAdminPanel({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [comprovante, setComprovante] = useState("");
+  const { confirm, alertSuccess, alertError } = useFeedback();
 
   if (!extra) return null;
 
@@ -51,15 +53,24 @@ export function CashbackSaqueAdminPanel({
 
   const isFinalized = ticketStatus === "finalizado" || !!pagoEm;
 
-  function handleConfirmar() {
-    if (!confirm(`Confirmar pagamento de ${fmtBRL(valor)}? As operações serão marcadas como sacadas e o saldo da construtora vai zerar.`))
-      return;
+  async function handleConfirmar() {
+    const ok = await confirm({
+      title: "Confirmar pagamento",
+      message: `Confirmar pagamento de ${fmtBRL(valor)}? As operações serão marcadas como sacadas e o saldo da construtora vai zerar.`,
+      confirmLabel: "Confirmar pagamento",
+      variant: "success",
+    });
+    if (!ok) return;
     start(async () => {
       try {
         await confirmarSaqueAction(ticketId, comprovante.trim() || null);
+        await alertSuccess(
+          `Pagamento de ${fmtBRL(valor)} registrado e ticket finalizado.`,
+          "Pagamento confirmado",
+        );
         router.refresh();
       } catch (e) {
-        alert("Erro: " + (e as Error).message);
+        await alertError((e as Error).message);
       }
     });
   }

@@ -7,6 +7,7 @@ import {
   closeTicketAction,
   type ReplyTicketState,
 } from "@/lib/actions/tickets";
+import { useFeedback } from "@/components/feedback-provider";
 
 type Message = {
   id: string;
@@ -154,16 +155,24 @@ export function TicketThread({
 
 function CloseTicketButton({ ticketId }: { ticketId: string }) {
   const router = useRouter();
+  const { confirm, alertSuccess, alertError } = useFeedback();
   return (
     <button
       type="button"
       onClick={async () => {
-        if (!confirm("Finalizar este ticket? Não dá pra reabrir.")) return;
+        const ok = await confirm({
+          title: "Finalizar ticket",
+          message: "Finalizar este ticket? Não dá pra reabrir.",
+          confirmLabel: "Finalizar",
+          variant: "danger",
+        });
+        if (!ok) return;
         try {
           await closeTicketAction(ticketId);
+          await alertSuccess("Ticket finalizado.", "Pronto");
           router.refresh();
         } catch (e) {
-          alert("Erro: " + (e as Error).message);
+          await alertError((e as Error).message);
         }
       }}
       className="inline-flex items-center gap-2 h-11 px-5 rounded-xl border border-border text-fg-muted hover:text-fg font-medium text-sm transition-colors"

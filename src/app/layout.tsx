@@ -7,6 +7,7 @@ import {
   MarketingHeader,
   MarketingFooter,
 } from "@/components/route-aware-chrome";
+import { FeedbackProvider } from "@/components/feedback-provider";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 
 const sans = Geist({
@@ -58,9 +59,11 @@ export default function RootLayout({
         className={`${sans.variable} ${mono.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col bg-bg text-fg pb-14 md:pb-0">
-          <MarketingHeader />
-          <main className="flex-1 relative z-10">{children}</main>
-          <MarketingFooter />
+          <FeedbackProvider>
+            <MarketingHeader />
+            <main className="flex-1 relative z-10">{children}</main>
+            <MarketingFooter />
+          </FeedbackProvider>
         </body>
       </html>
     </ClerkProvider>

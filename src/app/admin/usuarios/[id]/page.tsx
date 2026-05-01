@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { UserCharts } from "@/components/dashboard-charts";
 import { AdminCobrarButton } from "@/components/admin-cobrar-button";
+import { IniciarContatoButton } from "@/components/iniciar-contato-button";
 import {
   approveUserOnboardingAction,
   getUserDetail,
@@ -159,6 +160,7 @@ export default async function AdminUsuarioDetail({ params }: Params) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <IniciarContatoButton telefone={user.telefone} nome={user.nome} />
           <Link
             href={`/admin/usuarios/${id}/editar`}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"

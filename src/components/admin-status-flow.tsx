@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { changeOperacaoStatusAction } from "@/lib/actions/status-flow";
 import { formatBRL, valorPresente } from "@/lib/format";
+import { useFeedback } from "@/components/feedback-provider";
 
 type Status =
   | "rascunho"
@@ -171,6 +172,7 @@ export function AdminStatusFlow({
   currentCashbackPercent,
 }: Props) {
   const router = useRouter();
+  const { confirm: confirmModal, alertSuccess, alertError } = useFeedback();
   const [pending, startTransition] = useTransition();
   const [activeMotivo, setActiveMotivo] = useState<{
     to: TargetStatus;
@@ -242,14 +244,18 @@ export function AdminStatusFlow({
         setActiveTaxa(null);
         setActiveCashback(null);
         setMotivoText("");
+        await alertSuccess(
+          `Operação atualizada para ${to.replace(/_/g, " ")}.`,
+          "Status alterado",
+        );
         router.refresh();
       } catch (e) {
-        alert("Erro ao mudar status: " + (e as Error).message);
+        await alertError((e as Error).message, "Erro ao mudar status");
       }
     });
   }
 
-  function handleClick(t: TransitionDef) {
+  async function handleClick(t: TransitionDef) {
     if (t.needsMotivo) {
       setActiveMotivo({ to: t.to, label: t.motivoLabel ?? "Motivo" });
       return;
@@ -263,7 +269,15 @@ export function AdminStatusFlow({
       setActiveCashback({ to: t.to, label: t.label });
       return;
     }
-    if (t.confirm && !confirm(t.confirm)) return;
+    if (t.confirm) {
+      const ok = await confirmModal({
+        title: "Confirmar transição",
+        message: t.confirm,
+        confirmLabel: t.label,
+        variant: t.variant === "danger" ? "danger" : "default",
+      });
+      if (!ok) return;
+    }
     executeTransition(t.to);
   }
 
@@ -351,9 +365,9 @@ export function AdminStatusFlow({
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 if (!motivoText.trim()) {
-                  alert("Preencha o motivo.");
+                  await alertError("Preencha o motivo.", "Campo obrigatório");
                   return;
                 }
                 executeTransition(activeMotivo.to, {
@@ -458,9 +472,12 @@ export function AdminStatusFlow({
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 if (!taxaPreview || taxaPreview.invalida) {
-                  alert("Taxa inválida. Use entre 0,5% e 20%.");
+                  await alertError(
+                    "Taxa inválida. Use entre 0,5% e 20%.",
+                    "Taxa fora dos limites",
+                  );
                   return;
                 }
                 executeTransition(activeTaxa.to, {
@@ -560,9 +577,12 @@ export function AdminStatusFlow({
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 if (cashbackEnabled && cashbackPreview.invalida) {
-                  alert("Percentual de cashback inválido.");
+                  await alertError(
+                    "Percentual de cashback inválido.",
+                    "Cashback inválido",
+                  );
                   return;
                 }
                 executeTransition(activeCashback.to, {

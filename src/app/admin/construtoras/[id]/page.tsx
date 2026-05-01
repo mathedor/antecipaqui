@@ -15,6 +15,7 @@ import { getConstrutoraMonthlyStats } from "@/lib/actions/operacoes";
 import { ConstrutoraCharts } from "@/components/dashboard-charts";
 import { audit, getAuditLogsByTarget, getAuditLogsByUser } from "@/lib/audit";
 import { AuditLogTimeline } from "@/components/audit-log-timeline";
+import { IniciarContatoButton } from "@/components/iniciar-contato-button";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -131,6 +132,10 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <IniciarContatoButton
+            telefone={construtora.telefone ?? owner?.telefone ?? null}
+            nome={owner?.nome ?? construtora.razaoSocial}
+          />
           <Link
             href={`/admin/construtoras/${id}/editar`}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"

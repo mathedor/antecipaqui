@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { regenerateContractAction } from "@/lib/actions/admin";
+import { useFeedback } from "@/components/feedback-provider";
 import type { ContratoSigner } from "@/db/schema";
 
 type Props = {
@@ -53,22 +54,33 @@ export function ContratoCard({
   zapsignDocumentToken,
 }: Props) {
   const router = useRouter();
+  const { confirm, alertSuccess, alertError } = useFeedback();
   const [pending, startTransition] = useTransition();
   const [regenerated, setRegenerated] = useState<string | null>(null);
 
   const dt =
     typeof createdAt === "string" ? new Date(createdAt) : createdAt;
 
-  function handleRegen() {
-    if (!confirm("Regenerar o contrato substitui o anterior. Continuar?"))
-      return;
+  async function handleRegen() {
+    const ok = await confirm({
+      title: "Regenerar contrato",
+      message:
+        "Regenerar o contrato substitui o anterior. Os signatários precisarão assinar novamente. Continuar?",
+      confirmLabel: "Regenerar",
+      variant: "danger",
+    });
+    if (!ok) return;
     startTransition(async () => {
       try {
         const result = await regenerateContractAction(operacaoId);
         setRegenerated(result.url);
+        await alertSuccess(
+          "Novo contrato gerado e enviado pra ZapSign.",
+          "Contrato regenerado",
+        );
         router.refresh();
       } catch (e) {
-        alert("Erro ao regenerar: " + (e as Error).message);
+        await alertError((e as Error).message, "Erro ao regenerar contrato");
       }
     });
   }

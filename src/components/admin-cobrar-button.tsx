@@ -5,6 +5,7 @@ import {
   cobrarDocumentacaoConstrutoraAction,
   cobrarDocumentacaoUsuarioAction,
 } from "@/lib/actions/cobranca";
+import { useFeedback } from "@/components/feedback-provider";
 
 type Props = {
   target: "user" | "construtora";
@@ -22,14 +23,16 @@ export function AdminCobrarButton({
   variant = "icon",
 }: Props) {
   const [pending, start] = useTransition();
+  const { confirm, alertSuccess, alertError } = useFeedback();
 
-  function handleClick() {
-    if (
-      !confirm(
+  async function handleClick() {
+    const ok = await confirm({
+      title: "Cobrar documentação",
+      message:
         "Enviar email + notificação cobrando documentação faltante pra esse cadastro?",
-      )
-    )
-      return;
+      confirmLabel: "Enviar cobrança",
+    });
+    if (!ok) return;
     start(async () => {
       try {
         if (target === "user") {
@@ -37,9 +40,12 @@ export function AdminCobrarButton({
         } else {
           await cobrarDocumentacaoConstrutoraAction(id);
         }
-        alert("Cobrança enviada ✓");
+        await alertSuccess(
+          "Email + notificação foram disparados com sucesso.",
+          "Cobrança enviada",
+        );
       } catch (e) {
-        alert("Erro: " + (e as Error).message);
+        await alertError((e as Error).message, "Erro ao enviar cobrança");
       }
     });
   }

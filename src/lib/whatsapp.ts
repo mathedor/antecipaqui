@@ -67,6 +67,18 @@ function siteUrl() {
   );
 }
 
+/** Mensagem genérica de outreach inicial, sem contexto de operação. */
+export function buildOutreachMessage(greetingName?: string | null): string {
+  const nome = greetingName?.split(" ")[0] ?? "";
+  return [
+    `Olá${nome ? ` ${nome}` : ""}, aqui é da Antecipaqui.`,
+    "",
+    "Gostaria de uns minutos da sua atenção pra te apresentar como podemos ajudar com antecipação de comissões. Quando puder responder, agradeço!",
+    "",
+    siteUrl(),
+  ].join("\n");
+}
+
 /** Mensagem pra corretor / cedente. */
 export function buildOperacaoMessageForCorretor(
   data: OpMessageData,
