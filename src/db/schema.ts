@@ -32,6 +32,7 @@ export const userRoleEnum = pgEnum("user_role", [
   "imobiliaria",
   "construtora",
   "admin",
+  "fundo",
 ]);
 
 export const onboardingStatusEnum = pgEnum("onboarding_status", [
@@ -194,6 +195,58 @@ export const construtoras = pgTable(
 );
 
 /* =========================================
+   FUNDOS — investidores que aportam pra antecipar comissões.
+   Cada fundo tem taxa-base própria, contrato próprio e responsável.
+   Operações são vinculadas a um fundo escolhido na criação/aprovação.
+   ========================================= */
+
+export const fundos = pgTable(
+  "fundos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** User Clerk vinculado (login do fundo). NULL se ainda não foi aceito. */
+    ownerUserId: text("owner_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    razaoSocial: text("razao_social").notNull(),
+    nomeFantasia: text("nome_fantasia"),
+    cnpj: text("cnpj").notNull(),
+    cep: text("cep"),
+    endereco: text("endereco"),
+    cidade: text("cidade"),
+    uf: text("uf"),
+    /** Nome do contato responsável (pessoa física que assina/responde). */
+    contatoResponsavel: text("contato_responsavel"),
+    /** Telefone de WhatsApp do responsável. */
+    telefone: text("telefone"),
+    emailComercial: text("email_comercial"),
+    /** Email pra envio do contrato pra assinatura digital. */
+    emailAssinatura: text("email_assinatura"),
+    /** URL do contrato modelo (Vercel Blob). Cada operação usa o contrato do fundo. */
+    contratoUrl: text("contrato_url"),
+    contratoNome: text("contrato_nome"),
+    /** Taxa de juros base do fundo (mensal, decimal — 0.06 = 6%). Pode ser
+     *  sobrescrita por operação na aprovação admin. */
+    taxaMensalBase: numeric("taxa_mensal_base", { precision: 6, scale: 4 })
+      .notNull()
+      .default("0.0600"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("fundos_cnpj_idx").on(t.cnpj),
+    index("fundos_owner_idx").on(t.ownerUserId),
+  ],
+);
+
+export type Fundo = typeof fundos.$inferSelect;
+
+/* =========================================
    DOCUMENTOS GERAIS — KYC + operação
    ========================================= */
 
@@ -243,6 +296,11 @@ export const operacoes = pgTable(
     construtoraId: uuid("construtora_id")
       .notNull()
       .references(() => construtoras.id, { onDelete: "restrict" }),
+    /** Fundo que vai aportar a antecipação. NULL pra operações antigas
+     *  (criadas antes do conceito de fundo) — admin escolhe na aprovação. */
+    fundoId: uuid("fundo_id").references(() => fundos.id, {
+      onDelete: "set null",
+    }),
     // Dados financeiros
     valorVenda: numeric("valor_venda", { precision: 15, scale: 2 }).notNull(),
     valorComissao: numeric("valor_comissao", { precision: 15, scale: 2 }).notNull(),
@@ -279,6 +337,7 @@ export const operacoes = pgTable(
     uniqueIndex("operacoes_numero_idx").on(t.numero),
     index("operacoes_corretor_idx").on(t.corretorUserId),
     index("operacoes_construtora_idx").on(t.construtoraId),
+    index("operacoes_fundo_idx").on(t.fundoId),
     index("operacoes_status_idx").on(t.status),
   ],
 );

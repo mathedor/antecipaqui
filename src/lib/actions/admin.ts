@@ -339,6 +339,7 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
       construtoraUf: construtoras.uf,
       construtoraCep: construtoras.cep,
       construtoraOwnerUserId: construtoras.ownerUserId,
+      fundoId: operacoes.fundoId,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))

@@ -38,6 +38,9 @@ type ChangeStatusInput = {
    *  admin marca como enviada_para_pagamento (aprovação final).
    *  Limites: 0 < x <= 0.20. NÃO é visível pra corretor/imobiliária. */
   cashbackPercent?: number;
+  /** Fundo selecionado pra esta operação. Setado pelo admin na
+   *  pré-aprovação (calculadora comparativa). */
+  fundoId?: string;
 };
 
 function monthsBetween(from: Date, to: Date) {
@@ -95,6 +98,11 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     updates.aprovadoPorUserId = admin.id;
     updates.aprovadoEm = new Date();
     updates.motivoPendencia = null;
+
+    // Vincula fundo se passado
+    if (input.fundoId) {
+      updates.fundoId = input.fundoId;
+    }
 
     // Se o admin enviou nova taxa, recalcula VP + deságio das parcelas
     if (typeof input.novaTaxaMensal === "number") {

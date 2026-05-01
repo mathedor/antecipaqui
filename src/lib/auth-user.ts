@@ -89,17 +89,41 @@ export async function getCurrentDbUser(): Promise<User | null> {
 
   const isAdmin = isAdminEmail(email);
 
+  // Detecta convite de fundo via Clerk publicMetadata (vem da invitation)
+  const meta = clerkUser.publicMetadata as Record<string, unknown> | null;
+  const fundoIdFromInvite =
+    meta && typeof meta.fundoId === "string" ? meta.fundoId : null;
+  const roleFromInvite =
+    meta && typeof meta.role === "string" ? meta.role : null;
+
+  const role = isAdmin
+    ? "admin"
+    : roleFromInvite === "fundo" && fundoIdFromInvite
+      ? "fundo"
+      : "corretor";
+
   const inserted = await db
     .insert(users)
     .values({
       id: userId,
       email,
       nome,
-      role: isAdmin ? "admin" : "corretor",
-      onboardingStatus: isAdmin ? "aprovado" : "pendente",
+      role: role as never,
+      onboardingStatus:
+        isAdmin || role === "fundo" ? "aprovado" : "pendente",
     })
     .onConflictDoNothing()
     .returning();
+
+  // Se for primeiro login de fundo via convite, vincula o user ao fundo
+  if (inserted[0] && role === "fundo" && fundoIdFromInvite) {
+    const { fundos } = await import("@/db/schema");
+    await db
+      .update(fundos)
+      .set({ ownerUserId: userId, updatedAt: new Date() })
+      .where(eq(fundos.id, fundoIdFromInvite))
+      .catch((e) => console.error("[auth] erro vinculando fundo", e));
+  }
 
   if (inserted[0]) return inserted[0];
 

@@ -1,20 +1,42 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { systemSettings } from "@/db/schema";
+import { systemSettings, fundos } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
 
 const TAXA_MENSAL_KEY = "taxa_mensal";
 const TAXA_MENSAL_DEFAULT = 0.06;
 
 /**
- * Lê a taxa mensal atual do DB. Retorna o default 0.06 (6%) se ainda
- * não tiver valor configurado.
+ * Taxa mensal usada na calculadora pública e no cadastro de operação
+ * pelo corretor. É a MÉDIA das taxas-base dos fundos ativos cadastrados.
+ *
+ * Se não houver fundos, fallback pra system_settings.taxa_mensal, que por
+ * sua vez tem default 6% a.m.
+ *
+ * Importante: essa taxa é só uma estimativa. Na aprovação da operação, o
+ * admin escolhe o fundo específico (com sua taxa-base) e pode ainda
+ * customizar manualmente.
  */
 export async function getTaxaMensal(): Promise<number> {
   try {
+    // 1. Tenta média dos fundos ativos
+    const result = await db
+      .select({
+        media: sql<string>`COALESCE(AVG(${fundos.taxaMensalBase})::text, '0')`,
+        qtd: sql<number>`COUNT(*)::int`,
+      })
+      .from(fundos)
+      .where(eq(fundos.isActive, true));
+    const qtd = result[0]?.qtd ?? 0;
+    if (qtd > 0) {
+      const media = parseFloat(result[0].media);
+      if (Number.isFinite(media) && media > 0 && media < 1) return media;
+    }
+
+    // 2. Fallback: system_settings
     const [row] = await db
       .select()
       .from(systemSettings)

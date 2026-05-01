@@ -15,11 +15,17 @@ const nav: AdminNavItem[] = [
   {
     type: "submenu",
     label: "Registros",
-    matchPrefix: ["/admin/operacoes", "/admin/usuarios", "/admin/construtoras"],
+    matchPrefix: [
+      "/admin/operacoes",
+      "/admin/usuarios",
+      "/admin/construtoras",
+      "/admin/fundos",
+    ],
     items: [
       { href: "/admin/operacoes", label: "Operações" },
       { href: "/admin/usuarios", label: "Imobiliárias / Corretores" },
       { href: "/admin/construtoras", label: "Construtoras" },
+      { href: "/admin/fundos", label: "Fundos investidores" },
     ],
   },
   { type: "link", href: "/admin/tickets", label: "Tickets" },

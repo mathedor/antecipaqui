@@ -9,6 +9,7 @@ import { NotificarWhatsappButton } from "@/components/notificar-whatsapp-button"
 import { formatBRL, formatPercent } from "@/lib/format";
 import { getAdminOperacaoDetail } from "@/lib/actions/admin";
 import { getContratoForOperacao } from "@/lib/actions/contract";
+import { listFundosForSelector } from "@/lib/actions/fundos";
 
 export const metadata = {
   title: "Admin · Detalhe da operação",
@@ -63,9 +64,10 @@ type Params = { params: Promise<{ id: string }> };
 export default async function AdminOperacaoDetail({ params }: Params) {
   const admin = await requireAdmin();
   const { id } = await params;
-  const [op, contrato] = await Promise.all([
+  const [op, contrato, fundos] = await Promise.all([
     getAdminOperacaoDetail(id),
     getContratoForOperacao(id),
+    listFundosForSelector(),
   ]);
   if (!op) notFound();
 
@@ -165,6 +167,8 @@ export default async function AdminOperacaoDetail({ params }: Params) {
           currentCashbackPercent={
             op.cashbackPercent ? parseFloat(op.cashbackPercent) : null
           }
+          fundos={fundos}
+          currentFundoId={op.fundoId}
         />
       </div>
 

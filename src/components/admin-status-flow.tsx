@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { changeOperacaoStatusAction } from "@/lib/actions/status-flow";
 import { formatBRL, valorPresente } from "@/lib/format";
 import { useFeedback } from "@/components/feedback-provider";
+import { CalculadoraFundos } from "@/components/calculadora-fundos";
 
 type Status =
   | "rascunho"
@@ -153,6 +154,15 @@ type Props = {
   parcelas: Array<{ valor: string; vencimento: string }>;
   /** Cashback já cadastrado (decimal). Mostra como default no input. */
   currentCashbackPercent?: number | null;
+  /** Fundos cadastrados (pra calculadora comparativa na aprovação). */
+  fundos: Array<{
+    id: string;
+    razaoSocial: string;
+    nomeFantasia: string | null;
+    taxaMensalBase: string;
+  }>;
+  /** Fundo atual da operação (se já foi escolhido). */
+  currentFundoId?: string | null;
 };
 
 function monthsBetween(from: Date, to: Date) {
@@ -170,6 +180,8 @@ export function AdminStatusFlow({
   valorPresente: valorPresenteInicial,
   parcelas,
   currentCashbackPercent,
+  fundos,
+  currentFundoId,
 }: Props) {
   const router = useRouter();
   const { confirm: confirmModal, alertSuccess, alertError } = useFeedback();
@@ -190,6 +202,30 @@ export function AdminStatusFlow({
   const [taxaInput, setTaxaInput] = useState(
     String((currentTaxaMensal * 100).toFixed(2)),
   );
+  const [selectedFundoId, setSelectedFundoId] = useState<string | null>(
+    currentFundoId ?? fundos[0]?.id ?? null,
+  );
+
+  const parcelasParaCalc = useMemo(() => {
+    const today = new Date();
+    return parcelas.map((p) => ({
+      valor: parseFloat(p.valor),
+      mesesAteVencimento: monthsBetween(
+        today,
+        new Date(p.vencimento + "T00:00:00"),
+      ),
+    }));
+  }, [parcelas]);
+
+  function handleSelectFundo(fundoId: string) {
+    setSelectedFundoId(fundoId);
+    // Auto-preenche taxa com a taxa-base do fundo
+    const f = fundos.find((x) => x.id === fundoId);
+    if (f) {
+      const pct = parseFloat(f.taxaMensalBase) * 100;
+      setTaxaInput(pct.toFixed(2).replace(".", ","));
+    }
+  }
   const [cashbackEnabled, setCashbackEnabled] = useState(
     !!currentCashbackPercent,
   );
@@ -231,6 +267,7 @@ export function AdminStatusFlow({
       motivo?: string;
       novaTaxaMensal?: number;
       cashbackPercent?: number;
+      fundoId?: string;
     } = {},
   ) {
     startTransition(async () => {
@@ -403,9 +440,19 @@ export function AdminStatusFlow({
             <div className="font-bold">{activeTaxa.label}</div>
           </div>
 
+          {/* Calculadora comparativa de fundos */}
+          <CalculadoraFundos
+            fundos={fundos}
+            parcelas={parcelasParaCalc}
+            valorComissao={valorComissao}
+            selectedFundoId={selectedFundoId}
+            onSelect={handleSelectFundo}
+            taxaCustom={taxaPreview && !taxaPreview.invalida ? taxaPreview.taxa : undefined}
+          />
+
           <div>
             <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
-              Taxa mensal desta operação (%)
+              Taxa mensal desta operação (%) — pode customizar
               <span className="ml-1 text-accent">*</span>
             </label>
             <div className="flex items-stretch max-w-xs rounded-xl border border-border-strong overflow-hidden focus-within:border-accent transition-colors">
@@ -480,8 +527,16 @@ export function AdminStatusFlow({
                   );
                   return;
                 }
+                if (!selectedFundoId) {
+                  await alertError(
+                    "Selecione um fundo na calculadora antes de aprovar.",
+                    "Fundo obrigatório",
+                  );
+                  return;
+                }
                 executeTransition(activeTaxa.to, {
                   novaTaxaMensal: taxaPreview.taxa,
+                  fundoId: selectedFundoId,
                 });
               }}
               disabled={pending || !taxaPreview || taxaPreview.invalida}
