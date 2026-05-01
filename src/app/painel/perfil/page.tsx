@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { imobiliarias, construtoras, documentos } from "@/db/schema";
+import { imobiliarias, construtoras, documentos, fundos } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { PerfilForm } from "@/components/perfil-form";
@@ -20,7 +20,7 @@ export default async function PerfilPage() {
   const user = await getCurrentDbUser();
   if (!user) redirect("/entrar");
 
-  const [imob, construtora, docs] = await Promise.all([
+  const [imob, construtora, docs, fundo] = await Promise.all([
     db
       .select()
       .from(imobiliarias)
@@ -34,15 +34,23 @@ export default async function PerfilPage() {
       .limit(1)
       .then((r) => r[0] ?? null),
     db.select().from(documentos).where(eq(documentos.userId, user.id)),
+    db
+      .select()
+      .from(fundos)
+      .where(eq(fundos.ownerUserId, user.id))
+      .limit(1)
+      .then((r) => r[0] ?? null),
   ]);
 
   const role = (
-    user.role === "construtora"
-      ? "construtora"
-      : user.role === "imobiliaria"
-        ? "imobiliaria"
-        : "corretor"
-  ) as "construtora" | "imobiliaria" | "corretor";
+    user.role === "fundo"
+      ? "fundo"
+      : user.role === "construtora"
+        ? "construtora"
+        : user.role === "imobiliaria"
+          ? "imobiliaria"
+          : "corretor"
+  ) as "construtora" | "imobiliaria" | "corretor" | "fundo";
 
   return (
     <PainelShell role={role} userName={user.nome} active="/painel/perfil">
@@ -61,6 +69,7 @@ export default async function PerfilPage() {
         user={user}
         imobiliaria={imob}
         construtora={construtora}
+        fundo={fundo}
         initialDocs={{
           contratoSocial: pickDoc(docs, "contrato_social"),
           comprovanteEndereco: pickDoc(docs, "comprovante_endereco"),

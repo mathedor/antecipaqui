@@ -19,9 +19,28 @@ type Row = {
   corretorTelefone: string | null;
   construtoraNome: string | null;
   construtoraTelefone: string | null;
+  fundoId: string | null;
 };
 
-export function AdminOperacoesTable({ rows }: { rows: Row[] }) {
+type FundoOption = {
+  id: string;
+  razaoSocial: string;
+  nomeFantasia: string | null;
+};
+
+export function AdminOperacoesTable({
+  rows,
+  fundos = [],
+}: {
+  rows: Row[];
+  fundos?: FundoOption[];
+}) {
+  const fundoMap = new Map(fundos.map((f) => [f.id, f]));
+  const fundoLabel = (id: string | null) => {
+    if (!id) return "—";
+    const f = fundoMap.get(id);
+    return f?.nomeFantasia ?? f?.razaoSocial ?? "?";
+  };
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
@@ -33,6 +52,7 @@ export function AdminOperacoesTable({ rows }: { rows: Row[] }) {
             "Imobiliária / Corretor",
             "Email corretor",
             "Construtora",
+            "Fundo",
             "Comissão (R$)",
             "Valor presente (R$)",
           ]}
@@ -43,6 +63,7 @@ export function AdminOperacoesTable({ rows }: { rows: Row[] }) {
               r.corretorNome ?? "",
               r.corretorEmail ?? "",
               r.construtoraNome ?? "",
+              fundoLabel(r.fundoId),
               parseFloat(r.valorComissao).toFixed(2),
               parseFloat(r.valorPresente).toFixed(2),
             ])
@@ -95,6 +116,21 @@ export function AdminOperacoesTable({ rows }: { rows: Row[] }) {
               {r.construtoraNome ?? "—"}
             </span>
           ),
+        },
+        {
+          key: "fundo",
+          header: "Fundo",
+          sortable: true,
+          sortValue: (r) => fundoLabel(r.fundoId),
+          hideOnMobile: true,
+          render: (r) =>
+            r.fundoId ? (
+              <span className="font-mono text-[10px] text-fg-muted truncate">
+                {fundoLabel(r.fundoId)}
+              </span>
+            ) : (
+              <span className="font-mono text-[10px] text-warn">— sem —</span>
+            ),
         },
         {
           key: "valorComissao",

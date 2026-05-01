@@ -11,7 +11,7 @@ import { CepAddressFields } from "@/components/cep-address-fields";
 import { FileUploadField } from "@/components/file-upload-field";
 import { useFeedback } from "@/components/feedback-provider";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
-import type { User, Imobiliaria, Construtora } from "@/db/schema";
+import type { User, Imobiliaria, Construtora, Fundo } from "@/db/schema";
 
 type DocsState = {
   contratoSocial?: { url: string; name: string } | null;
@@ -23,6 +23,7 @@ type Props = {
   user: User;
   imobiliaria: Imobiliaria | null;
   construtora: Construtora | null;
+  fundo?: Fundo | null;
   initialDocs: DocsState;
 };
 
@@ -30,6 +31,7 @@ export function PerfilForm({
   user,
   imobiliaria,
   construtora,
+  fundo,
   initialDocs,
 }: Props) {
   const router = useRouter();
@@ -42,7 +44,8 @@ export function PerfilForm({
 
   const isCorretor = user.role === "corretor" || user.role === "imobiliaria";
   const isConstrutora = user.role === "construtora";
-  const empresa = isConstrutora ? construtora : imobiliaria;
+  const isFundo = user.role === "fundo";
+  const empresa = isFundo ? fundo : isConstrutora ? construtora : imobiliaria;
 
   const [telefone, setTelefone] = useState(
     user.telefone ? maskPhone(user.telefone) : "",
@@ -226,8 +229,34 @@ export function PerfilForm({
         </Card>
       )}
 
-      {/* Documentos KYC (não pra admin) */}
-      {user.role !== "admin" && (
+      {/* Empresa (fundo) — read-only no painel do fundo. Edição é feita pelo admin. */}
+      {isFundo && fundo && (
+        <Card
+          title="Dados do fundo (gerenciados pelo admin)"
+          subtitle="Mudanças nos dados da empresa são feitas pelo admin Antecipaqui. Pra atualizar telefone, contato responsável ou contrato modelo, abra um ticket de suporte."
+        >
+          <Grid>
+            <FieldRO label="Razão social" value={fundo.razaoSocial} />
+            <FieldRO label="Nome fantasia" value={fundo.nomeFantasia} />
+            <FieldRO label="CNPJ" value={fundo.cnpj} mono />
+            <FieldRO
+              label="Taxa-base"
+              value={`${(parseFloat(fundo.taxaMensalBase) * 100).toFixed(2).replace(".", ",")}% a.m.`}
+              mono
+            />
+            <FieldRO label="Endereço" value={fundo.endereco} />
+            <FieldRO label="Cidade / UF" value={fundo.cidade ? `${fundo.cidade}${fundo.uf ? " / " + fundo.uf : ""}` : null} />
+            <FieldRO label="CEP" value={fundo.cep} mono />
+            <FieldRO label="Contato responsável" value={fundo.contatoResponsavel} />
+            <FieldRO label="Telefone" value={fundo.telefone} mono />
+            <FieldRO label="Email comercial" value={fundo.emailComercial} mono />
+            <FieldRO label="Email para assinatura" value={fundo.emailAssinatura} mono />
+          </Grid>
+        </Card>
+      )}
+
+      {/* Documentos KYC (não pra admin nem fundo) */}
+      {user.role !== "admin" && user.role !== "fundo" && (
         <Card
           title="Documentos KYC"
           subtitle="Mantenha os documentos atualizados. Substitua se houve mudança no contrato social ou endereço."
@@ -312,4 +341,29 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">{children}</div>;
+}
+
+function FieldRO({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string | null | undefined;
+  mono?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
+        {label}
+      </label>
+      <div
+        className={`px-4 h-12 flex items-center rounded-xl border border-border bg-bg-soft text-sm ${
+          mono ? "font-mono" : ""
+        } ${value ? "text-fg" : "text-fg-dim italic"}`}
+      >
+        {value || "—"}
+      </div>
+    </div>
+  );
 }

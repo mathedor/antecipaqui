@@ -206,6 +206,7 @@ export async function getAllOperacoes(filters?: {
   q?: string;
   minValor?: number;
   maxValor?: number;
+  fundoId?: string;
 }) {
   const filterStatus = filters?.status;
   const from = filters?.from;
@@ -213,6 +214,7 @@ export async function getAllOperacoes(filters?: {
   const q = filters?.q?.trim();
   const minValor = filters?.minValor;
   const maxValor = filters?.maxValor;
+  const fundoId = filters?.fundoId;
 
   const base = db
     .select({
@@ -229,6 +231,7 @@ export async function getAllOperacoes(filters?: {
       corretorNome: users.nome,
       corretorEmail: users.email,
       corretorTelefone: users.telefone,
+      fundoId: operacoes.fundoId,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
@@ -255,6 +258,13 @@ export async function getAllOperacoes(filters?: {
   }
   if (typeof maxValor === "number" && Number.isFinite(maxValor)) {
     conds.push(sql`${operacoes.valorPresente} <= ${maxValor}`);
+  }
+  if (fundoId) {
+    if (fundoId === "_no_fundo_") {
+      conds.push(sql`${operacoes.fundoId} IS NULL`);
+    } else {
+      conds.push(eq(operacoes.fundoId, fundoId));
+    }
   }
 
   return conds.length > 0

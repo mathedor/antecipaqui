@@ -10,7 +10,7 @@ import {
   type MobileNavItem,
 } from "@/components/mobile-bottom-nav";
 
-type Role = "corretor" | "imobiliaria" | "construtora" | "admin";
+type Role = "corretor" | "imobiliaria" | "construtora" | "admin" | "fundo";
 
 type NavItem = { href: string; label: string };
 
@@ -46,6 +46,12 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/admin/relatorios", label: "Relatórios" },
     { href: "/admin/configuracoes", label: "Configurações" },
   ],
+  fundo: [
+    { href: "/painel", label: "Painel" },
+    { href: "/painel/operacoes", label: "Operações" },
+    { href: "/painel/parceiros", label: "Parceiros" },
+    { href: "/painel/suporte", label: "Suporte" },
+  ],
 };
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -53,6 +59,7 @@ const ROLE_LABEL: Record<Role, string> = {
   imobiliaria: "Imobiliária / Corretor",
   construtora: "Construtora",
   admin: "Administrador",
+  fundo: "Fundo investidor",
 };
 
 const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
@@ -78,6 +85,12 @@ const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
     { href: "/admin", label: "Painel", icon: "home" },
     { href: "/admin/operacoes", label: "Ops", icon: "table" },
     { href: "/admin/tickets", label: "Tickets", icon: "ticket" },
+  ],
+  fundo: [
+    { href: "/painel", label: "Painel", icon: "home" },
+    { href: "/painel/operacoes", label: "Ops", icon: "table" },
+    { href: "/painel/parceiros", label: "Parc.", icon: "list" },
+    { href: "/painel/suporte", label: "Suporte", icon: "ticket" },
   ],
 };
 
@@ -177,6 +190,23 @@ const MOBILE_FULLMENU: Record<
       section: "configurações",
       items: [
         { href: "/admin/configuracoes", label: "Parâmetros", icon: "config" },
+      ],
+    },
+  ],
+  fundo: [
+    {
+      section: "principal",
+      items: [
+        { href: "/painel", label: "Painel", icon: "home" },
+        { href: "/painel/operacoes", label: "Operações", icon: "table" },
+        { href: "/painel/parceiros", label: "Parceiros", icon: "list" },
+      ],
+    },
+    {
+      section: "suporte",
+      items: [
+        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/notificacoes", label: "Notificações", icon: "doc" },
       ],
     },
   ],

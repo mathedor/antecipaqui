@@ -40,6 +40,7 @@ export default async function OperacoesPage({ searchParams }: Search) {
   if (!user) redirect("/entrar");
 
   const isConstrutora = user.role === "construtora";
+  const isFundo = user.role === "fundo";
   const { from, to } = await searchParams;
 
   let allOps: Array<{
@@ -52,7 +53,22 @@ export default async function OperacoesPage({ searchParams }: Search) {
     createdAt: Date | string;
   }> = [];
 
-  if (isConstrutora) {
+  if (isFundo) {
+    const { getFundoDashboard } = await import("@/lib/actions/fundos");
+    const data = await getFundoDashboard();
+    if (data) {
+      allOps = data.operacoes.map((r) => ({
+        id: r.id,
+        numero: r.numero,
+        status: r.status,
+        valorComissao: r.valorComissao,
+        valorPresente: r.valorPresente,
+        counterpartyLabel:
+          (r.construtoraNome ?? "—") + " · " + (r.corretorNome ?? "—"),
+        createdAt: r.createdAt,
+      }));
+    }
+  } else if (isConstrutora) {
     const c = await getConstrutoraByOwnerId(user.id);
     if (c) {
       const rows = await getOperacoesByConstrutora(c.id);
@@ -108,18 +124,26 @@ export default async function OperacoesPage({ searchParams }: Search) {
     return true;
   });
 
-  const counterpartyHeader = isConstrutora
-    ? "Imobiliária / Corretor"
-    : "Construtora";
-  const titleLabel = isConstrutora ? "vinculadas a você" : "operações";
+  const counterpartyHeader = isFundo
+    ? "Construtora · Corretor"
+    : isConstrutora
+      ? "Imobiliária / Corretor"
+      : "Construtora";
+  const titleLabel = isFundo
+    ? "do fundo"
+    : isConstrutora
+      ? "vinculadas a você"
+      : "operações";
 
   const role = (
-    isConstrutora
-      ? "construtora"
-      : user.role === "imobiliaria"
-        ? "imobiliaria"
-        : "corretor"
-  ) as "construtora" | "corretor" | "imobiliaria";
+    isFundo
+      ? "fundo"
+      : isConstrutora
+        ? "construtora"
+        : user.role === "imobiliaria"
+          ? "imobiliaria"
+          : "corretor"
+  ) as "construtora" | "corretor" | "imobiliaria" | "fundo";
 
   return (
     <PainelShell role={role} userName={user.nome} active="/painel/operacoes">
@@ -134,7 +158,7 @@ export default async function OperacoesPage({ searchParams }: Search) {
             {operacoes.length === 1 ? "operação" : "operações"} no resultado
           </p>
         </div>
-        {!isConstrutora && (
+        {!isConstrutora && !isFundo && (
           <Link
             href="/painel/operacoes/nova"
             className="btn-primary !h-11 !px-5"

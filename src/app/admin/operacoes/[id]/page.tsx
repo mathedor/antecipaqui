@@ -104,9 +104,26 @@ export default async function AdminOperacaoDetail({ params }: Params) {
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-8">
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
             <h1 className="text-display-md font-mono">{op.numero}</h1>
             <OperacaoStatusBadge status={op.status} />
+            {op.fundoId ? (
+              (() => {
+                const f = fundos.find((x) => x.id === op.fundoId);
+                return f ? (
+                  <Link
+                    href={`/admin/fundos/${f.id}`}
+                    className="chip chip-accent hover:underline"
+                  >
+                    🏦 {f.nomeFantasia ?? f.razaoSocial}
+                  </Link>
+                ) : null;
+              })()
+            ) : (
+              <span className="chip bg-yellow-50 text-warn border-yellow-200">
+                ⚠ sem fundo
+              </span>
+            )}
           </div>
           <p className="text-fg-muted text-sm">
             Criada em {formatDateTime(op.createdAt)}
