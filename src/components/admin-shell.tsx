@@ -36,6 +36,7 @@ const nav: AdminNavItem[] = [
     matchPrefix: ["/admin/relatorios"],
     items: [
       { href: "/admin/relatorios", label: "Visão geral" },
+      { href: "/admin/relatorios/daily", label: "Daily" },
       { href: "/admin/relatorios/indices", label: "Índices" },
       {
         href: "/admin/relatorios/construtoras",
