@@ -68,79 +68,78 @@ export default async function InadimplentesPage({ searchParams }: Search) {
       {/* === Filtros === */}
       <form
         method="get"
-        className="rounded-2xl border border-border bg-bg-elev p-4 mb-4 grid grid-cols-1 md:grid-cols-5 gap-3"
+        className="rounded-2xl border border-border bg-bg-elev p-4 mb-4"
       >
-        <div className="md:col-span-2">
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            Buscar (operação, construtora, corretor)
-          </label>
-          <input
-            name="q"
-            defaultValue={params.q ?? ""}
-            placeholder="Ex: OP-2026 ou nome..."
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            Fundo
-          </label>
-          <select
-            name="fundoId"
-            defaultValue={params.fundoId ?? ""}
-            className="form-input"
-          >
-            <option value="">Todos</option>
-            {fundos.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nomeFantasia ?? f.razaoSocial}
-              </option>
-            ))}
-            <option value="_no_fundo_">— sem fundo —</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            Atraso mínimo
-          </label>
-          <select
-            name="diasMin"
-            defaultValue={params.diasMin ?? ""}
-            className="form-input"
-          >
-            <option value="">Qualquer</option>
-            <option value="1">≥ 1 dia</option>
-            <option value="30">≥ 30 dias</option>
-            <option value="60">≥ 60 dias</option>
-            <option value="90">≥ 90 dias</option>
-            <option value="180">≥ 180 dias</option>
-          </select>
-        </div>
-        <div className="flex gap-2">
-          <div className="flex-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="lg:col-span-2">
             <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-              Vencimento de
+              Buscar (operação, construtora, corretor)
             </label>
             <input
-              type="date"
-              name="from"
-              defaultValue={params.from ?? ""}
+              name="q"
+              defaultValue={params.q ?? ""}
+              placeholder="Ex: OP-2026 ou nome..."
               className="form-input"
             />
           </div>
-          <div className="flex-1">
+          <div>
             <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-              até
+              Fundo
             </label>
-            <input
-              type="date"
-              name="to"
-              defaultValue={params.to ?? ""}
+            <select
+              name="fundoId"
+              defaultValue={params.fundoId ?? ""}
               className="form-input"
-            />
+            >
+              <option value="">Todos</option>
+              {fundos.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nomeFantasia ?? f.razaoSocial}
+                </option>
+              ))}
+              <option value="_no_fundo_">— sem fundo —</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+              Atraso mínimo
+            </label>
+            <select
+              name="diasMin"
+              defaultValue={params.diasMin ?? ""}
+              className="form-input"
+            >
+              <option value="">Qualquer</option>
+              <option value="1">≥ 1 dia</option>
+              <option value="30">≥ 30 dias</option>
+              <option value="60">≥ 60 dias</option>
+              <option value="90">≥ 90 dias</option>
+              <option value="180">≥ 180 dias</option>
+            </select>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-2">
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+              Período de vencimento
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                name="from"
+                defaultValue={params.from ?? ""}
+                placeholder="De"
+                className="form-input min-w-0 flex-1"
+              />
+              <input
+                type="date"
+                name="to"
+                defaultValue={params.to ?? ""}
+                placeholder="Até"
+                className="form-input min-w-0 flex-1"
+              />
+            </div>
           </div>
         </div>
-        <div className="md:col-span-5 flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
           <button type="submit" className="btn-primary !h-10 !px-5">
             Filtrar
           </button>

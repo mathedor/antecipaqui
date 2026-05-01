@@ -230,6 +230,21 @@ export const fundos = pgTable(
     taxaMensalBase: numeric("taxa_mensal_base", { precision: 6, scale: 4 })
       .notNull()
       .default("0.0600"),
+    /* === Dados bancários — pra recebimento de pagamentos de duplicatas === */
+    bancoNome: text("banco_nome"),
+    /** Código do banco (3 dígitos: 001 BB, 341 Itaú, etc.) */
+    bancoCodigo: text("banco_codigo"),
+    bancoAgencia: text("banco_agencia"),
+    bancoConta: text("banco_conta"),
+    bancoPix: text("banco_pix"),
+    /* === Banco emissor de boletos (pode ser diferente do banco principal) === */
+    boletosBancoNome: text("boletos_banco_nome"),
+    /** URL da API que gera os boletos. */
+    boletosApiUrl: text("boletos_api_url"),
+    /* === Sistema de gestão (CRM/ERP) — pra integração de operações === */
+    sistemaGestaoNome: text("sistema_gestao_nome"),
+    /** URL da documentação da API do sistema de gestão. */
+    sistemaGestaoDocsUrl: text("sistema_gestao_docs_url"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

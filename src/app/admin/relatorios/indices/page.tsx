@@ -75,45 +75,47 @@ export default async function AdminIndicesPage({ searchParams }: Search) {
       {/* === Filtros (fundo + período de inadimplência) === */}
       <form
         method="get"
-        className="rounded-2xl border border-border bg-bg-elev p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-3"
+        className="rounded-2xl border border-border bg-bg-elev p-4 mb-6"
       >
-        <div>
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            Fundo
-          </label>
-          <select name="fundoId" defaultValue={fundoId ?? ""} className="form-input">
-            <option value="">Todos</option>
-            {fundos.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nomeFantasia ?? f.razaoSocial}
-              </option>
-            ))}
-            <option value="_no_fundo_">— sem fundo —</option>
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+              Fundo
+            </label>
+            <select name="fundoId" defaultValue={fundoId ?? ""} className="form-input">
+              <option value="">Todos</option>
+              {fundos.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nomeFantasia ?? f.razaoSocial}
+                </option>
+              ))}
+              <option value="_no_fundo_">— sem fundo —</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+              Inadimplência por fundo · período
+            </label>
+            <select
+              name="inadPeriodo"
+              defaultValue={inadPeriodo}
+              className="form-input"
+            >
+              <option value="30d">Último mês</option>
+              <option value="90d">Últimos 3 meses</option>
+              <option value="180d">Últimos 6 meses</option>
+              <option value="365d">Último ano</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            Inadimplência por fundo · período
-          </label>
-          <select
-            name="inadPeriodo"
-            defaultValue={inadPeriodo}
-            className="form-input"
-          >
-            <option value="30d">Último mês</option>
-            <option value="90d">Últimos 3 meses</option>
-            <option value="180d">Últimos 6 meses</option>
-            <option value="365d">Último ano</option>
-          </select>
-        </div>
-        <div className="flex items-end gap-2">
-          <button type="submit" className="btn-primary !h-12 !px-5">
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+          <button type="submit" className="btn-primary !h-10 !px-5">
             Aplicar
           </button>
           {(fundoId || inadPeriodo !== "90d") && (
             <Link
               href="/admin/relatorios/indices"
-              className="text-fg-muted hover:text-fg text-sm self-center"
+              className="text-fg-muted hover:text-fg text-sm"
             >
               limpar
             </Link>

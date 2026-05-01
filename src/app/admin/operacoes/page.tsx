@@ -88,67 +88,66 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
       {/* Busca + range de valor + fundo */}
       <form
         method="get"
-        className="rounded-2xl border border-border bg-bg-elev p-4 md:p-5 mb-4 grid grid-cols-1 md:grid-cols-5 gap-3"
+        className="rounded-2xl border border-border bg-bg-elev p-4 md:p-5 mb-4"
       >
-        <div className="md:col-span-2">
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            Buscar (número, construtora, corretor, email)
-          </label>
-          <input
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="Ex: OP-2026 ou nome..."
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            Fundo
-          </label>
-          <select
-            name="fundoId"
-            defaultValue={fundoId ?? ""}
-            className="form-input"
-          >
-            <option value="">Todos</option>
-            {fundos.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nomeFantasia ?? f.razaoSocial}
-              </option>
-            ))}
-            <option value="_no_fundo_">— sem fundo —</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            VP min (R$)
-          </label>
-          <input
-            name="minValor"
-            type="number"
-            step="100"
-            defaultValue={params.minValor ?? ""}
-            placeholder="0"
-            className="form-input"
-          />
-        </div>
-        <div>
-          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            VP max (R$)
-          </label>
-          <input
-            name="maxValor"
-            type="number"
-            step="100"
-            defaultValue={params.maxValor ?? ""}
-            placeholder="∞"
-            className="form-input"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="lg:col-span-2">
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+              Buscar (número, construtora, corretor, email)
+            </label>
+            <input
+              name="q"
+              defaultValue={q ?? ""}
+              placeholder="Ex: OP-2026 ou nome..."
+              className="form-input"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+              Fundo
+            </label>
+            <select
+              name="fundoId"
+              defaultValue={fundoId ?? ""}
+              className="form-input"
+            >
+              <option value="">Todos</option>
+              {fundos.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nomeFantasia ?? f.razaoSocial}
+                </option>
+              ))}
+              <option value="_no_fundo_">— sem fundo —</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+              Valor presente (R$)
+            </label>
+            <div className="flex gap-2">
+              <input
+                name="minValor"
+                type="number"
+                step="100"
+                defaultValue={params.minValor ?? ""}
+                placeholder="min"
+                className="form-input min-w-0 flex-1"
+              />
+              <input
+                name="maxValor"
+                type="number"
+                step="100"
+                defaultValue={params.maxValor ?? ""}
+                placeholder="max"
+                className="form-input min-w-0 flex-1"
+              />
+            </div>
+          </div>
         </div>
         {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
         {from && <input type="hidden" name="from" value={from} />}
         {to && <input type="hidden" name="to" value={to} />}
-        <div className="md:col-span-5 flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
           <button type="submit" className="btn-primary !h-10 !px-5">
             Filtrar
           </button>

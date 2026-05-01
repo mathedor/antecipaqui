@@ -76,57 +76,62 @@ export default async function AdminLogsPage({ searchParams }: Search) {
       {/* Filtros */}
       <form
         method="get"
-        className="rounded-2xl border border-border bg-bg-elev p-5 mb-6 grid grid-cols-2 md:grid-cols-5 gap-3"
+        className="rounded-2xl border border-border bg-bg-elev p-4 md:p-5 mb-6"
       >
-        <Field label="Ação">
-          <select name="action" defaultValue={params.action ?? ""} className="form-input">
-            <option value="">Todas</option>
-            {distinctActions.map((a) => (
-              <option key={a.action} value={a.action}>
-                {a.action} ({a.qtd})
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Tipo de alvo">
-          <select
-            name="targetType"
-            defaultValue={params.targetType ?? ""}
-            className="form-input"
-          >
-            <option value="">Todos</option>
-            <option value="user">Usuário</option>
-            <option value="construtora">Construtora</option>
-            <option value="operacao">Operação</option>
-            <option value="ticket">Ticket</option>
-            <option value="mural">Mural</option>
-          </select>
-        </Field>
-        <Field label="Usuário (ID Clerk)">
-          <input
-            name="userId"
-            defaultValue={params.userId ?? ""}
-            placeholder="user_xxx"
-            className="form-input font-mono text-xs"
-          />
-        </Field>
-        <Field label="De">
-          <input
-            type="date"
-            name="from"
-            defaultValue={params.from ?? ""}
-            className="form-input"
-          />
-        </Field>
-        <Field label="Até">
-          <input
-            type="date"
-            name="to"
-            defaultValue={params.to ?? ""}
-            className="form-input"
-          />
-        </Field>
-        <div className="col-span-2 md:col-span-5 flex items-center gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Field label="Ação">
+            <select name="action" defaultValue={params.action ?? ""} className="form-input">
+              <option value="">Todas</option>
+              {distinctActions.map((a) => (
+                <option key={a.action} value={a.action}>
+                  {a.action} ({a.qtd})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Tipo de alvo">
+            <select
+              name="targetType"
+              defaultValue={params.targetType ?? ""}
+              className="form-input"
+            >
+              <option value="">Todos</option>
+              <option value="user">Usuário</option>
+              <option value="construtora">Construtora</option>
+              <option value="operacao">Operação</option>
+              <option value="ticket">Ticket</option>
+              <option value="mural">Mural</option>
+            </select>
+          </Field>
+          <Field label="Usuário (ID Clerk)">
+            <input
+              name="userId"
+              defaultValue={params.userId ?? ""}
+              placeholder="user_xxx"
+              className="form-input font-mono text-xs"
+            />
+          </Field>
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+              Período
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                name="from"
+                defaultValue={params.from ?? ""}
+                className="form-input min-w-0 flex-1"
+              />
+              <input
+                type="date"
+                name="to"
+                defaultValue={params.to ?? ""}
+                className="form-input min-w-0 flex-1"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
           <button type="submit" className="btn-primary !h-10 !px-5">
             Filtrar
           </button>
