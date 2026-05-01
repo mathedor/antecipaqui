@@ -443,16 +443,24 @@ export async function getInadimplentes(filters?: {
       o.numero AS operacao_numero,
       o.status AS operacao_status,
       o.valor_presente AS operacao_vp,
+      o.taxa_mensal::float AS taxa_mensal,
       c.razao_social AS construtora_nome,
       c.id AS construtora_id,
+      c.telefone AS construtora_telefone,
+      c.email AS construtora_email,
+      im.id AS imobiliaria_id,
+      im.razao_social AS imobiliaria_nome,
+      im.telefone AS imobiliaria_telefone,
       u.nome AS corretor_nome,
       u.email AS corretor_email,
+      u.telefone AS corretor_telefone,
       u.id AS corretor_id,
       f.id AS fundo_id,
       COALESCE(f.nome_fantasia, f.razao_social) AS fundo_nome
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
     LEFT JOIN construtoras c ON c.id = o.construtora_id
+    LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
     LEFT JOIN users u ON u.id = o.corretor_user_id
     LEFT JOIN fundos f ON f.id = o.fundo_id
     WHERE ${where}
@@ -471,10 +479,17 @@ export async function getInadimplentes(filters?: {
     operacao_numero: string;
     operacao_status: string;
     operacao_vp: string;
+    taxa_mensal: number;
     construtora_nome: string | null;
     construtora_id: string | null;
+    construtora_telefone: string | null;
+    construtora_email: string | null;
+    imobiliaria_id: string | null;
+    imobiliaria_nome: string | null;
+    imobiliaria_telefone: string | null;
     corretor_nome: string | null;
     corretor_email: string | null;
+    corretor_telefone: string | null;
     corretor_id: string | null;
     fundo_id: string | null;
     fundo_nome: string | null;

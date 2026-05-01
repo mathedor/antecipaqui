@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { getInadimplentes } from "@/lib/actions/reports-extra";
 import { listFundosForSelector } from "@/lib/actions/fundos";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { ParcelaActions } from "@/components/parcela-actions";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = { title: "Admin · Inadimplentes" };
@@ -198,7 +199,7 @@ export default async function InadimplentesPage({ searchParams }: Search) {
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
-          <table className="w-full text-sm min-w-[1000px]">
+          <table className="w-full text-sm min-w-[1200px]">
             <thead className="bg-bg-card border-b border-border">
               <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
                 <th className="px-4 py-3 text-left">Operação</th>
@@ -209,6 +210,7 @@ export default async function InadimplentesPage({ searchParams }: Search) {
                 <th className="px-4 py-3 text-right">Vencimento</th>
                 <th className="px-4 py-3 text-right">Atraso</th>
                 <th className="px-4 py-3 text-right">Valor</th>
+                <th className="px-4 py-3 text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -289,6 +291,27 @@ export default async function InadimplentesPage({ searchParams }: Search) {
                   <td className="px-4 py-3 text-right font-mono tabular text-fg font-semibold">
                     {formatBRL(parseFloat(r.valor))}
                   </td>
+                  <td className="px-4 py-3">
+                    <ParcelaActions
+                      parcela={{
+                        parcelaId: r.parcela_id,
+                        parcelaNumero: r.numero,
+                        vencimento: r.vencimento,
+                        valorParcela: parseFloat(r.valor),
+                        diasAtraso: r.dias_atraso,
+                        taxaMensal: r.taxa_mensal,
+                        operacaoNumero: r.operacao_numero,
+                        construtoraNome: r.construtora_nome,
+                        construtoraTelefone: r.construtora_telefone,
+                        construtoraEmail: r.construtora_email,
+                        imobiliariaNome: r.imobiliaria_nome,
+                        imobiliariaTelefone: r.imobiliaria_telefone,
+                        corretorNome: r.corretor_nome,
+                        corretorEmail: r.corretor_email,
+                        corretorTelefone: r.corretor_telefone,
+                      }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -300,6 +323,7 @@ export default async function InadimplentesPage({ searchParams }: Search) {
                 <td className="px-4 py-3 text-right tabular text-danger font-bold">
                   {formatBRL(totalValor)}
                 </td>
+                <td className="px-4 py-3" />
               </tr>
             </tfoot>
           </table>
