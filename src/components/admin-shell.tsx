@@ -1,4 +1,5 @@
 import { UserButton } from "@clerk/nextjs";
+import { EditarDadosLink } from "@/components/editar-dados-link";
 import Link from "next/link";
 import { SairButton } from "@/components/sair-button";
 import { Logo } from "@/components/logo";
@@ -111,6 +112,9 @@ export function AdminShell({
               admin{userName ? ` · ${userName.split(" ")[0]}` : ""}
             </span>
             <NotificationBell />
+            <span className="hidden md:inline-flex">
+              <EditarDadosLink />
+            </span>
             <span className="hidden md:inline-flex">
               <SairButton />
             </span>

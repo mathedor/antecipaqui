@@ -4,6 +4,7 @@ import { Logo } from "@/components/logo";
 import { SairButton } from "@/components/sair-button";
 import { NotificationBell } from "@/components/notification-bell";
 import { VersionFooter } from "@/components/version-footer";
+import { EditarDadosLink } from "@/components/editar-dados-link";
 import {
   MobileBottomNav,
   type MobileNavItem,
@@ -234,6 +235,9 @@ export function PainelShell({
               {userName ? ` · ${userName.split(" ")[0]}` : ""}
             </span>
             <NotificationBell />
+            <span className="hidden md:inline-flex">
+              <EditarDadosLink />
+            </span>
             <span className="hidden md:inline-flex">
               <SairButton />
             </span>
