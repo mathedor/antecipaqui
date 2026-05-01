@@ -130,6 +130,49 @@ export default async function AdminFundoDetail({ params }: Params) {
             </Grid>
           </Card>
 
+          <Card label="Dados bancários">
+            <Grid>
+              <FieldR label="Banco" value={fundo.bancoNome} />
+              <FieldR label="Código" value={fundo.bancoCodigo} mono />
+              <FieldR label="Agência" value={fundo.bancoAgencia} mono />
+              <FieldR label="Conta" value={fundo.bancoConta} mono />
+              <FieldR label="PIX" value={fundo.bancoPix} mono />
+            </Grid>
+          </Card>
+
+          <Card label="Configurações · integrações">
+            <div className="space-y-4">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-2">
+                  banco emissor de boletos
+                </div>
+                <Grid>
+                  <FieldR label="Banco" value={fundo.boletosBancoNome} />
+                  <FieldR
+                    label="API de geração"
+                    value={fundo.boletosApiUrl}
+                    mono
+                    link={fundo.boletosApiUrl}
+                  />
+                </Grid>
+              </div>
+              <div className="pt-3 border-t border-border">
+                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-2">
+                  sistema de gestão
+                </div>
+                <Grid>
+                  <FieldR label="Sistema" value={fundo.sistemaGestaoNome} />
+                  <FieldR
+                    label="Documentação"
+                    value={fundo.sistemaGestaoDocsUrl}
+                    mono
+                    link={fundo.sistemaGestaoDocsUrl}
+                  />
+                </Grid>
+              </div>
+            </div>
+          </Card>
+
           <Card label={`Operações (${operacoes.length})`}>
             {operacoes.length === 0 ? (
               <p className="text-sm text-fg-muted">
@@ -300,23 +343,37 @@ function FieldR({
   label,
   value,
   mono = false,
+  link,
 }: {
   label: string;
   value: string | null | undefined;
   mono?: boolean;
+  link?: string | null;
 }) {
   return (
     <div>
       <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-0.5">
         {label}
       </div>
-      <div
-        className={`text-sm ${mono ? "font-mono" : ""} ${
-          value ? "text-fg" : "text-fg-dim italic"
-        }`}
-      >
-        {value || "—"}
-      </div>
+      {link && value ? (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener"
+          className={`text-sm break-all hover:underline ${mono ? "font-mono" : ""} text-accent`}
+          title={value}
+        >
+          {value}
+        </a>
+      ) : (
+        <div
+          className={`text-sm break-all ${mono ? "font-mono" : ""} ${
+            value ? "text-fg" : "text-fg-dim italic"
+          }`}
+        >
+          {value || "—"}
+        </div>
+      )}
     </div>
   );
 }

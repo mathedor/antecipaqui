@@ -168,6 +168,21 @@ export async function editFundoAction(
       contratoNome:
         String(formData.get("contratoNome") || "").trim() || null,
       taxaMensalBase: taxaMensal.toFixed(4),
+      bancoNome: String(formData.get("bancoNome") || "").trim() || null,
+      bancoCodigo:
+        String(formData.get("bancoCodigo") || "").trim() || null,
+      bancoAgencia:
+        String(formData.get("bancoAgencia") || "").trim() || null,
+      bancoConta: String(formData.get("bancoConta") || "").trim() || null,
+      bancoPix: String(formData.get("bancoPix") || "").trim() || null,
+      boletosBancoNome:
+        String(formData.get("boletosBancoNome") || "").trim() || null,
+      boletosApiUrl:
+        String(formData.get("boletosApiUrl") || "").trim() || null,
+      sistemaGestaoNome:
+        String(formData.get("sistemaGestaoNome") || "").trim() || null,
+      sistemaGestaoDocsUrl:
+        String(formData.get("sistemaGestaoDocsUrl") || "").trim() || null,
       updatedAt: new Date(),
     })
     .where(eq(fundos.id, fundoId));

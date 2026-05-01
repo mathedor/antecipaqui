@@ -254,6 +254,108 @@ export function AdminFundoForm({ fundo }: Props) {
         </div>
       </Card>
 
+      {/* === Dados bancários === */}
+      <Card
+        title="Dados bancários"
+        subtitle="Conta usada pelo fundo pra receber pagamentos das duplicatas e enviar recursos pras antecipações."
+      >
+        <Grid>
+          <Field label="Banco (nome)">
+            <input
+              name="bancoNome"
+              defaultValue={fundo?.bancoNome ?? ""}
+              placeholder="Ex: Itaú Unibanco"
+              className="form-input"
+            />
+          </Field>
+          <Field label="Código (ISPB / 3 dígitos)">
+            <input
+              name="bancoCodigo"
+              defaultValue={fundo?.bancoCodigo ?? ""}
+              placeholder="Ex: 341"
+              className="form-input font-mono"
+            />
+          </Field>
+          <Field label="Agência">
+            <input
+              name="bancoAgencia"
+              defaultValue={fundo?.bancoAgencia ?? ""}
+              placeholder="0001-2"
+              className="form-input font-mono"
+            />
+          </Field>
+          <Field label="Conta">
+            <input
+              name="bancoConta"
+              defaultValue={fundo?.bancoConta ?? ""}
+              placeholder="12345-6"
+              className="form-input font-mono"
+            />
+          </Field>
+          <Field label="Chave PIX">
+            <input
+              name="bancoPix"
+              defaultValue={fundo?.bancoPix ?? ""}
+              placeholder="CNPJ, email, telefone ou chave aleatória"
+              className="form-input font-mono"
+            />
+          </Field>
+        </Grid>
+      </Card>
+
+      {/* === Configurações: emissor de boletos + sistema de gestão === */}
+      <Card
+        title="Configurações"
+        subtitle="Integrações externas usadas pelas operações do fundo."
+      >
+        <h4 className="font-mono text-[11px] uppercase tracking-wider text-fg-dim mb-3">
+          banco emissor de boletos
+        </h4>
+        <div className="grid sm:grid-cols-2 gap-4 mb-6">
+          <Field label="Banco emissor">
+            <input
+              name="boletosBancoNome"
+              defaultValue={fundo?.boletosBancoNome ?? ""}
+              placeholder="Ex: Bradesco"
+              className="form-input"
+            />
+          </Field>
+          <Field label="Link da API de geração">
+            <input
+              name="boletosApiUrl"
+              type="url"
+              defaultValue={fundo?.boletosApiUrl ?? ""}
+              placeholder="https://api.banco.com.br/v1/boletos"
+              className="form-input font-mono text-xs"
+            />
+          </Field>
+        </div>
+
+        <h4 className="font-mono text-[11px] uppercase tracking-wider text-fg-dim mb-1">
+          sistema de comunicação
+        </h4>
+        <p className="text-xs text-fg-muted mb-3">Qual seu sistema de gestão?</p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Nome do sistema">
+            <input
+              name="sistemaGestaoNome"
+              defaultValue={fundo?.sistemaGestaoNome ?? ""}
+              placeholder="Ex: Omie, Bling, Conta Azul, ERP próprio..."
+              className="form-input"
+            />
+          </Field>
+          <Field label="Link da documentação de integração">
+            <input
+              name="sistemaGestaoDocsUrl"
+              type="url"
+              defaultValue={fundo?.sistemaGestaoDocsUrl ?? ""}
+              placeholder="https://developer.sistema.com/docs/operacoes"
+              className="form-input font-mono text-xs"
+            />
+          </Field>
+        </div>
+      </Card>
+
       <button type="submit" disabled={pending} className="btn-primary !h-12 !px-6">
         {pending
           ? "Salvando..."
