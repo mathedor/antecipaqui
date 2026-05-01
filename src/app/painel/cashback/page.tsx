@@ -1,22 +1,12 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { getCashbackSummaryForCurrentConstrutora } from "@/lib/actions/cashback";
 import { PainelShell } from "@/components/painel-shell";
 import { SolicitarSaqueForm } from "@/components/solicitar-saque-form";
+import { CashbackOpsTable } from "@/components/cashback-ops-table";
 import { formatBRL } from "@/lib/format";
-import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 
 export const metadata = { title: "Cashback" };
-
-function formatDate(d: Date | string) {
-  const dt = typeof d === "string" ? new Date(d) : d;
-  return dt.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-  });
-}
 
 export default async function CashbackPage() {
   const user = await requireActiveUser();
@@ -61,56 +51,7 @@ export default async function CashbackPage() {
               <h2 className="font-bold mb-3 tracking-tight">
                 Operações com cashback
               </h2>
-              {summary.operacoes.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border-strong bg-bg-card p-8 text-center">
-                  <p className="text-sm text-fg-muted">
-                    Nenhuma operação com cashback ainda. Quando uma operação
-                    sua é aprovada com cashback, aparece aqui.
-                  </p>
-                </div>
-              ) : (
-                <ul className="space-y-2">
-                  {summary.operacoes.map((op) => (
-                    <li
-                      key={op.id}
-                      className="grid grid-cols-12 gap-3 px-5 py-4 rounded-2xl border border-border bg-bg-elev items-center"
-                    >
-                      <Link
-                        href={`/painel/operacoes/${op.id}`}
-                        className="col-span-12 md:col-span-3 font-mono text-sm text-fg hover:text-accent"
-                      >
-                        {op.numero}
-                      </Link>
-                      <div className="col-span-6 md:col-span-3 text-xs text-fg-muted">
-                        VP: {formatBRL(parseFloat(op.valorPresente))}
-                      </div>
-                      <div className="col-span-6 md:col-span-2 text-xs">
-                        <OperacaoStatusBadge status={op.status} />
-                      </div>
-                      <div className="col-span-6 md:col-span-2 text-right">
-                        <div className="font-mono tabular text-sm font-bold text-success">
-                          {formatBRL(parseFloat(op.cashbackValor ?? "0"))}
-                        </div>
-                        <div className="text-[10px] text-fg-dim font-mono">
-                          {(parseFloat(op.cashbackPercent ?? "0") * 100)
-                            .toFixed(2)
-                            .replace(".", ",")}
-                          %
-                        </div>
-                      </div>
-                      <div className="col-span-6 md:col-span-2 text-right text-[10px] font-mono">
-                        {op.cashbackSacadoEm ? (
-                          <span className="text-fg-dim">
-                            sacado {formatDate(op.cashbackSacadoEm)}
-                          </span>
-                        ) : (
-                          <span className="text-success">disponível</span>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <CashbackOpsTable rows={summary.operacoes} />
             </div>
 
             <aside className="lg:col-span-5">

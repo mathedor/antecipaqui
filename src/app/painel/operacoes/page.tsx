@@ -6,13 +6,12 @@ import {
   getOperacoesByConstrutora,
   getOperacoesByCorretor,
 } from "@/lib/actions/operacoes";
-import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PainelShell } from "@/components/painel-shell";
+import { PainelOperacoesTable } from "@/components/painel-operacoes-table";
 import {
   DateRangeFilter,
   OperacoesStatBoxes,
 } from "@/components/operacoes-stats";
-import { formatBRL } from "@/lib/format";
 
 export const metadata = {
   title: "Operações",
@@ -148,56 +147,13 @@ export default async function OperacoesPage({ searchParams }: Search) {
       <OperacoesStatBoxes stats={stats} />
       <DateRangeFilter />
 
-      {operacoes.length === 0 ? (
-        allOps.length === 0 ? (
-          <EmptyState isConstrutora={isConstrutora} />
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border-strong bg-bg-card p-10 text-center">
-            <p className="text-fg-muted">
-              Nenhuma operação no período selecionado.
-            </p>
-          </div>
-        )
+      {allOps.length === 0 ? (
+        <EmptyState isConstrutora={isConstrutora} />
       ) : (
-        <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
-          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border bg-bg-card">
-            <div className="col-span-2">Número</div>
-            <div className="col-span-3">{counterpartyHeader}</div>
-            <div className="col-span-2 text-right">Comissão</div>
-            <div className="col-span-2 text-right">Valor presente</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-1"></div>
-          </div>
-          <ul>
-            {operacoes.map((op) => (
-              <li key={op.id} className="border-b border-border last:border-0">
-                <Link
-                  href={`/painel/operacoes/${op.id}`}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-bg-card transition-colors group"
-                >
-                  <div className="col-span-2 font-mono text-sm text-fg">
-                    {op.numero}
-                  </div>
-                  <div className="col-span-3 text-sm text-fg-muted truncate">
-                    {op.counterpartyLabel ?? "—"}
-                  </div>
-                  <div className="col-span-2 text-right font-mono tabular text-sm text-fg-muted">
-                    {formatBRL(parseFloat(op.valorComissao))}
-                  </div>
-                  <div className="col-span-2 text-right font-mono tabular text-sm text-fg font-semibold">
-                    {formatBRL(parseFloat(op.valorPresente))}
-                  </div>
-                  <div className="col-span-2">
-                    <OperacaoStatusBadge status={op.status} />
-                  </div>
-                  <div className="col-span-1 text-right text-fg-dim group-hover:text-accent group-hover:translate-x-1 transition-all">
-                    →
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <PainelOperacoesTable
+          rows={operacoes}
+          counterpartyHeader={counterpartyHeader}
+        />
       )}
     </PainelShell>
   );

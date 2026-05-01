@@ -377,6 +377,33 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-border-strong bg-bg-card font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      <td className="px-2 py-2 text-fg-muted">Totais</td>
+                      <td className="px-2 py-2" />
+                      <td className="px-2 py-2 text-right tabular text-fg font-bold">
+                        {formatBRL(
+                          operacoes.reduce(
+                            (s, o) => s + parseFloat(o.valorComissao),
+                            0,
+                          ),
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-right tabular text-fg font-bold">
+                        {formatBRL(
+                          operacoes.reduce(
+                            (s, o) => s + parseFloat(o.valorPresente),
+                            0,
+                          ),
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-center tabular text-fg-muted">
+                        {operacoes.reduce((s, o) => s + o.numeroParcelas, 0)}x
+                      </td>
+                      <td className="px-2 py-2" />
+                      <td className="px-2 py-2" />
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             )}

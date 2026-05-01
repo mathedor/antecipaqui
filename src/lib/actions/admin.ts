@@ -452,16 +452,22 @@ export async function listAllUsers() {
     .from(users)
     .orderBy(desc(users.createdAt));
 
-  // Conta operações por user
-  const opCounts = await db
+  // Operações por user: count + soma VP (somente status realizado/aprovado conta como volume)
+  const opAgg = await db
     .select({
       corretorUserId: operacoes.corretorUserId,
       total: count(),
+      valorOperado: sql<string>`COALESCE(SUM(${operacoes.valorPresente}) FILTER (WHERE ${operacoes.status} NOT IN ('rascunho','recusada','cancelada')), 0)`,
     })
     .from(operacoes)
     .groupBy(operacoes.corretorUserId);
 
-  const opMap = new Map(opCounts.map((c) => [c.corretorUserId, c.total]));
+  const opMap = new Map(
+    opAgg.map((c) => [
+      c.corretorUserId,
+      { total: c.total, valor: parseFloat(c.valorOperado) },
+    ]),
+  );
 
   // Conta documentos KYC por user (tipo contrato_social + comprovante_endereco)
   const docs = await db
@@ -485,9 +491,11 @@ export async function listAllUsers() {
         : u.role === "construtora"
           ? u.onboardingStatus === "aprovado"
           : hasContrato && hasComprovante;
+    const op = opMap.get(u.id);
     return {
       ...u,
-      totalOperacoes: opMap.get(u.id) ?? 0,
+      totalOperacoes: op?.total ?? 0,
+      valorOperado: op?.valor ?? 0,
       cadastroCompleto,
       docsFaltando:
         u.role === "corretor" || u.role === "imobiliaria"
@@ -532,14 +540,33 @@ export async function listAllConstrutoras() {
     docsByConstrutora.get(d.construtoraId)!.add(d.tipo);
   }
 
+  // Operações por construtora (qtd + VP somado, ignorando rascunho/recusada/cancelada)
+  const opAgg = await db
+    .select({
+      construtoraId: operacoes.construtoraId,
+      total: count(),
+      valorOperado: sql<string>`COALESCE(SUM(${operacoes.valorPresente}) FILTER (WHERE ${operacoes.status} NOT IN ('rascunho','recusada','cancelada')), 0)`,
+    })
+    .from(operacoes)
+    .groupBy(operacoes.construtoraId);
+  const opMap = new Map(
+    opAgg.map((o) => [
+      o.construtoraId,
+      { total: o.total, valor: parseFloat(o.valorOperado) },
+    ]),
+  );
+
   return rows.map((c) => {
     const dt = docsByConstrutora.get(c.id) ?? new Set();
     const hasContrato = dt.has("contrato_social");
     const hasComprovante = dt.has("comprovante_endereco");
     const cadastroCompleto =
       c.onboardingStatus === "aprovado" || (hasContrato && hasComprovante);
+    const op = opMap.get(c.id);
     return {
       ...c,
+      totalOperacoes: op?.total ?? 0,
+      valorOperado: op?.valor ?? 0,
       cadastroCompleto,
       docsFaltando: [
         !hasContrato && "Contrato social",

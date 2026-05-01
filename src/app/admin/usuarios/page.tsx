@@ -1,19 +1,11 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
-import { AdminRowActions } from "@/components/admin-row-actions";
-import { AdminCobrarButton } from "@/components/admin-cobrar-button";
+import { AdminUsuariosTable } from "@/components/admin-usuarios-table";
 import { listAllUsers } from "@/lib/actions/admin";
 
 export const metadata = {
   title: "Admin · Usuários",
-};
-
-const ROLE_LABEL: Record<string, string> = {
-  corretor: "Imobiliária / Corretor",
-  imobiliaria: "Imobiliária / Corretor",
-  construtora: "Construtora",
-  admin: "Admin",
 };
 
 const ROLE_FILTERS = [
@@ -101,62 +93,7 @@ export default async function AdminUsuariosPage({ searchParams }: Search) {
         {filtered.length} {filtered.length === 1 ? "resultado" : "resultados"}
       </div>
 
-      <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
-        <div className="hidden md:grid grid-cols-12 gap-3 px-6 py-3 text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border bg-bg-card">
-          <div className="col-span-3">Nome</div>
-          <div className="col-span-3">Email</div>
-          <div className="col-span-2">Tipo</div>
-          <div className="col-span-2">Cadastro</div>
-          <div className="col-span-2 text-right">Ações</div>
-        </div>
-        <ul>
-          {filtered.map((u) => {
-            const isAdminRow = u.role === "admin";
-            return (
-              <li
-                key={u.id}
-                className="grid grid-cols-12 gap-3 px-6 py-4 hover:bg-bg-card transition-colors items-center border-b border-border last:border-0"
-              >
-                <Link
-                  href={`/admin/usuarios/${u.id}`}
-                  className="col-span-6 md:col-span-3 text-sm text-fg truncate hover:text-accent"
-                >
-                  {u.nome ?? "(sem nome)"}
-                </Link>
-                <div className="hidden md:block col-span-3 font-mono text-xs text-fg-muted truncate">
-                  {u.email}
-                </div>
-                <div className="col-span-3 md:col-span-2 text-sm text-fg-muted truncate">
-                  {ROLE_LABEL[u.role] ?? u.role}
-                </div>
-                <div className="col-span-3 md:col-span-2">
-                  <CadastroBadge
-                    cadastroCompleto={u.cadastroCompleto}
-                    isActive={u.isActive}
-                    role={u.role}
-                    docsFaltando={u.docsFaltando}
-                  />
-                </div>
-                <div className="hidden md:flex col-span-2 justify-end items-center gap-1.5">
-                  <AdminRowActions
-                    viewHref={`/admin/usuarios/${u.id}`}
-                    editHref={`/admin/usuarios/${u.id}/editar`}
-                  >
-                    {!u.cadastroCompleto && !isAdminRow && (
-                      <AdminCobrarButton target="user" id={u.id} />
-                    )}
-                  </AdminRowActions>
-                </div>
-              </li>
-            );
-          })}
-          {filtered.length === 0 && (
-            <li className="px-6 py-12 text-center text-fg-muted">
-              Nenhum usuário com os filtros atuais.
-            </li>
-          )}
-        </ul>
-      </div>
+      <AdminUsuariosTable rows={filtered} />
     </AdminShell>
   );
 }
@@ -204,48 +141,3 @@ function FilterRow({
   );
 }
 
-function CadastroBadge({
-  cadastroCompleto,
-  isActive,
-  role,
-  docsFaltando,
-}: {
-  cadastroCompleto: boolean;
-  isActive: boolean;
-  role: string;
-  docsFaltando: string[];
-}) {
-  if (!isActive) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-red-50 text-danger border-danger/40">
-        ⛔ bloqueado
-      </span>
-    );
-  }
-  if (role === "admin") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-bg-card text-fg-dim border-border">
-        admin
-      </span>
-    );
-  }
-  if (cadastroCompleto) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-green-50 text-success border-green-200">
-        ✓ completo
-      </span>
-    );
-  }
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-yellow-50 text-warn border-yellow-200"
-      title={
-        docsFaltando.length > 0
-          ? `Falta: ${docsFaltando.join(", ")}`
-          : "Pendente"
-      }
-    >
-      ⚠ pendente
-    </span>
-  );
-}

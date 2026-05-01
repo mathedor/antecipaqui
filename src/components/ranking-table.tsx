@@ -144,6 +144,16 @@ export function RankingTable({ rows, tipo }: Props) {
     );
   }
 
+  const totals = sorted.reduce(
+    (acc, r) => ({
+      valorOperado: acc.valorOperado + r.valorOperado,
+      valorPago: acc.valorPago + r.valorPago,
+      valorAberto: acc.valorAberto + r.valorAberto,
+      qtdOperacoes: acc.qtdOperacoes + r.qtdOperacoes,
+    }),
+    { valorOperado: 0, valorPago: 0, valorAberto: 0, qtdOperacoes: 0 },
+  );
+
   return (
     <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
       <table className="w-full text-sm min-w-[760px]">
@@ -255,6 +265,26 @@ export function RankingTable({ rows, tipo }: Props) {
             );
           })}
         </tbody>
+        <tfoot>
+          <tr className="border-t-2 border-border-strong bg-bg-card font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+            <td className="px-3 md:px-4 py-3" />
+            <td className="px-3 md:px-4 py-3 text-fg-muted">Totais</td>
+            <td className="px-3 md:px-4 py-3 text-right tabular text-fg font-bold">
+              {formatBRL(totals.valorOperado)}
+            </td>
+            <td className="px-3 md:px-4 py-3 text-right tabular text-success font-bold">
+              {formatBRL(totals.valorPago)}
+            </td>
+            <td className="px-3 md:px-4 py-3 text-right tabular text-warn font-bold">
+              {formatBRL(totals.valorAberto)}
+            </td>
+            <td className="px-3 md:px-4 py-3 text-right tabular text-fg-muted font-bold">
+              {totals.qtdOperacoes}
+            </td>
+            <td className="px-3 md:px-4 py-3" />
+            <td className="px-3 md:px-4 py-3" />
+          </tr>
+        </tfoot>
       </table>
     </div>
   );

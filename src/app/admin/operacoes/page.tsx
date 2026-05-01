@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
-import { AdminRowActions } from "@/components/admin-row-actions";
-import { NotificarWhatsappRowActions } from "@/components/notificar-whatsapp-button";
-import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { AdminOperacoesTable } from "@/components/admin-operacoes-table";
 import {
   DateRangeFilter,
   OperacoesStatBoxes,
 } from "@/components/operacoes-stats";
-import { formatBRL } from "@/lib/format";
 import {
   getAdminOperacoesStatBoxes,
   getAllOperacoes,
@@ -91,76 +88,7 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
         })}
       </div>
 
-      {operacoes.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border-strong bg-bg-card p-10 text-center">
-          <p className="text-fg-muted">Nenhuma operação encontrada.</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
-          <div className="hidden md:grid grid-cols-12 gap-3 px-6 py-3 text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border bg-bg-card">
-            <div className="col-span-2">Número</div>
-            <div className="col-span-3">Imobiliária / Corretor</div>
-            <div className="col-span-2">Construtora</div>
-            <div className="col-span-1 text-right">VP</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-2 text-right">Ações</div>
-          </div>
-          <ul>
-            {operacoes.map((op) => (
-              <li
-                key={op.id}
-                className="grid grid-cols-12 gap-3 px-6 py-4 hover:bg-bg-card transition-colors items-center border-b border-border last:border-0"
-              >
-                <Link
-                  href={`/admin/operacoes/${op.id}`}
-                  className="col-span-2 font-mono text-sm text-fg hover:text-accent"
-                >
-                  {op.numero}
-                </Link>
-                <div className="col-span-5 md:col-span-3 text-sm truncate">
-                  <div className="text-fg truncate">{op.corretorNome ?? "—"}</div>
-                  <div className="font-mono text-[10px] text-fg-dim truncate">
-                    {op.corretorEmail}
-                  </div>
-                </div>
-                <div className="hidden md:block col-span-2 text-sm text-fg-muted truncate">
-                  {op.construtoraNome ?? "—"}
-                </div>
-                <div className="hidden md:block col-span-1 text-right font-mono tabular text-xs text-fg font-semibold">
-                  {formatBRL(parseFloat(op.valorPresente))}
-                </div>
-                <div className="col-span-5 md:col-span-2 flex justify-end md:justify-start">
-                  <OperacaoStatusBadge status={op.status} />
-                </div>
-                <div className="hidden md:flex col-span-2 justify-end items-center gap-1.5">
-                  <NotificarWhatsappRowActions
-                    operacao={{
-                      numero: op.numero,
-                      status: op.status,
-                      valorPresente: parseFloat(op.valorPresente),
-                      valorComissao: parseFloat(op.valorComissao),
-                      construtoraNome: op.construtoraNome,
-                      corretorNome: op.corretorNome,
-                    }}
-                    corretor={{
-                      phone: op.corretorTelefone,
-                      nome: op.corretorNome,
-                    }}
-                    construtora={{
-                      phone: op.construtoraTelefone,
-                      nome: op.construtoraNome,
-                    }}
-                  />
-                  <AdminRowActions
-                    viewHref={`/admin/operacoes/${op.id}`}
-                    editHref={`/admin/operacoes/${op.id}/editar`}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <AdminOperacoesTable rows={operacoes} />
     </AdminShell>
   );
 }
