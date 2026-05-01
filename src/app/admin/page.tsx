@@ -219,7 +219,7 @@ function StatCard({
       >
         {label}
       </div>
-      <div className="font-mono tabular text-base sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-fg leading-tight break-words">
+      <div className="font-mono tabular text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold tracking-tight text-fg leading-tight break-words">
         {value}
       </div>
       {sublabel && <div className="text-[10px] md:text-xs text-fg-muted mt-1">{sublabel}</div>}

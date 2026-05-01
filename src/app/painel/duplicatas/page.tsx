@@ -114,7 +114,7 @@ function Stat({
       >
         {label}
       </div>
-      <div className="font-mono tabular text-base sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight leading-tight break-words text-fg">
+      <div className="font-mono tabular text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold tracking-tight leading-tight break-words text-fg">
         {value}
       </div>
     </div>
