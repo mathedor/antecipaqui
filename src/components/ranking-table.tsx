@@ -24,7 +24,7 @@ type RankingRow = {
 
 type Props = {
   rows: RankingRow[];
-  tipo: "construtora" | "imobiliaria";
+  tipo: "construtora" | "imobiliaria" | "fundo";
 };
 
 const SITE_URL =
@@ -34,6 +34,9 @@ function whatsappMessageFor(row: RankingRow, tipo: Props["tipo"]) {
   const nome = row.nome.split(" ")[0];
   if (tipo === "construtora") {
     return `Olá ${nome}, aqui é da Antecipaqui!\n\nEstamos passando pra acompanhar suas operações em curso. Se precisar de qualquer coisa, é só responder.\n\n${SITE_URL}/painel`;
+  }
+  if (tipo === "fundo") {
+    return `Olá ${nome}, aqui é da Antecipaqui!\n\nEstamos passando pra acompanhar as operações antecipadas pelo seu fundo. Qualquer ajuste, é só responder.\n\n${SITE_URL}/painel`;
   }
   return `Olá ${nome}, aqui é da Antecipaqui!\n\nEstamos passando pra acompanhar suas operações de antecipação. Qualquer dúvida ou nova operação, é só falar com a gente.\n\n${SITE_URL}/painel`;
 }
@@ -163,7 +166,9 @@ export function RankingTable({ rows, tipo }: Props) {
             <Th field="nome">
               {tipo === "construtora"
                 ? "Construtora"
-                : "Imobiliária / Corretor"}
+                : tipo === "fundo"
+                  ? "Fundo"
+                  : "Imobiliária / Corretor"}
             </Th>
             <Th field="valorOperado" align="right">
               Valor operado
@@ -194,7 +199,9 @@ export function RankingTable({ rows, tipo }: Props) {
             const cadastroHref =
               tipo === "construtora"
                 ? `/admin/construtoras/${r.id}`
-                : `/admin/usuarios/${r.id}`;
+                : tipo === "fundo"
+                  ? `/admin/fundos/${r.id}`
+                  : `/admin/usuarios/${r.id}`;
             return (
               <tr
                 key={r.id}

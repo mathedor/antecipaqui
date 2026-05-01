@@ -3,12 +3,12 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { RelatorioFilters } from "@/components/relatorio-filters";
 import { RankingTable } from "@/components/ranking-table";
-import { getConstrutorasRanking } from "@/lib/actions/reports";
+import { getFundosRanking } from "@/lib/actions/reports";
 import { listFundosForSelector } from "@/lib/actions/fundos";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
-  title: "Relatório · Ranking de construtoras",
+  title: "Relatório · Ranking de fundos",
 };
 
 type Search = {
@@ -21,17 +21,14 @@ type Search = {
   }>;
 };
 
-export default async function RankingConstrutorasPage({
-  searchParams,
-}: Search) {
+export default async function RankingFundosPage({ searchParams }: Search) {
   const admin = await requireAdmin();
   const params = await searchParams;
   const [rows, fundos] = await Promise.all([
-    getConstrutorasRanking(params),
+    getFundosRanking(params),
     listFundosForSelector(),
   ]);
 
-  // Totais agregados
   const totalOperado = rows.reduce((s, r) => s + r.valorOperado, 0);
   const totalPago = rows.reduce((s, r) => s + r.valorPago, 0);
   const totalAberto = rows.reduce((s, r) => s + r.valorAberto, 0);
@@ -49,15 +46,13 @@ export default async function RankingConstrutorasPage({
       <div className="mb-6">
         <div className="eyebrow mb-2">ranking</div>
         <h1 className="text-display-md">
-          Construtoras que mais{" "}
-          <span className="text-gradient-blue">operaram</span>
+          Fundos que mais{" "}
+          <span className="text-gradient-blue">aportaram</span>
         </h1>
-        <p className="mt-2 text-fg-muted">
-          {rows.length} construtora(s) no resultado.
-        </p>
+        <p className="mt-2 text-fg-muted">{rows.length} fundo(s) no resultado.</p>
       </div>
 
-      <RelatorioFilters tipoCadastro="construtora" fundos={fundos} />
+      <RelatorioFilters tipoCadastro="fundo" fundos={fundos} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <Stat label="Total operado" value={formatBRL(totalOperado)} highlight />
@@ -66,7 +61,7 @@ export default async function RankingConstrutorasPage({
         <Stat label="Operações" value={String(totalOps)} />
       </div>
 
-      <RankingTable rows={rows} tipo="construtora" />
+      <RankingTable rows={rows} tipo="fundo" />
     </AdminShell>
   );
 }

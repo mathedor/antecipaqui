@@ -324,6 +324,192 @@ export function ValorEstatisticasChart({
   );
 }
 
+/* === Média por fundo (BarChart vertical com 2 séries) === */
+export function MediaPorFundoChart({
+  data,
+}: {
+  data: {
+    id: string;
+    nome: string;
+    taxa_base: number;
+    qtd_operacoes: number;
+    valor_medio: number;
+    valor_total: number;
+  }[];
+}) {
+  const formatted = data.map((d) => ({
+    nome: d.nome.length > 18 ? d.nome.slice(0, 18) + "…" : d.nome,
+    Operações: d.qtd_operacoes,
+    "Valor médio": Math.round(d.valor_medio),
+    "Total operado": Math.round(d.valor_total),
+  }));
+  return (
+    <ResponsiveContainer width="100%" height={Math.max(220, data.length * 60)}>
+      <BarChart
+        data={formatted}
+        layout="vertical"
+        margin={{ top: 10, right: 30, left: 100, bottom: 0 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#e6e7e9" />
+        <XAxis
+          type="number"
+          stroke="#5a6571"
+          fontSize={10}
+          tickFormatter={(v) => fmtBRL(Number(v))}
+        />
+        <YAxis
+          dataKey="nome"
+          type="category"
+          stroke="#5a6571"
+          fontSize={10}
+          width={100}
+        />
+        <Tooltip
+          formatter={(v, name) =>
+            name === "Operações"
+              ? [Number(v), "Operações"]
+              : [fmtBRL(Number(v)), name as string]
+          }
+          contentStyle={{
+            background: "#fff",
+            border: "1px solid #e6e7e9",
+            borderRadius: 8,
+            fontSize: 12,
+          }}
+        />
+        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Bar dataKey="Total operado" fill="#1c6dd0" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="Valor médio" fill="#15803d" radius={[0, 4, 4, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/* === Inadimplência por mês (LineChart) === */
+export function InadimplenciaMesChart({
+  data,
+}: {
+  data: { month: string; qtd: number; valor: number }[];
+}) {
+  const formatted = data.map((d) => ({
+    label: new Date(d.month + "-01T00:00:00").toLocaleDateString("pt-BR", {
+      month: "short",
+      year: "2-digit",
+    }),
+    Valor: Math.round(d.valor),
+    Parcelas: d.qtd,
+  }));
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <LineChart
+        data={formatted}
+        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#e6e7e9" />
+        <XAxis dataKey="label" stroke="#5a6571" fontSize={11} />
+        <YAxis
+          yAxisId="left"
+          stroke="#b91c1c"
+          fontSize={10}
+          tickFormatter={(v) => fmtBRL(Number(v))}
+        />
+        <YAxis
+          yAxisId="right"
+          orientation="right"
+          stroke="#5a6571"
+          fontSize={10}
+        />
+        <Tooltip
+          formatter={(v, name) =>
+            name === "Parcelas"
+              ? [Number(v), "Parcelas"]
+              : [fmtBRL(Number(v)), "Valor inadimplente"]
+          }
+          contentStyle={{
+            background: "#fff",
+            border: "1px solid #e6e7e9",
+            borderRadius: 8,
+            fontSize: 12,
+          }}
+        />
+        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Line
+          yAxisId="left"
+          type="monotone"
+          dataKey="Valor"
+          stroke="#b91c1c"
+          strokeWidth={2}
+          dot={{ r: 3 }}
+        />
+        <Line
+          yAxisId="right"
+          type="monotone"
+          dataKey="Parcelas"
+          stroke="#5a6571"
+          strokeWidth={2}
+          dot={{ r: 3 }}
+          strokeDasharray="3 3"
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+/* === Inadimplência por fundo (BarChart vertical) === */
+export function InadimplenciaFundoChart({
+  data,
+}: {
+  data: {
+    fundo_id: string;
+    nome: string;
+    qtd: number;
+    valor_inadimplente: number;
+    valor_30d_atraso: number;
+  }[];
+}) {
+  const formatted = data.map((d) => ({
+    nome: d.nome.length > 22 ? d.nome.slice(0, 22) + "…" : d.nome,
+    Inadimplente: Math.round(d.valor_inadimplente),
+    "+30d atraso": Math.round(d.valor_30d_atraso),
+  }));
+  return (
+    <ResponsiveContainer width="100%" height={Math.max(220, data.length * 56)}>
+      <BarChart
+        data={formatted}
+        layout="vertical"
+        margin={{ top: 10, right: 30, left: 130, bottom: 0 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#e6e7e9" />
+        <XAxis
+          type="number"
+          stroke="#5a6571"
+          fontSize={10}
+          tickFormatter={(v) => fmtBRL(Number(v))}
+        />
+        <YAxis
+          dataKey="nome"
+          type="category"
+          stroke="#5a6571"
+          fontSize={10}
+          width={130}
+        />
+        <Tooltip
+          formatter={(v) => fmtBRL(Number(v))}
+          contentStyle={{
+            background: "#fff",
+            border: "1px solid #e6e7e9",
+            borderRadius: 8,
+            fontSize: 12,
+          }}
+        />
+        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Bar dataKey="Inadimplente" fill="#b91c1c" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="+30d atraso" fill="#7c2d12" radius={[0, 4, 4, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 /* === Distribuição soma por faixa (Area) === */
 export function DistribuicaoSomaChart({
   data,

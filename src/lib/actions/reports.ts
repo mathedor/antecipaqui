@@ -13,6 +13,8 @@ export type ReportFilters = {
   cadastroStatus?: string;
   /** valor do enum operacao_status (ex: "realizada"). Vazio = todos. */
   operacaoStatus?: string;
+  /** Fundo selecionado. "_no_fundo_" = ops sem fundo. Vazio = todos. */
+  fundoId?: string;
 };
 
 type RankingRow = {
@@ -33,7 +35,8 @@ function buildOpFilters({
   from,
   to,
   operacaoStatus,
-}: Pick<ReportFilters, "from" | "to" | "operacaoStatus">) {
+  fundoId,
+}: Pick<ReportFilters, "from" | "to" | "operacaoStatus" | "fundoId">) {
   // Cláusulas que entram em cada agregação (referenciam alias `o`)
   const parts: ReturnType<typeof sql>[] = [];
   if (from)
@@ -44,6 +47,8 @@ function buildOpFilters({
     );
   if (operacaoStatus)
     parts.push(sql`o.status = ${operacaoStatus}::operacao_status`);
+  if (fundoId === "_no_fundo_") parts.push(sql`o.fundo_id IS NULL`);
+  else if (fundoId) parts.push(sql`o.fundo_id = ${fundoId}::uuid`);
   if (parts.length === 0) return sql`TRUE`;
   return sql.join(parts, sql` AND `);
 }
@@ -219,6 +224,89 @@ export async function getImobiliariasRanking(
     telefone: r.telefone,
     isActive: r.is_active,
     ownerUserId: r.user_id,
+    qtdOperacoes: Number(r.qtd_operacoes),
+    valorOperado: Number(r.valor_operado),
+    valorPago: Number(r.valor_pago),
+    valorAberto: Number(r.valor_aberto),
+  }));
+}
+
+/* ============================================================
+   RANKING DE FUNDOS
+   Mesmo formato dos demais — agrega operações por fundo_id.
+   ============================================================ */
+export async function getFundosRanking(
+  filters: ReportFilters = {},
+): Promise<RankingRow[]> {
+  await requireAdmin();
+  const opFilter = buildOpFilters(filters);
+
+  const cadastroFilter =
+    filters.cadastroStatus === "ativo"
+      ? sql`AND f.is_active = TRUE`
+      : filters.cadastroStatus === "inativo"
+        ? sql`AND f.is_active = FALSE`
+        : sql``;
+
+  const result = await db.execute(sql`
+    SELECT
+      f.id,
+      f.razao_social AS nome,
+      f.cnpj AS documento,
+      f.email_comercial AS email,
+      f.telefone,
+      f.is_active,
+      f.owner_user_id,
+      COALESCE(COUNT(o.id) FILTER (
+        WHERE ${opFilter}
+          AND o.status NOT IN ('rascunho','recusada','cancelada')
+      ), 0)::int AS qtd_operacoes,
+      COALESCE(SUM(o.valor_comissao) FILTER (
+        WHERE ${opFilter}
+          AND o.status NOT IN ('rascunho','recusada','cancelada')
+      ), 0)::float AS valor_operado,
+      COALESCE(SUM(o.valor_presente) FILTER (
+        WHERE ${opFilter}
+          AND o.status = 'realizada'
+      ), 0)::float AS valor_pago,
+      COALESCE(SUM(o.valor_presente) FILTER (
+        WHERE ${opFilter}
+          AND o.status IN (
+            'aguardando_aprovacao',
+            'documentos_incompletos',
+            'pre_aprovada',
+            'analise_final',
+            'enviada_para_assinatura',
+            'enviada_para_pagamento'
+          )
+      ), 0)::float AS valor_aberto
+    FROM fundos f
+    LEFT JOIN operacoes o ON o.fundo_id = f.id
+    WHERE TRUE ${cadastroFilter}
+    GROUP BY f.id
+    ORDER BY valor_operado DESC NULLS LAST, qtd_operacoes DESC, f.razao_social
+  `);
+
+  return extractRows<{
+    id: string;
+    nome: string;
+    documento: string;
+    email: string | null;
+    telefone: string | null;
+    is_active: boolean;
+    owner_user_id: string | null;
+    qtd_operacoes: number;
+    valor_operado: number;
+    valor_pago: number;
+    valor_aberto: number;
+  }>(result).map((r) => ({
+    id: r.id,
+    nome: r.nome,
+    documento: r.documento,
+    email: r.email,
+    telefone: r.telefone,
+    isActive: r.is_active,
+    ownerUserId: r.owner_user_id,
     qtdOperacoes: Number(r.qtd_operacoes),
     valorOperado: Number(r.valor_operado),
     valorPago: Number(r.valor_pago),

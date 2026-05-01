@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { getIndicesData } from "@/lib/actions/reports-extra";
+import { listFundosForSelector } from "@/lib/actions/fundos";
 import {
   DistribuicaoValorChart,
   PorDiaSemanaChart,
@@ -11,14 +12,31 @@ import {
   MotivosRecusaChart,
   ValorEstatisticasChart,
   DistribuicaoSomaChart,
+  MediaPorFundoChart,
+  InadimplenciaMesChart,
+  InadimplenciaFundoChart,
 } from "@/components/indices-charts";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = { title: "Admin · Índices" };
 
-export default async function AdminIndicesPage() {
+type Search = {
+  searchParams: Promise<{
+    fundoId?: string;
+    inadPeriodo?: "30d" | "90d" | "180d" | "365d";
+  }>;
+};
+
+export default async function AdminIndicesPage({ searchParams }: Search) {
   const admin = await requireAdmin();
-  const data = await getIndicesData();
+  const params = await searchParams;
+  const fundoId = params.fundoId;
+  const inadPeriodo = params.inadPeriodo ?? "90d";
+
+  const [data, fundos] = await Promise.all([
+    getIndicesData({ fundoId, inadPeriodo }),
+    listFundosForSelector(),
+  ]);
 
   const taxaRecusa =
     data.valorAvg.total + data.recusadas.total > 0
@@ -54,6 +72,55 @@ export default async function AdminIndicesPage() {
         </p>
       </div>
 
+      {/* === Filtros (fundo + período de inadimplência) === */}
+      <form
+        method="get"
+        className="rounded-2xl border border-border bg-bg-elev p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-3"
+      >
+        <div>
+          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+            Fundo
+          </label>
+          <select name="fundoId" defaultValue={fundoId ?? ""} className="form-input">
+            <option value="">Todos</option>
+            {fundos.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nomeFantasia ?? f.razaoSocial}
+              </option>
+            ))}
+            <option value="_no_fundo_">— sem fundo —</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+            Inadimplência por fundo · período
+          </label>
+          <select
+            name="inadPeriodo"
+            defaultValue={inadPeriodo}
+            className="form-input"
+          >
+            <option value="30d">Último mês</option>
+            <option value="90d">Últimos 3 meses</option>
+            <option value="180d">Últimos 6 meses</option>
+            <option value="365d">Último ano</option>
+          </select>
+        </div>
+        <div className="flex items-end gap-2">
+          <button type="submit" className="btn-primary !h-12 !px-5">
+            Aplicar
+          </button>
+          {(fundoId || inadPeriodo !== "90d") && (
+            <Link
+              href="/admin/relatorios/indices"
+              className="text-fg-muted hover:text-fg text-sm self-center"
+            >
+              limpar
+            </Link>
+          )}
+        </div>
+      </form>
+
       {/* === KPIs topo === */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         <KpiCard
@@ -80,6 +147,23 @@ export default async function AdminIndicesPage() {
           value={`${data.convites.total}`}
           sub={`${data.convites.aguardando} aguardando · ${data.convites.reivindicados} aceitos`}
           href="/admin/convites"
+        />
+      </div>
+
+      {/* === KPI inadimplência === */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+        <KpiCard
+          label="Inadimplência total"
+          value={formatBRL(data.inadTotal.valor)}
+          sub={`${data.inadTotal.qtd} parcelas vencidas/atrasadas`}
+          tone="danger"
+          href="/admin/relatorios/inadimplentes"
+        />
+        <KpiCard
+          label="Fundos cadastrados"
+          value={String(data.porFundo.length)}
+          sub={`${data.porFundo.reduce((s, f) => s + f.qtd_operacoes, 0)} ops vinculadas`}
+          href="/admin/fundos"
         />
       </div>
 
@@ -175,6 +259,64 @@ export default async function AdminIndicesPage() {
             </p>
           )}
         </ChartCard>
+      </div>
+
+      {/* === Charts FUNDOS + INADIMPLÊNCIA === */}
+      <div className="grid grid-cols-1 gap-5 mt-8">
+        <ChartCard
+          title="Média e total por fundo"
+          subtitle="Comparativo de operações + valor médio + total operado por cada fundo investidor"
+          href="/admin/relatorios/fundos"
+          hrefLabel="Ver ranking de fundos"
+        >
+          {data.porFundo.length === 0 ? (
+            <p className="text-sm text-fg-muted text-center py-8">
+              Nenhum fundo cadastrado ainda.
+            </p>
+          ) : (
+            <MediaPorFundoChart data={data.porFundo} />
+          )}
+        </ChartCard>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <ChartCard
+            title="Inadimplência por mês"
+            subtitle="Parcelas vencidas + a vencer com vencimento já passado · últimos 12 meses"
+            href="/admin/relatorios/inadimplentes"
+            hrefLabel="Ver inadimplentes"
+          >
+            {data.inadimplenciaMes.length === 0 ? (
+              <p className="text-sm text-fg-muted text-center py-12">
+                Sem inadimplência detectada nos últimos 12 meses.
+              </p>
+            ) : (
+              <InadimplenciaMesChart data={data.inadimplenciaMes} />
+            )}
+          </ChartCard>
+
+          <ChartCard
+            title={`Inadimplência por fundo · ${
+              inadPeriodo === "30d"
+                ? "último mês"
+                : inadPeriodo === "90d"
+                  ? "últimos 3 meses"
+                  : inadPeriodo === "180d"
+                    ? "últimos 6 meses"
+                    : "último ano"
+            }`}
+            subtitle="Use o seletor de período no topo. Barra escura = +30d de atraso."
+            href={`/admin/relatorios/inadimplentes?periodo=${inadPeriodo}`}
+            hrefLabel="Ver lista filtrada"
+          >
+            {data.inadimplenciaFundo.length === 0 ? (
+              <p className="text-sm text-fg-muted text-center py-12">
+                Nenhum fundo com inadimplência no período.
+              </p>
+            ) : (
+              <InadimplenciaFundoChart data={data.inadimplenciaFundo} />
+            )}
+          </ChartCard>
+        </div>
       </div>
 
       {/* === Listas: construtoras com docs faltantes + ops incompletas === */}

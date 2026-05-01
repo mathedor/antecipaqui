@@ -45,6 +45,8 @@ const nav: AdminNavItem[] = [
         href: "/admin/relatorios/imobiliarias",
         label: "Ranking de imobiliárias / corretores",
       },
+      { href: "/admin/relatorios/fundos", label: "Ranking de fundos" },
+      { href: "/admin/relatorios/inadimplentes", label: "Inadimplentes" },
       { href: "/admin/relatorios/logs", label: "Logs de auditoria" },
       { href: "/admin/relatorios/saude", label: "Saúde do sistema" },
     ],

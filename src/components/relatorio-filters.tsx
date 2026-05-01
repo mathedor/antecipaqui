@@ -46,10 +46,13 @@ function detectPreset(from?: string | null, to?: string | null) {
 }
 
 export function RelatorioFilters({
-  /** "construtora" | "imobiliaria" — muda só o label do status do cadastro */
+  /** "construtora" | "imobiliaria" | "fundo" — muda só o label do status do cadastro */
   tipoCadastro,
+  /** Lista de fundos pra dropdown. Se vazio, esconde o filtro. */
+  fundos = [],
 }: {
-  tipoCadastro: "construtora" | "imobiliaria";
+  tipoCadastro: "construtora" | "imobiliaria" | "fundo";
+  fundos?: Array<{ id: string; razaoSocial: string; nomeFantasia: string | null }>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -59,6 +62,7 @@ export function RelatorioFilters({
   const to = params.get("to");
   const cadastroStatus = params.get("cadastroStatus") ?? "";
   const operacaoStatus = params.get("operacaoStatus") ?? "";
+  const fundoId = params.get("fundoId") ?? "";
 
   const initialPreset = detectPreset(from, to);
   const [preset, setPreset] = useState(initialPreset);
@@ -92,7 +96,11 @@ export function RelatorioFilters({
   }
 
   const labelEntidade =
-    tipoCadastro === "construtora" ? "Construtora" : "Imobiliária / Corretor";
+    tipoCadastro === "construtora"
+      ? "Construtora"
+      : tipoCadastro === "fundo"
+        ? "Fundo"
+        : "Imobiliária / Corretor";
 
   return (
     <section className="rounded-2xl border border-border bg-bg-elev p-5 mb-6 space-y-4">
@@ -200,6 +208,27 @@ export function RelatorioFilters({
           ))}
         </select>
       </div>
+
+      {fundos.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim w-20 shrink-0">
+            Fundo
+          </span>
+          <select
+            value={fundoId}
+            onChange={(e) => pushWith({ fundoId: e.target.value || null })}
+            className="h-9 rounded-lg bg-bg border border-border-strong px-3 text-sm text-fg focus:border-accent outline-none transition-colors max-w-xs"
+          >
+            <option value="">Todos</option>
+            {fundos.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nomeFantasia ?? f.razaoSocial}
+              </option>
+            ))}
+            <option value="_no_fundo_">— sem fundo —</option>
+          </select>
+        </div>
+      )}
     </section>
   );
 }

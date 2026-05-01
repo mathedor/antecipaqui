@@ -21,8 +21,22 @@ function extractRows<T>(result: unknown): T[] {
    ÍNDICES — métricas e charts diversificados
    ========================================= */
 
-export async function getIndicesData() {
+export async function getIndicesData(filters?: {
+  fundoId?: string;
+  /** Janela de inadimplência por fundo: 30d, 90d, 180d, 365d (default 90d). */
+  inadPeriodo?: "30d" | "90d" | "180d" | "365d";
+}) {
   await requireAdmin();
+  const fundoId = filters?.fundoId?.trim() || undefined;
+  const inadPeriodo = filters?.inadPeriodo ?? "90d";
+
+  // Filtro fundo (aplicado em todas as agregações)
+  const fundoSql =
+    fundoId === "_no_fundo_"
+      ? sql` AND fundo_id IS NULL`
+      : fundoId
+        ? sql` AND fundo_id = ${fundoId}::uuid`
+        : sql``;
 
   // Valor médio das operações (média + mediana + p25/p75)
   const valorAvgRes = await db.execute(sql`
@@ -33,7 +47,7 @@ export async function getIndicesData() {
       COALESCE(percentile_cont(0.75) WITHIN GROUP (ORDER BY valor_presente)::float, 0) AS p75,
       COUNT(*)::int AS total
     FROM operacoes
-    WHERE status NOT IN ('rascunho', 'recusada', 'cancelada')
+    WHERE status NOT IN ('rascunho', 'recusada', 'cancelada') ${fundoSql}
   `);
   const valorAvg = extractRows<{
     media: number;
@@ -57,7 +71,7 @@ export async function getIndicesData() {
       COUNT(*)::int AS qtd,
       COALESCE(SUM(valor_presente)::float, 0) AS soma
     FROM operacoes
-    WHERE status NOT IN ('rascunho', 'recusada', 'cancelada')
+    WHERE status NOT IN ('rascunho', 'recusada', 'cancelada') ${fundoSql}
     GROUP BY faixa
     ORDER BY MIN(valor_presente)
   `);
@@ -72,7 +86,7 @@ export async function getIndicesData() {
     SELECT COUNT(*)::float / GREATEST(1, EXTRACT(DAY FROM (NOW() - MIN(created_at))))::float AS media
     FROM operacoes
     WHERE created_at >= NOW() - INTERVAL '90 days'
-      AND status NOT IN ('rascunho', 'recusada', 'cancelada')
+      AND status NOT IN ('rascunho', 'recusada', 'cancelada') ${fundoSql}
   `);
   const mediaDiaria = extractRows<{ media: number }>(mediaDiariaRes)[0]?.media ?? 0;
 
@@ -80,7 +94,7 @@ export async function getIndicesData() {
     SELECT COUNT(*)::float / GREATEST(1, EXTRACT(DAY FROM (NOW() - MIN(created_at))) / 7)::float AS media
     FROM operacoes
     WHERE created_at >= NOW() - INTERVAL '90 days'
-      AND status NOT IN ('rascunho', 'recusada', 'cancelada')
+      AND status NOT IN ('rascunho', 'recusada', 'cancelada') ${fundoSql}
   `);
   const mediaSemanal = extractRows<{ media: number }>(mediaSemanalRes)[0]?.media ?? 0;
 
@@ -88,7 +102,7 @@ export async function getIndicesData() {
     SELECT COUNT(*)::float / GREATEST(1, EXTRACT(DAY FROM (NOW() - MIN(created_at))) / 30)::float AS media
     FROM operacoes
     WHERE created_at >= NOW() - INTERVAL '180 days'
-      AND status NOT IN ('rascunho', 'recusada', 'cancelada')
+      AND status NOT IN ('rascunho', 'recusada', 'cancelada') ${fundoSql}
   `);
   const mediaMensal = extractRows<{ media: number }>(mediaMensalRes)[0]?.media ?? 0;
 
@@ -99,7 +113,7 @@ export async function getIndicesData() {
       COUNT(*)::int AS qtd
     FROM operacoes
     WHERE status NOT IN ('rascunho', 'recusada', 'cancelada')
-      AND created_at >= NOW() - INTERVAL '180 days'
+      AND created_at >= NOW() - INTERVAL '180 days' ${fundoSql}
     GROUP BY dia
     ORDER BY dia
   `);
@@ -244,6 +258,124 @@ export async function getIndicesData() {
     realizadas: 0,
   };
 
+  // Média por fundo (qtd ops + valor médio + valor total + taxa-base)
+  const porFundoRes = await db.execute(sql`
+    SELECT
+      f.id,
+      COALESCE(f.nome_fantasia, f.razao_social) AS nome,
+      f.taxa_mensal_base::float AS taxa_base,
+      COUNT(o.id)::int AS qtd_operacoes,
+      COALESCE(AVG(o.valor_presente)::float, 0) AS valor_medio,
+      COALESCE(SUM(o.valor_presente)::float, 0) AS valor_total,
+      COALESCE(AVG(o.valor_comissao)::float, 0) AS comissao_media
+    FROM fundos f
+    LEFT JOIN operacoes o
+      ON o.fundo_id = f.id
+      AND o.status NOT IN ('rascunho', 'recusada', 'cancelada')
+    WHERE f.is_active = TRUE
+    GROUP BY f.id, nome, f.taxa_mensal_base
+    ORDER BY valor_total DESC
+  `);
+  const porFundo = extractRows<{
+    id: string;
+    nome: string;
+    taxa_base: number;
+    qtd_operacoes: number;
+    valor_medio: number;
+    valor_total: number;
+    comissao_media: number;
+  }>(porFundoRes);
+
+  // Inadimplência por mês (últimos 12 meses) — parcelas em "vencida" OU
+  // "a_vencer" com vencimento já passado
+  const inadMesRes = await db.execute(sql`
+    SELECT
+      to_char(date_trunc('month', p.vencimento), 'YYYY-MM') AS month,
+      COUNT(*)::int AS qtd,
+      COALESCE(SUM(p.valor)::float, 0) AS valor
+    FROM parcelas_comissao p
+    INNER JOIN operacoes o ON o.id = p.operacao_id
+    WHERE (
+      p.status = 'vencida'
+      OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE)
+    )
+    AND p.vencimento >= date_trunc('month', NOW()) - INTERVAL '11 months'
+    AND o.status NOT IN ('rascunho', 'recusada', 'cancelada') ${
+      fundoId === "_no_fundo_"
+        ? sql` AND o.fundo_id IS NULL`
+        : fundoId
+          ? sql` AND o.fundo_id = ${fundoId}::uuid`
+          : sql``
+    }
+    GROUP BY date_trunc('month', p.vencimento)
+    ORDER BY date_trunc('month', p.vencimento)
+  `);
+  const inadimplenciaMes = extractRows<{
+    month: string;
+    qtd: number;
+    valor: number;
+  }>(inadMesRes);
+
+  // Inadimplência por fundo no período selecionado
+  const dias =
+    inadPeriodo === "30d"
+      ? 30
+      : inadPeriodo === "90d"
+        ? 90
+        : inadPeriodo === "180d"
+          ? 180
+          : 365;
+  const inadFundoRes = await db.execute(sql`
+    SELECT
+      COALESCE(f.id::text, '_sem_fundo_') AS fundo_id,
+      COALESCE(f.nome_fantasia, f.razao_social, '— sem fundo —') AS nome,
+      COUNT(p.id)::int AS qtd,
+      COALESCE(SUM(p.valor)::float, 0) AS valor_inadimplente,
+      COALESCE(SUM(p.valor) FILTER (
+        WHERE EXTRACT(EPOCH FROM (CURRENT_DATE - p.vencimento)) / 86400 > 30
+      )::float, 0) AS valor_30d_atraso
+    FROM parcelas_comissao p
+    INNER JOIN operacoes o ON o.id = p.operacao_id
+    LEFT JOIN fundos f ON f.id = o.fundo_id
+    WHERE (
+      p.status = 'vencida'
+      OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE)
+    )
+    AND p.vencimento >= CURRENT_DATE - (${dias}::int || ' days')::interval
+    AND o.status NOT IN ('rascunho', 'recusada', 'cancelada')
+    GROUP BY f.id, nome
+    ORDER BY valor_inadimplente DESC
+  `);
+  const inadimplenciaFundo = extractRows<{
+    fundo_id: string;
+    nome: string;
+    qtd: number;
+    valor_inadimplente: number;
+    valor_30d_atraso: number;
+  }>(inadFundoRes);
+
+  // Total de inadimplência (header KPI)
+  const inadTotalRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS qtd,
+      COALESCE(SUM(p.valor)::float, 0) AS valor
+    FROM parcelas_comissao p
+    INNER JOIN operacoes o ON o.id = p.operacao_id
+    WHERE (
+      p.status = 'vencida'
+      OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE)
+    )
+    AND o.status NOT IN ('rascunho', 'recusada', 'cancelada') ${
+      fundoId === "_no_fundo_"
+        ? sql` AND o.fundo_id IS NULL`
+        : fundoId
+          ? sql` AND o.fundo_id = ${fundoId}::uuid`
+          : sql``
+    }
+  `);
+  const inadTotal = extractRows<{ qtd: number; valor: number }>(inadTotalRes)[0] ??
+    { qtd: 0, valor: 0 };
+
   return {
     valorAvg,
     distribuicaoValor,
@@ -258,7 +390,95 @@ export async function getIndicesData() {
     convites,
     convitesMes,
     funil,
+    porFundo,
+    inadimplenciaMes,
+    inadimplenciaFundo,
+    inadTotal,
+    inadPeriodo,
   };
+}
+
+/* =========================================
+   INADIMPLENTES — relatório de parcelas vencidas
+   ========================================= */
+
+export async function getInadimplentes(filters?: {
+  fundoId?: string;
+  from?: string;
+  to?: string;
+  q?: string;
+  diasMin?: number;
+}) {
+  await requireAdmin();
+  const fundoId = filters?.fundoId?.trim() || undefined;
+  const conds: ReturnType<typeof sql>[] = [
+    sql`(p.status = 'vencida' OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE))`,
+    sql`o.status NOT IN ('rascunho', 'recusada', 'cancelada')`,
+  ];
+  if (fundoId === "_no_fundo_") conds.push(sql`o.fundo_id IS NULL`);
+  else if (fundoId) conds.push(sql`o.fundo_id = ${fundoId}::uuid`);
+  if (filters?.from) conds.push(sql`p.vencimento >= ${filters.from}::date`);
+  if (filters?.to) conds.push(sql`p.vencimento <= ${filters.to}::date`);
+  if (filters?.q) {
+    const like = `%${filters.q}%`;
+    conds.push(sql`(o.numero ILIKE ${like}
+      OR c.razao_social ILIKE ${like}
+      OR u.nome ILIKE ${like}
+      OR u.email ILIKE ${like})`);
+  }
+  if (filters?.diasMin && filters.diasMin > 0) {
+    conds.push(sql`(CURRENT_DATE - p.vencimento) >= ${filters.diasMin}`);
+  }
+  const where = sql.join(conds, sql` AND `);
+
+  const result = await db.execute(sql`
+    SELECT
+      p.id AS parcela_id,
+      p.numero,
+      p.valor,
+      p.vencimento,
+      p.status AS parcela_status,
+      (CURRENT_DATE - p.vencimento)::int AS dias_atraso,
+      o.id AS operacao_id,
+      o.numero AS operacao_numero,
+      o.status AS operacao_status,
+      o.valor_presente AS operacao_vp,
+      c.razao_social AS construtora_nome,
+      c.id AS construtora_id,
+      u.nome AS corretor_nome,
+      u.email AS corretor_email,
+      u.id AS corretor_id,
+      f.id AS fundo_id,
+      COALESCE(f.nome_fantasia, f.razao_social) AS fundo_nome
+    FROM parcelas_comissao p
+    INNER JOIN operacoes o ON o.id = p.operacao_id
+    LEFT JOIN construtoras c ON c.id = o.construtora_id
+    LEFT JOIN users u ON u.id = o.corretor_user_id
+    LEFT JOIN fundos f ON f.id = o.fundo_id
+    WHERE ${where}
+    ORDER BY p.vencimento ASC
+    LIMIT 500
+  `);
+
+  return extractRows<{
+    parcela_id: string;
+    numero: number;
+    valor: string;
+    vencimento: string;
+    parcela_status: string;
+    dias_atraso: number;
+    operacao_id: string;
+    operacao_numero: string;
+    operacao_status: string;
+    operacao_vp: string;
+    construtora_nome: string | null;
+    construtora_id: string | null;
+    corretor_nome: string | null;
+    corretor_email: string | null;
+    corretor_id: string | null;
+    fundo_id: string | null;
+    fundo_nome: string | null;
+  }>(result);
 }
 
 /* =========================================

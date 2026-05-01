@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { RelatorioFilters } from "@/components/relatorio-filters";
 import { RankingTable } from "@/components/ranking-table";
 import { getImobiliariasRanking } from "@/lib/actions/reports";
+import { listFundosForSelector } from "@/lib/actions/fundos";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -16,6 +17,7 @@ type Search = {
     to?: string;
     cadastroStatus?: string;
     operacaoStatus?: string;
+    fundoId?: string;
   }>;
 };
 
@@ -24,7 +26,10 @@ export default async function RankingImobiliariasPage({
 }: Search) {
   const admin = await requireAdmin();
   const params = await searchParams;
-  const rows = await getImobiliariasRanking(params);
+  const [rows, fundos] = await Promise.all([
+    getImobiliariasRanking(params),
+    listFundosForSelector(),
+  ]);
 
   const totalOperado = rows.reduce((s, r) => s + r.valorOperado, 0);
   const totalPago = rows.reduce((s, r) => s + r.valorPago, 0);
@@ -51,7 +56,7 @@ export default async function RankingImobiliariasPage({
         </p>
       </div>
 
-      <RelatorioFilters tipoCadastro="imobiliaria" />
+      <RelatorioFilters tipoCadastro="imobiliaria" fundos={fundos} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <Stat label="Total operado" value={formatBRL(totalOperado)} highlight />
