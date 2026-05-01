@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import {
   construtoras,
+  documentos,
   imobiliarias,
   operacoes,
   parcelasComissao,
@@ -15,6 +16,56 @@ import { requireAdmin } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { getTaxaMensal } from "@/lib/actions/settings";
+
+type DocTipo = "contrato_social" | "comprovante_endereco" | "creci";
+
+/** Persiste/substitui um documento KYC pra owner (user/imob/construtora). */
+async function upsertDocumento(args: {
+  tipo: DocTipo;
+  url: string;
+  nome: string;
+  userId?: string | null;
+  imobiliariaId?: string | null;
+  construtoraId?: string | null;
+}) {
+  if (!args.url) return;
+  // Remove versões anteriores do mesmo tipo pro mesmo owner
+  if (args.userId) {
+    await db
+      .delete(documentos)
+      .where(
+        and(eq(documentos.userId, args.userId), eq(documentos.tipo, args.tipo)),
+      );
+  }
+  if (args.imobiliariaId) {
+    await db
+      .delete(documentos)
+      .where(
+        and(
+          eq(documentos.imobiliariaId, args.imobiliariaId),
+          eq(documentos.tipo, args.tipo),
+        ),
+      );
+  }
+  if (args.construtoraId) {
+    await db
+      .delete(documentos)
+      .where(
+        and(
+          eq(documentos.construtoraId, args.construtoraId),
+          eq(documentos.tipo, args.tipo),
+        ),
+      );
+  }
+  await db.insert(documentos).values({
+    tipo: args.tipo,
+    url: args.url,
+    nomeOriginal: args.nome,
+    userId: args.userId ?? null,
+    imobiliariaId: args.imobiliariaId ?? null,
+    construtoraId: args.construtoraId ?? null,
+  });
+}
 
 /* =============================================================
    USUÁRIO — editar
@@ -34,7 +85,8 @@ export async function editUserAction(
   if (!userId) return { ok: false, error: "userId obrigatório" };
 
   const nome = String(formData.get("nome") || "").trim() || null;
-  const telefone = String(formData.get("telefone") || "").trim() || null;
+  const telefoneRaw = String(formData.get("telefone") || "").trim();
+  const telefone = telefoneRaw.replace(/\D/g, "") || null;
   const role = String(formData.get("role") || "").trim();
 
   if (!["corretor", "imobiliaria", "construtora"].includes(role))
@@ -46,6 +98,7 @@ export async function editUserAction(
     .where(eq(users.id, userId));
 
   // Imobiliária do usuário (se existir)
+  let imobiliariaId: string | null = null;
   const razaoSocial = String(formData.get("imobRazaoSocial") || "").trim();
   if (razaoSocial) {
     const cnpj = unmaskCNPJ(String(formData.get("imobCnpj") || ""));
@@ -55,11 +108,13 @@ export async function editUserAction(
       cnpj,
       creciResponsavel:
         String(formData.get("imobCreci") || "").trim() || null,
-      telefone: String(formData.get("imobTelefone") || "").trim() || null,
+      telefone: String(formData.get("imobTelefone") || "")
+        .replace(/\D/g, "") || null,
       cep: String(formData.get("imobCep") || "").trim() || null,
       endereco: String(formData.get("imobEndereco") || "").trim() || null,
       cidade: String(formData.get("imobCidade") || "").trim() || null,
-      uf: String(formData.get("imobUf") || "").trim() || null,
+      uf:
+        String(formData.get("imobUf") || "").trim().toUpperCase() || null,
       bancoNome: String(formData.get("imobBancoNome") || "").trim() || null,
       bancoCodigo: String(formData.get("imobBancoCodigo") || "").trim() || null,
       bancoAgencia:
@@ -80,12 +135,34 @@ export async function editUserAction(
         .update(imobiliarias)
         .set(update)
         .where(eq(imobiliarias.id, existing[0].id));
+      imobiliariaId = existing[0].id;
     }
+  }
+
+  // Documentos KYC (se admin subiu)
+  const docs: { tipo: DocTipo; field: string }[] = [
+    { tipo: "contrato_social", field: "doc_contrato_social" },
+    { tipo: "comprovante_endereco", field: "doc_comprovante_endereco" },
+    { tipo: "creci", field: "doc_creci" },
+  ];
+  for (const d of docs) {
+    const url = String(formData.get(d.field) || "").trim();
+    if (!url) continue;
+    const nome = String(
+      formData.get(`${d.field}_nome`) || `${d.tipo}.pdf`,
+    );
+    await upsertDocumento({
+      tipo: d.tipo,
+      url,
+      nome,
+      userId,
+      imobiliariaId,
+    });
   }
 
   revalidatePath("/admin/usuarios");
   revalidatePath(`/admin/usuarios/${userId}`);
-  redirect(`/admin/usuarios/${userId}`);
+  return { ok: true };
 }
 
 /* =============================================================
@@ -115,19 +192,40 @@ export async function editConstrutoraAction(
       nomeFantasia:
         String(formData.get("nomeFantasia") || "").trim() || null,
       cnpj,
-      telefone: String(formData.get("telefone") || "").trim() || null,
+      telefone: String(formData.get("telefone") || "")
+        .replace(/\D/g, "") || null,
       email: String(formData.get("email") || "").trim() || null,
       cep: String(formData.get("cep") || "").trim() || null,
       endereco: String(formData.get("endereco") || "").trim() || null,
       cidade: String(formData.get("cidade") || "").trim() || null,
-      uf: String(formData.get("uf") || "").trim() || null,
+      uf:
+        String(formData.get("uf") || "").trim().toUpperCase() || null,
       updatedAt: new Date(),
     })
     .where(eq(construtoras.id, construtoraId));
 
+  // Documentos KYC
+  const docs: { tipo: DocTipo; field: string }[] = [
+    { tipo: "contrato_social", field: "doc_contrato_social" },
+    { tipo: "comprovante_endereco", field: "doc_comprovante_endereco" },
+  ];
+  for (const d of docs) {
+    const url = String(formData.get(d.field) || "").trim();
+    if (!url) continue;
+    const nome = String(
+      formData.get(`${d.field}_nome`) || `${d.tipo}.pdf`,
+    );
+    await upsertDocumento({
+      tipo: d.tipo,
+      url,
+      nome,
+      construtoraId,
+    });
+  }
+
   revalidatePath("/admin/construtoras");
   revalidatePath(`/admin/construtoras/${construtoraId}`);
-  redirect(`/admin/construtoras/${construtoraId}`);
+  return { ok: true };
 }
 
 /* =============================================================

@@ -1,66 +1,101 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   editUserAction,
   type EditUserState,
 } from "@/lib/actions/admin-edit";
+import { CepAddressFields } from "@/components/cep-address-fields";
+import { FileUploadField } from "@/components/file-upload-field";
+import { useFeedback } from "@/components/feedback-provider";
+import { maskCNPJ, maskPhone } from "@/lib/cnpj";
 import type { User, Imobiliaria } from "@/db/schema";
+
+type DocsState = {
+  contratoSocial?: { url: string; name: string } | null;
+  comprovanteEndereco?: { url: string; name: string } | null;
+  creci?: { url: string; name: string } | null;
+};
 
 type Props = {
   user: User;
   imobiliaria: Imobiliaria | null;
+  initialDocs: DocsState;
 };
 
-export function AdminEditUserForm({ user, imobiliaria }: Props) {
+export function AdminEditUserForm({
+  user,
+  imobiliaria,
+  initialDocs,
+}: Props) {
+  const router = useRouter();
+  const { alertSuccess, alertError } = useFeedback();
   const [state, action, pending] = useActionState<EditUserState, FormData>(
     editUserAction,
     null,
   );
 
+  const [telefone, setTelefone] = useState(
+    user.telefone ? maskPhone(user.telefone) : "",
+  );
+  const [imobCnpj, setImobCnpj] = useState(
+    imobiliaria?.cnpj ? maskCNPJ(imobiliaria.cnpj) : "",
+  );
+  const [imobTelefone, setImobTelefone] = useState(
+    imobiliaria?.telefone ? maskPhone(imobiliaria.telefone) : "",
+  );
+
+  useEffect(() => {
+    if (state && !state.ok) {
+      alertError(state.error, "Erro ao salvar");
+    } else if (state && state.ok) {
+      alertSuccess("Cadastro atualizado.", "Salvo");
+      router.refresh();
+    }
+  }, [state, alertSuccess, alertError, router]);
+
   return (
     <form action={action} className="space-y-6">
       <input type="hidden" name="userId" value={user.id} />
 
-      {state && !state.ok && (
-        <div className="rounded-xl border border-danger/40 bg-red-50 text-danger p-4 text-sm">
-          {state.error}
-        </div>
-      )}
-
       <Card title="Dados pessoais">
-        <Field label="Email">
-          <input
-            value={user.email}
-            disabled
-            className="form-input opacity-60 cursor-not-allowed"
-          />
-        </Field>
-        <Field label="Nome">
-          <input
-            name="nome"
-            defaultValue={user.nome ?? ""}
-            className="form-input"
-          />
-        </Field>
-        <Field label="Telefone">
-          <input
-            name="telefone"
-            defaultValue={user.telefone ?? ""}
-            className="form-input"
-          />
-        </Field>
-        <Field label="Tipo de cadastro">
-          <select
-            name="role"
-            defaultValue={user.role}
-            className="form-input"
-          >
-            <option value="corretor">Corretor (PF)</option>
-            <option value="imobiliaria">Imobiliária (PJ)</option>
-            <option value="construtora">Construtora</option>
-          </select>
-        </Field>
+        <Grid>
+          <Field label="Email">
+            <input
+              value={user.email}
+              disabled
+              className="form-input opacity-60 cursor-not-allowed"
+            />
+          </Field>
+          <Field label="Nome">
+            <input
+              name="nome"
+              defaultValue={user.nome ?? ""}
+              className="form-input"
+            />
+          </Field>
+          <Field label="Telefone">
+            <input
+              name="telefone"
+              value={telefone}
+              onChange={(e) => setTelefone(maskPhone(e.target.value))}
+              inputMode="tel"
+              className="form-input"
+            />
+          </Field>
+          <Field label="Tipo de cadastro">
+            <select
+              name="role"
+              defaultValue={user.role}
+              className="form-input"
+            >
+              <option value="corretor">Corretor (PF)</option>
+              <option value="imobiliaria">Imobiliária (PJ)</option>
+              <option value="construtora">Construtora</option>
+            </select>
+          </Field>
+        </Grid>
       </Card>
 
       {imobiliaria && (
@@ -83,8 +118,10 @@ export function AdminEditUserForm({ user, imobiliaria }: Props) {
             <Field label="CNPJ">
               <input
                 name="imobCnpj"
-                defaultValue={imobiliaria.cnpj}
-                className="form-input"
+                value={imobCnpj}
+                onChange={(e) => setImobCnpj(maskCNPJ(e.target.value))}
+                inputMode="numeric"
+                className="form-input font-mono"
               />
             </Field>
             <Field label="CRECI responsável">
@@ -97,39 +134,22 @@ export function AdminEditUserForm({ user, imobiliaria }: Props) {
             <Field label="Telefone">
               <input
                 name="imobTelefone"
-                defaultValue={imobiliaria.telefone ?? ""}
+                value={imobTelefone}
+                onChange={(e) => setImobTelefone(maskPhone(e.target.value))}
+                inputMode="tel"
                 className="form-input"
               />
             </Field>
-            <Field label="CEP">
-              <input
-                name="imobCep"
-                defaultValue={imobiliaria.cep ?? ""}
-                className="form-input"
-              />
-            </Field>
-            <Field label="Endereço">
-              <input
-                name="imobEndereco"
-                defaultValue={imobiliaria.endereco ?? ""}
-                className="form-input"
-              />
-            </Field>
-            <Field label="Cidade">
-              <input
-                name="imobCidade"
-                defaultValue={imobiliaria.cidade ?? ""}
-                className="form-input"
-              />
-            </Field>
-            <Field label="UF">
-              <input
-                name="imobUf"
-                defaultValue={imobiliaria.uf ?? ""}
-                maxLength={2}
-                className="form-input uppercase"
-              />
-            </Field>
+            <CepAddressFields
+              prefix="imob"
+              initial={{
+                cep: imobiliaria.cep,
+                endereco: imobiliaria.endereco,
+                cidade: imobiliaria.cidade,
+                uf: imobiliaria.uf,
+              }}
+              optional
+            />
           </Grid>
           <h4 className="mt-6 mb-3 font-mono text-[11px] uppercase tracking-wider text-fg-dim">
             dados bancários (cessão)
@@ -164,6 +184,35 @@ export function AdminEditUserForm({ user, imobiliaria }: Props) {
               />
             </Field>
           </Grid>
+        </Card>
+      )}
+
+      {user.role !== "construtora" && user.role !== "admin" && (
+        <Card title="Documentos KYC">
+          <p className="text-xs text-fg-muted mb-4 -mt-2">
+            Faltando? Você (admin) pode subir agora pra completar o cadastro
+            sem cobrar o usuário.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <FileUploadField
+              label="Contrato social"
+              name="doc_contrato_social"
+              folder={`kyc/user-${user.id}/contrato-social`}
+              initial={initialDocs.contratoSocial ?? null}
+            />
+            <FileUploadField
+              label="Comprovante de endereço"
+              name="doc_comprovante_endereco"
+              folder={`kyc/user-${user.id}/comprovante-endereco`}
+              initial={initialDocs.comprovanteEndereco ?? null}
+            />
+            <FileUploadField
+              label="CRECI (opcional)"
+              name="doc_creci"
+              folder={`kyc/user-${user.id}/creci`}
+              initial={initialDocs.creci ?? null}
+            />
+          </div>
         </Card>
       )}
 

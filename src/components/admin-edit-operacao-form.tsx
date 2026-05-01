@@ -5,6 +5,7 @@ import {
   editOperacaoAction,
   type EditOperacaoState,
 } from "@/lib/actions/admin-edit";
+import { useFeedback } from "@/components/feedback-provider";
 import { parseBRLNumber } from "@/lib/format";
 
 type Parcela = { valor: string; vencimento: string };
@@ -43,6 +44,7 @@ export function AdminEditOperacaoForm({ operacao, parcelas: initial }: Props) {
     editOperacaoAction,
     null,
   );
+  const { alertError } = useFeedback();
 
   const [valorVenda, setValorVenda] = useState(
     numberToMask(parseFloat(operacao.valorVenda)),
@@ -67,10 +69,11 @@ export function AdminEditOperacaoForm({ operacao, parcelas: initial }: Props) {
   const diff = totalParcelas - valorComissaoNum;
 
   useEffect(() => {
-    if (state?.ok) {
-      // server action faz redirect — não precisa router.push aqui
+    if (state && !state.ok) {
+      alertError(state.error, "Erro ao salvar operação");
     }
-  }, [state]);
+    // sucesso: server action faz redirect — não precisa router.push aqui
+  }, [state, alertError]);
 
   function updateParcela(idx: number, key: keyof Parcela, value: string) {
     setParcelas((prev) => {

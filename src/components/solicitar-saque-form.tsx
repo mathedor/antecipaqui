@@ -6,6 +6,7 @@ import {
   solicitarSaqueAction,
   type SolicitarSaqueState,
 } from "@/lib/actions/cashback";
+import { useFeedback } from "@/components/feedback-provider";
 
 type Props = {
   saldo: number;
@@ -19,6 +20,7 @@ export function SolicitarSaqueForm({
   construtoraCnpj,
 }: Props) {
   const router = useRouter();
+  const { alertSuccess, alertError } = useFeedback();
   const [state, action, pending] = useActionState<
     SolicitarSaqueState,
     FormData
@@ -26,9 +28,14 @@ export function SolicitarSaqueForm({
 
   useEffect(() => {
     if (state?.ok) {
-      router.push(`/painel/suporte/${state.ticketId}`);
+      alertSuccess(
+        "Sua solicitação foi enviada. O admin vai processar o pagamento em até 3 dias úteis.",
+        "Saque solicitado",
+      ).then(() => router.push(`/painel/suporte/${state.ticketId}`));
+    } else if (state && !state.ok) {
+      alertError(state.error, "Erro ao solicitar saque");
     }
-  }, [state, router]);
+  }, [state, router, alertSuccess, alertError]);
 
   return (
     <form action={action} className="space-y-3">

@@ -1,31 +1,55 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   editConstrutoraAction,
   type EditConstrutoraState,
 } from "@/lib/actions/admin-edit";
+import { CepAddressFields } from "@/components/cep-address-fields";
+import { FileUploadField } from "@/components/file-upload-field";
+import { useFeedback } from "@/components/feedback-provider";
+import { maskCNPJ, maskPhone } from "@/lib/cnpj";
 import type { Construtora } from "@/db/schema";
+
+type DocsState = {
+  contratoSocial?: { url: string; name: string } | null;
+  comprovanteEndereco?: { url: string; name: string } | null;
+};
+
+type Props = {
+  construtora: Construtora;
+  initialDocs: DocsState;
+};
 
 export function AdminEditConstrutoraForm({
   construtora,
-}: {
-  construtora: Construtora;
-}) {
+  initialDocs,
+}: Props) {
+  const router = useRouter();
+  const { alertSuccess, alertError } = useFeedback();
   const [state, action, pending] = useActionState<
     EditConstrutoraState,
     FormData
   >(editConstrutoraAction, null);
 
+  const [cnpj, setCnpj] = useState(maskCNPJ(construtora.cnpj));
+  const [telefone, setTelefone] = useState(
+    construtora.telefone ? maskPhone(construtora.telefone) : "",
+  );
+
+  useEffect(() => {
+    if (state && !state.ok) {
+      alertError(state.error, "Erro ao salvar");
+    } else if (state && state.ok) {
+      alertSuccess("Cadastro atualizado.", "Salvo");
+      router.refresh();
+    }
+  }, [state, alertSuccess, alertError, router]);
+
   return (
     <form action={action} className="space-y-6">
       <input type="hidden" name="construtoraId" value={construtora.id} />
-
-      {state && !state.ok && (
-        <div className="rounded-xl border border-danger/40 bg-red-50 text-danger p-4 text-sm">
-          {state.error}
-        </div>
-      )}
 
       <section className="rounded-2xl border border-border bg-bg-elev p-6 md:p-7">
         <h3 className="font-bold mb-5">Dados da construtora</h3>
@@ -49,14 +73,18 @@ export function AdminEditConstrutoraForm({
             <input
               name="cnpj"
               required
-              defaultValue={construtora.cnpj}
+              value={cnpj}
+              onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+              inputMode="numeric"
               className="form-input font-mono"
             />
           </Field>
           <Field label="Telefone">
             <input
               name="telefone"
-              defaultValue={construtora.telefone ?? ""}
+              value={telefone}
+              onChange={(e) => setTelefone(maskPhone(e.target.value))}
+              inputMode="tel"
               className="form-input"
             />
           </Field>
@@ -68,35 +96,37 @@ export function AdminEditConstrutoraForm({
               className="form-input"
             />
           </Field>
-          <Field label="CEP">
-            <input
-              name="cep"
-              defaultValue={construtora.cep ?? ""}
-              className="form-input"
-            />
-          </Field>
-          <Field label="Endereço">
-            <input
-              name="endereco"
-              defaultValue={construtora.endereco ?? ""}
-              className="form-input"
-            />
-          </Field>
-          <Field label="Cidade">
-            <input
-              name="cidade"
-              defaultValue={construtora.cidade ?? ""}
-              className="form-input"
-            />
-          </Field>
-          <Field label="UF">
-            <input
-              name="uf"
-              maxLength={2}
-              defaultValue={construtora.uf ?? ""}
-              className="form-input uppercase"
-            />
-          </Field>
+          <CepAddressFields
+            initial={{
+              cep: construtora.cep,
+              endereco: construtora.endereco,
+              cidade: construtora.cidade,
+              uf: construtora.uf,
+            }}
+            optional
+          />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-bg-elev p-6 md:p-7">
+        <h3 className="font-bold mb-1">Documentos KYC</h3>
+        <p className="text-xs text-fg-muted mb-5">
+          Faltando? Suba aqui mesmo. Os arquivos vão pro mesmo storage do
+          onboarding.
+        </p>
+        <div className="grid md:grid-cols-2 gap-4">
+          <FileUploadField
+            label="Contrato social"
+            name="doc_contrato_social"
+            folder={`kyc/construtora-${construtora.id}/contrato-social`}
+            initial={initialDocs.contratoSocial ?? null}
+          />
+          <FileUploadField
+            label="Comprovante de endereço"
+            name="doc_comprovante_endereco"
+            folder={`kyc/construtora-${construtora.id}/comprovante-endereco`}
+            initial={initialDocs.comprovanteEndereco ?? null}
+          />
         </div>
       </section>
 

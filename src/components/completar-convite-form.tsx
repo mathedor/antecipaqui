@@ -7,6 +7,7 @@ import {
   type CompletarConviteState,
 } from "@/lib/actions/pending-operacoes";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
+import { useFeedback } from "@/components/feedback-provider";
 import { formatBRL, valorPresente } from "@/lib/format";
 
 type Props = {
@@ -31,6 +32,7 @@ function monthsBetween(from: Date, to: Date) {
 
 export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
   const router = useRouter();
+  const { alertSuccess, alertError } = useFeedback();
   const [state, action, pending] = useActionState<
     CompletarConviteState,
     FormData
@@ -44,9 +46,14 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
 
   useEffect(() => {
     if (state?.ok) {
-      router.push(`/painel/operacoes/${state.operacaoId}`);
+      alertSuccess(
+        "Convite aceito e operação criada. Acompanhe pelo painel.",
+        "Operação registrada",
+      ).then(() => router.push(`/painel/operacoes/${state.operacaoId}`));
+    } else if (state && !state.ok) {
+      alertError(state.error, "Erro ao completar convite");
     }
-  }, [state, router]);
+  }, [state, router, alertSuccess, alertError]);
 
   // Preview do VP usando taxa sugerida
   const valorComissao = parseFloat(convite.valorComissao);

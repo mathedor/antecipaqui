@@ -597,6 +597,45 @@ export const muralMessages = pgTable(
 export type MuralMessage = typeof muralMessages.$inferSelect;
 
 /* =========================================
+   REPOSITÓRIO DE ARQUIVOS — admin sobe arquivos arbitrários
+   sobre um usuário ou construtora (anotações internas, contratos,
+   correspondências, comprovantes diversos, etc.)
+   ========================================= */
+
+export const repositorioFiles = pgTable(
+  "repositorio_files",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Pelo menos um dos dois é preenchido. */
+    targetUserId: text("target_user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    targetConstrutoraId: uuid("target_construtora_id").references(
+      () => construtoras.id,
+      { onDelete: "cascade" },
+    ),
+    /** Quem fez upload (sempre admin). */
+    uploadedByUserId: text("uploaded_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    nomeOriginal: text("nome_original").notNull(),
+    descricao: text("descricao"),
+    url: text("url").notNull(),
+    sizeBytes: integer("size_bytes"),
+    mimeType: text("mime_type"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("repositorio_user_idx").on(t.targetUserId),
+    index("repositorio_construtora_idx").on(t.targetConstrutoraId),
+  ],
+);
+
+export type RepositorioFile = typeof repositorioFiles.$inferSelect;
+
+/* =========================================
    SYSTEM SETTINGS — configurações administrativas (key/value)
    ========================================= */
 

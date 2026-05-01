@@ -6,6 +6,7 @@ import {
   createPendingOperacoesAction,
   type CreatePendingState,
 } from "@/lib/actions/pending-operacoes";
+import { useFeedback } from "@/components/feedback-provider";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
 
 type ImobOption = {
@@ -65,14 +66,22 @@ export function LoteOperacoesForm({
     CreatePendingState,
     FormData
   >(createPendingOperacoesAction, null);
+  const { alertSuccess, alertError } = useFeedback();
 
   useEffect(() => {
     if (state?.ok) {
-      // Reseta o form pra um estado limpo
+      const qtd = state.total ?? linhas.length;
+      alertSuccess(
+        `${qtd} operação(ões) cadastrada(s). Os corretores receberam convite por email.`,
+        "Lote criado",
+      );
       setLinhas([blankLinha()]);
       router.refresh();
+    } else if (state && !state.ok) {
+      alertError(state.error, "Erro ao salvar lote");
     }
-  }, [state, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, router, alertSuccess, alertError]);
 
   function update(i: number, patch: Partial<Linha>) {
     setLinhas((prev) => {

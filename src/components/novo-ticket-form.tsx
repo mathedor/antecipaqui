@@ -6,9 +6,11 @@ import {
   createTicketAction,
   type CreateTicketState,
 } from "@/lib/actions/tickets";
+import { useFeedback } from "@/components/feedback-provider";
 
 export function NovoTicketForm() {
   const router = useRouter();
+  const { alertSuccess, alertError } = useFeedback();
   const [state, action, pending] = useActionState<CreateTicketState, FormData>(
     createTicketAction,
     null,
@@ -16,9 +18,14 @@ export function NovoTicketForm() {
 
   useEffect(() => {
     if (state?.ok) {
-      router.push(`/painel/suporte/${state.ticketId}`);
+      alertSuccess(
+        "Seu ticket foi criado e a Antecipaqui foi notificada.",
+        "Ticket aberto",
+      ).then(() => router.push(`/painel/suporte/${state.ticketId}`));
+    } else if (state && !state.ok) {
+      alertError(state.error, "Erro ao criar ticket");
     }
-  }, [state, router]);
+  }, [state, router, alertSuccess, alertError]);
 
   return (
     <form action={action} className="space-y-5 max-w-2xl">

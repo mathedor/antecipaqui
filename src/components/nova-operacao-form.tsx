@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/operacoes";
 import { ConstrutoraModal } from "./construtora-modal";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
+import { useFeedback } from "@/components/feedback-provider";
 import { formatBRL, parseBRLNumber, valorPresente } from "@/lib/format";
 
 type Construtora = {
@@ -81,6 +82,7 @@ export function NovaOperacaoForm({
     FormData
   >(createOperacaoAction, null);
   const router = useRouter();
+  const { alertSuccess, alertError } = useFeedback();
 
   const [construtoraId, setConstrutoraId] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -110,9 +112,12 @@ export function NovaOperacaoForm({
 
   useEffect(() => {
     if (state?.ok) {
-      router.push(`/painel/operacoes/${state.operacaoId}`);
+      alertSuccess(`Operação ${state.numero} criada com sucesso.`, "Operação registrada")
+        .then(() => router.push(`/painel/operacoes/${state.operacaoId}`));
+    } else if (state && !state.ok) {
+      alertError(state.error, "Erro ao registrar operação");
     }
-  }, [state, router]);
+  }, [state, router, alertSuccess, alertError]);
 
   // Valor presente em tempo real
   const { vp, desagio, percentDesagio } = useMemo(() => {

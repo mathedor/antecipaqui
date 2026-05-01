@@ -9,6 +9,7 @@ import {
 import { maskCNPJ, maskCEP, maskPhone, UF_LIST } from "@/lib/cnpj";
 import { buscarCep, unmaskCep } from "@/lib/cep";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
+import { useFeedback } from "@/components/feedback-provider";
 
 type InitialValues = {
   nome: string;
@@ -68,6 +69,7 @@ export function OnboardingForm({
     null,
   );
   const router = useRouter();
+  const { alertSuccess, alertError } = useFeedback();
   // Se a action retornou values (caso de erro), prioriza eles. Senão usa
   // o que veio do server (DB) ou vazio.
   const submitted =
@@ -170,8 +172,15 @@ export function OnboardingForm({
   );
 
   useEffect(() => {
-    if (state?.ok) router.push(state.redirectTo);
-  }, [state, router]);
+    if (state?.ok) {
+      alertSuccess(
+        "Seu cadastro foi enviado pra análise. Vamos avisar por email assim que aprovarmos.",
+        "Cadastro completo",
+      ).then(() => router.push(state.redirectTo));
+    } else if (state && !state.ok) {
+      alertError(state.error, "Erro no envio");
+    }
+  }, [state, router, alertSuccess, alertError]);
 
   const isCorretor = role === "corretor";
   const isConstrutora = role === "construtora";

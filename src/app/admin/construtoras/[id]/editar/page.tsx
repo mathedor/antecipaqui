@@ -3,17 +3,30 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminEditConstrutoraForm } from "@/components/admin-edit-construtora-form";
+import { RepositorioPanel } from "@/components/repositorio-panel";
 import { getConstrutoraDetail } from "@/lib/actions/admin";
+import { listRepositorioFiles } from "@/lib/actions/repositorio";
 
 export const metadata = { title: "Admin · Editar construtora" };
 
 type Params = { params: Promise<{ id: string }> };
+
+function pickDoc<T extends { tipo: string; url: string; nomeOriginal: string }>(
+  docs: T[],
+  tipo: string,
+) {
+  const d = docs.find((x) => x.tipo === tipo);
+  return d ? { url: d.url, name: d.nomeOriginal } : null;
+}
 
 export default async function AdminEditarConstrutora({ params }: Params) {
   const admin = await requireAdmin();
   const { id } = await params;
   const detail = await getConstrutoraDetail(id);
   if (!detail) notFound();
+  const repositorioFilesList = await listRepositorioFiles({
+    construtoraId: id,
+  });
 
   return (
     <AdminShell active="/admin/construtoras" userName={admin.nome}>
@@ -27,10 +40,23 @@ export default async function AdminEditarConstrutora({ params }: Params) {
         Editar <span className="text-gradient-blue">construtora</span>
       </h1>
       <p className="text-fg-muted mb-8">
-        Altere razão social, CNPJ, endereço e dados de contato.
+        Altere razão social, CNPJ, endereço, dados de contato e documentos.
       </p>
 
-      <AdminEditConstrutoraForm construtora={detail.construtora} />
+      <AdminEditConstrutoraForm
+        construtora={detail.construtora}
+        initialDocs={{
+          contratoSocial: pickDoc(detail.documentos, "contrato_social"),
+          comprovanteEndereco: pickDoc(detail.documentos, "comprovante_endereco"),
+        }}
+      />
+
+      <div className="mt-8">
+        <RepositorioPanel
+          targetConstrutoraId={id}
+          files={repositorioFilesList}
+        />
+      </div>
     </AdminShell>
   );
 }

@@ -16,6 +16,7 @@ import { ConstrutoraCharts } from "@/components/dashboard-charts";
 import { audit, getAuditLogsByTarget, getAuditLogsByUser } from "@/lib/audit";
 import { AuditLogTimeline } from "@/components/audit-log-timeline";
 import { IniciarContatoButton } from "@/components/iniciar-contato-button";
+import { AdminDeleteButton } from "@/components/admin-delete-button";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -161,6 +162,11 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
               </button>
             </form>
           )}
+          <AdminDeleteButton
+            target="construtora"
+            id={id}
+            nome={construtora.razaoSocial}
+          />
         </div>
       </div>
 

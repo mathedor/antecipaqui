@@ -6,6 +6,7 @@ import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { UserCharts } from "@/components/dashboard-charts";
 import { AdminCobrarButton } from "@/components/admin-cobrar-button";
 import { IniciarContatoButton } from "@/components/iniciar-contato-button";
+import { AdminDeleteButton } from "@/components/admin-delete-button";
 import {
   approveUserOnboardingAction,
   getUserDetail,
@@ -189,6 +190,11 @@ export default async function AdminUsuarioDetail({ params }: Params) {
               </button>
             </form>
           )}
+          <AdminDeleteButton
+            target="user"
+            id={id}
+            nome={user.nome ?? user.email}
+          />
         </div>
       </div>
 
