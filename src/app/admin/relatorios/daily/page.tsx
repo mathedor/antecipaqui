@@ -99,37 +99,51 @@ export default async function AdminDailyPage({ searchParams }: Search) {
       </div>
 
       {/* === Filtros === */}
+      {/* Período preset (navega direto, fora do form) */}
+      <div className="mb-4">
+        <span className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
+          Período
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {PERIODOS.map((p) => {
+            const qs = new URLSearchParams();
+            qs.set("periodo", p.value);
+            // Preserva os outros filtros ao trocar período
+            if (params.status) qs.set("status", params.status);
+            if (params.fundoId) qs.set("fundoId", params.fundoId);
+            if (params.construtoraId)
+              qs.set("construtoraId", params.construtoraId);
+            if (params.imobiliariaId)
+              qs.set("imobiliariaId", params.imobiliariaId);
+            // Datas só fazem sentido com periodo=custom
+            if (p.value === "custom") {
+              if (params.from) qs.set("from", params.from);
+              if (params.to) qs.set("to", params.to);
+            }
+            return (
+              <Link
+                key={p.value}
+                href={`/admin/relatorios/daily?${qs.toString()}`}
+                className={`chip transition-colors hover:border-accent ${
+                  periodo === p.value ? "chip-accent" : ""
+                }`}
+              >
+                {p.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Demais filtros via form (status, fundo, construtora, imobiliária + custom dates) */}
       <form
         method="get"
         className="rounded-2xl border border-border bg-bg-elev p-4 mb-4"
       >
-        {/* Período preset */}
-        <div className="mb-3">
-          <span className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
-            Período
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {PERIODOS.map((p) => (
-              <label
-                key={p.value}
-                className={`chip cursor-pointer transition-colors hover:border-accent ${
-                  periodo === p.value ? "chip-accent" : ""
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="periodo"
-                  value={p.value}
-                  defaultChecked={periodo === p.value}
-                  className="hidden"
-                />
-                {p.label}
-              </label>
-            ))}
-          </div>
-        </div>
+        {/* Mantém o periodo selecionado no submit */}
+        <input type="hidden" name="periodo" value={periodo} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {periodo === "custom" && (
             <div className="lg:col-span-2">
               <label className="block text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-1.5 font-mono">
