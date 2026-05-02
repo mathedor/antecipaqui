@@ -379,6 +379,14 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center justify-end gap-1">
+                      <Link
+                        href={`/admin/operacoes/${r.operacaoId}`}
+                        title="Ver operação"
+                        aria-label="Ver operação"
+                        className="inline-flex items-center justify-center size-8 rounded-lg border border-border text-fg-muted hover:border-accent hover:text-accent transition-colors"
+                      >
+                        <EyeIcon />
+                      </Link>
                       <ActionBtn
                         title="Gerar boleto"
                         onClick={() => handleBoleto(r)}
@@ -545,6 +553,15 @@ function MailIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <rect x="3" y="5" width="18" height="14" rx="2" />
       <path d="m3 7 9 6 9-6" />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }

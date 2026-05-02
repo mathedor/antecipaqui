@@ -6,6 +6,7 @@ import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { AdminStatusFlow } from "@/components/admin-status-flow";
 import { ContratoCard } from "@/components/contrato-card";
 import { NotificarWhatsappButton } from "@/components/notificar-whatsapp-button";
+import { ParcelaActions } from "@/components/parcela-actions";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { getAdminOperacaoDetail } from "@/lib/actions/admin";
 import { getContratoForOperacao } from "@/lib/actions/contract";
@@ -442,29 +443,6 @@ export default async function AdminOperacaoDetail({ params }: Params) {
             </div>
           </Card>
 
-          <Card label={`Parcelas (${op.parcelas.length})`}>
-            <ul className="space-y-2">
-              {op.parcelas.map((p) => (
-                <li
-                  key={p.id}
-                  className="grid grid-cols-12 gap-3 items-center text-sm py-2 border-b border-border last:border-0"
-                >
-                  <span className="col-span-1 font-mono text-xs text-fg-dim">
-                    #{String(p.numero).padStart(2, "0")}
-                  </span>
-                  <span className="col-span-4 text-fg">
-                    {formatDate(p.vencimento)}
-                  </span>
-                  <span className="col-span-4 text-right font-mono tabular text-fg-muted">
-                    {formatBRL(parseFloat(p.valor))}
-                  </span>
-                  <span className="col-span-3 text-right font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-                    {p.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
         </div>
 
         <aside className="lg:col-span-5 space-y-5">
@@ -526,8 +504,217 @@ export default async function AdminOperacaoDetail({ params }: Params) {
           </Card>
         </aside>
       </div>
+
+      {/* === Cronograma de parcelas full-width com encargos + ações === */}
+      <ParcelasOperacaoFullSection op={op} />
     </AdminShell>
   );
+}
+
+type ParcelasOperacaoCtx = NonNullable<
+  Awaited<ReturnType<typeof getAdminOperacaoDetail>>
+>;
+
+function ParcelasOperacaoFullSection({ op }: { op: ParcelasOperacaoCtx }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const taxa = parseFloat(op.taxaMensal);
+
+  const linhas = op.parcelas.map((p) => {
+    const valor = parseFloat(p.valor);
+    const venc = new Date(p.vencimento + "T00:00:00");
+    const diasAtraso = Math.floor(
+      (today.getTime() - venc.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const isPaga = p.status === "paga";
+    const ehAtrasada = !isPaga && diasAtraso > 0;
+    const jurosParcela = valor * taxa;
+    const multa = ehAtrasada ? valor * 0.02 : 0;
+    const jurosMora = ehAtrasada ? valor * taxa * (diasAtraso / 30) : 0;
+    const encargos = multa + jurosMora;
+    return {
+      ...p,
+      valor,
+      diasAtraso,
+      isPaga,
+      ehAtrasada,
+      jurosParcela,
+      multa,
+      jurosMora,
+      encargos,
+      valorAtual: isPaga ? valor : valor + encargos,
+    };
+  });
+
+  const totalNominal = linhas.reduce((s, l) => s + l.valor, 0);
+  const totalJurosParcela = linhas.reduce((s, l) => s + l.jurosParcela, 0);
+  const totalEncargos = linhas.reduce((s, l) => s + l.encargos, 0);
+  const totalAtual = linhas.reduce((s, l) => s + l.valorAtual, 0);
+
+  return (
+    <section className="mt-8 rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+      <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
+            cronograma de parcelas
+          </div>
+          <h2 className="text-lg font-bold tracking-tight">
+            {op.parcelas.length} parcela(s) · taxa{" "}
+            {(taxa * 100).toFixed(2).replace(".", ",")}% a.m.
+          </h2>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-sm" style={{ minWidth: "1100px" }}>
+          <thead className="bg-bg-card border-b border-border">
+            <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
+              <th className="px-3 py-3 text-left">#</th>
+              <th className="px-3 py-3 text-left">Vencimento</th>
+              <th className="px-3 py-3 text-left">Status</th>
+              <th className="px-3 py-3 text-right">Valor parcela</th>
+              <th className="px-3 py-3 text-right">Juros parcela</th>
+              <th className="px-3 py-3 text-right">Atraso</th>
+              <th className="px-3 py-3 text-right">Encargos</th>
+              <th className="px-3 py-3 text-right">Valor atual</th>
+              <th className="px-3 py-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map((l) => (
+              <tr
+                key={l.id}
+                className={`border-b border-border last:border-0 ${
+                  l.ehAtrasada ? "bg-red-50/30" : ""
+                } hover:bg-bg-card transition-colors`}
+              >
+                <td className="px-3 py-3 font-mono text-xs text-fg-dim">
+                  #{String(l.numero).padStart(2, "0")}
+                </td>
+                <td className="px-3 py-3 font-mono text-xs text-fg">
+                  {formatDate(l.vencimento)}
+                </td>
+                <td className="px-3 py-3">
+                  {l.isPaga ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-green-50 text-success border-green-200">
+                      ✓ paga
+                    </span>
+                  ) : l.ehAtrasada ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-red-50 text-danger border-danger/40">
+                      vencida
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-bg-soft text-fg-muted border-border">
+                      a vencer
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-3 text-right font-mono tabular text-fg font-semibold">
+                  {formatBRL(l.valor)}
+                </td>
+                <td className="px-3 py-3 text-right font-mono tabular text-xs text-fg-muted">
+                  {formatBRL(l.jurosParcela)}
+                </td>
+                <td className="px-3 py-3 text-right">
+                  {l.ehAtrasada ? (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono font-semibold ${
+                        l.diasAtraso >= 90
+                          ? "bg-red-50 text-danger border-danger/40"
+                          : l.diasAtraso >= 30
+                            ? "bg-orange-50 text-orange-700 border-orange-200"
+                            : "bg-yellow-50 text-warn border-yellow-200"
+                      }`}
+                    >
+                      {l.diasAtraso}d
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-fg-dim">
+                      {l.isPaga ? "—" : `em ${Math.abs(l.diasAtraso)}d`}
+                    </span>
+                  )}
+                </td>
+                <td
+                  className="px-3 py-3 text-right font-mono tabular text-xs"
+                  title={
+                    l.ehAtrasada
+                      ? `Multa 2%: ${formatBRL(l.multa)}\nJuros mora (${(taxa * 100).toFixed(2)}% × ${l.diasAtraso}d/30): ${formatBRL(l.jurosMora)}`
+                      : "Sem encargos"
+                  }
+                >
+                  {l.ehAtrasada ? (
+                    <span className="text-warn font-semibold">
+                      + {formatBRL(l.encargos)}
+                    </span>
+                  ) : (
+                    <span className="text-fg-dim">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-3 text-right font-mono tabular text-fg font-bold">
+                  {formatBRL(l.valorAtual)}
+                </td>
+                <td className="px-3 py-3">
+                  {!l.isPaga ? (
+                    <ParcelaActions
+                      parcela={{
+                        parcelaId: l.id,
+                        parcelaNumero: l.numero,
+                        vencimento: l.vencimento,
+                        valorParcela: l.valor,
+                        diasAtraso: l.diasAtraso,
+                        taxaMensal: taxa,
+                        operacaoNumero: op.numero,
+                        construtoraNome: op.construtoraNome,
+                        construtoraTelefone: op.construtoraTelefone,
+                        construtoraEmail: op.construtoraEmail,
+                        imobiliariaNome:
+                          op.imobiliaria?.razaoSocial ?? null,
+                        imobiliariaTelefone:
+                          op.imobiliaria?.telefone ?? null,
+                        corretorNome: op.corretorNome,
+                        corretorEmail: op.corretorEmail,
+                        corretorTelefone: op.corretorTelefone,
+                      }}
+                    />
+                  ) : (
+                    <span className="text-[10px] text-fg-dim font-mono text-right block">
+                      pago em {p_pagoEm(l)}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-border-strong bg-bg-card font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+              <td className="px-3 py-3 text-fg-muted" colSpan={3}>
+                Totais
+              </td>
+              <td className="px-3 py-3 text-right tabular text-fg font-bold">
+                {formatBRL(totalNominal)}
+              </td>
+              <td className="px-3 py-3 text-right tabular text-fg-muted">
+                {formatBRL(totalJurosParcela)}
+              </td>
+              <td className="px-3 py-3" />
+              <td className="px-3 py-3 text-right tabular text-warn font-bold">
+                {totalEncargos > 0 ? `+ ${formatBRL(totalEncargos)}` : "—"}
+              </td>
+              <td className="px-3 py-3 text-right tabular text-fg font-bold">
+                {formatBRL(totalAtual)}
+              </td>
+              <td className="px-3 py-3" />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function p_pagoEm(p: { pagoEm: string | null }) {
+  if (!p.pagoEm) return "—";
+  return formatDate(p.pagoEm);
 }
 
 function Card({
