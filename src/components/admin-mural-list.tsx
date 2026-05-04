@@ -14,12 +14,14 @@ const AUDIENCE_LABEL: Record<string, string> = {
   both: "Imobiliária + construtora",
   imobiliaria: "Imobiliária / corretor",
   construtora: "Construtora",
+  comercial: "Comercial",
 };
 
 const AUDIENCE_CLASS: Record<string, string> = {
   both: "bg-accent-soft text-accent border-accent/30",
   imobiliaria: "bg-blue-50 text-accent border-blue-200",
   construtora: "bg-violet-50 text-violet-700 border-violet-200",
+  comercial: "bg-orange-50 text-orange-700 border-orange-200",
 };
 
 function formatDateTime(d: Date | string) {

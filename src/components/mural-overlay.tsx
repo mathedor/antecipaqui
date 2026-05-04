@@ -6,7 +6,7 @@ type MuralMsg = {
   id: string;
   titulo: string | null;
   body: string;
-  audience: "imobiliaria" | "construtora" | "both";
+  audience: "imobiliaria" | "construtora" | "comercial" | "both";
   createdAt: Date | string;
   expiresAt: Date | string | null;
 };

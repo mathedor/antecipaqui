@@ -20,6 +20,8 @@ type Row = {
   construtoraNome: string | null;
   construtoraTelefone: string | null;
   fundoId: string | null;
+  comercialId?: string | null;
+  comercialNome?: string | null;
 };
 
 type FundoOption = {
@@ -53,6 +55,7 @@ export function AdminOperacoesTable({
             "Email corretor",
             "Construtora",
             "Fundo",
+            "Comercial",
             "Comissão (R$)",
             "Valor presente (R$)",
           ]}
@@ -64,6 +67,7 @@ export function AdminOperacoesTable({
               r.corretorEmail ?? "",
               r.construtoraNome ?? "",
               fundoLabel(r.fundoId),
+              r.comercialNome ?? "",
               parseFloat(r.valorComissao).toFixed(2),
               parseFloat(r.valorPresente).toFixed(2),
             ])
@@ -130,6 +134,21 @@ export function AdminOperacoesTable({
               </span>
             ) : (
               <span className="font-mono text-[10px] text-warn">— sem —</span>
+            ),
+        },
+        {
+          key: "comercial",
+          header: "Comercial",
+          sortable: true,
+          sortValue: (r) => r.comercialNome ?? "",
+          hideOnMobile: true,
+          render: (r) =>
+            r.comercialNome ? (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-orange-50 text-orange-700 border-orange-200 truncate max-w-[120px]">
+                {r.comercialNome}
+              </span>
+            ) : (
+              <span className="font-mono text-[10px] text-fg-dim">—</span>
             ),
         },
         {

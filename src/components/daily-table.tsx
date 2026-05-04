@@ -19,6 +19,7 @@ const SITE_URL =
 type SortKey =
   | "construtora"
   | "imobiliaria"
+  | "comercialNome"
   | "vencimento"
   | "valorParcela"
   | "dataOperacao"
@@ -208,6 +209,7 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
             "Construtora",
             "Imobiliária / Corretor",
             "Fundo",
+            "Comercial",
             "Vencimento",
             "Dias atraso",
             "Valor parcela (R$)",
@@ -223,6 +225,7 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
               r.construtoraNome ?? "",
               r.imobiliariaNome ?? r.corretorNome ?? "",
               r.fundoNome ?? "",
+              r.comercialNome ?? "",
               r.vencimento,
               r.diasAtraso,
               r.valorParcela.toFixed(2),
@@ -237,7 +240,7 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
       </div>
 
       <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
-        <table className="w-full text-sm" style={{ minWidth: "1400px" }}>
+        <table className="w-full text-sm" style={{ minWidth: "1550px" }}>
           <thead className="bg-bg-card border-b border-border">
             <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
               <Th onClick={() => handleSort("construtora")} active={sortKey === "construtora"} dir={sortDir}>
@@ -245,6 +248,9 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
               </Th>
               <Th onClick={() => handleSort("imobiliaria")} active={sortKey === "imobiliaria"} dir={sortDir}>
                 Imobiliária / Corretor
+              </Th>
+              <Th onClick={() => handleSort("comercialNome")} active={sortKey === "comercialNome"} dir={sortDir}>
+                Comercial
               </Th>
               <Th onClick={() => handleSort("vencimento")} active={sortKey === "vencimento"} dir={sortDir} align="right">
                 Vencimento
@@ -322,6 +328,15 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
                       >
                         🏦 {r.fundoNome}
                       </Link>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-xs">
+                    {r.comercialNome ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-orange-50 text-orange-700 border-orange-200 truncate max-w-[140px]">
+                        {r.comercialNome}
+                      </span>
+                    ) : (
+                      <span className="text-fg-dim text-[10px] font-mono">—</span>
                     )}
                   </td>
                   <td className="px-3 py-3 text-right font-mono text-xs">
@@ -421,7 +436,7 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-border-strong bg-bg-card font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-              <td className="px-3 py-3 text-fg-muted" colSpan={4}>
+              <td className="px-3 py-3 text-fg-muted" colSpan={5}>
                 {sorted.length} parcela(s)
               </td>
               <td className="px-3 py-3 text-right tabular text-fg font-bold">

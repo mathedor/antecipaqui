@@ -1,13 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql, or } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/db";
-import { comerciais, users } from "@/db/schema";
+import {
+  comerciais,
+  users,
+  operacoes,
+  parcelasComissao,
+  construtoras,
+  imobiliarias,
+} from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ, isValidCPF, unmaskCPF } from "@/lib/cnpj";
 import { audit } from "@/lib/audit";
+import { calcLucroOperacao, calcComissaoComercial } from "@/lib/comercial-calc";
 
 export type CadastrarComercialState =
   | { ok: false; error: string }
@@ -322,4 +330,228 @@ export async function getCurrentComercial() {
     .where(eq(comerciais.ownerUserId, user.id))
     .limit(1);
   return c ?? null;
+}
+
+/* =========================================
+   DASHBOARD DO COMERCIAL
+   ========================================= */
+
+export async function getComercialDashboard(comercialId: string) {
+  // Operações do comercial: diretas OU via construtora/imob com esse comercial
+  const ops = await db
+    .select({
+      id: operacoes.id,
+      numero: operacoes.numero,
+      status: operacoes.status,
+      valorComissao: operacoes.valorComissao,
+      valorPresente: operacoes.valorPresente,
+      desagio: operacoes.desagio,
+      createdAt: operacoes.createdAt,
+      construtoraNome: construtoras.razaoSocial,
+      construtoraId: operacoes.construtoraId,
+      corretorNome: users.nome,
+      imobiliariaNome: imobiliarias.razaoSocial,
+    })
+    .from(operacoes)
+    .leftJoin(construtoras, eq(construtoras.id, operacoes.construtoraId))
+    .leftJoin(imobiliarias, eq(imobiliarias.id, operacoes.imobiliariaId))
+    .leftJoin(users, eq(users.id, operacoes.corretorUserId))
+    .where(
+      or(
+        eq(operacoes.comercialId, comercialId),
+        eq(construtoras.comercialId, comercialId),
+        eq(imobiliarias.comercialId, comercialId),
+      ),
+    )
+    .orderBy(desc(operacoes.createdAt));
+
+  const opIds = ops.map((o) => o.id);
+
+  // Parcelas pra inadimplência + faturamento
+  const parcelas = opIds.length
+    ? await db
+        .select()
+        .from(parcelasComissao)
+        .where(sql`${parcelasComissao.operacaoId} = ANY(${opIds})`)
+    : [];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  let valorAVencer = 0;
+  let valorVencido = 0;
+  let faturadoNoMes = 0;
+  for (const p of parcelas) {
+    const v = parseFloat(p.valor);
+    const venc = new Date(p.vencimento + "T00:00:00");
+    if (p.status === "paga") {
+      if (p.pagoEm && new Date(p.pagoEm + "T00:00:00") >= monthStart) {
+        faturadoNoMes += parseFloat(p.pagoValor ?? p.valor);
+      }
+    } else {
+      if (venc < today) valorVencido += v;
+      else valorAVencer += v;
+    }
+  }
+
+  // Lucro / comissão calculados em cima do deságio das ops aprovadas
+  let comissaoAcumulada = 0;
+  let comissaoPendente = 0;
+  let comissaoRealizada = 0;
+  for (const o of ops) {
+    if (
+      ["rascunho", "recusada", "cancelada"].includes(o.status)
+    )
+      continue;
+    const desagio = parseFloat(o.desagio);
+    const com = calcComissaoComercial(desagio);
+    comissaoAcumulada += com;
+    if (o.status === "realizada") comissaoRealizada += com;
+    else comissaoPendente += com;
+  }
+
+  // Construtoras / imobiliárias distintas que ele atende
+  const construtorasMap = new Map<
+    string,
+    { id: string; nome: string; qtd: number; valorOperado: number }
+  >();
+  for (const o of ops) {
+    if (!o.construtoraId) continue;
+    const cur = construtorasMap.get(o.construtoraId);
+    const vp = parseFloat(o.valorPresente);
+    if (cur) {
+      cur.qtd++;
+      cur.valorOperado += vp;
+    } else {
+      construtorasMap.set(o.construtoraId, {
+        id: o.construtoraId,
+        nome: o.construtoraNome ?? "—",
+        qtd: 1,
+        valorOperado: vp,
+      });
+    }
+  }
+
+  // Ranking por mês — gráfico de evolução
+  const porMesRes = await db.execute(sql`
+    SELECT
+      to_char(date_trunc('month', o.created_at), 'YYYY-MM') AS month,
+      COUNT(*)::int AS qtd,
+      COALESCE(SUM(o.valor_presente)::float, 0) AS volume,
+      COALESCE(SUM(o.desagio)::float, 0) AS juros
+    FROM operacoes o
+    LEFT JOIN construtoras c ON c.id = o.construtora_id
+    LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
+    WHERE (o.comercial_id = ${comercialId}::uuid
+      OR c.comercial_id = ${comercialId}::uuid
+      OR im.comercial_id = ${comercialId}::uuid)
+      AND o.status NOT IN ('rascunho', 'recusada', 'cancelada')
+      AND o.created_at >= date_trunc('month', NOW()) - INTERVAL '11 months'
+    GROUP BY date_trunc('month', o.created_at)
+    ORDER BY date_trunc('month', o.created_at)
+  `);
+  type MesRow = {
+    month: string;
+    qtd: number;
+    volume: number;
+    juros: number;
+  };
+  const porMesRows = (
+    porMesRes as unknown as { rows?: MesRow[] }
+  ).rows ?? [];
+  const porMes = porMesRows.map((m) => ({
+    ...m,
+    comissao: calcComissaoComercial(m.juros),
+  }));
+
+  return {
+    totals: {
+      qtdOperacoes: ops.length,
+      valorAVencer,
+      valorVencido,
+      faturadoNoMes,
+      comissaoAcumulada,
+      comissaoRealizada,
+      comissaoPendente,
+      qtdConstrutoras: construtorasMap.size,
+    },
+    construtoras: Array.from(construtorasMap.values()).sort(
+      (a, b) => b.valorOperado - a.valorOperado,
+    ),
+    operacoes: ops,
+    porMes,
+  };
+}
+
+/* =========================================
+   ADMIN — RELATÓRIO DE DESEMPENHO DOS COMERCIAIS
+   ========================================= */
+
+export async function getDesempenhoComerciais(filters: {
+  from?: string;
+  to?: string;
+} = {}) {
+  await requireAdmin();
+  const conds: ReturnType<typeof sql>[] = [
+    sql`o.status NOT IN ('rascunho', 'recusada', 'cancelada')`,
+  ];
+  if (filters.from) conds.push(sql`o.created_at >= ${filters.from}::date`);
+  if (filters.to)
+    conds.push(
+      sql`o.created_at <= (${filters.to}::date + interval '1 day')`,
+    );
+  const where = sql.join(conds, sql` AND `);
+
+  const result = await db.execute(sql`
+    SELECT
+      cm.id,
+      cm.nome_completo AS nome,
+      cm.apelido,
+      cm.tipo_pessoa,
+      cm.email,
+      COUNT(o.id)::int AS qtd_operacoes,
+      COALESCE(SUM(o.valor_presente)::float, 0) AS volume_operado,
+      COALESCE(SUM(o.valor_comissao)::float, 0) AS comissoes_intermediadas,
+      COALESCE(SUM(o.desagio)::float, 0) AS juros_total,
+      COUNT(o.id) FILTER (WHERE o.status = 'realizada')::int AS qtd_realizadas
+    FROM comerciais cm
+    LEFT JOIN operacoes o
+      ON (o.comercial_id = cm.id
+        OR o.construtora_id IN (SELECT id FROM construtoras WHERE comercial_id = cm.id)
+        OR o.imobiliaria_id IN (SELECT id FROM imobiliarias WHERE comercial_id = cm.id))
+      AND ${where}
+    WHERE cm.is_active = TRUE
+    GROUP BY cm.id, cm.nome_completo, cm.apelido, cm.tipo_pessoa, cm.email
+    ORDER BY volume_operado DESC, qtd_operacoes DESC
+  `);
+
+  type Row = {
+    id: string;
+    nome: string;
+    apelido: string | null;
+    tipo_pessoa: string;
+    email: string;
+    qtd_operacoes: number;
+    volume_operado: number;
+    comissoes_intermediadas: number;
+    juros_total: number;
+    qtd_realizadas: number;
+  };
+  const rows = (result as unknown as { rows: Row[] }).rows;
+
+  return rows.map((r) => ({
+    id: r.id,
+    nome: r.nome,
+    apelido: r.apelido,
+    tipoPessoa: r.tipo_pessoa,
+    email: r.email,
+    qtdOperacoes: Number(r.qtd_operacoes),
+    qtdRealizadas: Number(r.qtd_realizadas),
+    volumeOperado: Number(r.volume_operado),
+    comissoesIntermediadas: Number(r.comissoes_intermediadas),
+    jurosTotal: Number(r.juros_total),
+    lucroLiquido: calcLucroOperacao(Number(r.juros_total)),
+    comissaoComercial: calcComissaoComercial(Number(r.juros_total)),
+  }));
 }

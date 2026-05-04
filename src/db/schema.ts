@@ -704,6 +704,7 @@ export type PendingOperacao = typeof pendingOperacoes.$inferSelect;
 export const muralAudienceEnum = pgEnum("mural_audience", [
   "imobiliaria",
   "construtora",
+  "comercial",
   "both",
 ]);
 

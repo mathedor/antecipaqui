@@ -23,7 +23,9 @@ export async function getMuralForCurrentUser() {
       ? ["construtora", "both"]
       : user.role === "corretor" || user.role === "imobiliaria"
         ? ["imobiliaria", "both"]
-        : ["imobiliaria", "construtora", "both"];
+        : user.role === "comercial"
+          ? ["comercial"]
+          : ["imobiliaria", "construtora", "comercial", "both"];
 
   const now = new Date();
   return db

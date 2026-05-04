@@ -93,6 +93,7 @@ export function AdminMuralForm(props: Props) {
             <option value="both">Imobiliária + construtora</option>
             <option value="imobiliaria">Só imobiliária / corretor</option>
             <option value="construtora">Só construtora</option>
+            <option value="comercial">Só comercial</option>
           </select>
         </div>
         <div>

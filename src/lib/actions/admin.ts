@@ -232,6 +232,10 @@ export async function getAllOperacoes(filters?: {
       corretorEmail: users.email,
       corretorTelefone: users.telefone,
       fundoId: operacoes.fundoId,
+      comercialId: operacoes.comercialId,
+      comercialNome: sql<
+        string | null
+      >`COALESCE((SELECT COALESCE(apelido, nome_completo) FROM comerciais WHERE id = ${operacoes.comercialId}), NULL)`,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))

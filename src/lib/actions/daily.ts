@@ -25,6 +25,12 @@ export type DailyFilters = {
   fundoId?: string;
   construtoraId?: string;
   imobiliariaId?: string;
+  /** Filtra por comercial responsável (operação) ou por ops cuja
+   *  construtora/imobiliária têm esse comercial. */
+  comercialId?: string;
+  /** Se true, NÃO exige requireAdmin (usado pra comercial logado ver só
+   *  as próprias parcelas — autorização externa). */
+  skipAuthCheck?: boolean;
 };
 
 /**
@@ -73,6 +79,8 @@ export type DailyRow = {
   corretorTelefone: string | null;
   fundoId: string | null;
   fundoNome: string | null;
+  comercialId: string | null;
+  comercialNome: string | null;
   // calculados
   jurosParcela: number;
   encargosMulta: number;
@@ -84,7 +92,7 @@ export type DailyRow = {
 export async function getDailyParcelas(
   filters: DailyFilters = {},
 ): Promise<DailyRow[]> {
-  await requireAdmin();
+  if (!filters.skipAuthCheck) await requireAdmin();
 
   // Resolve período em datas
   const today = new Date();
@@ -152,6 +160,14 @@ export async function getDailyParcelas(
   if (filters.imobiliariaId) {
     conds.push(sql`o.imobiliaria_id = ${filters.imobiliariaId}::uuid`);
   }
+  if (filters.comercialId) {
+    // Operação OU construtora OU imobiliária com esse comercial responsável
+    conds.push(
+      sql`(o.comercial_id = ${filters.comercialId}::uuid
+        OR c.comercial_id = ${filters.comercialId}::uuid
+        OR im.comercial_id = ${filters.comercialId}::uuid)`,
+    );
+  }
 
   const where = sql.join(conds, sql` AND `);
 
@@ -181,13 +197,18 @@ export async function getDailyParcelas(
       u.email AS corretor_email,
       u.telefone AS corretor_telefone,
       f.id AS fundo_id,
-      COALESCE(f.nome_fantasia, f.razao_social) AS fundo_nome
+      COALESCE(f.nome_fantasia, f.razao_social) AS fundo_nome,
+      COALESCE(o.comercial_id, c.comercial_id, im.comercial_id) AS comercial_id,
+      COALESCE(com_op.apelido, com_op.nome_completo, com_c.apelido, com_c.nome_completo, com_i.apelido, com_i.nome_completo) AS comercial_nome
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
     LEFT JOIN construtoras c ON c.id = o.construtora_id
     LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
     LEFT JOIN users u ON u.id = o.corretor_user_id
     LEFT JOIN fundos f ON f.id = o.fundo_id
+    LEFT JOIN comerciais com_op ON com_op.id = o.comercial_id
+    LEFT JOIN comerciais com_c ON com_c.id = c.comercial_id
+    LEFT JOIN comerciais com_i ON com_i.id = im.comercial_id
     WHERE ${where}
     ORDER BY p.vencimento ASC, o.numero
     LIMIT 1000
@@ -219,6 +240,8 @@ export async function getDailyParcelas(
     corretor_telefone: string | null;
     fundo_id: string | null;
     fundo_nome: string | null;
+    comercial_id: string | null;
+    comercial_nome: string | null;
   }>(result);
 
   return raw.map((r) => {
@@ -253,6 +276,8 @@ export async function getDailyParcelas(
       corretorTelefone: r.corretor_telefone,
       fundoId: r.fundo_id,
       fundoNome: r.fundo_nome,
+      comercialId: r.comercial_id,
+      comercialNome: r.comercial_nome,
       jurosParcela,
       encargosMulta: enc.multa,
       encargosJurosMora: enc.jurosMora,

@@ -60,6 +60,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   comercial: [
     { href: "/painel", label: "Painel" },
+    { href: "/painel/daily", label: "Daily" },
     { href: "/painel/perfil", label: "Meus dados" },
     { href: "/painel/suporte", label: "Suporte" },
   ],
@@ -106,6 +107,7 @@ const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
   ],
   comercial: [
     { href: "/painel", label: "Painel", icon: "home" },
+    { href: "/painel/daily", label: "Daily", icon: "table" },
     { href: "/painel/perfil", label: "Perfil", icon: "config" },
     { href: "/painel/suporte", label: "Suporte", icon: "ticket" },
   ],
@@ -232,6 +234,7 @@ const MOBILE_FULLMENU: Record<
       section: "principal",
       items: [
         { href: "/painel", label: "Painel", icon: "home" },
+        { href: "/painel/daily", label: "Daily", icon: "table" },
         { href: "/painel/perfil", label: "Meus dados", icon: "config" },
       ],
     },
