@@ -64,17 +64,25 @@ export default async function AdminUsuariosPage({ searchParams }: Search) {
 
   return (
     <AdminShell active="/admin/usuarios" userName={admin.nome}>
-      <div className="mb-6">
-        <div className="eyebrow mb-2">usuários</div>
-        <h1 className="text-display-md">
-          Imobiliárias /{" "}
-          <span className="text-gradient-blue">Corretores</span>
-        </h1>
-        <p className="mt-2 text-fg-muted">
-          {corretoresImob.length} imobiliárias/corretores ·{" "}
-          {construtoraUsers.length} construtoras · {adminUsers.length} admin
-          {adminUsers.length === 1 ? "" : "s"}
-        </p>
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <div className="eyebrow mb-2">usuários</div>
+          <h1 className="text-display-md">
+            Imobiliárias /{" "}
+            <span className="text-gradient-blue">Corretores</span>
+          </h1>
+          <p className="mt-2 text-fg-muted">
+            {corretoresImob.length} imobiliárias/corretores ·{" "}
+            {construtoraUsers.length} construtoras · {adminUsers.length} admin
+            {adminUsers.length === 1 ? "" : "s"}
+          </p>
+        </div>
+        <Link
+          href="/admin/cadastrar/imobiliaria"
+          className="btn-primary !h-11 !px-5"
+        >
+          + Nova imobiliária / corretor
+        </Link>
       </div>
 
       <form

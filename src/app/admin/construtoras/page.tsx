@@ -40,15 +40,23 @@ export default async function AdminConstrutorasPage({
 
   return (
     <AdminShell active="/admin/construtoras" userName={admin.nome}>
-      <div className="mb-6">
-        <div className="eyebrow mb-2">construtoras</div>
-        <h1 className="text-display-md">
-          Todas as <span className="text-gradient-blue">construtoras</span>
-        </h1>
-        <p className="mt-2 text-fg-muted">
-          {list.length} {list.length === 1 ? "construtora" : "construtoras"}{" "}
-          cadastradas
-        </p>
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <div className="eyebrow mb-2">construtoras</div>
+          <h1 className="text-display-md">
+            Todas as <span className="text-gradient-blue">construtoras</span>
+          </h1>
+          <p className="mt-2 text-fg-muted">
+            {list.length} {list.length === 1 ? "construtora" : "construtoras"}{" "}
+            cadastradas
+          </p>
+        </div>
+        <Link
+          href="/admin/cadastrar/construtora"
+          className="btn-primary !h-11 !px-5"
+        >
+          + Nova construtora
+        </Link>
       </div>
 
       <form

@@ -14,7 +14,7 @@ const nav: AdminNavItem[] = [
   {
     type: "submenu",
     label: "Cadastrar",
-    matchPrefix: ["/admin/cadastrar"],
+    matchPrefix: ["/admin/cadastrar", "/admin/fundos/novo"],
     items: [
       { href: "/admin/cadastrar", label: "Visão geral" },
       {
@@ -23,6 +23,7 @@ const nav: AdminNavItem[] = [
       },
       { href: "/admin/cadastrar/construtora", label: "Construtora" },
       { href: "/admin/cadastrar/comercial", label: "Comercial" },
+      { href: "/admin/fundos/novo", label: "Fundo de investimento" },
       { href: "/admin/cadastrar/operacao", label: "Operação" },
     ],
   },

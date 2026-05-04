@@ -27,6 +27,13 @@ const ITEMS = [
     border: "border-orange-300/40 bg-orange-50",
   },
   {
+    href: "/admin/fundos/novo",
+    title: "Fundo de investimento",
+    desc: "Investidor que aporta capital. Cada fundo tem taxa-base, contrato e login próprios.",
+    icon: "🏦",
+    border: "border-yellow-300/40 bg-yellow-50",
+  },
+  {
     href: "/admin/cadastrar/operacao",
     title: "Operação",
     desc: "Registra operação como admin — você escolhe a imobiliária / corretor cedente e a construtora.",
