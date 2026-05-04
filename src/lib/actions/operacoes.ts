@@ -184,6 +184,10 @@ export async function createOperacaoAction(
   const valorComissao = parseBRLNumber(
     String(formData.get("valorComissao") || ""),
   );
+  const valorEntradaRaw = String(formData.get("valorEntrada") || "").trim();
+  const valorEntrada = valorEntradaRaw
+    ? parseBRLNumber(valorEntradaRaw)
+    : null;
 
   if (!construtoraId) return { ok: false, error: "Selecione a construtora" };
   if (!Number.isFinite(valorVenda) || valorVenda <= 0)
@@ -245,6 +249,9 @@ export async function createOperacaoAction(
   const docNotaFiscalUrl = String(
     formData.get("doc_nota_fiscal") || "",
   ).trim();
+  const docComprovanteEntradaUrl = String(
+    formData.get("doc_comprovante_entrada") || "",
+  ).trim();
 
   if (!docContratoVendaUrl)
     return { ok: false, error: "Anexe o contrato de compra e venda" };
@@ -283,6 +290,8 @@ export async function createOperacaoAction(
       construtoraId,
       valorVenda: String(valorVenda.toFixed(2)),
       valorComissao: String(valorComissao.toFixed(2)),
+      valorEntrada:
+        valorEntrada && valorEntrada > 0 ? String(valorEntrada.toFixed(2)) : null,
       dataVenda,
       numeroParcelas: parcelas.length,
       taxaMensal: String(taxaMensal),
@@ -304,23 +313,42 @@ export async function createOperacaoAction(
   );
 
   // Documentos da operação (URLs do Vercel Blob — já validadas acima)
-  const docRows = [
+  type DocRow = {
+    tipo:
+      | "contrato_venda"
+      | "contrato_comissao"
+      | "nota_fiscal"
+      | "comprovante_entrada";
+    url: string;
+    nome: string;
+  };
+  const docRows: DocRow[] = [
     {
-      tipo: "contrato_venda" as const,
+      tipo: "contrato_venda",
       url: docContratoVendaUrl,
       nome: String(formData.get("doc_contrato_venda_nome") || "contrato_venda.pdf"),
     },
     {
-      tipo: "contrato_comissao" as const,
+      tipo: "contrato_comissao",
       url: docContratoComissaoUrl,
       nome: String(formData.get("doc_contrato_comissao_nome") || "contrato_comissao.pdf"),
     },
     {
-      tipo: "nota_fiscal" as const,
+      tipo: "nota_fiscal",
       url: docNotaFiscalUrl,
       nome: String(formData.get("doc_nota_fiscal_nome") || "nota_fiscal.pdf"),
     },
   ];
+  if (docComprovanteEntradaUrl) {
+    docRows.push({
+      tipo: "comprovante_entrada",
+      url: docComprovanteEntradaUrl,
+      nome: String(
+        formData.get("doc_comprovante_entrada_nome") ||
+          "comprovante_entrada.pdf",
+      ),
+    });
+  }
 
   if (docRows.length > 0) {
     await db.insert(documentos).values(

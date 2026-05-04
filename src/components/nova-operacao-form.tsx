@@ -89,6 +89,7 @@ export function NovaOperacaoForm({
 
   const [valorVenda, setValorVenda] = useState("");
   const [valorComissao, setValorComissao] = useState("");
+  const [valorEntrada, setValorEntrada] = useState("");
   const [dataVenda, setDataVenda] = useState(
     new Date().toISOString().slice(0, 10),
   );
@@ -98,6 +99,8 @@ export function NovaOperacaoForm({
   const [docContratoVenda, setDocContratoVenda] = useState<UploadedBlob | null>(null);
   const [docContratoComissao, setDocContratoComissao] = useState<UploadedBlob | null>(null);
   const [docNotaFiscal, setDocNotaFiscal] = useState<UploadedBlob | null>(null);
+  const [docComprovanteEntrada, setDocComprovanteEntrada] =
+    useState<UploadedBlob | null>(null);
 
   const valorComissaoNum = parseBRLNumber(valorComissao);
 
@@ -241,6 +244,40 @@ export function NovaOperacaoForm({
                   />
                 </div>
               </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
+                  Valor da entrada
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-muted text-sm font-mono pointer-events-none">
+                    R$
+                  </span>
+                  <input
+                    name="valorEntrada"
+                    value={valorEntrada}
+                    onChange={(e) => setValorEntrada(maskCurrency(e.target.value))}
+                    inputMode="numeric"
+                    placeholder="0,00"
+                    className="w-full h-12 rounded-xl bg-bg border border-border-strong pl-10 pr-4 text-fg placeholder:text-fg-dim focus:border-accent outline-none transition-colors tabular text-right"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-fg-dim">
+                  Valor pago à vista pelo comprador. Comprovante abaixo.
+                </p>
+              </div>
+              <FileUploadField
+                label="Comprovante de pagamento da entrada"
+                name="doc_comprovante_entrada"
+                folder="operacoes/comprovante-entrada"
+                description="PDF ou imagem do comprovante (TED, PIX, recibo)"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                onChange={setDocComprovanteEntrada}
+              />
+              <input
+                type="hidden"
+                name="doc_comprovante_entrada_nome"
+                value={docComprovanteEntrada?.name ?? ""}
+              />
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">

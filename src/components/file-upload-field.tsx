@@ -68,6 +68,28 @@ export function FileUploadField({
     onChange?.(null);
   }
 
+  /**
+   * Sanitiza nome de arquivo pra evitar caracteres que quebram URLs do
+   * Vercel Blob. Mantém extensão.
+   */
+  function sanitizeFileName(name: string): string {
+    const lastDot = name.lastIndexOf(".");
+    const base = lastDot > 0 ? name.slice(0, lastDot) : name;
+    const ext = lastDot > 0 ? name.slice(lastDot) : "";
+    // Remove acentos
+    const noAccents = base
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "");
+    // Substitui qualquer coisa que não seja letra/dígito/-/_ por _
+    const cleaned = noAccents
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .replace(/_{2,}/g, "_")
+      .toLowerCase();
+    const cleanExt = ext.toLowerCase().replace(/[^.a-z0-9]/g, "");
+    return (cleaned || "arquivo") + cleanExt;
+  }
+
   async function handleFile(file: File) {
     setErrorMsg(null);
     if (file.size > maxMB * 1024 * 1024) {
@@ -78,9 +100,12 @@ export function FileUploadField({
     setStatus("uploading");
     setProgress(0);
     try {
-      const newBlob = await upload(`${folder}/${Date.now()}-${file.name}`, file, {
+      const safeName = sanitizeFileName(file.name);
+      const path = `${folder}/${Date.now()}-${safeName}`;
+      const newBlob = await upload(path, file, {
         access: "public",
         handleUploadUrl: "/api/upload",
+        contentType: file.type || undefined,
         onUploadProgress: (e) => setProgress(e.percentage),
       });
       const uploaded: UploadedBlob = {
@@ -96,7 +121,9 @@ export function FileUploadField({
       onChange?.(uploaded);
     } catch (e) {
       setStatus("error");
-      setErrorMsg((e as Error).message || "Erro no upload");
+      const msg = (e as Error).message || "Erro no upload";
+      console.error("[file-upload]", e, { file: file.name, type: file.type, size: file.size });
+      setErrorMsg(msg);
     }
   }
 

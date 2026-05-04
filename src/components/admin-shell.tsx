@@ -12,6 +12,7 @@ import {
 } from "@/components/mobile-bottom-nav";
 
 const nav: AdminNavItem[] = [
+  { type: "link", href: "/admin/cadastrar", label: "Cadastrar" },
   {
     type: "submenu",
     label: "Registros",

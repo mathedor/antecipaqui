@@ -90,6 +90,7 @@ export const documentoTipoEnum = pgEnum("documento_tipo", [
   "contrato_venda",
   "contrato_comissao",
   "nota_fiscal",
+  "comprovante_entrada",
   "outro",
 ]);
 
@@ -319,6 +320,9 @@ export const operacoes = pgTable(
     // Dados financeiros
     valorVenda: numeric("valor_venda", { precision: 15, scale: 2 }).notNull(),
     valorComissao: numeric("valor_comissao", { precision: 15, scale: 2 }).notNull(),
+    /** Valor da entrada paga pelo comprador. Documento de comprovante
+     *  fica em `documentos` com tipo='comprovante_entrada'. */
+    valorEntrada: numeric("valor_entrada", { precision: 15, scale: 2 }),
     dataVenda: date("data_venda").notNull(),
     numeroParcelas: integer("numero_parcelas").notNull(),
     taxaMensal: numeric("taxa_mensal", { precision: 6, scale: 4 })
