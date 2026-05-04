@@ -7,6 +7,7 @@ import {
   type CreateConstrutoraState,
 } from "@/lib/actions/operacoes";
 import { CepAddressFields } from "@/components/cep-address-fields";
+import { FileUploadField } from "@/components/file-upload-field";
 import { useFeedback } from "@/components/feedback-provider";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
 
@@ -88,6 +89,32 @@ export function AdminCadastrarConstrutoraForm() {
         <Grid>
           <CepAddressFields optional />
         </Grid>
+      </Card>
+
+      <Card
+        title="Documentos KYC (opcional)"
+        subtitle="Você pode subir agora ou solicitar via cobrança depois."
+      >
+        <div className="grid sm:grid-cols-3 gap-4">
+          <FileUploadField
+            label="Contrato social"
+            name="doc_contrato_social"
+            folder="kyc/construtora-cadastro/contrato-social"
+            description="PDF do contrato social"
+          />
+          <FileUploadField
+            label="Comprovante de endereço"
+            name="doc_comprovante_endereco"
+            folder="kyc/construtora-cadastro/comprovante-endereco"
+            description="Conta de luz, água ou telefone"
+          />
+          <FileUploadField
+            label="Cartão CNPJ"
+            name="doc_cartao_cnpj"
+            folder="kyc/construtora-cadastro/cartao-cnpj"
+            description="Cartão CNPJ atualizado"
+          />
+        </div>
       </Card>
 
       <button type="submit" disabled={pending} className="btn-primary !h-12 !px-6">

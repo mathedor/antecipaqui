@@ -1,5 +1,4 @@
-import { UserButton } from "@clerk/nextjs";
-import { EditarDadosLink } from "@/components/editar-dados-link";
+import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
 import Link from "next/link";
 import { SairButton } from "@/components/sair-button";
 import { Logo } from "@/components/logo";
@@ -12,7 +11,21 @@ import {
 } from "@/components/mobile-bottom-nav";
 
 const nav: AdminNavItem[] = [
-  { type: "link", href: "/admin/cadastrar", label: "Cadastrar" },
+  {
+    type: "submenu",
+    label: "Cadastrar",
+    matchPrefix: ["/admin/cadastrar"],
+    items: [
+      { href: "/admin/cadastrar", label: "Visão geral" },
+      {
+        href: "/admin/cadastrar/imobiliaria",
+        label: "Imobiliária / Corretor",
+      },
+      { href: "/admin/cadastrar/construtora", label: "Construtora" },
+      { href: "/admin/cadastrar/comercial", label: "Comercial" },
+      { href: "/admin/cadastrar/operacao", label: "Operação" },
+    ],
+  },
   {
     type: "submenu",
     label: "Registros",
@@ -38,7 +51,6 @@ const nav: AdminNavItem[] = [
     label: "Relatórios",
     matchPrefix: ["/admin/relatorios"],
     items: [
-      { href: "/admin/relatorios", label: "Visão geral" },
       { href: "/admin/relatorios/daily", label: "Daily" },
       { href: "/admin/relatorios/indices", label: "Índices" },
       {
@@ -132,13 +144,10 @@ export function AdminShell({
             </span>
             <NotificationBell />
             <span className="hidden md:inline-flex">
-              <EditarDadosLink />
-            </span>
-            <span className="hidden md:inline-flex">
               <SairButton />
             </span>
             <span className="hidden md:inline-flex">
-              <UserButton />
+              <UserButtonWithPerfil />
             </span>
           </div>
         </div>

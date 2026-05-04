@@ -171,6 +171,39 @@ export async function cadastrarImobiliariaAction(
     })
     .returning({ id: imobiliarias.id });
 
+  // Documentos opcionais (KYC)
+  type DocTipo = "contrato_social" | "comprovante_endereco" | "cartao_cnpj";
+  const docInputs: { field: string; tipo: DocTipo; nomeDefault: string }[] = [
+    { field: "doc_contrato_social", tipo: "contrato_social", nomeDefault: "contrato_social.pdf" },
+    {
+      field: "doc_comprovante_endereco",
+      tipo: "comprovante_endereco",
+      nomeDefault: "comprovante_endereco.pdf",
+    },
+    { field: "doc_cartao_cnpj", tipo: "cartao_cnpj", nomeDefault: "cartao_cnpj.pdf" },
+  ];
+  const docsToInsert: Array<{
+    tipo: DocTipo;
+    url: string;
+    nomeOriginal: string;
+    userId: string;
+    imobiliariaId: string;
+  }> = [];
+  for (const d of docInputs) {
+    const url = String(formData.get(d.field) || "").trim();
+    if (!url) continue;
+    docsToInsert.push({
+      tipo: d.tipo,
+      url,
+      nomeOriginal: String(formData.get(`${d.field}_nome`) || d.nomeDefault),
+      userId,
+      imobiliariaId: created.id,
+    });
+  }
+  if (docsToInsert.length > 0) {
+    await db.insert(documentos).values(docsToInsert);
+  }
+
   audit({
     action: "admin_cadastrou_imobiliaria",
     targetType: "user",
@@ -181,6 +214,7 @@ export async function cadastrarImobiliariaAction(
       email: responsavelEmail,
       role,
       imobiliariaId: created.id,
+      docsEnviados: docsToInsert.length,
     },
   }).catch(() => undefined);
 

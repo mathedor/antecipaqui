@@ -1,6 +1,6 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SairButton } from "@/components/sair-button";
@@ -158,14 +158,10 @@ export function MobileBottomNav({
             className="border-t border-border px-3 py-3 flex items-center justify-between gap-3 shrink-0"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}
           >
-            <Link
-              href="/painel/perfil"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 text-xs text-fg-muted hover:text-accent"
-            >
-              <UserButton />
-              <span>Editar dados</span>
-            </Link>
+            <div className="flex items-center gap-2 text-xs text-fg-muted">
+              <UserButtonWithPerfil />
+              <span>conta</span>
+            </div>
             <SairButton />
           </footer>
         </div>

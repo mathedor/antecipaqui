@@ -7,6 +7,7 @@ import {
   type CadastrarImobState,
 } from "@/lib/actions/admin-cadastrar";
 import { CepAddressFields } from "@/components/cep-address-fields";
+import { FileUploadField } from "@/components/file-upload-field";
 import { useFeedback } from "@/components/feedback-provider";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
 
@@ -126,6 +127,32 @@ export function AdminCadastrarImobForm() {
             />
           </Field>
         </Grid>
+      </Card>
+
+      <Card
+        title="Documentos KYC (opcional)"
+        subtitle="Você pode subir agora ou solicitar via cobrança depois. Recomendado: 3 documentos básicos."
+      >
+        <div className="grid sm:grid-cols-3 gap-4">
+          <FileUploadField
+            label="Contrato social"
+            name="doc_contrato_social"
+            folder="kyc/imob-cadastro/contrato-social"
+            description="PDF do contrato social ou MEI"
+          />
+          <FileUploadField
+            label="Comprovante de endereço"
+            name="doc_comprovante_endereco"
+            folder="kyc/imob-cadastro/comprovante-endereco"
+            description="Conta de luz, água ou telefone"
+          />
+          <FileUploadField
+            label="Cartão CNPJ"
+            name="doc_cartao_cnpj"
+            folder="kyc/imob-cadastro/cartao-cnpj"
+            description="Cartão CNPJ atualizado"
+          />
+        </div>
       </Card>
 
       <button type="submit" disabled={pending} className="btn-primary !h-12 !px-6">

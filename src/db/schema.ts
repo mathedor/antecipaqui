@@ -85,6 +85,7 @@ export const contratoStatusEnum = pgEnum("contrato_status", [
 export const documentoTipoEnum = pgEnum("documento_tipo", [
   "contrato_social",
   "comprovante_endereco",
+  "cartao_cnpj",
   "rg",
   "cpf",
   "creci",

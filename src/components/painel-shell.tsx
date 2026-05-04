@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
 import { Logo } from "@/components/logo";
 import { SairButton } from "@/components/sair-button";
 import { NotificationBell } from "@/components/notification-bell";
 import { VersionFooter } from "@/components/version-footer";
-import { EditarDadosLink } from "@/components/editar-dados-link";
+import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
 import {
   MobileBottomNav,
   type MobileNavItem,
@@ -302,13 +301,10 @@ export function PainelShell({
             </span>
             <NotificationBell />
             <span className="hidden md:inline-flex">
-              <EditarDadosLink />
-            </span>
-            <span className="hidden md:inline-flex">
               <SairButton />
             </span>
             <span className="hidden md:inline-flex">
-              <UserButton />
+              <UserButtonWithPerfil />
             </span>
           </div>
         </div>

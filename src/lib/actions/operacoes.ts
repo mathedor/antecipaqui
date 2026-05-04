@@ -107,6 +107,45 @@ export async function createConstrutoraAction(
     })
     .returning();
 
+  // Documentos opcionais (KYC) — persistidos se admin/corretor enviou via form
+  type ConsTipo = "contrato_social" | "comprovante_endereco" | "cartao_cnpj";
+  const docInputs: { field: string; tipo: ConsTipo; nomeDefault: string }[] = [
+    {
+      field: "doc_contrato_social",
+      tipo: "contrato_social",
+      nomeDefault: "contrato_social.pdf",
+    },
+    {
+      field: "doc_comprovante_endereco",
+      tipo: "comprovante_endereco",
+      nomeDefault: "comprovante_endereco.pdf",
+    },
+    {
+      field: "doc_cartao_cnpj",
+      tipo: "cartao_cnpj",
+      nomeDefault: "cartao_cnpj.pdf",
+    },
+  ];
+  const docsToInsert: Array<{
+    tipo: ConsTipo;
+    url: string;
+    nomeOriginal: string;
+    construtoraId: string;
+  }> = [];
+  for (const d of docInputs) {
+    const url = String(formData.get(d.field) || "").trim();
+    if (!url) continue;
+    docsToInsert.push({
+      tipo: d.tipo,
+      url,
+      nomeOriginal: String(formData.get(`${d.field}_nome`) || d.nomeDefault),
+      construtoraId: created.id,
+    });
+  }
+  if (docsToInsert.length > 0) {
+    await db.insert(documentos).values(docsToInsert);
+  }
+
   // Email de boas-vindas — best-effort, não bloqueia o fluxo
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.antecipaqui.digital";
