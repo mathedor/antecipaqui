@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/admin-cadastrar";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
 import { useFeedback } from "@/components/feedback-provider";
+import { SearchableSelect } from "@/components/searchable-select";
 import { formatBRL, parseBRLNumber, valorPresente } from "@/lib/format";
 
 type CorretorOption = {
@@ -140,45 +141,37 @@ export function AdminCadastrarOperacaoForm({
       <Card title="Cedente">
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Imobiliária / Corretor *">
-            <select
+            <SearchableSelect
               name="corretorUserId"
               required
               value={corretorUserId}
-              onChange={(e) => setCorretorUserId(e.target.value)}
-              className="form-input"
-            >
-              <option value="">Selecione...</option>
-              {corretores.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.imobNome ?? c.nome ?? c.email}
-                </option>
-              ))}
-            </select>
-            {corretorUserId && (() => {
-              const c = corretores.find((x) => x.id === corretorUserId);
-              if (!c) return null;
-              return (
-                <p className="mt-1 text-[11px] font-mono text-fg-dim">
-                  {c.email} {c.imobCnpj ? `· CNPJ ${c.imobCnpj}` : ""}
-                </p>
-              );
-            })()}
+              onChange={setCorretorUserId}
+              placeholder="Buscar imobiliária ou corretor..."
+              options={corretores.map((c) => ({
+                value: c.id,
+                label: c.imobNome ?? c.nome ?? c.email,
+                sub:
+                  c.email +
+                  (c.imobCnpj ? ` · CNPJ ${c.imobCnpj}` : "") +
+                  ` · ${c.role}`,
+              }))}
+              emptyLabel="Nenhuma imobiliária / corretor encontrada."
+            />
           </Field>
           <Field label="Construtora *">
-            <select
+            <SearchableSelect
               name="construtoraId"
               required
               value={construtoraId}
-              onChange={(e) => setConstrutoraId(e.target.value)}
-              className="form-input"
-            >
-              <option value="">Selecione...</option>
-              {construtoras.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nomeFantasia ?? c.razaoSocial}
-                </option>
-              ))}
-            </select>
+              onChange={setConstrutoraId}
+              placeholder="Buscar construtora..."
+              options={construtoras.map((c) => ({
+                value: c.id,
+                label: c.nomeFantasia ?? c.razaoSocial,
+                sub: c.razaoSocial + ` · CNPJ ${c.cnpj}`,
+              }))}
+              emptyLabel="Nenhuma construtora encontrada."
+            />
           </Field>
         </div>
       </Card>
