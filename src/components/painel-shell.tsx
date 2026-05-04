@@ -10,7 +10,13 @@ import {
   type MobileNavItem,
 } from "@/components/mobile-bottom-nav";
 
-type Role = "corretor" | "imobiliaria" | "construtora" | "admin" | "fundo";
+type Role =
+  | "corretor"
+  | "imobiliaria"
+  | "construtora"
+  | "admin"
+  | "fundo"
+  | "comercial";
 
 type NavItem = { href: string; label: string };
 
@@ -52,6 +58,11 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/parceiros", label: "Parceiros" },
     { href: "/painel/suporte", label: "Suporte" },
   ],
+  comercial: [
+    { href: "/painel", label: "Painel" },
+    { href: "/painel/perfil", label: "Meus dados" },
+    { href: "/painel/suporte", label: "Suporte" },
+  ],
 };
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -60,6 +71,7 @@ const ROLE_LABEL: Record<Role, string> = {
   construtora: "Construtora",
   admin: "Administrador",
   fundo: "Fundo investidor",
+  comercial: "Comercial",
 };
 
 const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
@@ -90,6 +102,11 @@ const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
     { href: "/painel", label: "Painel", icon: "home" },
     { href: "/painel/operacoes", label: "Ops", icon: "table" },
     { href: "/painel/parceiros", label: "Parc.", icon: "list" },
+    { href: "/painel/suporte", label: "Suporte", icon: "ticket" },
+  ],
+  comercial: [
+    { href: "/painel", label: "Painel", icon: "home" },
+    { href: "/painel/perfil", label: "Perfil", icon: "config" },
     { href: "/painel/suporte", label: "Suporte", icon: "ticket" },
   ],
 };
@@ -200,6 +217,22 @@ const MOBILE_FULLMENU: Record<
         { href: "/painel", label: "Painel", icon: "home" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
         { href: "/painel/parceiros", label: "Parceiros", icon: "list" },
+      ],
+    },
+    {
+      section: "suporte",
+      items: [
+        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/notificacoes", label: "Notificações", icon: "doc" },
+      ],
+    },
+  ],
+  comercial: [
+    {
+      section: "principal",
+      items: [
+        { href: "/painel", label: "Painel", icon: "home" },
+        { href: "/painel/perfil", label: "Meus dados", icon: "config" },
       ],
     },
     {

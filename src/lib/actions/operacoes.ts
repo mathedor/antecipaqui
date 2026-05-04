@@ -99,6 +99,10 @@ export async function createConstrutoraAction(
       cidade,
       uf,
       registeredByUserId: user.id,
+      comercialId: await (async () => {
+        const { getDefaultComercialId } = await import("@/lib/actions/comerciais");
+        return getDefaultComercialId();
+      })(),
       onboardingStatus: "pendente",
     })
     .returning();
@@ -288,6 +292,10 @@ export async function createOperacaoAction(
       corretorUserId: user.id,
       imobiliariaId: imob?.id ?? null,
       construtoraId,
+      comercialId: await (async () => {
+        const { getDefaultComercialId } = await import("@/lib/actions/comerciais");
+        return getDefaultComercialId();
+      })(),
       valorVenda: String(valorVenda.toFixed(2)),
       valorComissao: String(valorComissao.toFixed(2)),
       valorEntrada:

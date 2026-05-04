@@ -33,6 +33,7 @@ export const userRoleEnum = pgEnum("user_role", [
   "construtora",
   "admin",
   "fundo",
+  "comercial",
 ]);
 
 export const onboardingStatusEnum = pgEnum("onboarding_status", [
@@ -131,6 +132,8 @@ export const imobiliarias = pgTable(
     ownerUserId: text("owner_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    /** Comercial responsável pelo cadastro/relacionamento. */
+    comercialId: uuid("comercial_id"),
     razaoSocial: text("razao_social").notNull(),
     nomeFantasia: text("nome_fantasia"),
     cnpj: text("cnpj").notNull(),
@@ -169,6 +172,8 @@ export const construtoras = pgTable(
     registeredByUserId: text("registered_by_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    /** Comercial responsável pelo cadastro/relacionamento. */
+    comercialId: uuid("comercial_id"),
     razaoSocial: text("razao_social").notNull(),
     nomeFantasia: text("nome_fantasia"),
     cnpj: text("cnpj").notNull(),
@@ -194,6 +199,52 @@ export const construtoras = pgTable(
     index("construtoras_owner_idx").on(t.ownerUserId),
   ],
 );
+
+/* =========================================
+   COMERCIAIS — equipe comercial (interna ou parceira).
+   Pode ser PF ou PJ. Tem login próprio.
+   ========================================= */
+
+export const tipoPessoaEnum = pgEnum("tipo_pessoa", ["fisica", "juridica"]);
+
+export const comerciais = pgTable(
+  "comerciais",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** User Clerk vinculado. NULL se ainda não foi aceito o convite. */
+    ownerUserId: text("owner_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    tipoPessoa: tipoPessoaEnum("tipo_pessoa").notNull(),
+    /** Nome completo (PF) ou razão social (PJ). */
+    nomeCompleto: text("nome_completo").notNull(),
+    /** Apelido (PF) ou nome fantasia (PJ). */
+    apelido: text("apelido"),
+    /** CPF se PF, CNPJ se PJ. Sem máscara. */
+    documento: text("documento").notNull(),
+    cep: text("cep"),
+    endereco: text("endereco"),
+    cidade: text("cidade"),
+    uf: text("uf"),
+    email: text("email").notNull(),
+    /** Telefone com WhatsApp. */
+    telefone: text("telefone"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("comerciais_documento_idx").on(t.documento),
+    index("comerciais_owner_idx").on(t.ownerUserId),
+    index("comerciais_email_idx").on(t.email),
+  ],
+);
+
+export type Comercial = typeof comerciais.$inferSelect;
 
 /* =========================================
    FUNDOS — investidores que aportam pra antecipar comissões.
@@ -315,6 +366,11 @@ export const operacoes = pgTable(
     /** Fundo que vai aportar a antecipação. NULL pra operações antigas
      *  (criadas antes do conceito de fundo) — admin escolhe na aprovação. */
     fundoId: uuid("fundo_id").references(() => fundos.id, {
+      onDelete: "set null",
+    }),
+    /** Comercial responsável pela operação (recebe ~10% do lucro líquido).
+     *  Default: comercial "Antecipaqui" criado por seed. */
+    comercialId: uuid("comercial_id").references(() => comerciais.id, {
       onDelete: "set null",
     }),
     // Dados financeiros

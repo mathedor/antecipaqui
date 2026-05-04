@@ -20,6 +20,13 @@ const ITEMS = [
     border: "border-violet-300/40 bg-violet-50",
   },
   {
+    href: "/admin/cadastrar/comercial",
+    title: "Comercial",
+    desc: "Membro da equipe comercial (PF ou PJ) com login próprio. Recebe convite por email.",
+    icon: "👤",
+    border: "border-orange-300/40 bg-orange-50",
+  },
+  {
     href: "/admin/cadastrar/operacao",
     title: "Operação",
     desc: "Registra operação como admin — você escolhe a imobiliária / corretor cedente e a construtora.",
@@ -44,7 +51,7 @@ export default async function AdminCadastrarHub() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {ITEMS.map((it) => (
           <Link
             key={it.href}

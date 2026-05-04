@@ -27,6 +27,12 @@ type ConstrutoraOption = {
   cnpj: string;
 };
 
+type ComercialOption = {
+  id: string;
+  nomeCompleto: string;
+  apelido: string | null;
+};
+
 type Parcela = { valor: string; vencimento: string };
 
 function maskCurrency(v: string) {
@@ -65,11 +71,15 @@ function monthsBetween(from: Date, to: Date) {
 export function AdminCadastrarOperacaoForm({
   corretores,
   construtoras,
+  comerciais,
   taxaMensalSugerida,
+  defaultComercialId = "",
 }: {
   corretores: CorretorOption[];
   construtoras: ConstrutoraOption[];
+  comerciais: ComercialOption[];
   taxaMensalSugerida: number;
+  defaultComercialId?: string;
 }) {
   const router = useRouter();
   const { alertSuccess, alertError } = useFeedback();
@@ -80,6 +90,7 @@ export function AdminCadastrarOperacaoForm({
 
   const [corretorUserId, setCorretorUserId] = useState("");
   const [construtoraId, setConstrutoraId] = useState("");
+  const [comercialId, setComercialId] = useState(defaultComercialId);
   const [valorVenda, setValorVenda] = useState("");
   const [valorComissao, setValorComissao] = useState("");
   const [valorEntrada, setValorEntrada] = useState("");
@@ -172,6 +183,23 @@ export function AdminCadastrarOperacaoForm({
               }))}
               emptyLabel="Nenhuma construtora encontrada."
             />
+          </Field>
+          <Field label="Comercial responsável">
+            <SearchableSelect
+              name="comercialId"
+              value={comercialId}
+              onChange={setComercialId}
+              placeholder="Antecipaqui (default)"
+              options={comerciais.map((c) => ({
+                value: c.id,
+                label: c.apelido ?? c.nomeCompleto,
+                sub: c.nomeCompleto,
+              }))}
+              emptyLabel="Nenhum comercial cadastrado."
+            />
+            <p className="mt-1 text-[10px] text-fg-dim">
+              Vai ganhar ~10% do lucro líquido. Vazio = atribuído ao Antecipaqui.
+            </p>
           </Field>
         </div>
       </Card>

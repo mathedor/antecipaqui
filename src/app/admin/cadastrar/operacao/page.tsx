@@ -6,16 +6,28 @@ import {
   listCorretoresForSelector,
   listConstrutorasForSelector,
 } from "@/lib/actions/admin-cadastrar";
+import {
+  listComerciaisForSelector,
+  getDefaultComercialId,
+} from "@/lib/actions/comerciais";
 import { getTaxaMensal } from "@/lib/actions/settings";
 
 export const metadata = { title: "Admin · Cadastrar operação" };
 
 export default async function AdminCadastrarOperacaoPage() {
   const admin = await requireAdmin();
-  const [corretores, construtorasList, taxaMensal] = await Promise.all([
+  const [
+    corretores,
+    construtorasList,
+    comerciais,
+    taxaMensal,
+    defaultComercialId,
+  ] = await Promise.all([
     listCorretoresForSelector(),
     listConstrutorasForSelector(),
+    listComerciaisForSelector(),
     getTaxaMensal(),
+    getDefaultComercialId(),
   ]);
 
   return (
@@ -38,6 +50,8 @@ export default async function AdminCadastrarOperacaoPage() {
       <AdminCadastrarOperacaoForm
         corretores={corretores}
         construtoras={construtorasList}
+        comerciais={comerciais}
+        defaultComercialId={defaultComercialId ?? ""}
         taxaMensalSugerida={taxaMensal}
       />
     </AdminShell>

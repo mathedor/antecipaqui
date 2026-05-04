@@ -100,7 +100,11 @@ export async function getCurrentDbUser(): Promise<User | null> {
     ? "admin"
     : roleFromInvite === "fundo" && fundoIdFromInvite
       ? "fundo"
-      : "corretor";
+      : roleFromInvite === "comercial"
+        ? "comercial"
+        : roleFromInvite === "corretor" || roleFromInvite === "imobiliaria"
+          ? roleFromInvite
+          : "corretor";
 
   const inserted = await db
     .insert(users)
@@ -110,7 +114,9 @@ export async function getCurrentDbUser(): Promise<User | null> {
       nome,
       role: role as never,
       onboardingStatus:
-        isAdmin || role === "fundo" ? "aprovado" : "pendente",
+        isAdmin || role === "fundo" || role === "comercial"
+          ? "aprovado"
+          : "pendente",
     })
     .onConflictDoNothing()
     .returning();
@@ -123,6 +129,17 @@ export async function getCurrentDbUser(): Promise<User | null> {
       .set({ ownerUserId: userId, updatedAt: new Date() })
       .where(eq(fundos.id, fundoIdFromInvite))
       .catch((e) => console.error("[auth] erro vinculando fundo", e));
+  }
+
+  // Se for comercial via convite, vincula pelo email (já existe row criada
+  // pelo admin com user placeholder; substitui ownerUserId pelo userId real)
+  if (inserted[0] && role === "comercial") {
+    const { comerciais } = await import("@/db/schema");
+    await db
+      .update(comerciais)
+      .set({ ownerUserId: userId, updatedAt: new Date() })
+      .where(eq(comerciais.email, email))
+      .catch((e) => console.error("[auth] erro vinculando comercial", e));
   }
 
   if (inserted[0]) return inserted[0];

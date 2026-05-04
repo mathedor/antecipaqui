@@ -139,11 +139,22 @@ export async function cadastrarImobiliariaAction(
     });
   }
 
+  // Comercial (admin pode escolher; default = Antecipaqui)
+  let comercialId =
+    String(formData.get("comercialId") || "").trim() || null;
+  if (!comercialId) {
+    const { getDefaultComercialId } = await import(
+      "@/lib/actions/comerciais"
+    );
+    comercialId = (await getDefaultComercialId()) ?? null;
+  }
+
   // Cria imobiliária vinculada ao user
   const [created] = await db
     .insert(imobiliarias)
     .values({
       ownerUserId: userId,
+      comercialId,
       razaoSocial,
       nomeFantasia,
       cnpj,
@@ -238,10 +249,21 @@ export async function adminCadastrarOperacaoAction(
 
   const corretorUserId = String(formData.get("corretorUserId") || "").trim();
   const construtoraId = String(formData.get("construtoraId") || "").trim();
+  const comercialIdRaw =
+    String(formData.get("comercialId") || "").trim() || null;
   if (!corretorUserId)
     return { ok: false, error: "Selecione a imobiliária / corretor cedente" };
   if (!construtoraId)
     return { ok: false, error: "Selecione a construtora" };
+
+  // Se admin não escolheu comercial, atribui ao Antecipaqui (default)
+  let comercialId = comercialIdRaw;
+  if (!comercialId) {
+    const { getDefaultComercialId } = await import(
+      "@/lib/actions/comerciais"
+    );
+    comercialId = (await getDefaultComercialId()) ?? null;
+  }
 
   const valorVenda = parseBRLNumber(String(formData.get("valorVenda") || ""));
   const valorComissao = parseBRLNumber(
@@ -327,6 +349,7 @@ export async function adminCadastrarOperacaoAction(
       corretorUserId,
       imobiliariaId: imob?.id ?? null,
       construtoraId,
+      comercialId,
       valorVenda: String(valorVenda.toFixed(2)),
       valorComissao: String(valorComissao.toFixed(2)),
       valorEntrada:
