@@ -143,12 +143,20 @@ export default async function AdminOperacaoDetail({ params }: Params) {
             )}
           </p>
         </div>
-        <Link
-          href={`/admin/operacoes/${op.id}/editar`}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"
-        >
-          ✎ Editar valores
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href={`/operacoes/${op.id}/bordero`}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-accent/40 bg-accent-soft text-accent hover:bg-accent hover:text-white font-medium text-sm transition-colors"
+          >
+            📄 Visualizar bordero
+          </Link>
+          <Link
+            href={`/admin/operacoes/${op.id}/editar`}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"
+          >
+            ✎ Editar valores
+          </Link>
+        </div>
       </div>
 
       {/* Banners de motivo */}

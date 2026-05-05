@@ -100,7 +100,15 @@ export default async function OperacaoDetailPage({ params }: Params) {
         >
           ← operações
         </Link>
-        <PrintButton>🖨 Imprimir / salvar PDF</PrintButton>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/operacoes/${op.id}/bordero`}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-accent/40 bg-accent-soft text-accent hover:bg-accent hover:text-white font-medium text-sm transition-colors"
+          >
+            📄 Visualizar bordero
+          </Link>
+          <PrintButton>🖨 Imprimir / salvar PDF</PrintButton>
+        </div>
       </div>
 
       <article className="rounded-3xl border border-border bg-bg-elev p-8 md:p-12 print:border-0 print:rounded-none print:p-0 print:bg-transparent">
