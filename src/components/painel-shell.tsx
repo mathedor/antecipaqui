@@ -54,6 +54,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   fundo: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
+    { href: "/painel/recebimentos", label: "Recebimentos" },
     { href: "/painel/parceiros", label: "Parceiros" },
     { href: "/painel/suporte", label: "Suporte" },
   ],
@@ -100,9 +101,9 @@ const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
   ],
   fundo: [
     { href: "/painel", label: "Painel", icon: "home" },
+    { href: "/painel/recebimentos", label: "Receb.", icon: "wallet" },
     { href: "/painel/operacoes", label: "Ops", icon: "table" },
     { href: "/painel/parceiros", label: "Parc.", icon: "list" },
-    { href: "/painel/suporte", label: "Suporte", icon: "ticket" },
   ],
   comercial: [
     { href: "/painel", label: "Painel", icon: "home" },
@@ -217,6 +218,12 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel", label: "Painel", icon: "home" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
+      ],
+    },
+    {
+      section: "financeiro",
+      items: [
+        { href: "/painel/recebimentos", label: "Parcelas a receber", icon: "wallet" },
         { href: "/painel/parceiros", label: "Parceiros", icon: "list" },
       ],
     },

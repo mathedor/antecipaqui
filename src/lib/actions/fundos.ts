@@ -487,3 +487,43 @@ export async function getFundoDashboard() {
     imobiliarias: imobiliariasOperadas,
   };
 }
+
+/**
+ * Lista parcelas a receber pelo fundo: cada parcela das operações que ele
+ * financia, ordenadas por vencimento.
+ *
+ * Retorna `null` se o usuário não é fundo. Operações em status pré-aprovação
+ * são excluídas (parcelas só "valem" pro fundo após desembolso = realizada
+ * em diante; mas incluímos pre_aprovada→realizada pra que ele veja o
+ * cronograma esperado).
+ */
+export async function getRecebimentosFundo() {
+  const fundo = await getCurrentFundo();
+  if (!fundo) return null;
+
+  const rows = await db
+    .select({
+      parcelaId: parcelasComissao.id,
+      numero: parcelasComissao.numero,
+      valor: parcelasComissao.valor,
+      vencimento: parcelasComissao.vencimento,
+      statusParcela: parcelasComissao.status,
+      pagoEm: parcelasComissao.pagoEm,
+      pagoValor: parcelasComissao.pagoValor,
+      operacaoId: operacoes.id,
+      operacaoNumero: operacoes.numero,
+      operacaoStatus: operacoes.status,
+      construtoraNome: construtoras.razaoSocial,
+      corretorNome: users.nome,
+    })
+    .from(parcelasComissao)
+    .innerJoin(operacoes, eq(parcelasComissao.operacaoId, operacoes.id))
+    .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
+    .leftJoin(users, eq(operacoes.corretorUserId, users.id))
+    .where(
+      sql`${operacoes.fundoId} = ${fundo.id} AND ${operacoes.status} IN ('pre_aprovada','analise_final','enviada_para_assinatura','enviada_para_pagamento','realizada')`,
+    )
+    .orderBy(parcelasComissao.vencimento);
+
+  return { fundo, parcelas: rows };
+}
