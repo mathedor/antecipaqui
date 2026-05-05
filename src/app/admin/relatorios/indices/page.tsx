@@ -33,10 +33,54 @@ export default async function AdminIndicesPage({ searchParams }: Search) {
   const fundoId = params.fundoId;
   const inadPeriodo = params.inadPeriodo ?? "90d";
 
-  const [data, fundos] = await Promise.all([
-    getIndicesData({ fundoId, inadPeriodo }),
-    listFundosForSelector(),
-  ]);
+  let data: Awaited<ReturnType<typeof getIndicesData>> | null = null;
+  let dataError: { message: string; stack: string } | null = null;
+  let fundos: Awaited<ReturnType<typeof listFundosForSelector>> = [];
+  try {
+    [data, fundos] = await Promise.all([
+      getIndicesData({ fundoId, inadPeriodo }),
+      listFundosForSelector(),
+    ]);
+  } catch (e) {
+    const err = e as Error;
+    console.error("[indices] getIndicesData falhou:", err);
+    dataError = {
+      message: err.message || String(err),
+      stack: (err.stack ?? "").split("\n").slice(0, 8).join("\n"),
+    };
+  }
+
+  if (dataError || !data) {
+    return (
+      <AdminShell active="/admin/relatorios" userName={admin.nome}>
+        <div className="rounded-2xl border border-danger/40 bg-red-50 p-6 max-w-3xl">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-danger mb-2">
+            erro carregando relatório de índices
+          </div>
+          <h1 className="text-xl font-bold text-fg mb-3">
+            Falhou ao buscar dados
+          </h1>
+          <pre className="text-xs text-fg-muted whitespace-pre-wrap break-all bg-bg-elev p-3 rounded-lg border border-border">
+            {dataError?.message ?? "data is null"}
+          </pre>
+          {dataError?.stack && (
+            <details className="mt-3">
+              <summary className="text-xs text-fg-muted cursor-pointer">
+                stack trace
+              </summary>
+              <pre className="text-[10px] text-fg-dim whitespace-pre-wrap break-all mt-2">
+                {dataError.stack}
+              </pre>
+            </details>
+          )}
+          <p className="text-xs text-fg-muted mt-4">
+            Reporta esse erro pro dev. Filtros usados: fundoId=
+            {fundoId ?? "—"}, inadPeriodo={inadPeriodo}
+          </p>
+        </div>
+      </AdminShell>
+    );
+  }
 
   const taxaRecusa =
     data.valorAvg.total + data.recusadas.total > 0
