@@ -310,7 +310,7 @@ async function checkDb(): Promise<CheckResult[]> {
   // Comercial default Antecipaqui
   try {
     const r = await db.execute(
-      sql`select id from comerciais where nome_completo = 'Antecipaqui' limit 1`,
+      sql`select id from comerciais where nome_completo ilike 'Antecipaqui%' limit 1`,
     );
     out.push({
       name: "comercial 'Antecipaqui' default presente",

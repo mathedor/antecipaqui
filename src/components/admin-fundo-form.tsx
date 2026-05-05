@@ -45,22 +45,32 @@ export function AdminFundoForm({ fundo }: Props) {
   async function handleFile(file: File) {
     setUploading(true);
     setProgress(0);
+    const safeName = sanitizeFileName(file.name);
+    const path = `fundos/contratos/${Date.now()}-${safeName}`;
     try {
-      const safeName = sanitizeFileName(file.name);
-      const blob = await upload(
-        `fundos/contratos/${Date.now()}-${safeName}`,
-        file,
-        {
-          access: "public",
-          handleUploadUrl: "/api/upload",
-          contentType: file.type || undefined,
-          onUploadProgress: (e) => setProgress(e.percentage),
-        },
-      );
+      console.log("[fundo-contrato-upload] iniciando", {
+        originalName: file.name,
+        safeName,
+        path,
+        type: file.type,
+        size: file.size,
+      });
+      const blob = await upload(path, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+        contentType: file.type || undefined,
+        onUploadProgress: (e) => setProgress(e.percentage),
+      });
       setContratoUrl(blob.url);
       setContratoNome(file.name);
+      console.log("[fundo-contrato-upload] ok", blob.url);
     } catch (e) {
-      await alertError((e as Error).message, "Erro ao enviar contrato");
+      console.error("[fundo-contrato-upload] erro", e, { path, type: file.type });
+      const msg = (e as Error).message || "Erro desconhecido";
+      await alertError(
+        `${msg}\n\nArquivo: ${file.name}\nTipo: ${file.type || "desconhecido"}\nTamanho: ${(file.size / 1024).toFixed(0)}KB`,
+        "Erro ao enviar contrato",
+      );
     } finally {
       setUploading(false);
     }
