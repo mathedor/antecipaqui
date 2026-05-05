@@ -11,6 +11,7 @@ import {
 import { CepAddressFields } from "@/components/cep-address-fields";
 import { useFeedback } from "@/components/feedback-provider";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
+import { sanitizeFileName } from "@/lib/sanitize-filename";
 import type { Fundo } from "@/db/schema";
 
 type Props = {
@@ -45,11 +46,17 @@ export function AdminFundoForm({ fundo }: Props) {
     setUploading(true);
     setProgress(0);
     try {
-      const blob = await upload(`fundos/contratos/${Date.now()}-${file.name}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-        onUploadProgress: (e) => setProgress(e.percentage),
-      });
+      const safeName = sanitizeFileName(file.name);
+      const blob = await upload(
+        `fundos/contratos/${Date.now()}-${safeName}`,
+        file,
+        {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+          contentType: file.type || undefined,
+          onUploadProgress: (e) => setProgress(e.percentage),
+        },
+      );
       setContratoUrl(blob.url);
       setContratoNome(file.name);
     } catch (e) {

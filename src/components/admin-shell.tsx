@@ -16,7 +16,6 @@ const nav: AdminNavItem[] = [
     label: "Cadastrar",
     matchPrefix: ["/admin/cadastrar", "/admin/fundos/novo"],
     items: [
-      { href: "/admin/cadastrar", label: "Visão geral" },
       {
         href: "/admin/cadastrar/imobiliaria",
         label: "Imobiliária / Corretor",

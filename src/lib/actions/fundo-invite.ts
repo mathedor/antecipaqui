@@ -33,12 +33,16 @@ export async function gerarConviteFundoAction(
   }
 
   // Cria invitation no Clerk com metadata pro flow de criação do user
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
+    "https://www.antecipaqui.digital";
   try {
     const clerk = await clerkClient();
     await clerk.invitations.createInvitation({
       emailAddress: email,
       publicMetadata: { fundoId, role: "fundo" },
-      redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/painel`,
+      redirectUrl: `${siteUrl}/painel`,
     });
   } catch (e) {
     throw new Error(

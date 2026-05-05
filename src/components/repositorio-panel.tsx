@@ -8,6 +8,7 @@ import {
   deleteRepositorioFileAction,
 } from "@/lib/actions/repositorio";
 import { useFeedback } from "@/components/feedback-provider";
+import { sanitizeFileName } from "@/lib/sanitize-filename";
 import type { RepositorioFile } from "@/db/schema";
 
 type Props = {
@@ -54,11 +55,17 @@ export function RepositorioPanel({
       const folder = targetUserId
         ? `repositorio/user-${targetUserId}`
         : `repositorio/construtora-${targetConstrutoraId}`;
-      const blob = await upload(`${folder}/${Date.now()}-${file.name}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-        onUploadProgress: (e) => setProgress(e.percentage),
-      });
+      const safeName = sanitizeFileName(file.name);
+      const blob = await upload(
+        `${folder}/${Date.now()}-${safeName}`,
+        file,
+        {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+          contentType: file.type || undefined,
+          onUploadProgress: (e) => setProgress(e.percentage),
+        },
+      );
       await uploadRepositorioFileAction({
         targetUserId,
         targetConstrutoraId,

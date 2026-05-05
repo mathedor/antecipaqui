@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   deleteUserAction,
   deleteConstrutoraAction,
@@ -17,6 +18,7 @@ type Props = {
 export function AdminDeleteButton({ target, id, nome }: Props) {
   const [pending, start] = useTransition();
   const { confirm, alertError } = useFeedback();
+  const router = useRouter();
 
   async function handleClick() {
     const tipo = target === "user" ? "este usuário" : "esta construtora";
@@ -38,12 +40,22 @@ export function AdminDeleteButton({ target, id, nome }: Props) {
 
     start(async () => {
       try {
-        if (target === "user") {
-          await deleteUserAction(id);
-        } else {
-          await deleteConstrutoraAction(id);
+        const res =
+          target === "user"
+            ? await deleteUserAction(id)
+            : await deleteConstrutoraAction(id);
+        if (!res.ok) {
+          await alertError(
+            res.error,
+            target === "user"
+              ? "Erro ao deletar usuário"
+              : "Erro ao deletar construtora",
+          );
+          return;
         }
-        // redirect acontece dentro da action — não precisa fazer nada aqui
+        router.push(
+          target === "user" ? "/admin/usuarios" : "/admin/construtoras",
+        );
       } catch (e) {
         await alertError(
           (e as Error).message,

@@ -108,13 +108,17 @@ export async function cadastrarImobiliariaAction(
       .where(eq(users.id, userId));
   } else {
     // Cria invitation no Clerk
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ??
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
+      "https://www.antecipaqui.digital";
     let inviteId: string;
     try {
       const clerk = await clerkClient();
       const inv = await clerk.invitations.createInvitation({
         emailAddress: responsavelEmail,
         publicMetadata: { role },
-        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/painel`,
+        redirectUrl: `${siteUrl}/painel`,
       });
       inviteId = inv.id;
     } catch (e) {

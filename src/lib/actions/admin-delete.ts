@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/db";
@@ -44,10 +43,12 @@ import { audit } from "@/lib/audit";
  * 11. user
  * 12. clerk
  */
-export async function deleteUserAction(userId: string) {
+export async function deleteUserAction(
+  userId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const admin = await requireAdmin();
   if (admin.id === userId) {
-    throw new Error("Você não pode deletar a si mesmo.");
+    return { ok: false, error: "Você não pode deletar a si mesmo." };
   }
 
   const [u] = await db
@@ -55,7 +56,7 @@ export async function deleteUserAction(userId: string) {
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
-  if (!u) throw new Error("Usuário não encontrado.");
+  if (!u) return { ok: false, error: "Usuário não encontrado." };
 
   // 1. Pega todas as operações do user pra deletar dependências em cascata explicitamente
   const userOps = await db
@@ -120,13 +121,15 @@ export async function deleteUserAction(userId: string) {
   }).catch(() => undefined);
 
   revalidatePath("/admin/usuarios");
-  redirect("/admin/usuarios");
+  return { ok: true };
 }
 
 /**
  * Deleta uma construtora e todos os dados relacionados.
  */
-export async function deleteConstrutoraAction(construtoraId: string) {
+export async function deleteConstrutoraAction(
+  construtoraId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   await requireAdmin();
 
   const [c] = await db
@@ -137,7 +140,7 @@ export async function deleteConstrutoraAction(construtoraId: string) {
     .from(construtoras)
     .where(eq(construtoras.id, construtoraId))
     .limit(1);
-  if (!c) throw new Error("Construtora não encontrada.");
+  if (!c) return { ok: false, error: "Construtora não encontrada." };
 
   // Operações dela
   const ops = await db
@@ -176,7 +179,7 @@ export async function deleteConstrutoraAction(construtoraId: string) {
   }).catch(() => undefined);
 
   revalidatePath("/admin/construtoras");
-  redirect("/admin/construtoras");
+  return { ok: true };
 }
 
 /* Suppress unused warning — these tables are imported pra documentar
