@@ -341,7 +341,8 @@ async function ensureComercial(userId: string, spec: AccountSpec) {
     .limit(1);
   const baseValues = {
     ownerUserId: userId,
-    tipoPessoa: spec.cnpj.length === 11 ? ("PF" as const) : ("PJ" as const),
+    tipoPessoa:
+      spec.cnpj.length === 11 ? ("fisica" as const) : ("juridica" as const),
     nomeCompleto: `${spec.firstName} ${spec.lastName}`,
     apelido: spec.empresaApelido ?? null,
     documento: spec.cnpj,
