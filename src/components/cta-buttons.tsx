@@ -99,12 +99,12 @@ export function CtaSimular({ children, className }: ButtonProps) {
   }
 
   return (
-    <a
+    <Link
       href="/#simulador"
       onClick={handleClick}
       className={className}
     >
       {children}
-    </a>
+    </Link>
   );
 }

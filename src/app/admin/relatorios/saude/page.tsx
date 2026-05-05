@@ -117,8 +117,8 @@ export default async function AdminSaudePage() {
               erros detectados nos logs
             </div>
             <span className="text-xs text-fg-muted">
-              últimos 30 eventos com action ~ 'error|failed|fail|erro' OU metadata
-              contendo "error"
+              últimos 30 eventos com action ~ &apos;error|failed|fail|erro&apos;
+              OU metadata contendo &quot;error&quot;
             </span>
           </div>
           {health.errors.length === 0 ? (

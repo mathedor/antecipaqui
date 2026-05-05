@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, and, desc, sql, count } from "drizzle-orm";
+import { eq, desc, sql, count } from "drizzle-orm";
 import { db } from "@/db";
 import {
   fundos,

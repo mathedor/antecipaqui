@@ -21,7 +21,7 @@ export default async function NovaOperacaoPage() {
   }
 
   // Bloqueio: corretor/imobiliária precisa ter docs antes de operar
-  let docsFaltando: string[] = [];
+  const docsFaltando: string[] = [];
   if (user.role === "corretor" || user.role === "imobiliaria") {
     const userDocs = await db
       .select({ tipo: documentos.tipo })

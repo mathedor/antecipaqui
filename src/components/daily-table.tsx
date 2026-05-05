@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import {
   notificarParcelaPorEmailAction,
   gerarBoletoParcelaAction,
@@ -71,7 +70,6 @@ function buildWhatsappMessageImobiliaria(r: DailyRow) {
 }
 
 export function DailyTable({ rows }: { rows: DailyRow[] }) {
-  const router = useRouter();
   const { confirm, alertSuccess, alertError } = useFeedback();
   const [pending, start] = useTransition();
   const [sortKey, setSortKey] = useState<SortKey>("vencimento");

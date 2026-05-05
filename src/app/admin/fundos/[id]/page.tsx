@@ -14,11 +14,6 @@ export const metadata = { title: "Admin · Fundo" };
 
 type Params = { params: Promise<{ id: string }> };
 
-function fmtDate(d: string) {
-  if (!d) return "—";
-  return new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
-}
-
 export default async function AdminFundoDetail({ params }: Params) {
   const admin = await requireAdmin();
   const { id } = await params;

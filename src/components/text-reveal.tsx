@@ -16,27 +16,6 @@ function flatten(node: ReactNode): string {
   return "";
 }
 
-function splitWords(node: ReactNode, base: string[] = []): { text: string; styled: boolean }[] {
-  const out: { text: string; styled: boolean }[] = [];
-  Children.forEach(node, (child) => {
-    if (typeof child === "string" || typeof child === "number") {
-      String(child)
-        .split(/(\s+)/)
-        .forEach((part) => {
-          if (part === "") return;
-          out.push({ text: part, styled: base.length > 0 });
-        });
-    } else if (isValidElement<{ children?: ReactNode; className?: string }>(child)) {
-      const inner = flatten(child.props.children);
-      inner.split(/(\s+)/).forEach((part) => {
-        if (part === "") return;
-        out.push({ text: part, styled: true });
-      });
-    }
-  });
-  return out;
-}
-
 /**
  * TextReveal — splits children into words and reveals them with stagger
  * once the heading scrolls into view.

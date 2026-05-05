@@ -138,7 +138,7 @@ export function NovaOperacaoForm({
       desagio: d,
       percentDesagio: d / valorComissaoNum,
     };
-  }, [parcelas, valorComissaoNum]);
+  }, [parcelas, valorComissaoNum, TAXA_MENSAL]);
 
   function updateParcela(idx: number, key: keyof Parcela, value: string) {
     setParcelas((prev) => {

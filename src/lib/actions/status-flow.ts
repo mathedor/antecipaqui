@@ -5,7 +5,6 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   construtoras,
-  imobiliarias,
   operacaoEvents,
   operacoes,
   parcelasComissao,

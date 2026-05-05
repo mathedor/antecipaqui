@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { db } from "@/db";
 import {

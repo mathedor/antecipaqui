@@ -296,6 +296,7 @@ function Header({ logoUrl, numero }: { logoUrl: string; numero: string }) {
   return (
     <View style={styles.header} fixed>
       <View style={styles.logoContainer}>
+        {/* eslint-disable-next-line jsx-a11y/alt-text */}
         <Image src={logoUrl} style={styles.logo} />
       </View>
       <View style={styles.headerRight}>

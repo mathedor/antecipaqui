@@ -217,8 +217,8 @@ export function ContratoCard({
 
       {!signers && status === "gerado" && (
         <p className="mt-4 text-xs text-fg-muted">
-          Contrato gerado mas ainda não enviado pra ZapSign. Use "Regenerar" pra
-          tentar novamente.
+          Contrato gerado mas ainda não enviado pra ZapSign. Use
+          &quot;Regenerar&quot; pra tentar novamente.
         </p>
       )}
     </div>

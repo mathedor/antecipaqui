@@ -15,7 +15,6 @@ type Props = {
 };
 
 export function SolicitarSaqueForm({
-  saldo,
   construtoraNome,
   construtoraCnpj,
 }: Props) {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
 import { formatBRL, valorPresente } from "@/lib/format";
 
@@ -61,9 +62,9 @@ export function CalculadoraFundos({
     return (
       <div className="rounded-xl border border-dashed border-warn/40 bg-yellow-50 p-4 text-sm text-warn">
         Nenhum fundo cadastrado. Cadastre fundos em{" "}
-        <a href="/admin/fundos" className="underline font-semibold">
+        <Link href="/admin/fundos" className="underline font-semibold">
           /admin/fundos
-        </a>{" "}
+        </Link>{" "}
         antes de aprovar operações.
       </div>
     );
