@@ -11,7 +11,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:reset": "tsx --env-file=.env.local scripts/reset-db.ts"
+    "db:reset": "tsx --env-file=.env.local scripts/reset-db.ts",
+    "qa:seed-accounts": "tsx --env-file=.env.local scripts/create-test-accounts.ts",
+    "qa": "tsx --env-file=.env.local scripts/qa-tester.ts"
   },
   "dependencies": {
     "@clerk/localizations": "^4.5.6",
