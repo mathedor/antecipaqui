@@ -15,6 +15,9 @@ export async function GET() {
     vercelGitBranch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
     deployedAt: process.env.VERCEL_GIT_COMMIT_AUTHOR_DATE ?? null,
     blobConfigured: !!process.env.BLOB_READ_WRITE_TOKEN,
+    resendConfigured: !!process.env.RESEND_API_KEY,
+    resendFrom: process.env.RESEND_FROM ?? null,
+    zapsignConfigured: !!process.env.ZAPSIGN_API_TOKEN,
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? null,
   });
 }
