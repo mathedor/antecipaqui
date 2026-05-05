@@ -332,7 +332,7 @@ export async function getIndicesData(filters?: {
       COUNT(p.id)::int AS qtd,
       COALESCE(SUM(p.valor)::float, 0) AS valor_inadimplente,
       COALESCE(SUM(p.valor) FILTER (
-        WHERE EXTRACT(EPOCH FROM (CURRENT_DATE - p.vencimento)) / 86400 > 30
+        WHERE (CURRENT_DATE - p.vencimento) > 30
       )::float, 0) AS valor_30d_atraso
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
@@ -341,7 +341,7 @@ export async function getIndicesData(filters?: {
       p.status = 'vencida'
       OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE)
     )
-    AND p.vencimento >= CURRENT_DATE - (${dias}::int || ' days')::interval
+    AND p.vencimento >= CURRENT_DATE - make_interval(days => ${dias}::int)
     AND o.status NOT IN ('rascunho', 'recusada', 'cancelada')
     GROUP BY f.id, nome
     ORDER BY valor_inadimplente DESC
