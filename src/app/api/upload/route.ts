@@ -47,9 +47,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           );
         }
         return {
-          // Tipos comuns + alguns que iOS/Android geram com sufixos diferentes.
-          // Sem `allowedContentTypes` o Blob aceita qualquer tipo — preferimos
-          // restringir mas com lista ampla pra não bloquear celulares.
+          access: "private",
           allowedContentTypes: [
             "application/pdf",
             "image/jpeg",
@@ -60,9 +58,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             "image/gif",
             "image/heic",
             "image/heif",
-            "application/octet-stream", // alguns browsers enviam assim quando type="" no input
+            "application/octet-stream",
           ],
-          maximumSizeInBytes: 15 * 1024 * 1024, // 15MB
+          maximumSizeInBytes: 15 * 1024 * 1024,
           tokenPayload: JSON.stringify({ userId, pathname }),
         };
       },

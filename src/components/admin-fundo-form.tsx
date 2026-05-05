@@ -12,6 +12,7 @@ import { CepAddressFields } from "@/components/cep-address-fields";
 import { useFeedback } from "@/components/feedback-provider";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
 import { sanitizeFileName } from "@/lib/sanitize-filename";
+import { toBlobProxyHref } from "@/lib/blob-url";
 import type { Fundo } from "@/db/schema";
 
 type Props = {
@@ -56,7 +57,7 @@ export function AdminFundoForm({ fundo }: Props) {
         size: file.size,
       });
       const blob = await upload(path, file, {
-        access: "public",
+        access: "private",
         handleUploadUrl: "/api/upload",
         contentType: file.type || undefined,
         onUploadProgress: (e) => setProgress(e.percentage),
@@ -218,7 +219,7 @@ export function AdminFundoForm({ fundo }: Props) {
                   ✓
                 </span>
                 <a
-                  href={contratoUrl}
+                  href={toBlobProxyHref(contratoUrl)}
                   target="_blank"
                   rel="noopener"
                   className="flex-1 truncate text-fg hover:text-accent"

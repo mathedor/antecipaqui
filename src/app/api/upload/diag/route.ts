@@ -39,7 +39,7 @@ export async function GET() {
   const probePath = `_diag/${Date.now()}-probe.txt`;
   try {
     const blob = await put(probePath, "diag probe " + new Date().toISOString(), {
-      access: "public",
+      access: "private",
       contentType: "text/plain",
       addRandomSuffix: false,
       allowOverwrite: true,

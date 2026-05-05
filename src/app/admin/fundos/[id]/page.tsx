@@ -8,6 +8,7 @@ import { FundoConviteLogin } from "@/components/fundo-convite-login";
 import { getFundoDetail } from "@/lib/actions/fundos";
 import { audit } from "@/lib/audit";
 import { formatBRL } from "@/lib/format";
+import { toBlobProxyHref } from "@/lib/blob-url";
 
 export const metadata = { title: "Admin · Fundo" };
 
@@ -288,7 +289,7 @@ export default async function AdminFundoDetail({ params }: Params) {
           <Card label="Contrato modelo">
             {fundo.contratoUrl ? (
               <a
-                href={fundo.contratoUrl}
+                href={toBlobProxyHref(fundo.contratoUrl)}
                 target="_blank"
                 rel="noopener"
                 className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-border bg-bg hover:border-accent transition-colors text-sm"

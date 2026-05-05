@@ -11,6 +11,7 @@ import { formatBRL, formatPercent } from "@/lib/format";
 import { getAdminOperacaoDetail } from "@/lib/actions/admin";
 import { getContratoForOperacao } from "@/lib/actions/contract";
 import { listFundosForSelector } from "@/lib/actions/fundos";
+import { toBlobProxyHref } from "@/lib/blob-url";
 
 export const metadata = {
   title: "Admin · Detalhe da operação",
@@ -467,10 +468,9 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                       </div>
                     </div>
                     <a
-                      href={d.url}
+                      href={toBlobProxyHref(d.url) + "?download=1"}
                       target="_blank"
                       rel="noopener"
-                      download
                       className="text-accent text-sm font-semibold whitespace-nowrap shrink-0"
                     >
                       baixar ↓

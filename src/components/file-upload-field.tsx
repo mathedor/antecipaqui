@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { sanitizeFileName } from "@/lib/sanitize-filename";
+import { toBlobProxyHref } from "@/lib/blob-url";
 
 export type UploadedBlob = {
   url: string;
@@ -82,7 +83,7 @@ export function FileUploadField({
       const safeName = sanitizeFileName(file.name);
       const path = `${folder}/${Date.now()}-${safeName}`;
       const newBlob = await upload(path, file, {
-        access: "public",
+        access: "private",
         handleUploadUrl: "/api/upload",
         contentType: file.type || undefined,
         onUploadProgress: (e) => setProgress(e.percentage),
@@ -180,7 +181,7 @@ export function FileUploadField({
             ✓
           </span>
           <a
-            href={blob.url}
+            href={toBlobProxyHref(blob.url)}
             target="_blank"
             rel="noopener"
             className="flex-1 truncate text-fg hover:text-accent transition-colors"

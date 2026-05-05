@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions/block";
 import { getConstrutoraMonthlyStats } from "@/lib/actions/operacoes";
 import { ConstrutoraCharts } from "@/components/dashboard-charts";
+import { toBlobProxyHref } from "@/lib/blob-url";
 import { audit, getAuditLogsByTarget, getAuditLogsByUser } from "@/lib/audit";
 import { AuditLogTimeline } from "@/components/audit-log-timeline";
 import { IniciarContatoButton } from "@/components/iniciar-contato-button";
@@ -441,7 +442,7 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
                       </div>
                     </div>
                     <a
-                      href={d.url}
+                      href={toBlobProxyHref(d.url)}
                       target="_blank"
                       rel="noopener"
                       className="text-accent text-sm font-semibold whitespace-nowrap shrink-0"

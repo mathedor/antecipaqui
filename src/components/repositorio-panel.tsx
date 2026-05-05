@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/repositorio";
 import { useFeedback } from "@/components/feedback-provider";
 import { sanitizeFileName } from "@/lib/sanitize-filename";
+import { toBlobProxyHref } from "@/lib/blob-url";
 import type { RepositorioFile } from "@/db/schema";
 
 type Props = {
@@ -60,7 +61,7 @@ export function RepositorioPanel({
         `${folder}/${Date.now()}-${safeName}`,
         file,
         {
-          access: "public",
+          access: "private",
           handleUploadUrl: "/api/upload",
           contentType: file.type || undefined,
           onUploadProgress: (e) => setProgress(e.percentage),
@@ -179,7 +180,7 @@ export function RepositorioPanel({
             >
               <div className="min-w-0 flex-1">
                 <a
-                  href={f.url}
+                  href={toBlobProxyHref(f.url)}
                   target="_blank"
                   rel="noopener"
                   className="block font-semibold text-sm text-fg hover:text-accent truncate"

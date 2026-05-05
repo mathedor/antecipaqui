@@ -13,6 +13,7 @@ import {
   getUserMonthlyStats,
   rejectUserOnboardingAction,
 } from "@/lib/actions/admin";
+import { toBlobProxyHref } from "@/lib/blob-url";
 import { blockUserAction, unblockUserAction } from "@/lib/actions/block";
 import { audit, getAuditLogsByUser, getAuditLogsByTarget } from "@/lib/audit";
 import { AuditLogTimeline } from "@/components/audit-log-timeline";
@@ -404,10 +405,9 @@ export default async function AdminUsuarioDetail({ params }: Params) {
                       </div>
                     </div>
                     <a
-                      href={d.url}
+                      href={toBlobProxyHref(d.url) + "?download=1"}
                       target="_blank"
                       rel="noopener"
-                      download
                       className="text-accent text-sm font-semibold whitespace-nowrap shrink-0"
                     >
                       baixar ↓

@@ -8,6 +8,7 @@ import { PrintButton } from "@/components/print-button";
 import { ContratoCard } from "@/components/contrato-card";
 import { PainelShell } from "@/components/painel-shell";
 import { formatBRL, formatPercent } from "@/lib/format";
+import { toBlobProxyHref } from "@/lib/blob-url";
 
 export const metadata = {
   title: "Borderô da operação",
@@ -268,7 +269,7 @@ export default async function OperacaoDetailPage({ params }: Params) {
                     </div>
                   </div>
                   <a
-                    href={d.url}
+                    href={toBlobProxyHref(d.url)}
                     target="_blank"
                     rel="noopener"
                     className="text-accent text-sm font-semibold whitespace-nowrap shrink-0 print:hidden"
