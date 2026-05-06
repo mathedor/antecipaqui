@@ -158,6 +158,7 @@ export default async function OperacaoDetailPage({ params }: Params) {
               currentStatus={op.status}
               currentTaxaMensal={parseFloat(op.taxaMensal)}
               valorComissao={parseFloat(op.valorComissao)}
+              valorVenda={parseFloat(op.valorVenda)}
               valorPresente={parseFloat(op.valorPresente)}
               parcelas={op.parcelas.map((p) => ({
                 valor: p.valor,

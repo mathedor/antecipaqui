@@ -55,10 +55,12 @@ export default async function AdminPage() {
         <StatCard
           label="Aprovadas / ativas"
           value={String(stats.aprovadas)}
+          href="/admin/operacoes?status=enviada_para_pagamento"
         />
         <StatCard
           label="Liquidadas"
           value={String(stats.liquidadas)}
+          href="/admin/operacoes?status=realizada"
         />
         <StatCard
           label="Recusadas"
@@ -78,23 +80,27 @@ export default async function AdminPage() {
           label="Comissão total"
           value={formatBRL(stats.valorComissaoTotal)}
           sublabel="todas as operações"
+          href="/admin/operacoes"
         />
         <StatCard
           label="Já antecipado"
           value={formatBRL(stats.valorAntecipado)}
           sublabel="creditado a corretores"
           highlight
+          href="/admin/relatorios/indices"
         />
         <StatCard
           label="A vencer"
           value={formatBRL(stats.aVencer)}
           sublabel="parcelas pendentes"
+          href="/admin/relatorios/daily"
         />
         <StatCard
           label="Vencidas"
           value={formatBRL(stats.vencidas)}
           sublabel="atenção necessária"
           tone={stats.vencidas > 0 ? "danger" : "default"}
+          href="/admin/relatorios/inadimplentes"
         />
       </div>
 

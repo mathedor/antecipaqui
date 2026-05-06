@@ -148,6 +148,8 @@ type Props = {
   currentTaxaMensal: number;
   /** Comissão total — pra preview de novo deságio. */
   valorComissao: number;
+  /** Valor da venda total (informativo no card da calculadora). */
+  valorVenda?: number;
   /** Valor presente da operação — base do cashback. */
   valorPresente: number;
   /** Parcelas pra recalcular VP no preview client-side. */
@@ -179,6 +181,7 @@ export function AdminStatusFlow({
   currentStatus,
   currentTaxaMensal,
   valorComissao,
+  valorVenda,
   valorPresente: valorPresenteInicial,
   parcelas,
   currentCashbackPercent,
@@ -489,6 +492,8 @@ export function AdminStatusFlow({
             fundos={fundos}
             parcelas={parcelasParaCalc}
             valorComissao={valorComissao}
+            valorVenda={valorVenda}
+            numeroParcelas={parcelas.length}
             selectedFundoId={selectedFundoId}
             onSelect={handleSelectFundo}
             taxaCustom={taxaPreview && !taxaPreview.invalida ? taxaPreview.taxa : undefined}

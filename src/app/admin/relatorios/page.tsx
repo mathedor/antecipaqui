@@ -8,18 +8,71 @@ export const metadata = {
 
 const RELATORIOS = [
   {
+    href: "/admin/relatorios/indices",
+    title: "Índices · KPIs do negócio",
+    desc: "Painel completo: valor médio das ops, distribuição por faixa, funil de conversão, taxa de recusa, inadimplência e gráficos por fundo.",
+    icon: "📊",
+    section: "Visão geral",
+  },
+  {
+    href: "/admin/relatorios/saude",
+    title: "Saúde da plataforma",
+    desc: "Status do sistema: Resend, Clerk, blob, integrações externas e configurações críticas.",
+    icon: "🩺",
+    section: "Visão geral",
+  },
+  {
     href: "/admin/relatorios/construtoras",
     title: "Ranking de construtoras",
-    desc: "Construtoras que mais operaram no período. Valor operado, pago, em aberto e quantidade de operações.",
+    desc: "Construtoras que mais operaram. Valor operado, pago, em aberto e quantidade de operações.",
     icon: "🏗️",
+    section: "Rankings",
   },
   {
     href: "/admin/relatorios/imobiliarias",
     title: "Ranking de imobiliárias / corretores",
-    desc: "Imobiliárias e corretores que mais cederam comissões. Comparativo de volume e status de cadastro.",
+    desc: "Imobiliárias e corretores que mais cederam comissões. Comparativo de volume.",
     icon: "🏢",
+    section: "Rankings",
+  },
+  {
+    href: "/admin/relatorios/fundos",
+    title: "Ranking de fundos",
+    desc: "Fundos que mais aportaram. Total operado, pago, em aberto e nº de ops por fundo.",
+    icon: "🏦",
+    section: "Rankings",
+  },
+  {
+    href: "/admin/relatorios/comerciais",
+    title: "Ranking de comerciais",
+    desc: "Comerciais com mais operações sob responsabilidade — lucro / desagio gerado.",
+    icon: "💼",
+    section: "Rankings",
+  },
+  {
+    href: "/admin/relatorios/daily",
+    title: "Daily · parcelas em aberto",
+    desc: "Cronograma diário das parcelas a vencer e em atraso. Cálculo de encargos automático + ações de notificação e boleto.",
+    icon: "📅",
+    section: "Operacional",
+  },
+  {
+    href: "/admin/relatorios/inadimplentes",
+    title: "Inadimplentes",
+    desc: "Lista de operações com parcelas vencidas. Filtros por período e fundo.",
+    icon: "⚠️",
+    section: "Operacional",
+  },
+  {
+    href: "/admin/relatorios/logs",
+    title: "Audit log",
+    desc: "Histórico completo de ações de usuários: logins, leituras, escritas, mudanças de status.",
+    icon: "📜",
+    section: "Operacional",
   },
 ];
+
+const SECOES = ["Visão geral", "Rankings", "Operacional"];
 
 export default async function RelatoriosIndexPage() {
   const admin = await requireAdmin();
@@ -36,28 +89,41 @@ export default async function RelatoriosIndexPage() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-5">
-        {RELATORIOS.map((r) => (
-          <Link
-            key={r.href}
-            href={r.href}
-            className="rounded-3xl border border-border bg-bg-elev p-7 hover:border-accent hover:shadow-xl transition-all group"
-          >
-            <div className="text-4xl mb-4">{r.icon}</div>
-            <h2 className="text-xl font-bold tracking-tight group-hover:text-accent transition-colors">
-              {r.title}
-            </h2>
-            <p className="mt-2 text-sm text-fg-muted leading-relaxed">
-              {r.desc}
-            </p>
-            <span className="mt-5 inline-flex items-center gap-2 text-sm text-accent font-semibold">
-              Abrir relatório
-              <span className="transition-transform group-hover:translate-x-1">
-                →
-              </span>
-            </span>
-          </Link>
-        ))}
+      <div className="space-y-10">
+        {SECOES.map((secao) => {
+          const items = RELATORIOS.filter((r) => r.section === secao);
+          if (items.length === 0) return null;
+          return (
+            <section key={secao}>
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-4">
+                {secao}
+              </div>
+              <div className="grid md:grid-cols-2 gap-5">
+                {items.map((r) => (
+                  <Link
+                    key={r.href}
+                    href={r.href}
+                    className="rounded-3xl border border-border bg-bg-elev p-7 hover:border-accent hover:shadow-xl transition-all group"
+                  >
+                    <div className="text-4xl mb-4">{r.icon}</div>
+                    <h2 className="text-xl font-bold tracking-tight group-hover:text-accent transition-colors">
+                      {r.title}
+                    </h2>
+                    <p className="mt-2 text-sm text-fg-muted leading-relaxed">
+                      {r.desc}
+                    </p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm text-accent font-semibold">
+                      Abrir relatório
+                      <span className="transition-transform group-hover:translate-x-1">
+                        →
+                      </span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </AdminShell>
   );

@@ -20,14 +20,20 @@ type Props = {
   selectedFundoId: string | null;
   onSelect: (fundoId: string) => void;
   /** Taxa custom que o admin definiu (override). Se passada, é usada
-   *  pro fundo selecionado e a tabela mostra "(custom)". */
+   *  pro fundo selecionado e o card mostra "(custom)". */
   taxaCustom?: number;
+  /** Opcional — valor total da venda, exibido no card de resumo. */
+  valorVenda?: number;
+  /** Opcional — # de parcelas pra exibir. */
+  numeroParcelas?: number;
 };
 
 /**
  * Calculadora comparativa de fundos.
- * Mostra cada fundo com sua taxa-base + VP/deságio calculados sobre as
- * parcelas da operação. Admin clica num fundo pra selecioná-lo.
+ *
+ * Layout: bloco esquerdo com infos da operação + grid de cards (um por
+ * fundo) com VP/deságio/lucro pra cada um. Admin clica num card pra
+ * selecioná-lo.
  */
 export function CalculadoraFundos({
   fundos,
@@ -36,12 +42,16 @@ export function CalculadoraFundos({
   selectedFundoId,
   onSelect,
   taxaCustom,
+  valorVenda,
+  numeroParcelas,
 }: Props) {
   const linhas = useMemo(
     () =>
       fundos.map((f) => {
         const taxa =
-          f.id === selectedFundoId && taxaCustom ? taxaCustom : parseFloat(f.taxaMensalBase);
+          f.id === selectedFundoId && taxaCustom
+            ? taxaCustom
+            : parseFloat(f.taxaMensalBase);
         const vp = valorPresente(parcelas, taxa);
         const desagio = valorComissao - vp;
         const pctDesagio =
@@ -70,110 +80,208 @@ export function CalculadoraFundos({
     );
   }
 
-  // Calcula melhor fundo (menor deságio = mais paga ao corretor)
+  // Melhor fundo = maior VP (menor deságio entregue ao cedente)
   const best = linhas.reduce((b, c) => (c.vp > b.vp ? c : b), linhas[0]);
+  const totalParcelas = numeroParcelas ?? parcelas.length;
+  const prazoMedio =
+    parcelas.length > 0
+      ? parcelas.reduce((s, p) => s + p.mesesAteVencimento, 0) /
+        parcelas.length
+      : 0;
 
   return (
     <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
-      <div className="px-4 py-3 bg-bg-card border-b border-border flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-dim">
-            calculadora comparativa de fundos
-          </div>
-          <p className="text-xs text-fg-muted mt-0.5">
-            Selecione o fundo. VP e deságio calculados com a taxa-base de cada
-            um sobre as parcelas dessa operação.
-          </p>
+      <div className="px-5 py-3 border-b border-border bg-bg-card">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-dim">
+          calculadora comparativa
         </div>
-        <div className="text-right">
-          <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-            comissão da operação
-          </div>
-          <div className="font-mono tabular text-base font-bold text-fg">
-            {formatBRL(valorComissao)}
-          </div>
-        </div>
+        <p className="text-xs text-fg-muted mt-0.5">
+          Compare como a operação ficaria em cada fundo. Clique num card pra
+          selecionar — taxa do fundo é aplicada e VP/deságio recalculados.
+        </p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border">
-              <th className="px-3 py-2 text-left">Selecionar</th>
-              <th className="px-3 py-2 text-left">Fundo</th>
-              <th className="px-3 py-2 text-right">Taxa</th>
-              <th className="px-3 py-2 text-right">VP (recebido)</th>
-              <th className="px-3 py-2 text-right">Deságio</th>
-              <th className="px-3 py-2 text-right">% deságio</th>
-              <th className="px-3 py-2 text-center">Recom.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.map((l) => {
+
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 p-4">
+        {/* Painel esquerdo: dados da operação */}
+        <aside className="rounded-xl border border-accent/30 bg-accent-soft p-4 self-start sticky lg:top-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent mb-3">
+            dados da operação
+          </div>
+          {valorVenda !== undefined && (
+            <Stat
+              label="Valor da venda"
+              value={formatBRL(valorVenda)}
+            />
+          )}
+          <Stat
+            label="Comissão"
+            value={formatBRL(valorComissao)}
+            highlight
+          />
+          <Stat
+            label="Parcelas"
+            value={`${totalParcelas}x`}
+          />
+          <Stat
+            label="Prazo médio"
+            value={`${prazoMedio.toFixed(1)} meses`}
+          />
+          <hr className="border-accent/20 my-3" />
+          <p className="text-[10px] text-fg-muted leading-relaxed">
+            VP = valor presente (líquido pago ao cedente). Deságio = lucro do
+            fundo. Cards à direita ordenados pelo melhor VP (mais favorável ao
+            cedente) primeiro.
+          </p>
+        </aside>
+
+        {/* Cards de fundos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          {[...linhas]
+            .sort((a, b) => b.vp - a.vp)
+            .map((l) => {
               const selected = l.fundo.id === selectedFundoId;
               const isBest = l.fundo.id === best.fundo.id;
               return (
-                <tr
+                <button
                   key={l.fundo.id}
+                  type="button"
                   onClick={() => onSelect(l.fundo.id)}
-                  className={`border-b border-border last:border-0 cursor-pointer transition-colors ${
+                  className={`relative text-left rounded-xl border-2 p-4 transition-all ${
                     selected
-                      ? "bg-accent-soft hover:bg-accent-soft/70"
-                      : "hover:bg-bg-card"
+                      ? "border-accent bg-accent-soft shadow-sm"
+                      : "border-border bg-bg hover:border-accent/40 hover:shadow-sm"
                   }`}
                 >
-                  <td className="px-3 py-3">
-                    <input
-                      type="radio"
-                      name="calculadora-fundo"
-                      checked={selected}
-                      onChange={() => onSelect(l.fundo.id)}
-                      className="size-4 accent-current text-accent"
-                    />
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="font-semibold text-fg text-sm">
-                      {l.fundo.nomeFantasia ?? l.fundo.razaoSocial}
+                  {isBest && (
+                    <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] uppercase tracking-wider font-mono bg-green-50 text-success border-green-200 shadow-sm">
+                      ★ melhor
+                    </span>
+                  )}
+
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-fg text-sm truncate">
+                        {l.fundo.nomeFantasia ?? l.fundo.razaoSocial}
+                      </div>
+                      {l.fundo.nomeFantasia && (
+                        <div className="text-[10px] text-fg-muted truncate">
+                          {l.fundo.razaoSocial}
+                        </div>
+                      )}
                     </div>
-                    {l.fundo.nomeFantasia && (
-                      <div className="text-[10px] text-fg-muted">
-                        {l.fundo.razaoSocial}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-right font-mono tabular text-sm">
-                    {(l.taxa * 100).toFixed(2).replace(".", ",")}%
-                    {l.isCustom && (
-                      <div className="text-[9px] uppercase font-mono text-accent">
-                        custom
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-right font-mono tabular text-sm font-semibold text-fg">
-                    {formatBRL(l.vp)}
-                  </td>
-                  <td className="px-3 py-3 text-right font-mono tabular text-sm text-warn">
-                    − {formatBRL(l.desagio)}
-                  </td>
-                  <td className="px-3 py-3 text-right font-mono tabular text-xs text-fg-muted">
-                    {l.pctDesagio.toFixed(2).replace(".", ",")}%
-                  </td>
-                  <td className="px-3 py-3 text-center">
-                    {isBest && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wider font-mono bg-green-50 text-success border-green-200">
-                        ✓ melhor
-                      </span>
-                    )}
-                  </td>
-                </tr>
+                    <div
+                      className={`size-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
+                        selected
+                          ? "border-accent bg-accent text-white"
+                          : "border-border-strong"
+                      }`}
+                    >
+                      {selected && (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 16 16"
+                          className="size-3"
+                          fill="currentColor"
+                        >
+                          <path d="M13.485 4.43a1 1 0 0 1 .085 1.41l-6 6.5a1 1 0 0 1-1.452.038l-3.5-3.5a1 1 0 0 1 1.414-1.414l2.752 2.752 5.29-5.696a1 1 0 0 1 1.411-.09z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <RowMini
+                      label="Taxa a.m."
+                      value={
+                        <span>
+                          {(l.taxa * 100).toFixed(2).replace(".", ",")}%
+                          {l.isCustom && (
+                            <span className="ml-1 text-[9px] uppercase font-mono text-accent">
+                              custom
+                            </span>
+                          )}
+                        </span>
+                      }
+                    />
+                    <RowMini
+                      label="VP (cedente)"
+                      value={formatBRL(l.vp)}
+                      highlight
+                    />
+                    <RowMini
+                      label="Deságio"
+                      value={`− ${formatBRL(l.desagio)}`}
+                      tone="warn"
+                    />
+                    <RowMini
+                      label="% deságio"
+                      value={`${l.pctDesagio.toFixed(2).replace(".", ",")}%`}
+                      tone="muted"
+                    />
+                  </div>
+                </button>
               );
             })}
-          </tbody>
-        </table>
+        </div>
       </div>
-      <p className="px-4 py-2 text-[10px] text-fg-dim border-t border-border bg-bg-card">
-        Recomendado: o fundo com maior VP entrega mais dinheiro ao cedente — o
-        deságio (lucro do fundo) é menor.
-      </p>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="mb-2.5 last:mb-0">
+      <div className="font-mono text-[9px] uppercase tracking-wider text-fg-dim">
+        {label}
+      </div>
+      <div
+        className={`font-mono tabular text-sm font-bold leading-tight ${
+          highlight ? "text-accent text-base" : "text-fg"
+        }`}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function RowMini({
+  label,
+  value,
+  highlight = false,
+  tone = "default",
+}: {
+  label: string;
+  value: React.ReactNode;
+  highlight?: boolean;
+  tone?: "default" | "warn" | "muted";
+}) {
+  const valueColor =
+    tone === "warn"
+      ? "text-warn"
+      : tone === "muted"
+        ? "text-fg-muted"
+        : highlight
+          ? "text-accent"
+          : "text-fg";
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+        {label}
+      </span>
+      <span
+        className={`font-mono tabular text-xs font-semibold ${valueColor}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
