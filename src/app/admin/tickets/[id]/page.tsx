@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
-import { TicketThread } from "@/components/ticket-thread";
+import { ChatThread } from "@/components/chat-thread";
 import { CashbackSaqueAdminPanel } from "@/components/cashback-saque-admin-panel";
-import { getTicketDetail } from "@/lib/actions/tickets";
+import { getChatDetail, chatCategoriaLabel } from "@/lib/actions/chat";
 
 export const metadata = {
   title: "Admin · Ticket",
@@ -23,8 +26,15 @@ type Params = { params: Promise<{ id: string }> };
 export default async function AdminTicketDetailPage({ params }: Params) {
   const admin = await requireAdmin();
   const { id } = await params;
-  const detail = await getTicketDetail(id);
+  const detail = await getChatDetail(id);
   if (!detail) notFound();
+
+  // Quem abriu (primeiro participante criador) — buscamos via tickets.userId
+  const [opener] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, detail.ticket.userId))
+    .limit(1);
 
   return (
     <AdminShell active="/admin/tickets" userName={admin.nome}>
@@ -37,6 +47,19 @@ export default async function AdminTicketDetailPage({ params }: Params) {
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-8">
         <div>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-mono font-semibold bg-accent-soft text-accent">
+              {chatCategoriaLabel(detail.ticket.categoria)}
+            </span>
+            {detail.ticket.operacaoId && (
+              <Link
+                href={`/admin/operacoes/${detail.ticket.operacaoId}`}
+                className="font-mono text-[10px] uppercase tracking-wider text-fg-dim hover:text-accent"
+              >
+                operação vinculada →
+              </Link>
+            )}
+          </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {detail.ticket.assunto}
           </h1>
@@ -47,7 +70,7 @@ export default async function AdminTicketDetailPage({ params }: Params) {
         <TicketStatusBadge status={detail.ticket.status} forAdmin />
       </div>
 
-      {detail.opener && (
+      {opener && (
         <div className="rounded-2xl border border-border bg-bg-elev p-5 mb-6">
           <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-2">
             aberto por
@@ -55,36 +78,36 @@ export default async function AdminTicketDetailPage({ params }: Params) {
           <div className="flex items-center gap-3 flex-wrap">
             <div>
               <div className="font-bold">
-                {detail.opener.nome ?? detail.opener.email}
+                {opener.nome ?? opener.email}
               </div>
               <div className="text-xs text-fg-muted">
                 <a
-                  href={`mailto:${detail.opener.email}`}
+                  href={`mailto:${opener.email}`}
                   className="hover:text-accent"
                 >
-                  {detail.opener.email}
+                  {opener.email}
                 </a>
-                {detail.opener.telefone && (
+                {opener.telefone && (
                   <>
                     {" · "}
                     <a
-                      href={`tel:${detail.opener.telefone}`}
+                      href={`tel:${opener.telefone}`}
                       className="font-mono hover:text-accent"
                     >
-                      {detail.opener.telefone}
+                      {opener.telefone}
                     </a>
                   </>
                 )}
               </div>
             </div>
             <span className="chip">
-              {ROLE_LABEL[detail.opener.role] ?? detail.opener.role}
+              {ROLE_LABEL[opener.role] ?? opener.role}
             </span>
             <Link
               href={
-                detail.opener.role === "construtora"
-                  ? `/admin/construtoras` // sem detalhe direto pelo userId
-                  : `/admin/usuarios/${detail.opener.id}`
+                opener.role === "construtora"
+                  ? `/admin/construtoras`
+                  : `/admin/usuarios/${opener.id}`
               }
               className="ml-auto text-xs text-accent hover:underline"
             >
@@ -102,10 +125,13 @@ export default async function AdminTicketDetailPage({ params }: Params) {
         />
       )}
 
-      <TicketThread
+      <ChatThread
         ticketId={detail.ticket.id}
         ticketStatus={detail.ticket.status}
-        messages={detail.messages}
+        ticketCategoria={detail.ticket.categoria}
+        initialMessages={detail.messages}
+        participantes={detail.participantes}
+        viewerId={detail.viewerId}
         viewerRole={detail.viewerRole}
       />
     </AdminShell>

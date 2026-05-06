@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
-import { getAllTicketsForAdmin } from "@/lib/actions/tickets";
+import { listMyChats, chatCategoriaLabel } from "@/lib/actions/chat";
 
 export const metadata = {
   title: "Admin · Tickets",
@@ -38,7 +38,10 @@ type Search = { searchParams: Promise<{ status?: string }> };
 export default async function AdminTicketsPage({ searchParams }: Search) {
   const admin = await requireAdmin();
   const { status: statusFilter } = await searchParams;
-  const tickets = await getAllTicketsForAdmin(statusFilter || undefined);
+  const all = await listMyChats();
+  const tickets = statusFilter
+    ? all.filter((t) => t.status === statusFilter)
+    : all;
 
   return (
     <AdminShell active="/admin/tickets" userName={admin.nome}>
@@ -84,9 +87,17 @@ export default async function AdminTicketsPage({ searchParams }: Search) {
                 className="grid grid-cols-12 gap-3 px-5 py-4 rounded-2xl border border-border bg-bg-elev hover:border-accent transition-colors items-center"
               >
                 <div className="col-span-12 md:col-span-5">
-                  <div className="font-bold text-fg truncate">{t.assunto}</div>
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-mono font-semibold bg-accent-soft text-accent">
+                      {chatCategoriaLabel(t.categoria)}
+                    </span>
+                    <span className="font-bold text-fg truncate">
+                      {t.assunto}
+                    </span>
+                  </div>
                   <div className="text-xs text-fg-muted truncate mt-0.5">
-                    {t.userNome ?? t.userEmail} · {ROLE_LABEL[t.userRole ?? ""]}
+                    {t.userNome ?? t.userEmail} ·{" "}
+                    {ROLE_LABEL[t.userRole ?? ""] ?? t.userRole}
                   </div>
                 </div>
                 <div className="col-span-6 md:col-span-3 text-xs text-fg-muted font-mono">

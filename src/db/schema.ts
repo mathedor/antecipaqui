@@ -573,10 +573,20 @@ export const tickets = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     assunto: text("assunto").notNull(),
     status: ticketStatusEnum("status").notNull().default("aberto"),
-    /** "geral" = ticket comum; "cashback" = solicitação de saque de cashback */
+    /** Categoria do chat:
+     * - "geral" / "cashback" — legado (suporte simples / saque cashback)
+     * - "suporte" — fala com admin
+     * - "operacoes" / "negociacoes" — fala com fundo da operação
+     * - "confirmacao" — fundo fala com construtora
+     * - "documentos" — fundo fala com imobiliária / corretor
+     */
     categoria: text("categoria").notNull().default("geral"),
     /** Payload livre — usado pra cashback: { valorSolicitado, dadosBancarios } */
     extra: jsonb("extra"),
+    /** Quando o chat tem contexto de operação (operacoes/negociacoes/confirmacao/documentos),
+     *  fica vinculado a uma operação específica. Routing usa esse campo pra
+     *  determinar quem entra no chat (fundo da op, construtora, imobiliária). */
+    operacaoId: uuid("operacao_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -589,8 +599,42 @@ export const tickets = pgTable(
     index("tickets_user_idx").on(t.userId),
     index("tickets_status_idx").on(t.status),
     index("tickets_categoria_idx").on(t.categoria),
+    index("tickets_operacao_idx").on(t.operacaoId),
   ],
 );
+
+/** Participantes de um chat (multi-participante). Cada user pode ver e
+ *  enviar mensagens. Quando admin troca fundo de uma operação, removemos o
+ *  participante do fundo antigo e inserimos o novo (em chats com
+ *  categoria=operacoes|negociacoes|confirmacao|documentos vinculados à op). */
+export const ticketParticipants = pgTable(
+  "ticket_participants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ticketId: uuid("ticket_id")
+      .notNull()
+      .references(() => tickets.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Role do participante na hora que foi adicionado (snapshot). */
+    role: text("role").notNull(),
+    addedAt: timestamp("added_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Marcado quando o participante "saiu" do chat (ex: fundo trocado). */
+    leftAt: timestamp("left_at", { withTimezone: true }),
+    /** Última leitura do user — pra calcular badge de não lidas. */
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("ticket_participants_unique").on(t.ticketId, t.userId),
+    index("ticket_participants_user_idx").on(t.userId, t.leftAt),
+    index("ticket_participants_ticket_idx").on(t.ticketId),
+  ],
+);
+
+export type TicketParticipant = typeof ticketParticipants.$inferSelect;
 
 export const ticketMessages = pgTable(
   "ticket_messages",

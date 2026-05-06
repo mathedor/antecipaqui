@@ -1,47 +1,73 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
-import { getTicketDetail } from "@/lib/actions/tickets";
+import { getChatDetail, chatCategoriaLabel } from "@/lib/actions/chat";
 import { PainelShell } from "@/components/painel-shell";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
-import { TicketThread } from "@/components/ticket-thread";
+import { ChatThread } from "@/components/chat-thread";
 
 export const metadata = {
-  title: "Ticket",
+  title: "Chat",
 };
 
 type Params = { params: Promise<{ id: string }> };
 
-export default async function TicketDetailPage({ params }: Params) {
+export default async function ChatDetailPage({ params }: Params) {
   const user = await requireActiveUser();
-  if (user.role === "admin") {
-    const { id } = await params;
-    redirect(`/admin/tickets/${id}`);
-  }
-
   const { id } = await params;
-  const detail = await getTicketDetail(id);
+  const detail = await getChatDetail(id);
   if (!detail) notFound();
 
   const role = (
-    user.role === "construtora"
-      ? "construtora"
-      : user.role === "imobiliaria"
-        ? "imobiliaria"
-        : "corretor"
-  ) as "construtora" | "corretor" | "imobiliaria";
+    user.role === "fundo"
+      ? "fundo"
+      : user.role === "construtora"
+        ? "construtora"
+        : user.role === "imobiliaria"
+          ? "imobiliaria"
+          : user.role === "comercial"
+            ? "comercial"
+            : user.role === "admin"
+              ? "admin"
+              : "corretor"
+  ) as
+    | "construtora"
+    | "corretor"
+    | "imobiliaria"
+    | "fundo"
+    | "comercial"
+    | "admin";
+
+  const backHref = user.role === "admin" ? "/admin/tickets" : "/painel/suporte";
 
   return (
-    <PainelShell role={role} userName={user.nome} active="/painel/suporte">
+    <PainelShell
+      role={role}
+      userName={user.nome}
+      active={user.role === "admin" ? "/admin/tickets" : "/painel/suporte"}
+    >
       <Link
-        href="/painel/suporte"
+        href={backHref}
         className="font-mono text-[11px] uppercase tracking-wider text-fg-muted hover:text-fg transition-colors mb-3 inline-block"
       >
-        ← suporte
+        ← chats
       </Link>
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-8">
         <div>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-mono font-semibold bg-accent-soft text-accent">
+              {chatCategoriaLabel(detail.ticket.categoria)}
+            </span>
+            {detail.ticket.operacaoId && (
+              <Link
+                href={`/painel/operacoes/${detail.ticket.operacaoId}`}
+                className="font-mono text-[10px] uppercase tracking-wider text-fg-dim hover:text-accent"
+              >
+                operação vinculada →
+              </Link>
+            )}
+          </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {detail.ticket.assunto}
           </h1>
@@ -52,10 +78,13 @@ export default async function TicketDetailPage({ params }: Params) {
         <TicketStatusBadge status={detail.ticket.status} />
       </div>
 
-      <TicketThread
+      <ChatThread
         ticketId={detail.ticket.id}
         ticketStatus={detail.ticket.status}
-        messages={detail.messages}
+        ticketCategoria={detail.ticket.categoria}
+        initialMessages={detail.messages}
+        participantes={detail.participantes}
+        viewerId={detail.viewerId}
         viewerRole={detail.viewerRole}
       />
     </PainelShell>

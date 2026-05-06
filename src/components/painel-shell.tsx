@@ -25,14 +25,14 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/convites", label: "Convites" },
-    { href: "/painel/suporte", label: "Suporte" },
+    { href: "/painel/suporte", label: "Chats" },
   ],
   imobiliaria: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/convites", label: "Convites" },
-    { href: "/painel/suporte", label: "Suporte" },
+    { href: "/painel/suporte", label: "Chats" },
   ],
   construtora: [
     { href: "/painel", label: "Painel" },
@@ -40,7 +40,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/operacoes/lote", label: "Cadastrar em lote" },
     { href: "/painel/duplicatas", label: "Duplicatas" },
     { href: "/painel/cashback", label: "Cashback" },
-    { href: "/painel/suporte", label: "Suporte" },
+    { href: "/painel/suporte", label: "Chats" },
   ],
   admin: [
     { href: "/admin/operacoes", label: "Operações" },
@@ -58,13 +58,13 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/daily", label: "Daily" },
     { href: "/painel/recebimentos", label: "Recebimentos" },
     { href: "/painel/parceiros", label: "Parceiros" },
-    { href: "/painel/suporte", label: "Suporte" },
+    { href: "/painel/suporte", label: "Chats" },
   ],
   comercial: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/daily", label: "Daily" },
     { href: "/painel/perfil", label: "Meus dados" },
-    { href: "/painel/suporte", label: "Suporte" },
+    { href: "/painel/suporte", label: "Chats" },
   ],
 };
 
@@ -111,7 +111,7 @@ const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
     { href: "/painel", label: "Painel", icon: "home" },
     { href: "/painel/daily", label: "Daily", icon: "table" },
     { href: "/painel/perfil", label: "Perfil", icon: "config" },
-    { href: "/painel/suporte", label: "Suporte", icon: "ticket" },
+    { href: "/painel/suporte", label: "Chats", icon: "ticket" },
   ],
 };
 
@@ -132,7 +132,7 @@ const MOBILE_FULLMENU: Record<
     {
       section: "suporte",
       items: [
-        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
       ],
     },
@@ -150,7 +150,7 @@ const MOBILE_FULLMENU: Record<
     {
       section: "suporte",
       items: [
-        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
       ],
     },
@@ -178,7 +178,7 @@ const MOBILE_FULLMENU: Record<
     {
       section: "suporte",
       items: [
-        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
       ],
     },
@@ -234,7 +234,7 @@ const MOBILE_FULLMENU: Record<
     {
       section: "suporte",
       items: [
-        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
       ],
     },
@@ -251,7 +251,7 @@ const MOBILE_FULLMENU: Record<
     {
       section: "suporte",
       items: [
-        { href: "/painel/suporte", label: "Tickets de suporte", icon: "ticket" },
+        { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
       ],
     },

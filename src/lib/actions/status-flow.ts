@@ -191,6 +191,17 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     .set(updates)
     .where(eq(operacoes.id, input.operacaoId));
 
+  // Se o fundo mudou, sincroniza participantes dos chats vinculados
+  if (
+    typeof updates.fundoId === "string" &&
+    updates.fundoId !== op.fundoId
+  ) {
+    const { syncChatsOnFundoChange } = await import("@/lib/actions/chat");
+    await syncChatsOnFundoChange(input.operacaoId, updates.fundoId).catch(
+      (e) => console.error("[chat] sync on fundo change failed:", e),
+    );
+  }
+
   // Custos de operação: substitui o conjunto atual pelo enviado.
   // Aceito em qualquer transição de aprovação (final ou cashback).
   if (Array.isArray(input.custos)) {
