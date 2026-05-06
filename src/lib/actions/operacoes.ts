@@ -311,8 +311,28 @@ export async function createOperacaoAction(
       .limit(1)
   )[0];
 
-  // Cálculo do valor presente — usa a taxa configurada pelo admin
-  const taxaMensal = await getTaxaMensal();
+  // Fidelização: se a construtora está fidelizada a um fundo, vincula
+  // automaticamente esse fundo + adota a taxa-base dele em vez da global.
+  const [construRow] = await db
+    .select({ fundoFidelizadoId: construtoras.fundoFidelizadoId })
+    .from(construtoras)
+    .where(eq(construtoras.id, construtoraId))
+    .limit(1);
+  let fundoIdAuto: string | null = null;
+  let taxaMensal = await getTaxaMensal();
+  if (construRow?.fundoFidelizadoId) {
+    const { fundos } = await import("@/db/schema");
+    const [f] = await db
+      .select({ id: fundos.id, taxaMensalBase: fundos.taxaMensalBase })
+      .from(fundos)
+      .where(eq(fundos.id, construRow.fundoFidelizadoId))
+      .limit(1);
+    if (f) {
+      fundoIdAuto = f.id;
+      taxaMensal = parseFloat(f.taxaMensalBase);
+    }
+  }
+
   const today = new Date();
   const parcelasComMeses = parcelas.map((p) => ({
     valor: Number(p.valor),
@@ -330,6 +350,7 @@ export async function createOperacaoAction(
       corretorUserId: user.id,
       imobiliariaId: imob?.id ?? null,
       construtoraId,
+      fundoId: fundoIdAuto,
       comercialId: await (async () => {
         const { getDefaultComercialId } = await import("@/lib/actions/comerciais");
         return getDefaultComercialId();
@@ -496,7 +517,8 @@ export async function getOperacoesByCorretor(corretorUserId: string) {
 }
 
 export async function getOperacaoDetail(operacaoId: string, userId: string) {
-  // Permite acesso pelo corretor que cadastrou OU pela construtora dona da row
+  // Permite acesso pelo corretor que cadastrou, construtora dona da row,
+  // ou fundo dono da operação
   const construtoraOwned = (
     await db
       .select({ id: construtoras.id })
@@ -505,9 +527,16 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
       .limit(1)
   )[0];
 
+  const { fundos } = await import("@/db/schema");
+  const fundoOwned = (
+    await db
+      .select({ id: fundos.id })
+      .from(fundos)
+      .where(eq(fundos.ownerUserId, userId))
+      .limit(1)
+  )[0];
+
   const conditions = [eq(operacoes.id, operacaoId)];
-  // Authz: corretor dono OU construtora dona
-  // Drizzle: fazemos a query e checamos no app
   const [op] = await db
     .select({
       id: operacoes.id,
@@ -521,9 +550,12 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
       numeroParcelas: operacoes.numeroParcelas,
       taxaMensal: operacoes.taxaMensal,
       motivoRecusa: operacoes.motivoRecusa,
+      motivoPendencia: operacoes.motivoPendencia,
       createdAt: operacoes.createdAt,
       corretorUserId: operacoes.corretorUserId,
       construtoraId: operacoes.construtoraId,
+      fundoId: operacoes.fundoId,
+      cashbackPercent: operacoes.cashbackPercent,
       construtoraNome: construtoras.razaoSocial,
       construtoraCnpj: construtoras.cnpj,
     })
@@ -537,7 +569,8 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
   const isCorretor = op.corretorUserId === userId;
   const isConstrutora =
     construtoraOwned && op.construtoraId === construtoraOwned.id;
-  if (!isCorretor && !isConstrutora) return null;
+  const isFundo = fundoOwned && op.fundoId === fundoOwned.id;
+  if (!isCorretor && !isConstrutora && !isFundo) return null;
 
   const parcelas = await db
     .select()
@@ -562,7 +595,11 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
     ...op,
     parcelas,
     documentos: docs,
-    viewerRole: isConstrutora ? ("construtora" as const) : ("corretor" as const),
+    viewerRole: isFundo
+      ? ("fundo" as const)
+      : isConstrutora
+        ? ("construtora" as const)
+        : ("corretor" as const),
   };
 }
 

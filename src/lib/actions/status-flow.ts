@@ -5,12 +5,14 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   construtoras,
+  custosOperacao,
+  fundos,
   operacaoEvents,
   operacoes,
   parcelasComissao,
   users,
 } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth-user";
+import { getCurrentDbUser } from "@/lib/auth-user";
 import { notify } from "@/lib/notify";
 import { generateContractForOperacao } from "@/lib/actions/contract";
 import { audit } from "@/lib/audit";
@@ -29,7 +31,7 @@ type ChangeStatusInput = {
     | "cancelada"
     | "aguardando_aprovacao";
   motivo?: string;
-  /** Nova taxa mensal (decimal: 0.06 = 6%). Usada quando admin aprova
+  /** Nova taxa mensal (decimal: 0.06 = 6%). Usada quando admin/fundo aprova
    *  e quer ajustar a taxa específica daquela operação. Recalcula VP +
    *  deságio. Validada server-side (0,5%–20%). */
   novaTaxaMensal?: number;
@@ -40,7 +42,36 @@ type ChangeStatusInput = {
   /** Fundo selecionado pra esta operação. Setado pelo admin na
    *  pré-aprovação (calculadora comparativa). */
   fundoId?: string;
+  /** Custos de operação cadastrados na aprovação final. Cada item vira
+   *  uma row em custos_operacao; os existentes da operação são substituídos. */
+  custos?: Array<{ titulo: string; valor: number }>;
 };
+
+/** Quem pode mudar status: admin sempre; fundo só nas próprias operações. */
+async function authorizeStatusChange(operacaoId: string) {
+  const user = await getCurrentDbUser();
+  if (!user) throw new Error("Unauthorized");
+  if (!user.isActive) throw new Error("Conta bloqueada");
+  if (user.role === "admin") return user;
+  if (user.role === "fundo") {
+    const [f] = await db
+      .select({ id: fundos.id })
+      .from(fundos)
+      .where(eq(fundos.ownerUserId, user.id))
+      .limit(1);
+    if (!f) throw new Error("Fundo não vinculado");
+    const [op] = await db
+      .select({ fundoId: operacoes.fundoId })
+      .from(operacoes)
+      .where(eq(operacoes.id, operacaoId))
+      .limit(1);
+    if (!op) throw new Error("Operação não encontrada");
+    if (op.fundoId !== f.id)
+      throw new Error("Operação não pertence ao seu fundo");
+    return user;
+  }
+  throw new Error("Apenas admin ou fundo");
+}
 
 function monthsBetween(from: Date, to: Date) {
   const years = to.getFullYear() - from.getFullYear();
@@ -62,7 +93,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
-  const admin = await requireAdmin();
+  const actor = await authorizeStatusChange(input.operacaoId);
 
   // Carrega operação + cedente + construtora
   const [op] = await db
@@ -94,7 +125,7 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     input.newStatus === "analise_final" ||
     input.newStatus === "enviada_para_assinatura"
   ) {
-    updates.aprovadoPorUserId = admin.id;
+    updates.aprovadoPorUserId = actor.id;
     updates.aprovadoEm = new Date();
     updates.motivoPendencia = null;
 
@@ -160,16 +191,42 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     .set(updates)
     .where(eq(operacoes.id, input.operacaoId));
 
+  // Custos de operação: substitui o conjunto atual pelo enviado.
+  // Aceito em qualquer transição de aprovação (final ou cashback).
+  if (Array.isArray(input.custos)) {
+    const validos = input.custos
+      .map((c) => ({
+        titulo: String(c.titulo ?? "").trim(),
+        valor:
+          typeof c.valor === "number" && Number.isFinite(c.valor) ? c.valor : 0,
+      }))
+      .filter((c) => c.titulo.length > 0 && c.valor > 0);
+    await db
+      .delete(custosOperacao)
+      .where(eq(custosOperacao.operacaoId, input.operacaoId));
+    if (validos.length > 0) {
+      await db.insert(custosOperacao).values(
+        validos.map((c) => ({
+          operacaoId: input.operacaoId,
+          titulo: c.titulo,
+          valor: String(c.valor.toFixed(2)),
+          createdByUserId: actor.id,
+        })),
+      );
+    }
+  }
+
   // Audit log (operação + sistema-wide)
   await db.insert(operacaoEvents).values({
     operacaoId: input.operacaoId,
-    userId: admin.id,
+    userId: actor.id,
     type: `status_changed_to_${input.newStatus}`,
     payload: {
       from: op.status,
       to: input.newStatus,
       motivo: input.motivo ?? null,
-      adminId: admin.id,
+      actorId: actor.id,
+      actorRole: actor.role,
     },
   });
   audit({
@@ -329,7 +386,7 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
         await generateContractForOperacao(op.id);
         await db.insert(operacaoEvents).values({
           operacaoId: op.id,
-          userId: admin.id,
+          userId: actor.id,
           type: "contract_generated",
           payload: {},
         });

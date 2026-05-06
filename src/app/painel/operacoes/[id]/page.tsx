@@ -3,10 +3,13 @@ import { redirect, notFound } from "next/navigation";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { getOperacaoDetail } from "@/lib/actions/operacoes";
 import { getContratoForOperacao } from "@/lib/actions/contract";
+import { listFundosForSelector } from "@/lib/actions/fundos";
+import { listCustosOperacao } from "@/lib/actions/custos";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PrintButton } from "@/components/print-button";
 import { ContratoCard } from "@/components/contrato-card";
 import { PainelShell } from "@/components/painel-shell";
+import { AdminStatusFlow } from "@/components/admin-status-flow";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { toBlobProxyHref } from "@/lib/blob-url";
 
@@ -55,9 +58,11 @@ export default async function OperacaoDetailPage({ params }: Params) {
   const user = await getCurrentDbUser();
   if (!user) redirect("/entrar");
 
-  const [op, contrato] = await Promise.all([
+  const [op, contrato, fundos, custos] = await Promise.all([
     getOperacaoDetail(id, user.id),
     getContratoForOperacao(id),
+    user.role === "fundo" ? listFundosForSelector() : Promise.resolve([]),
+    listCustosOperacao(id),
   ]);
   if (!op) notFound();
 
@@ -80,12 +85,17 @@ export default async function OperacaoDetailPage({ params }: Params) {
   const totalJuros = parcelasComCalculo.reduce((s, p) => s + p.juros, 0);
 
   const role = (
-    user.role === "construtora"
-      ? "construtora"
-      : user.role === "imobiliaria"
-        ? "imobiliaria"
-        : "corretor"
-  ) as "construtora" | "corretor" | "imobiliaria";
+    user.role === "fundo"
+      ? "fundo"
+      : user.role === "construtora"
+        ? "construtora"
+        : user.role === "imobiliaria"
+          ? "imobiliaria"
+          : "corretor"
+  ) as "construtora" | "corretor" | "imobiliaria" | "fundo";
+
+  const isFundoView = user.role === "fundo" && op.viewerRole === "fundo";
+  const totalCustos = custos.reduce((s, c) => s + parseFloat(c.valor), 0);
 
   return (
     <PainelShell
@@ -139,6 +149,57 @@ export default async function OperacaoDetailPage({ params }: Params) {
             </div>
             <p className="text-fg">{op.motivoRecusa}</p>
           </div>
+        )}
+
+        {isFundoView && (
+          <div className="mb-6 print:hidden">
+            <AdminStatusFlow
+              operacaoId={op.id}
+              currentStatus={op.status}
+              currentTaxaMensal={parseFloat(op.taxaMensal)}
+              valorComissao={parseFloat(op.valorComissao)}
+              valorPresente={parseFloat(op.valorPresente)}
+              parcelas={op.parcelas.map((p) => ({
+                valor: p.valor,
+                vencimento: p.vencimento,
+              }))}
+              currentCashbackPercent={
+                op.cashbackPercent ? parseFloat(op.cashbackPercent) : null
+              }
+              fundos={fundos}
+              currentFundoId={op.fundoId}
+              currentCustos={custos.map((c) => ({
+                titulo: c.titulo,
+                valor: parseFloat(c.valor),
+              }))}
+            />
+          </div>
+        )}
+
+        {custos.length > 0 && (
+          <Card label={`Custos da operação · ${formatBRL(totalCustos)}`} className="mb-8">
+            <ul className="divide-y divide-border">
+              {custos.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 py-2.5"
+                >
+                  <span className="text-sm text-fg">{c.titulo}</span>
+                  <span className="font-mono tabular text-sm text-warn font-semibold">
+                    − {formatBRL(parseFloat(c.valor))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 pt-3 border-t border-border-strong flex items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                total descontado do montante
+              </span>
+              <span className="font-mono tabular text-base text-warn font-bold">
+                − {formatBRL(totalCustos)}
+              </span>
+            </div>
+          </Card>
         )}
 
         {contrato && (

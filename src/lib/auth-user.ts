@@ -209,6 +209,21 @@ export async function requireAdmin(): Promise<User> {
   return user;
 }
 
+/**
+ * Permite admin OU fundo. Pra ações compartilhadas (aprovação final, cadastro
+ * de operação, cadastro de custos). Dispara erro (não redirect) — caller
+ * decide o que fazer.
+ */
+export async function requireAdminOrFundo(): Promise<User> {
+  const user = await getCurrentDbUser();
+  if (!user) throw new Error("Unauthorized");
+  if (!user.isActive) throw new Error("Conta bloqueada");
+  if (user.role !== "admin" && user.role !== "fundo") {
+    throw new Error("Apenas admin ou fundo");
+  }
+  return user;
+}
+
 async function notifyAdminsAboutBlockedAttempt(blockedUser: User) {
   // Busca todos os admins do DB (via lista ADMIN_EMAILS)
   if (adminEmails.length === 0) return;

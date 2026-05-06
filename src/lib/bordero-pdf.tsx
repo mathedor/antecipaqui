@@ -340,13 +340,60 @@ export function BorderoPdf({
               {fmtBRL(data.totais.desagio)}
             </Text>
           </View>
-          <View style={[styles.stat, styles.statHighlight]}>
-            <Text style={styles.statLabel}>Líquido a receber</Text>
+          <View
+            style={data.custos.length > 0 ? styles.stat : [styles.stat, styles.statHighlight]}
+          >
+            <Text style={styles.statLabel}>
+              {data.custos.length > 0 ? "Líquido (antes dos custos)" : "Líquido a receber"}
+            </Text>
             <Text style={[styles.statValue, { color: COLOR_ACCENT }]}>
               {fmtBRL(data.totais.valorLiquido)}
             </Text>
           </View>
         </View>
+
+        {data.custos.length > 0 && (
+          <View style={styles.bankBox}>
+            <Text style={styles.bankTitle}>custos da operação</Text>
+            {data.custos.map((c, i) => (
+              <View
+                key={i}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  paddingVertical: 3,
+                  borderBottomWidth: i === data.custos.length - 1 ? 0 : 0.5,
+                  borderBottomColor: COLOR_BORDER,
+                }}
+              >
+                <Text style={{ fontSize: 9 }}>{c.titulo}</Text>
+                <Text style={{ fontSize: 9, color: COLOR_WARN, fontFamily: "Helvetica-Bold" }}>
+                  − {fmtBRL(c.valor)}
+                </Text>
+              </View>
+            ))}
+            <View style={[styles.statsRow, { marginTop: 10, marginBottom: 0 }]}>
+              <View style={styles.stat}>
+                <Text style={styles.statLabel}>Líquido bruto</Text>
+                <Text style={styles.statValue}>
+                  {fmtBRL(data.totais.valorLiquido)}
+                </Text>
+              </View>
+              <View style={styles.stat}>
+                <Text style={styles.statLabel}>Custos total</Text>
+                <Text style={[styles.statValue, { color: COLOR_WARN }]}>
+                  − {fmtBRL(data.totais.custosTotal)}
+                </Text>
+              </View>
+              <View style={[styles.stat, styles.statHighlight]}>
+                <Text style={styles.statLabel}>Líquido cedente</Text>
+                <Text style={[styles.statValue, { color: COLOR_ACCENT }]}>
+                  {fmtBRL(data.totais.valorLiquidoCedente)}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {(data.cedente.bancoNome || data.cedente.bancoConta) && (
           <View style={styles.bankBox}>

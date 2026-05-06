@@ -17,14 +17,23 @@ type DocsState = {
   comprovanteEndereco?: { url: string; name: string } | null;
 };
 
+type FundoOption = {
+  id: string;
+  razaoSocial: string;
+  nomeFantasia: string | null;
+  taxaMensalBase: string;
+};
+
 type Props = {
   construtora: Construtora;
   initialDocs: DocsState;
+  fundos: FundoOption[];
 };
 
 export function AdminEditConstrutoraForm({
   construtora,
   initialDocs,
+  fundos,
 }: Props) {
   const router = useRouter();
   const { alertSuccess, alertError } = useFeedback();
@@ -36,6 +45,12 @@ export function AdminEditConstrutoraForm({
   const [cnpj, setCnpj] = useState(maskCNPJ(construtora.cnpj));
   const [telefone, setTelefone] = useState(
     construtora.telefone ? maskPhone(construtora.telefone) : "",
+  );
+  const [fidelizar, setFidelizar] = useState<"sim" | "nao">(
+    construtora.fundoFidelizadoId ? "sim" : "nao",
+  );
+  const [fundoFidelizadoId, setFundoFidelizadoId] = useState<string>(
+    construtora.fundoFidelizadoId ?? "",
   );
 
   useEffect(() => {
@@ -105,6 +120,50 @@ export function AdminEditConstrutoraForm({
             }}
             optional
           />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-yellow-300/40 bg-yellow-50/40 p-6 md:p-7">
+        <h3 className="font-bold mb-1">Fidelizar a um fundo?</h3>
+        <p className="text-xs text-fg-muted mb-5">
+          Se sim, todas as operações dessa construtora serão automaticamente
+          vinculadas ao fundo escolhido (e usarão a taxa-base dele como padrão).
+          O admin/fundo ainda pode customizar a taxa por operação na aprovação.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Fidelizar?">
+            <select
+              name="fidelizar"
+              value={fidelizar}
+              onChange={(e) => setFidelizar(e.target.value as "sim" | "nao")}
+              className="form-input"
+            >
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+            </select>
+          </Field>
+          {fidelizar === "sim" && (
+            <Field label="Fundo responsável *">
+              <select
+                name="fundoFidelizadoId"
+                value={fundoFidelizadoId}
+                onChange={(e) => setFundoFidelizadoId(e.target.value)}
+                className="form-input"
+                required
+              >
+                <option value="">Selecione...</option>
+                {fundos.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.nomeFantasia ?? f.razaoSocial} ·{" "}
+                    {(parseFloat(f.taxaMensalBase) * 100)
+                      .toFixed(2)
+                      .replace(".", ",")}
+                    % a.m.
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
       </section>
 

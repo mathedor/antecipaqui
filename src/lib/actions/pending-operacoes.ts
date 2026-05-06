@@ -530,7 +530,28 @@ export async function completarConviteAction(
       error: "Parcelas devem vencer dentro de 120 dias da data de hoje",
     };
 
-  const taxaMensal = await getTaxaMensal();
+  // Fidelização: se a construtora está fidelizada a um fundo, vincula
+  // automaticamente esse fundo + adota a taxa-base dele em vez da global.
+  const [construRow] = await db
+    .select({ fundoFidelizadoId: construtoras.fundoFidelizadoId })
+    .from(construtoras)
+    .where(eq(construtoras.id, pending.construtoraId))
+    .limit(1);
+  let fundoIdAuto: string | null = null;
+  let taxaMensal = await getTaxaMensal();
+  if (construRow?.fundoFidelizadoId) {
+    const { fundos } = await import("@/db/schema");
+    const [f] = await db
+      .select({ id: fundos.id, taxaMensalBase: fundos.taxaMensalBase })
+      .from(fundos)
+      .where(eq(fundos.id, construRow.fundoFidelizadoId))
+      .limit(1);
+    if (f) {
+      fundoIdAuto = f.id;
+      taxaMensal = parseFloat(f.taxaMensalBase);
+    }
+  }
+
   const parcelasComMeses = parcelasArr.map((p) => ({
     valor: p.valor,
     mesesAteVencimento: Math.max(
@@ -556,6 +577,7 @@ export async function completarConviteAction(
       corretorUserId: user.id,
       imobiliariaId: imob?.id ?? null,
       construtoraId: pending.construtoraId,
+      fundoId: fundoIdAuto,
       valorVenda: pending.valorVenda,
       valorComissao: pending.valorComissao,
       dataVenda: pending.dataVenda ?? new Date().toISOString().slice(0, 10),

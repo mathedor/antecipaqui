@@ -6,6 +6,7 @@ import { AdminEditConstrutoraForm } from "@/components/admin-edit-construtora-fo
 import { RepositorioPanel } from "@/components/repositorio-panel";
 import { getConstrutoraDetail } from "@/lib/actions/admin";
 import { listRepositorioFiles } from "@/lib/actions/repositorio";
+import { listFundosForSelector } from "@/lib/actions/fundos";
 
 export const metadata = { title: "Admin · Editar construtora" };
 
@@ -24,9 +25,10 @@ export default async function AdminEditarConstrutora({ params }: Params) {
   const { id } = await params;
   const detail = await getConstrutoraDetail(id);
   if (!detail) notFound();
-  const repositorioFilesList = await listRepositorioFiles({
-    construtoraId: id,
-  });
+  const [repositorioFilesList, fundos] = await Promise.all([
+    listRepositorioFiles({ construtoraId: id }),
+    listFundosForSelector(),
+  ]);
 
   return (
     <AdminShell active="/admin/construtoras" userName={admin.nome}>
@@ -49,6 +51,7 @@ export default async function AdminEditarConstrutora({ params }: Params) {
           contratoSocial: pickDoc(detail.documentos, "contrato_social"),
           comprovanteEndereco: pickDoc(detail.documentos, "comprovante_endereco"),
         }}
+        fundos={fundos}
       />
 
       <div className="mt-8">

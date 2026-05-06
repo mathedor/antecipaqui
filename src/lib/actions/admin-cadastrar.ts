@@ -7,6 +7,7 @@ import { db } from "@/db";
 import {
   construtoras,
   documentos,
+  fundos,
   imobiliarias,
   operacoes,
   parcelasComissao,
@@ -355,8 +356,31 @@ export async function adminCadastrarOperacaoAction(
       .limit(1)
   )[0];
 
+  // Fidelização: se a construtora está fidelizada a um fundo, vincula
+  // automaticamente esse fundo + usa a taxa-base dele em vez da global.
+  const [constru] = await db
+    .select({
+      fundoFidelizadoId: construtoras.fundoFidelizadoId,
+    })
+    .from(construtoras)
+    .where(eq(construtoras.id, construtoraId))
+    .limit(1);
+
+  let fundoIdAuto: string | null = null;
+  let taxaMensal = await getTaxaMensal();
+  if (constru?.fundoFidelizadoId) {
+    const [f] = await db
+      .select({ id: fundos.id, taxaMensalBase: fundos.taxaMensalBase })
+      .from(fundos)
+      .where(eq(fundos.id, constru.fundoFidelizadoId))
+      .limit(1);
+    if (f) {
+      fundoIdAuto = f.id;
+      taxaMensal = parseFloat(f.taxaMensalBase);
+    }
+  }
+
   // Calcula VP
-  const taxaMensal = await getTaxaMensal();
   const today = new Date();
   const arr = parcelas.map((p) => {
     const venc = new Date(p.vencimento + "T00:00:00");
@@ -388,6 +412,7 @@ export async function adminCadastrarOperacaoAction(
       imobiliariaId: imob?.id ?? null,
       construtoraId,
       comercialId,
+      fundoId: fundoIdAuto,
       valorVenda: String(valorVenda.toFixed(2)),
       valorComissao: String(valorComissao.toFixed(2)),
       valorEntrada:

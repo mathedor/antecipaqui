@@ -69,7 +69,15 @@ function buildWhatsappMessageImobiliaria(r: DailyRow) {
   return lines.join("\n");
 }
 
-export function DailyTable({ rows }: { rows: DailyRow[] }) {
+export function DailyTable({
+  rows,
+  viewerRole = "admin",
+}: {
+  rows: DailyRow[];
+  /** "admin" → links pra /admin/*; "fundo" → links pra /painel/* (oculta links sensíveis pra outros roles) */
+  viewerRole?: "admin" | "fundo";
+}) {
+  const opLinkBase = viewerRole === "fundo" ? "/painel/operacoes" : "/admin/operacoes";
   const { confirm, alertSuccess, alertError } = useFeedback();
   const [pending, start] = useTransition();
   const [sortKey, setSortKey] = useState<SortKey>("vencimento");
@@ -286,7 +294,7 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
                   className={`border-b border-border last:border-0 hover:bg-bg-card transition-colors ${overdue ? "bg-red-50/30" : ""}`}
                 >
                   <td className="px-3 py-3 text-xs">
-                    {r.construtoraId ? (
+                    {r.construtoraId && viewerRole === "admin" ? (
                       <Link
                         href={`/admin/construtoras/${r.construtoraId}`}
                         className="text-fg font-semibold truncate hover:text-accent block max-w-[160px]"
@@ -294,10 +302,12 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
                         {r.construtoraNome ?? "—"}
                       </Link>
                     ) : (
-                      <span className="text-fg-muted">—</span>
+                      <span className="text-fg font-semibold truncate block max-w-[160px]">
+                        {r.construtoraNome ?? "—"}
+                      </span>
                     )}
                     <Link
-                      href={`/admin/operacoes/${r.operacaoId}`}
+                      href={`${opLinkBase}/${r.operacaoId}`}
                       className="font-mono text-[10px] text-accent hover:underline"
                     >
                       {r.operacaoNumero}
@@ -307,7 +317,7 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
                     </span>
                   </td>
                   <td className="px-3 py-3 text-xs">
-                    {r.corretorId ? (
+                    {r.corretorId && viewerRole === "admin" ? (
                       <Link
                         href={`/admin/usuarios/${r.corretorId}`}
                         className="text-fg truncate hover:text-accent block max-w-[180px]"
@@ -315,11 +325,11 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
                         {r.imobiliariaNome ?? r.corretorNome ?? "—"}
                       </Link>
                     ) : (
-                      <span className="text-fg-muted">
+                      <span className="text-fg truncate block max-w-[180px]">
                         {r.imobiliariaNome ?? r.corretorNome ?? "—"}
                       </span>
                     )}
-                    {r.fundoId && (
+                    {r.fundoId && viewerRole === "admin" && (
                       <Link
                         href={`/admin/fundos/${r.fundoId}`}
                         className="text-[10px] font-mono text-accent hover:underline"
@@ -393,7 +403,7 @@ export function DailyTable({ rows }: { rows: DailyRow[] }) {
                   <td className="px-3 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Link
-                        href={`/admin/operacoes/${r.operacaoId}`}
+                        href={`${opLinkBase}/${r.operacaoId}`}
                         title="Ver operação"
                         aria-label="Ver operação"
                         className="inline-flex items-center justify-center size-8 rounded-lg border border-border text-fg-muted hover:border-accent hover:text-accent transition-colors"

@@ -187,6 +187,10 @@ export const construtoras = pgTable(
     onboardingStatus: onboardingStatusEnum("onboarding_status")
       .notNull()
       .default("pendente"),
+    /** Fundo fidelizado: quando setado, todas as operações dessa construtora
+     *  saem automaticamente vinculadas a esse fundo (e usam a taxa-base dele).
+     *  Setado pelo admin na edição da construtora. */
+    fundoFidelizadoId: uuid("fundo_fidelizado_id"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -198,6 +202,7 @@ export const construtoras = pgTable(
   (t) => [
     uniqueIndex("construtoras_cnpj_idx").on(t.cnpj),
     index("construtoras_owner_idx").on(t.ownerUserId),
+    index("construtoras_fundo_fidelizado_idx").on(t.fundoFidelizadoId),
   ],
 );
 
@@ -444,6 +449,36 @@ export const parcelasComissao = pgTable(
     index("parcelas_vencimento_idx").on(t.vencimento),
   ],
 );
+
+/* =========================================
+   CUSTOS DA OPERAÇÃO — itens livres (título + valor) cadastrados pelo
+   admin/fundo na aprovação final. Cada item é descontado do montante
+   recebido pelo cedente. Mostrados detalhados no borderô e agrupados
+   nos relatórios.
+   ========================================= */
+
+export const custosOperacao = pgTable(
+  "custos_operacao",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    operacaoId: uuid("operacao_id")
+      .notNull()
+      .references(() => operacoes.id, { onDelete: "cascade" }),
+    titulo: text("titulo").notNull(),
+    valor: numeric("valor", { precision: 15, scale: 2 }).notNull(),
+    /** admin ou fundo que cadastrou. */
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("custos_operacao_op_idx").on(t.operacaoId)],
+);
+
+export type CustoOperacao = typeof custosOperacao.$inferSelect;
+export type NewCustoOperacao = typeof custosOperacao.$inferInsert;
 
 /* =========================================
    CONTRATOS (gerados após aprovação)

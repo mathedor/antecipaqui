@@ -5,6 +5,7 @@ import { PainelShell } from "@/components/painel-shell";
 import { DailyTable } from "@/components/daily-table";
 import { getDailyParcelas } from "@/lib/actions/daily";
 import { getCurrentComercial } from "@/lib/actions/comerciais";
+import { getCurrentFundo } from "@/lib/actions/fundos";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = { title: "Daily" };
@@ -32,22 +33,35 @@ type Search = {
   }>;
 };
 
-export default async function ComercialDailyPage({ searchParams }: Search) {
+export default async function PainelDailyPage({ searchParams }: Search) {
   const user = await requireActiveUser();
-  if (user.role !== "comercial") redirect("/painel");
+  if (user.role !== "comercial" && user.role !== "fundo")
+    redirect("/painel");
 
   const params = await searchParams;
   const periodo = params.periodo ?? "mes";
 
-  const comercial = await getCurrentComercial();
-  if (!comercial) redirect("/painel");
+  let dailyFilter: {
+    comercialId?: string;
+    fundoId?: string;
+  } = {};
+
+  if (user.role === "comercial") {
+    const comercial = await getCurrentComercial();
+    if (!comercial) redirect("/painel");
+    dailyFilter = { comercialId: comercial.id };
+  } else {
+    const fundo = await getCurrentFundo();
+    if (!fundo) redirect("/painel");
+    dailyFilter = { fundoId: fundo.id };
+  }
 
   const rows = await getDailyParcelas({
     periodo,
     from: params.from,
     to: params.to,
     status: params.status,
-    comercialId: comercial.id,
+    ...dailyFilter,
     skipAuthCheck: true,
   });
 
@@ -59,15 +73,20 @@ export default async function ComercialDailyPage({ searchParams }: Search) {
   const valorTotalAtual = rows.reduce((s, r) => s + r.valorAtual, 0);
 
   return (
-    <PainelShell role="comercial" userName={user.nome} active="/painel/daily">
+    <PainelShell
+      role={user.role === "fundo" ? "fundo" : "comercial"}
+      userName={user.nome}
+      active="/painel/daily"
+    >
       <div className="mb-6">
         <div className="eyebrow mb-2">acompanhamento</div>
         <h1 className="text-display-md">
           <span className="text-gradient-blue">Daily</span> · suas operações
         </h1>
         <p className="mt-2 text-fg-muted max-w-2xl">
-          Parcelas em aberto das operações sob sua responsabilidade. Cálculo
-          automático de encargos (multa 2% + juros mora pela taxa × dias).
+          {user.role === "fundo"
+            ? "Parcelas em aberto das operações do seu fundo. Use os botões pra notificar via WhatsApp/email e gerar boletos."
+            : "Parcelas em aberto das operações sob sua responsabilidade. Cálculo automático de encargos (multa 2% + juros mora pela taxa × dias)."}
         </p>
       </div>
 
@@ -181,7 +200,10 @@ export default async function ComercialDailyPage({ searchParams }: Search) {
         />
       </div>
 
-      <DailyTable rows={rows} />
+      <DailyTable
+        rows={rows}
+        viewerRole={user.role === "fundo" ? "fundo" : "admin"}
+      />
     </PainelShell>
   );
 }

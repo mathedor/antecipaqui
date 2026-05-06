@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   comerciais,
   construtoras,
+  custosOperacao,
   fundos,
   imobiliarias,
   operacoes,
@@ -46,10 +47,13 @@ export type BorderoData = {
   fundo: { razaoSocial: string } | null;
   comercial: { nome: string } | null;
   parcelas: BorderoParcela[];
+  custos: Array<{ titulo: string; valor: number }>;
   totais: {
     valorBruto: number;
     desagio: number;
     valorLiquido: number;
+    custosTotal: number;
+    valorLiquidoCedente: number;
   };
 };
 
@@ -159,7 +163,7 @@ export async function getBorderoData(
     };
   });
 
-  const totais = parcelas.reduce(
+  const subtotais = parcelas.reduce(
     (acc, p) => ({
       valorBruto: acc.valorBruto + p.valorBruto,
       desagio: acc.desagio + p.desagio,
@@ -167,6 +171,22 @@ export async function getBorderoData(
     }),
     { valorBruto: 0, desagio: 0, valorLiquido: 0 },
   );
+
+  const custosRows = await db
+    .select()
+    .from(custosOperacao)
+    .where(eq(custosOperacao.operacaoId, operacaoId))
+    .orderBy(custosOperacao.createdAt);
+  const custos = custosRows.map((c) => ({
+    titulo: c.titulo,
+    valor: parseFloat(c.valor),
+  }));
+  const custosTotal = custos.reduce((s, c) => s + c.valor, 0);
+  const totais = {
+    ...subtotais,
+    custosTotal,
+    valorLiquidoCedente: Math.max(subtotais.valorLiquido - custosTotal, 0),
+  };
 
   const cedenteTipo: "imobiliaria" | "corretor" = imobiliaria
     ? "imobiliaria"
@@ -197,6 +217,7 @@ export async function getBorderoData(
     fundo,
     comercial,
     parcelas,
+    custos,
     totais,
   };
 }

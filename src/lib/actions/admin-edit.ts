@@ -185,6 +185,15 @@ export async function editConstrutoraAction(
   const cnpj = unmaskCNPJ(String(formData.get("cnpj") || ""));
   if (!isValidCNPJ(cnpj)) return { ok: false, error: "CNPJ inválido" };
 
+  // Fidelização: campo "fidelizar?" + fundoFidelizadoId
+  const fidelizar = String(formData.get("fidelizar") || "") === "sim";
+  const fundoFidelizadoId = fidelizar
+    ? String(formData.get("fundoFidelizadoId") || "").trim() || null
+    : null;
+  if (fidelizar && !fundoFidelizadoId) {
+    return { ok: false, error: "Selecione o fundo responsável pela fidelização" };
+  }
+
   await db
     .update(construtoras)
     .set({
@@ -200,6 +209,7 @@ export async function editConstrutoraAction(
       cidade: String(formData.get("cidade") || "").trim() || null,
       uf:
         String(formData.get("uf") || "").trim().toUpperCase() || null,
+      fundoFidelizadoId,
       updatedAt: new Date(),
     })
     .where(eq(construtoras.id, construtoraId));

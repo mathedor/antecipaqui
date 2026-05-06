@@ -136,12 +136,54 @@ export function BorderoCard({ data }: { data: BorderoData }) {
             tone="warn"
           />
           <Stat
-            label="Líquido a receber"
+            label={
+              data.custos.length > 0
+                ? "Líquido (antes dos custos)"
+                : "Líquido a receber"
+            }
             value={formatBRL(data.totais.valorLiquido)}
             tone="accent"
-            highlight
+            highlight={data.custos.length === 0}
           />
         </div>
+
+        {data.custos.length > 0 && (
+          <div className="rounded-xl border border-warn/30 bg-yellow-50/50 p-5">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-3">
+              custos da operação
+            </div>
+            <ul className="divide-y divide-border">
+              {data.custos.map((c, i) => (
+                <li
+                  key={i}
+                  className="flex items-center justify-between gap-3 py-2"
+                >
+                  <span className="text-sm text-fg">{c.titulo}</span>
+                  <span className="font-mono tabular text-sm text-warn font-semibold">
+                    − {formatBRL(c.valor)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 pt-3 border-t border-border-strong grid sm:grid-cols-3 gap-3">
+              <Stat
+                label="Líquido bruto"
+                value={formatBRL(data.totais.valorLiquido)}
+              />
+              <Stat
+                label="Custos total"
+                value={`− ${formatBRL(data.totais.custosTotal)}`}
+                tone="warn"
+              />
+              <Stat
+                label="Líquido cedente"
+                value={formatBRL(data.totais.valorLiquidoCedente)}
+                tone="accent"
+                highlight
+              />
+            </div>
+          </div>
+        )}
 
         {(data.cedente.bancoNome || data.cedente.bancoConta) && (
           <div className="rounded-xl border border-border bg-bg-card p-5">

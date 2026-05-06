@@ -6,7 +6,13 @@ import { documentos } from "@/db/schema";
 import { requireActiveUser } from "@/lib/auth-user";
 import { listConstrutorasForSelect } from "@/lib/actions/operacoes";
 import { getTaxaMensal } from "@/lib/actions/settings";
+import {
+  listCorretoresForFundoSelector,
+  listConstrutorasForFundoSelector,
+} from "@/lib/actions/fundo-cadastrar";
+import { getCurrentFundo } from "@/lib/actions/fundos";
 import { NovaOperacaoForm } from "@/components/nova-operacao-form";
+import { FundoCadastrarOperacaoForm } from "@/components/fundo-cadastrar-operacao-form";
 import { PainelShell } from "@/components/painel-shell";
 
 export const metadata = {
@@ -15,6 +21,39 @@ export const metadata = {
 
 export default async function NovaOperacaoPage() {
   const user = await requireActiveUser();
+
+  // Fundo: cadastra usando seu próprio fundo
+  if (user.role === "fundo") {
+    const [fundo, corretoresF, construtorasF] = await Promise.all([
+      getCurrentFundo(),
+      listCorretoresForFundoSelector(),
+      listConstrutorasForFundoSelector(),
+    ]);
+    if (!fundo) redirect("/painel");
+    return (
+      <PainelShell
+        role="fundo"
+        userName={user.nome}
+        active="/painel/operacoes/nova"
+      >
+        <div className="mb-8">
+          <h1 className="text-display-md">
+            Nova <span className="text-gradient-blue">operação</span>
+          </h1>
+          <p className="mt-2 text-fg-muted">
+            Cadastre uma operação em nome de uma imobiliária / corretor
+            existente. A operação fica vinculada ao seu fundo automaticamente.
+          </p>
+        </div>
+        <FundoCadastrarOperacaoForm
+          corretores={corretoresF}
+          construtoras={construtorasF}
+          taxaMensalBaseFundo={parseFloat(fundo.taxaMensalBase)}
+          fundoNome={fundo.nomeFantasia ?? fundo.razaoSocial}
+        />
+      </PainelShell>
+    );
+  }
 
   if (user.onboardingStatus === "pendente") {
     redirect("/painel/onboarding");

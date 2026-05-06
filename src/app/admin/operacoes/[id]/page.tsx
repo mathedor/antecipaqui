@@ -11,6 +11,7 @@ import { formatBRL, formatPercent } from "@/lib/format";
 import { getAdminOperacaoDetail } from "@/lib/actions/admin";
 import { getContratoForOperacao } from "@/lib/actions/contract";
 import { listFundosForSelector } from "@/lib/actions/fundos";
+import { listCustosOperacao } from "@/lib/actions/custos";
 import { toBlobProxyHref } from "@/lib/blob-url";
 
 export const metadata = {
@@ -66,12 +67,14 @@ type Params = { params: Promise<{ id: string }> };
 export default async function AdminOperacaoDetail({ params }: Params) {
   const admin = await requireAdmin();
   const { id } = await params;
-  const [op, contrato, fundos] = await Promise.all([
+  const [op, contrato, fundos, custos] = await Promise.all([
     getAdminOperacaoDetail(id),
     getContratoForOperacao(id),
     listFundosForSelector(),
+    listCustosOperacao(id),
   ]);
   if (!op) notFound();
+  const totalCustos = custos.reduce((s, c) => s + parseFloat(c.valor), 0);
 
   const taxa = parseFloat(op.taxaMensal);
 
@@ -196,6 +199,10 @@ export default async function AdminOperacaoDetail({ params }: Params) {
           }
           fundos={fundos}
           currentFundoId={op.fundoId}
+          currentCustos={custos.map((c) => ({
+            titulo: c.titulo,
+            valor: parseFloat(c.valor),
+          }))}
         />
       </div>
 
@@ -450,6 +457,36 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                 value={`${(((parseFloat(op.desagio)) / parseFloat(op.valorComissao)) * 100).toFixed(2)}%`}
               />
             </div>
+            {custos.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-2">
+                  custos cadastrados ({custos.length})
+                </div>
+                <ul className="divide-y divide-border">
+                  {custos.map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between gap-3 py-1.5"
+                    >
+                      <span className="text-xs text-fg">{c.titulo}</span>
+                      <span className="font-mono tabular text-xs text-warn font-semibold">
+                        − {formatBRL(parseFloat(c.valor))}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex items-center justify-between gap-3 pt-2 mt-2 border-t border-border-strong">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Líquido cedente
+                  </span>
+                  <span className="font-mono tabular text-sm font-bold text-accent">
+                    {formatBRL(
+                      Math.max(parseFloat(op.valorPresente) - totalCustos, 0),
+                    )}
+                  </span>
+                </div>
+              </div>
+            )}
           </Card>
 
         </div>

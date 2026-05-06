@@ -163,6 +163,8 @@ type Props = {
   }>;
   /** Fundo atual da operação (se já foi escolhido). */
   currentFundoId?: string | null;
+  /** Custos já cadastrados — preenche o editor inline pra edição. */
+  currentCustos?: Array<{ titulo: string; valor: number }>;
 };
 
 function monthsBetween(from: Date, to: Date) {
@@ -182,6 +184,7 @@ export function AdminStatusFlow({
   currentCashbackPercent,
   fundos,
   currentFundoId,
+  currentCustos,
 }: Props) {
   const router = useRouter();
   const { confirm: confirmModal, alertSuccess, alertError } = useFeedback();
@@ -235,6 +238,46 @@ export function AdminStatusFlow({
       : "1,00",
   );
 
+  // Custos da operação — array editável local. Cada item é { titulo, valor }
+  // (valor em number BRL). Salvado quando confirmar transição com taxa ou
+  // quando confirmar transição com cashback.
+  const [custosEdit, setCustosEdit] = useState<
+    Array<{ titulo: string; valor: string }>
+  >(
+    (currentCustos ?? []).map((c) => ({
+      titulo: c.titulo,
+      valor: c.valor.toFixed(2).replace(".", ","),
+    })),
+  );
+
+  function addCusto() {
+    setCustosEdit((arr) => [...arr, { titulo: "", valor: "" }]);
+  }
+  function removeCusto(idx: number) {
+    setCustosEdit((arr) => arr.filter((_, i) => i !== idx));
+  }
+  function updateCusto(idx: number, key: "titulo" | "valor", v: string) {
+    setCustosEdit((arr) =>
+      arr.map((c, i) => (i === idx ? { ...c, [key]: v } : c)),
+    );
+  }
+
+  const custosNormalizados = useMemo(
+    () =>
+      custosEdit
+        .map((c) => ({
+          titulo: c.titulo.trim(),
+          valor: parseFloat(
+            c.valor.replace(/\./g, "").replace(",", ".").replace(/[^\d.]/g, ""),
+          ),
+        }))
+        .filter(
+          (c) => c.titulo.length > 0 && Number.isFinite(c.valor) && c.valor > 0,
+        ),
+    [custosEdit],
+  );
+  const totalCustos = custosNormalizados.reduce((s, c) => s + c.valor, 0);
+
   const transitions = TRANSITIONS[currentStatus as Status] ?? [];
 
   // Preview do novo VP/deságio com a taxa digitada
@@ -268,6 +311,7 @@ export function AdminStatusFlow({
       novaTaxaMensal?: number;
       cashbackPercent?: number;
       fundoId?: string;
+      custos?: Array<{ titulo: string; valor: number }>;
     } = {},
   ) {
     startTransition(async () => {
@@ -516,6 +560,19 @@ export function AdminStatusFlow({
             </div>
           )}
 
+          <CustosEditor
+            custosEdit={custosEdit}
+            addCusto={addCusto}
+            removeCusto={removeCusto}
+            updateCusto={updateCusto}
+            totalCustos={totalCustos}
+            valorPresenteAtual={
+              taxaPreview && !taxaPreview.invalida && taxaPreview.vp != null
+                ? taxaPreview.vp
+                : valorPresenteInicial
+            }
+          />
+
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
@@ -537,6 +594,7 @@ export function AdminStatusFlow({
                 executeTransition(activeTaxa.to, {
                   novaTaxaMensal: taxaPreview.taxa,
                   fundoId: selectedFundoId,
+                  custos: custosNormalizados,
                 });
               }}
               disabled={pending || !taxaPreview || taxaPreview.invalida}
@@ -629,6 +687,15 @@ export function AdminStatusFlow({
             </div>
           )}
 
+          <CustosEditor
+            custosEdit={custosEdit}
+            addCusto={addCusto}
+            removeCusto={removeCusto}
+            updateCusto={updateCusto}
+            totalCustos={totalCustos}
+            valorPresenteAtual={valorPresenteInicial}
+          />
+
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
@@ -644,6 +711,7 @@ export function AdminStatusFlow({
                   cashbackPercent: cashbackEnabled
                     ? cashbackPreview.percent
                     : undefined,
+                  custos: custosNormalizados,
                 });
               }}
               disabled={
@@ -661,6 +729,117 @@ export function AdminStatusFlow({
             >
               Cancelar
             </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustosEditor({
+  custosEdit,
+  addCusto,
+  removeCusto,
+  updateCusto,
+  totalCustos,
+  valorPresenteAtual,
+}: {
+  custosEdit: Array<{ titulo: string; valor: string }>;
+  addCusto: () => void;
+  removeCusto: (idx: number) => void;
+  updateCusto: (idx: number, key: "titulo" | "valor", v: string) => void;
+  totalCustos: number;
+  valorPresenteAtual: number;
+}) {
+  const liquido = Math.max(valorPresenteAtual - totalCustos, 0);
+  return (
+    <div className="rounded-xl border border-border bg-bg p-4">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+            custos da operação
+          </div>
+          <p className="text-xs text-fg-muted mt-0.5">
+            Itens descontados do montante (taxas de cartório, ITBI, comissões
+            adicionais etc). Detalhados no borderô.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={addCusto}
+          className="inline-flex items-center gap-1 h-9 px-3 rounded-lg border border-accent/40 text-accent text-xs font-semibold hover:bg-accent-soft transition-colors"
+        >
+          + adicionar
+        </button>
+      </div>
+
+      {custosEdit.length === 0 ? (
+        <p className="text-xs text-fg-dim italic py-2">
+          Nenhum custo cadastrado. Clique em &ldquo;adicionar&rdquo; pra
+          incluir um item.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {custosEdit.map((c, idx) => (
+            <li key={idx} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={c.titulo}
+                onChange={(e) => updateCusto(idx, "titulo", e.target.value)}
+                placeholder="Título (ex: ITBI, Cartório...)"
+                className="flex-1 min-w-0 h-10 px-3 rounded-lg border border-border bg-bg-elev text-fg text-sm placeholder:text-fg-dim focus:border-accent outline-none"
+              />
+              <div className="flex items-stretch w-44 rounded-lg border border-border overflow-hidden focus-within:border-accent">
+                <span className="bg-bg-soft px-2.5 flex items-center text-fg-dim text-xs font-mono border-r border-border">
+                  R$
+                </span>
+                <input
+                  inputMode="decimal"
+                  value={c.valor}
+                  onChange={(e) => updateCusto(idx, "valor", e.target.value)}
+                  placeholder="0,00"
+                  className="flex-1 min-w-0 bg-bg-elev h-10 px-2 text-fg placeholder:text-fg-dim outline-none tabular text-right text-sm"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeCusto(idx)}
+                title="Remover"
+                aria-label="Remover custo"
+                className="size-9 rounded-lg border border-border text-fg-muted hover:border-danger hover:text-danger transition-colors flex items-center justify-center text-base"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {totalCustos > 0 && (
+        <div className="mt-3 pt-3 border-t border-border grid grid-cols-3 gap-3 text-sm">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+              VP atual
+            </div>
+            <div className="font-mono tabular text-base font-semibold">
+              {formatBRL(valorPresenteAtual)}
+            </div>
+          </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+              Total custos
+            </div>
+            <div className="font-mono tabular text-base font-semibold text-warn">
+              − {formatBRL(totalCustos)}
+            </div>
+          </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+              Líquido cedente
+            </div>
+            <div className="font-mono tabular text-base font-bold text-accent">
+              {formatBRL(liquido)}
+            </div>
           </div>
         </div>
       )}
