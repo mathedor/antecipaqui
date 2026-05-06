@@ -8,7 +8,8 @@ import { AdminShell } from "@/components/admin-shell";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
 import { ChatThread } from "@/components/chat-thread";
 import { CashbackSaqueAdminPanel } from "@/components/cashback-saque-admin-panel";
-import { getChatDetail, chatCategoriaLabel } from "@/lib/actions/chat";
+import { getChatDetail } from "@/lib/actions/chat";
+import { chatCategoriaLabel } from "@/lib/chat-helpers";
 
 export const metadata = {
   title: "Admin · Ticket",

@@ -3,13 +3,13 @@ import Link from "next/link";
 import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { NovoChatForm } from "@/components/novo-chat-form";
+import { listOperacoesParaChat } from "@/lib/actions/chat";
 import {
   getCategoriasForRole,
   categoriaPrecisaOperacao,
   chatCategoriaLabel,
-  listOperacoesParaChat,
   type ChatCategoria,
-} from "@/lib/actions/chat";
+} from "@/lib/chat-helpers";
 
 export const metadata = {
   title: "Novo chat",

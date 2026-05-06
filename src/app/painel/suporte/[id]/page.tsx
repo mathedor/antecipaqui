@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
-import { getChatDetail, chatCategoriaLabel } from "@/lib/actions/chat";
+import { getChatDetail } from "@/lib/actions/chat";
+import { chatCategoriaLabel } from "@/lib/chat-helpers";
 import { PainelShell } from "@/components/painel-shell";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
 import { ChatThread } from "@/components/chat-thread";

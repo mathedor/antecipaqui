@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
-import { listMyChats, chatCategoriaLabel } from "@/lib/actions/chat";
+import { listMyChats } from "@/lib/actions/chat";
+import { chatCategoriaLabel } from "@/lib/chat-helpers";
 
 export const metadata = {
   title: "Admin · Tickets",

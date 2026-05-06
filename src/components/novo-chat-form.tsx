@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   openChatAction,
   type OpenChatState,
-  type ChatCategoria,
 } from "@/lib/actions/chat";
+import { type ChatCategoria } from "@/lib/chat-helpers";
 import { useFeedback } from "@/components/feedback-provider";
 
 type CategoriaOption = {
