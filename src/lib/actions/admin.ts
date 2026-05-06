@@ -236,6 +236,7 @@ export async function getAllOperacoes(filters?: {
       comercialNome: sql<
         string | null
       >`COALESCE((SELECT COALESCE(apelido, nome_completo) FROM comerciais WHERE id = ${operacoes.comercialId}), NULL)`,
+      pagadorTipo: operacoes.pagadorTipo,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
@@ -337,6 +338,7 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
       cashbackPercent: operacoes.cashbackPercent,
       cashbackValor: operacoes.cashbackValor,
       cashbackSacadoEm: operacoes.cashbackSacadoEm,
+      pagadorTipo: operacoes.pagadorTipo,
       imobiliariaId: operacoes.imobiliariaId,
       corretorUserId: operacoes.corretorUserId,
       corretorNome: users.nome,
@@ -406,6 +408,13 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
     .where(eq(operacaoEvents.operacaoId, operacaoId))
     .orderBy(desc(operacaoEvents.createdAt));
 
+  const { operacaoCompradores } = await import("@/db/schema");
+  const compradoresOp = await db
+    .select()
+    .from(operacaoCompradores)
+    .where(eq(operacaoCompradores.operacaoId, operacaoId))
+    .orderBy(operacaoCompradores.ordem);
+
   return {
     ...op,
     imobiliaria,
@@ -413,6 +422,7 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
     parcelas,
     documentos: docs,
     events,
+    compradores: compradoresOp,
   };
 }
 

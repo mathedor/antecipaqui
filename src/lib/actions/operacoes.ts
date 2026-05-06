@@ -17,6 +17,10 @@ import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { sendEmail } from "@/lib/email";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { getTaxaMensal } from "@/lib/actions/settings";
+import {
+  parseCompradoresFromForm,
+  parsePagadorTipo,
+} from "@/lib/compradores";
 
 /* =========================================
    HELPERS
@@ -343,6 +347,22 @@ export async function createOperacaoAction(
 
   const numero = await generateOperacaoNumero();
 
+  // Pagador (construtora|compradores) + lista de compradores quando aplicável
+  const pagadorTipo = parsePagadorTipo(
+    String(formData.get("pagadorTipo") || ""),
+  );
+  let compradoresParseados: ReturnType<typeof parseCompradoresFromForm> = {
+    ok: true,
+    compradores: [],
+  };
+  if (pagadorTipo === "compradores") {
+    compradoresParseados = parseCompradoresFromForm(
+      String(formData.get("compradores") || ""),
+    );
+    if (!compradoresParseados.ok)
+      return { ok: false, error: compradoresParseados.error };
+  }
+
   const [op] = await db
     .insert(operacoes)
     .values({
@@ -365,8 +385,32 @@ export async function createOperacaoAction(
       valorPresente: String(vp.toFixed(2)),
       desagio: String(desagio.toFixed(2)),
       status: "aguardando_aprovacao",
+      pagadorTipo,
     })
     .returning();
+
+  if (
+    pagadorTipo === "compradores" &&
+    compradoresParseados.ok &&
+    compradoresParseados.compradores.length > 0
+  ) {
+    const { operacaoCompradores } = await import("@/db/schema");
+    await db.insert(operacaoCompradores).values(
+      compradoresParseados.compradores.map((c, i) => ({
+        operacaoId: op.id,
+        ordem: i + 1,
+        tipoPessoa: c.tipoPessoa,
+        nome: c.nome,
+        documento: c.documento,
+        telefone: c.telefone,
+        email: c.email,
+        cep: c.cep,
+        endereco: c.endereco,
+        cidade: c.cidade,
+        uf: c.uf,
+      })),
+    );
+  }
 
   // Insere parcelas
   await db.insert(parcelasComissao).values(
@@ -556,6 +600,7 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
       construtoraId: operacoes.construtoraId,
       fundoId: operacoes.fundoId,
       cashbackPercent: operacoes.cashbackPercent,
+      pagadorTipo: operacoes.pagadorTipo,
       construtoraNome: construtoras.razaoSocial,
       construtoraCnpj: construtoras.cnpj,
     })
@@ -591,10 +636,18 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
     .where(eq(documentos.operacaoId, operacaoId))
     .orderBy(documentos.createdAt);
 
+  const { operacaoCompradores } = await import("@/db/schema");
+  const compradoresOp = await db
+    .select()
+    .from(operacaoCompradores)
+    .where(eq(operacaoCompradores.operacaoId, operacaoId))
+    .orderBy(operacaoCompradores.ordem);
+
   return {
     ...op,
     parcelas,
     documentos: docs,
+    compradores: compradoresOp,
     viewerRole: isFundo
       ? ("fundo" as const)
       : isConstrutora

@@ -246,13 +246,52 @@ export function BorderoPdf({
             </Text>
           </View>
           <View style={styles.fieldsCol}>
-            <Text style={styles.fieldLabel}>Sacado (construtora)</Text>
+            <Text style={styles.fieldLabel}>
+              {data.pagadorTipo === "compradores"
+                ? "Construtora (responsável)"
+                : "Sacado (construtora)"}
+            </Text>
             <Text style={styles.fieldValue}>{data.construtora.razaoSocial}</Text>
             <Text style={styles.fieldSub}>
               CNPJ {fmtCNPJ(data.construtora.cnpj)}
             </Text>
           </View>
         </View>
+
+        {data.pagadorTipo === "compradores" && data.compradores.length > 0 && (
+          <View style={styles.bankBox}>
+            <Text style={styles.bankTitle}>
+              sacado{data.compradores.length === 1 ? "" : "s"} · comprador
+              {data.compradores.length === 1 ? "" : "es"} solidário
+              {data.compradores.length === 1 ? "" : "s"}
+            </Text>
+            {data.compradores.map((c, i) => (
+              <View
+                key={i}
+                style={{
+                  paddingVertical: 4,
+                  borderBottomWidth: i === data.compradores.length - 1 ? 0 : 0.5,
+                  borderBottomColor: COLOR_BORDER,
+                }}
+              >
+                <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold" }}>
+                  {c.nome} · {c.tipoPessoa === "fisica" ? "PF" : "PJ"}
+                </Text>
+                <Text style={{ fontSize: 8, color: COLOR_FG_MUTED }}>
+                  {c.tipoPessoa === "fisica" ? "CPF" : "CNPJ"} {c.documento} ·{" "}
+                  {c.email} · {c.telefone}
+                </Text>
+                {(c.endereco || c.cidade) && (
+                  <Text style={{ fontSize: 8, color: COLOR_FG_MUTED }}>
+                    {[c.endereco, c.cidade, c.uf, c.cep && `CEP ${c.cep}`]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
 
         <View style={styles.fieldsGrid}>
           <View style={styles.fieldsCol}>

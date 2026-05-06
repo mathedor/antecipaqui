@@ -7,6 +7,7 @@ import {
   type CadastrarOpAdminState,
 } from "@/lib/actions/admin-cadastrar";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
+import { PagadorSelector } from "./pagador-selector";
 import { useFeedback } from "@/components/feedback-provider";
 import { SearchableSelect } from "@/components/searchable-select";
 import { formatBRL, parseBRLNumber, valorPresente } from "@/lib/format";
@@ -312,6 +313,8 @@ export function AdminCadastrarOperacaoForm({
         )}
         <input type="hidden" name="parcelas" value={JSON.stringify(parcelas)} />
       </Card>
+
+      <PagadorSelector />
 
       <Card
         title="Documentos (opcional)"

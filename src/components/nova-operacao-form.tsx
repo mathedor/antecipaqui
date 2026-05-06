@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/operacoes";
 import { ConstrutoraModal } from "./construtora-modal";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
+import { PagadorSelector } from "./pagador-selector";
 import { useFeedback } from "@/components/feedback-provider";
 import { formatBRL, parseBRLNumber, valorPresente } from "@/lib/format";
 
@@ -361,6 +362,8 @@ export function NovaOperacaoForm({
             )}
             <input type="hidden" name="parcelas" value={JSON.stringify(parcelas)} />
           </Section>
+
+          <PagadorSelector />
 
           {/* Documentos da operação */}
           <Section

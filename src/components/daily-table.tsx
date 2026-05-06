@@ -159,6 +159,8 @@ export function DailyTable({
         if (res.enviados.imobiliaria)
           msg.push("✓ Imobiliária / corretor notificada");
         else msg.push("✕ Sem email da imobiliária / corretor");
+        if (res.enviados.compradores > 0)
+          msg.push(`✓ ${res.enviados.compradores} comprador(es) notificado(s)`);
         await alertSuccess(msg.join("\n"), "Emails processados");
       } catch (e) {
         await alertError(
@@ -173,9 +175,19 @@ export function DailyTable({
     start(async () => {
       try {
         const res = await gerarBoletoParcelaAction(r.parcelaId);
+        const sacadosTxt = res.sacados
+          .map(
+            (s) =>
+              `   - ${s.nome} (${s.tipoPessoa === "fisica" ? "CPF" : "CNPJ"} ${s.documento})`,
+          )
+          .join("\n");
+        const pagadorLabel =
+          res.pagadorTipo === "compradores"
+            ? `Sacados (${res.sacados.length} comprador${res.sacados.length === 1 ? "" : "es"} solidário${res.sacados.length === 1 ? "" : "s"}):\n${sacadosTxt}`
+            : `Sacado: ${res.sacados[0]?.nome ?? "—"} (CNPJ ${res.sacados[0]?.documento ?? "—"})`;
         const ok2 = await confirm({
           title: "Abrir API de boletos",
-          message: `Vamos abrir a URL da API do banco emissor configurado no fundo "${res.fundoNome}" (${res.bancoNome ?? "—"}).\n\nDados pra preencher:\n• Parcela: ${res.parcela.numero}\n• Operação: ${res.parcela.operacaoNumero}\n• Vencimento: ${fmtDate(res.parcela.vencimento)}\n• Valor: ${formatBRL(res.parcela.valor)}\n\nContinuar?`,
+          message: `Vamos abrir a URL da API do banco emissor configurado no fundo "${res.fundoNome}" (${res.bancoNome ?? "—"}).\n\nDados pra preencher:\n• Parcela: ${res.parcela.numero}\n• Operação: ${res.parcela.operacaoNumero}\n• Vencimento: ${fmtDate(res.parcela.vencimento)}\n• Valor: ${formatBRL(res.parcela.valor)}\n\n${pagadorLabel}\n\nContinuar?`,
           confirmLabel: "Abrir API",
         });
         if (ok2) {

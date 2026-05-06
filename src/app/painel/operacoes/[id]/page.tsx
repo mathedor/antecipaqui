@@ -231,8 +231,56 @@ export default async function OperacaoDetailPage({ params }: Params) {
             <div className="mt-1 font-mono text-xs text-fg-muted">
               CNPJ {op.construtoraCnpj ?? "—"}
             </div>
+            <div className="mt-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-mono font-semibold bg-bg-card text-fg-muted border border-border">
+                {op.pagadorTipo === "compradores"
+                  ? "responsável (não pagadora)"
+                  : "responsável + pagadora"}
+              </span>
+            </div>
           </Card>
         </div>
+
+        {op.pagadorTipo === "compradores" && op.compradores.length > 0 && (
+          <Card
+            label={`Pagador(es) da comissão · ${op.compradores.length} sacado${op.compradores.length === 1 ? "" : "s"}`}
+            className="mb-8"
+          >
+            <ul className="space-y-3">
+              {op.compradores.map((c) => (
+                <li
+                  key={c.id}
+                  className="rounded-xl border border-border bg-bg p-4"
+                >
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-bold">{c.nome}</span>
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      {c.tipoPessoa === "fisica" ? "PF" : "PJ"}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-fg-muted font-mono">
+                    <span>
+                      {c.tipoPessoa === "fisica" ? "CPF" : "CNPJ"} {c.documento}
+                    </span>
+                    <a href={`mailto:${c.email}`} className="hover:text-accent">
+                      {c.email}
+                    </a>
+                    <a href={`tel:${c.telefone}`} className="hover:text-accent">
+                      {c.telefone}
+                    </a>
+                  </div>
+                  {(c.endereco || c.cidade) && (
+                    <div className="mt-1 text-xs text-fg-muted">
+                      {[c.endereco, c.cidade, c.uf, c.cep && `CEP ${c.cep}`]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
 
         <Card label="Resumo financeiro" className="mb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

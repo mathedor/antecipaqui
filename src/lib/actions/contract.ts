@@ -141,6 +141,30 @@ export async function generateContractForOperacao(
     construtoraUf: construtora.uf,
     construtoraTelefone: construtora.telefone,
     construtoraEmail: construtora.email,
+    pagadorTipo:
+      op.pagadorTipo === "compradores"
+        ? ("compradores" as const)
+        : ("construtora" as const),
+    compradores: await (async () => {
+      if (op.pagadorTipo !== "compradores") return [];
+      const { operacaoCompradores } = await import("@/db/schema");
+      const rows = await db
+        .select()
+        .from(operacaoCompradores)
+        .where(eq(operacaoCompradores.operacaoId, op.id))
+        .orderBy(operacaoCompradores.ordem);
+      return rows.map((c) => ({
+        tipoPessoa: c.tipoPessoa as "fisica" | "juridica",
+        nome: c.nome,
+        documento: c.documento,
+        telefone: c.telefone,
+        email: c.email,
+        endereco: c.endereco,
+        cidade: c.cidade,
+        uf: c.uf,
+        cep: c.cep,
+      }));
+    })(),
     parcelas: parcelasCalc,
     logoUrl: getLogoUrl(),
   };

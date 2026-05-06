@@ -8,6 +8,11 @@ import {
 } from "@/lib/actions/pending-operacoes";
 import { useFeedback } from "@/components/feedback-provider";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
+import {
+  CompradoresEditor,
+  novoCompradorVazio,
+  type CompradorInput,
+} from "./compradores-editor";
 
 type ImobOption = {
   id: string;
@@ -31,6 +36,8 @@ type Linha = {
   numeroParcelas: string;
   dataPrimeiraParcela: string;
   observacoes: string;
+  pagadorTipo: "construtora" | "compradores";
+  compradores: CompradorInput[];
 };
 
 const blankLinha = (): Linha => ({
@@ -43,6 +50,8 @@ const blankLinha = (): Linha => ({
   numeroParcelas: "3",
   dataPrimeiraParcela: "",
   observacoes: "",
+  pagadorTipo: "construtora",
+  compradores: [novoCompradorVazio()],
 });
 
 function maskCurrency(value: string): string {
@@ -138,6 +147,9 @@ export function LoteOperacoesForm({
           numeroParcelas: l.numeroParcelas,
           dataPrimeiraParcela: l.dataPrimeiraParcela,
           observacoes: l.observacoes,
+          pagadorTipo: l.pagadorTipo,
+          compradores:
+            l.pagadorTipo === "compradores" ? l.compradores : undefined,
         }));
         const fd = new FormData();
         fd.append("linhas", JSON.stringify(payload));
@@ -443,6 +455,51 @@ function LinhaCard({
         placeholder="Observações (opcional)"
         className="form-input !h-10 text-sm"
       />
+
+      {/* Pagador da comissão (construtora ou comprador) */}
+      <div className="rounded-xl border border-warn/30 bg-yellow-50/30 p-3 space-y-3">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+          responsável pelo pagamento da comissão
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <label
+            className={`cursor-pointer rounded-lg border p-2 text-center text-xs font-semibold transition-colors ${
+              linha.pagadorTipo === "construtora"
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-border bg-bg text-fg-muted hover:border-accent/40"
+            }`}
+          >
+            <input
+              type="radio"
+              checked={linha.pagadorTipo === "construtora"}
+              onChange={() => onChange({ pagadorTipo: "construtora" })}
+              className="sr-only"
+            />
+            Construtora
+          </label>
+          <label
+            className={`cursor-pointer rounded-lg border p-2 text-center text-xs font-semibold transition-colors ${
+              linha.pagadorTipo === "compradores"
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-border bg-bg text-fg-muted hover:border-accent/40"
+            }`}
+          >
+            <input
+              type="radio"
+              checked={linha.pagadorTipo === "compradores"}
+              onChange={() => onChange({ pagadorTipo: "compradores" })}
+              className="sr-only"
+            />
+            Comprador(es)
+          </label>
+        </div>
+        {linha.pagadorTipo === "compradores" && (
+          <CompradoresEditor
+            value={linha.compradores}
+            onChange={(next) => onChange({ compradores: next })}
+          />
+        )}
+      </div>
     </li>
   );
 }

@@ -22,6 +22,7 @@ type Row = {
   fundoId: string | null;
   comercialId?: string | null;
   comercialNome?: string | null;
+  pagadorTipo?: string | null;
 };
 
 type FundoOption = {
@@ -116,9 +117,16 @@ export function AdminOperacoesTable({
           sortValue: (r) => r.construtoraNome ?? "",
           hideOnMobile: true,
           render: (r) => (
-            <span className="text-fg-muted truncate">
-              {r.construtoraNome ?? "—"}
-            </span>
+            <div className="min-w-0">
+              <span className="text-fg-muted truncate block">
+                {r.construtoraNome ?? "—"}
+              </span>
+              {r.pagadorTipo === "compradores" && (
+                <span className="font-mono text-[9px] uppercase tracking-wider text-warn">
+                  pagador: comprador
+                </span>
+              )}
+            </div>
           ),
         },
         {

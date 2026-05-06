@@ -15,6 +15,10 @@ import {
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { audit } from "@/lib/audit";
+import {
+  parseCompradoresFromForm,
+  parsePagadorTipo,
+} from "@/lib/compradores";
 
 /** Lista corretores/imobiliárias ativos pra dropdown — versão pra fundo. */
 export async function listCorretoresForFundoSelector() {
@@ -159,6 +163,21 @@ export async function fundoCadastrarOperacaoAction(
       ?.max ?? 0) || 0;
   const numero = `OP-${ano}-${String(lastNum + 1).padStart(4, "0")}`;
 
+  const pagadorTipo = parsePagadorTipo(
+    String(formData.get("pagadorTipo") || ""),
+  );
+  let compradoresParseados: ReturnType<typeof parseCompradoresFromForm> = {
+    ok: true,
+    compradores: [],
+  };
+  if (pagadorTipo === "compradores") {
+    compradoresParseados = parseCompradoresFromForm(
+      String(formData.get("compradores") || ""),
+    );
+    if (!compradoresParseados.ok)
+      return { ok: false, error: compradoresParseados.error };
+  }
+
   const [op] = await db
     .insert(operacoes)
     .values({
@@ -179,8 +198,32 @@ export async function fundoCadastrarOperacaoAction(
       valorPresente: String(vp.toFixed(2)),
       desagio: String(desagio.toFixed(2)),
       status: "aguardando_aprovacao",
+      pagadorTipo,
     })
     .returning();
+
+  if (
+    pagadorTipo === "compradores" &&
+    compradoresParseados.ok &&
+    compradoresParseados.compradores.length > 0
+  ) {
+    const { operacaoCompradores } = await import("@/db/schema");
+    await db.insert(operacaoCompradores).values(
+      compradoresParseados.compradores.map((c, i) => ({
+        operacaoId: op.id,
+        ordem: i + 1,
+        tipoPessoa: c.tipoPessoa,
+        nome: c.nome,
+        documento: c.documento,
+        telefone: c.telefone,
+        email: c.email,
+        cep: c.cep,
+        endereco: c.endereco,
+        cidade: c.cidade,
+        uf: c.uf,
+      })),
+    );
+  }
 
   await db.insert(parcelasComissao).values(
     parcelas.map((p, i) => ({

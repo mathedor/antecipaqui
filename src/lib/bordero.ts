@@ -7,6 +7,7 @@ import {
   custosOperacao,
   fundos,
   imobiliarias,
+  operacaoCompradores,
   operacoes,
   parcelasComissao,
   users,
@@ -44,6 +45,18 @@ export type BorderoData = {
     razaoSocial: string;
     cnpj: string;
   };
+  pagadorTipo: "construtora" | "compradores";
+  compradores: Array<{
+    tipoPessoa: "fisica" | "juridica";
+    nome: string;
+    documento: string;
+    telefone: string;
+    email: string;
+    endereco: string | null;
+    cidade: string | null;
+    uf: string | null;
+    cep: string | null;
+  }>;
   fundo: { razaoSocial: string } | null;
   comercial: { nome: string } | null;
   parcelas: BorderoParcela[];
@@ -177,6 +190,15 @@ export async function getBorderoData(
     .from(custosOperacao)
     .where(eq(custosOperacao.operacaoId, operacaoId))
     .orderBy(custosOperacao.createdAt);
+
+  const compradoresRows =
+    op.pagadorTipo === "compradores"
+      ? await db
+          .select()
+          .from(operacaoCompradores)
+          .where(eq(operacaoCompradores.operacaoId, operacaoId))
+          .orderBy(operacaoCompradores.ordem)
+      : [];
   const custos = custosRows.map((c) => ({
     titulo: c.titulo,
     valor: parseFloat(c.valor),
@@ -214,6 +236,19 @@ export async function getBorderoData(
       razaoSocial: constru.razaoSocial,
       cnpj: constru.cnpj,
     },
+    pagadorTipo:
+      op.pagadorTipo === "compradores" ? "compradores" : "construtora",
+    compradores: compradoresRows.map((c) => ({
+      tipoPessoa: c.tipoPessoa as "fisica" | "juridica",
+      nome: c.nome,
+      documento: c.documento,
+      telefone: c.telefone,
+      email: c.email,
+      endereco: c.endereco,
+      cidade: c.cidade,
+      uf: c.uf,
+      cep: c.cep,
+    })),
     fundo,
     comercial,
     parcelas,

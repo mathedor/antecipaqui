@@ -20,6 +20,7 @@ import { sendEmail } from "@/lib/email";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { getTaxaMensal } from "@/lib/actions/settings";
+import { parseCompradoresFromForm } from "@/lib/compradores";
 
 type LinhaPayload = {
   imobiliariaId?: string | null;
@@ -36,6 +37,10 @@ type LinhaPayload = {
   numeroParcelas: string;
   dataPrimeiraParcela: string;
   observacoes?: string;
+  /** 'construtora' (default) ou 'compradores'. */
+  pagadorTipo?: "construtora" | "compradores";
+  /** JSON string ou array dos compradores quando pagadorTipo='compradores'. */
+  compradores?: unknown;
 };
 
 export type CreatePendingState =
@@ -213,6 +218,37 @@ export async function createPendingOperacoesAction(
         error: `Linha ${i + 1}: data da 1ª parcela inválida`,
       };
 
+    // Pagador (default 'construtora')
+    const pagadorTipoLinha =
+      l.pagadorTipo === "compradores" ? "compradores" : "construtora";
+    let compradoresLinha:
+      | Array<{
+          tipoPessoa: "fisica" | "juridica";
+          nome: string;
+          documento: string;
+          telefone: string;
+          email: string;
+          cep?: string | null;
+          endereco?: string | null;
+          cidade?: string | null;
+          uf?: string | null;
+        }>
+      | null = null;
+    if (pagadorTipoLinha === "compradores") {
+      const raw =
+        typeof l.compradores === "string"
+          ? l.compradores
+          : JSON.stringify(l.compradores ?? []);
+      const parsed = parseCompradoresFromForm(raw);
+      if (!parsed.ok)
+        return {
+          ok: false,
+          linhaIndex: i,
+          error: `Linha ${i + 1}: ${parsed.error}`,
+        };
+      compradoresLinha = parsed.compradores;
+    }
+
     const inviteToken = generateInviteToken();
     await db.insert(pendingOperacoes).values({
       construtoraId: c.id,
@@ -229,6 +265,8 @@ export async function createPendingOperacoesAction(
       observacoes: l.observacoes?.trim() || null,
       inviteToken,
       createdByUserId: user.id,
+      pagadorTipo: pagadorTipoLinha,
+      compradores: compradoresLinha,
     });
 
     // Email convite (best-effort)
@@ -569,7 +607,7 @@ export async function completarConviteAction(
     .from(operacoes);
   const opNumero = `OP-${year}-${String(opCount + 1).padStart(4, "0")}`;
 
-  // Cria operação
+  // Cria operação — copia pagadorTipo do pending
   const [op] = await db
     .insert(operacoes)
     .values({
@@ -586,8 +624,33 @@ export async function completarConviteAction(
       valorPresente: String(vp.toFixed(2)),
       desagio: String(desagio.toFixed(2)),
       status: "aguardando_aprovacao",
+      pagadorTipo: pending.pagadorTipo,
     })
     .returning();
+
+  // Compradores (copia do JSON do pending)
+  if (
+    pending.pagadorTipo === "compradores" &&
+    Array.isArray(pending.compradores) &&
+    pending.compradores.length > 0
+  ) {
+    const { operacaoCompradores } = await import("@/db/schema");
+    await db.insert(operacaoCompradores).values(
+      pending.compradores.map((c, i) => ({
+        operacaoId: op.id,
+        ordem: i + 1,
+        tipoPessoa: c.tipoPessoa,
+        nome: c.nome,
+        documento: c.documento,
+        telefone: c.telefone,
+        email: c.email,
+        cep: c.cep ?? null,
+        endereco: c.endereco ?? null,
+        cidade: c.cidade ?? null,
+        uf: c.uf ?? null,
+      })),
+    );
+  }
 
   // Parcelas
   await db.insert(parcelasComissao).values(

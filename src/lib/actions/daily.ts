@@ -1,6 +1,6 @@
 "use server";
 
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { requireAdmin } from "@/lib/auth-user";
 import { sendEmail } from "@/lib/email";
@@ -347,8 +347,58 @@ export async function notificarParcelaPorEmailAction(parcelaId: string) {
 
   let enviadosConstrutora = false;
   let enviadosImob = false;
+  let enviadosCompradores = 0;
 
-  // Email pra construtora
+  // Compradores (quando pagadorTipo='compradores') — manda email pra todos
+  const { operacoes, operacaoCompradores } = await import("@/db/schema");
+  const [opPagador] = await db
+    .select({ pagadorTipo: operacoes.pagadorTipo })
+    .from(operacoes)
+    .where(eq(operacoes.id, r.operacao_id))
+    .limit(1);
+  if (opPagador?.pagadorTipo === "compradores") {
+    const compradores = await db
+      .select()
+      .from(operacaoCompradores)
+      .where(eq(operacaoCompradores.operacaoId, r.operacao_id))
+      .orderBy(operacaoCompradores.ordem);
+    for (const c of compradores) {
+      const subject =
+        dias > 0
+          ? `Antecipaqui · Parcela em atraso · operação ${r.operacao_numero}`
+          : `Antecipaqui · Lembrete de parcela · operação ${r.operacao_numero}`;
+      const firstName = c.nome.split(" ")[0] ?? "";
+      const body = `Olá ${firstName},
+
+${
+  dias > 0
+    ? `Identificamos que a parcela #${String(r.parcela_numero).padStart(2, "0")} da operação ${r.operacao_numero} venceu em ${fmtDate(r.vencimento)} e está com ${dias} dia(s) de atraso.`
+    : `Esse é um lembrete da parcela #${String(r.parcela_numero).padStart(2, "0")} da operação ${r.operacao_numero}, com vencimento em ${fmtDate(r.vencimento)}.`
+}
+
+Detalhes:
+• Vendedora (responsável): ${r.construtora_nome ?? "—"}
+• Valor original da parcela: ${formatBRL(r.valor_parcela)}${
+        dias > 0
+          ? `
+• Encargos (multa 2% + juros mora): ${formatBRL(enc.total)}
+• Valor atualizado: ${formatBRL(valorAtual)}`
+          : ""
+      }
+
+Em caso de dúvida, responda este email.
+
+Equipe Antecipaqui`;
+      try {
+        await sendEmail({ to: c.email, subject, body });
+        enviadosCompradores += 1;
+      } catch (e) {
+        console.error("[daily/notificar-comprador]", c.email, e);
+      }
+    }
+  }
+
+  // Email pra construtora (sempre — ela continua responsável)
   if (r.construtora_email) {
     const subject = dias > 0
       ? `Antecipaqui · Parcela em atraso · operação ${r.operacao_numero}`
@@ -431,6 +481,7 @@ Equipe Antecipaqui`;
     enviados: {
       construtora: enviadosConstrutora,
       imobiliaria: enviadosImob,
+      compradores: enviadosCompradores,
     },
   };
 }
@@ -448,10 +499,14 @@ export async function gerarBoletoParcelaAction(parcelaId: string) {
     SELECT
       p.id, p.numero, p.vencimento, p.valor::float AS valor,
       o.numero AS operacao_numero, o.id AS operacao_id,
+      o.pagador_tipo,
+      c.razao_social AS construtora_nome, c.cnpj AS construtora_cnpj,
+        c.email AS construtora_email,
       f.id AS fundo_id, f.boletos_api_url, f.boletos_banco_nome,
       COALESCE(f.nome_fantasia, f.razao_social) AS fundo_nome
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
+    LEFT JOIN construtoras c ON c.id = o.construtora_id
     LEFT JOIN fundos f ON f.id = o.fundo_id
     WHERE p.id = ${parcelaId}::uuid
     LIMIT 1
@@ -463,6 +518,10 @@ export async function gerarBoletoParcelaAction(parcelaId: string) {
     valor: number;
     operacao_numero: string;
     operacao_id: string;
+    pagador_tipo: string;
+    construtora_nome: string | null;
+    construtora_cnpj: string | null;
+    construtora_email: string | null;
     fundo_id: string | null;
     boletos_api_url: string | null;
     boletos_banco_nome: string | null;
@@ -470,6 +529,41 @@ export async function gerarBoletoParcelaAction(parcelaId: string) {
   }>(result);
   const r = rows[0];
   if (!r) throw new Error("Parcela não encontrada");
+
+  // Carrega sacados — compradores (se aplicável) ou construtora
+  type SacadoOut = {
+    tipoPessoa: "fisica" | "juridica";
+    nome: string;
+    documento: string;
+    email: string | null;
+    telefone: string | null;
+  };
+  let sacados: SacadoOut[] = [];
+  if (r.pagador_tipo === "compradores") {
+    const { operacaoCompradores } = await import("@/db/schema");
+    const compradoresRows = await db
+      .select()
+      .from(operacaoCompradores)
+      .where(eq(operacaoCompradores.operacaoId, r.operacao_id))
+      .orderBy(operacaoCompradores.ordem);
+    sacados = compradoresRows.map((c) => ({
+      tipoPessoa: c.tipoPessoa as "fisica" | "juridica",
+      nome: c.nome,
+      documento: c.documento,
+      email: c.email,
+      telefone: c.telefone,
+    }));
+  } else if (r.construtora_nome && r.construtora_cnpj) {
+    sacados = [
+      {
+        tipoPessoa: "juridica",
+        nome: r.construtora_nome,
+        documento: r.construtora_cnpj,
+        email: r.construtora_email,
+        telefone: null,
+      },
+    ];
+  }
 
   if (!r.fundo_id) {
     throw new Error(
@@ -505,5 +599,7 @@ export async function gerarBoletoParcelaAction(parcelaId: string) {
       valor: r.valor,
       operacaoNumero: r.operacao_numero,
     },
+    pagadorTipo: r.pagador_tipo as "construtora" | "compradores",
+    sacados,
   };
 }

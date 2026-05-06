@@ -52,7 +52,11 @@ export function BorderoCard({ data }: { data: BorderoData }) {
             }
           />
           <Field
-            label="Sacado (construtora)"
+            label={
+              data.pagadorTipo === "compradores"
+                ? "Construtora (responsável)"
+                : "Sacado (construtora)"
+            }
             value={data.construtora.razaoSocial}
             sub={`CNPJ ${fmtCNPJ(data.construtora.cnpj)}`}
           />
@@ -68,6 +72,48 @@ export function BorderoCard({ data }: { data: BorderoData }) {
             tone="accent"
           />
         </div>
+
+        {data.pagadorTipo === "compradores" && data.compradores.length > 0 && (
+          <div className="rounded-xl border border-warn/30 bg-yellow-50/40 p-5">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-3">
+              sacado{data.compradores.length === 1 ? "" : "s"} ·
+              comprador{data.compradores.length === 1 ? "" : "es"} solidário
+              {data.compradores.length === 1 ? "" : "s"}
+            </div>
+            <ul className="divide-y divide-border">
+              {data.compradores.map((c, i) => (
+                <li key={i} className="py-2">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="font-bold text-fg">{c.nome}</span>
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      {c.tipoPessoa === "fisica" ? "PF" : "PJ"}
+                    </span>
+                  </div>
+                  <div className="text-xs text-fg-muted font-mono mt-0.5 flex flex-wrap gap-x-3">
+                    <span>
+                      {c.tipoPessoa === "fisica" ? "CPF" : "CNPJ"}{" "}
+                      {c.tipoPessoa === "fisica"
+                        ? c.documento.replace(
+                            /^(\d{3})(\d{3})(\d{3})(\d{2})$/,
+                            "$1.$2.$3-$4",
+                          )
+                        : fmtCNPJ(c.documento)}
+                    </span>
+                    <span>{c.email}</span>
+                    <span>{c.telefone}</span>
+                  </div>
+                  {(c.endereco || c.cidade) && (
+                    <div className="text-xs text-fg-muted mt-0.5">
+                      {[c.endereco, c.cidade, c.uf, c.cep && `CEP ${c.cep}`]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="rounded-xl border border-border overflow-x-auto">
           <table className="w-full text-sm min-w-[640px]">

@@ -407,6 +407,12 @@ export const operacoes = pgTable(
     cashbackSacadoEm: timestamp("cashback_sacado_em", { withTimezone: true }),
     /** Ticket que registrou o saque (audit + valor pago + data) */
     cashbackSacadoTicketId: uuid("cashback_sacado_ticket_id"),
+    /** Quem é o "fiel devedor" (sacado) das parcelas — vai pra contrato e
+     *  boletos. Construtora continua sempre presente como responsável.
+     *  - 'construtora' (default) → boleto sai no nome da construtora
+     *  - 'compradores' → boleto sai com vários sacados (lista em
+     *    operacao_compradores). */
+    pagadorTipo: text("pagador_tipo").notNull().default("construtora"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -449,6 +455,45 @@ export const parcelasComissao = pgTable(
     index("parcelas_vencimento_idx").on(t.vencimento),
   ],
 );
+
+/* =========================================
+   COMPRADORES DA OPERAÇÃO — quando o pagador da comissão é o comprador
+   do imóvel (em vez da construtora). Pode haver mais de um (responsabilidade
+   solidária — boleto sai com todos como sacados).
+   ========================================= */
+
+export const operacaoCompradores = pgTable(
+  "operacao_compradores",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    operacaoId: uuid("operacao_id")
+      .notNull()
+      .references(() => operacoes.id, { onDelete: "cascade" }),
+    /** Ordem de exibição (sequência cadastrada). */
+    ordem: integer("ordem").notNull().default(1),
+    tipoPessoa: tipoPessoaEnum("tipo_pessoa").notNull(),
+    /** Nome completo (PF) ou razão social (PJ). */
+    nome: text("nome").notNull(),
+    /** CPF (PF) ou CNPJ (PJ). Sem máscara. */
+    documento: text("documento").notNull(),
+    telefone: text("telefone").notNull(),
+    email: text("email").notNull(),
+    cep: text("cep"),
+    endereco: text("endereco"),
+    cidade: text("cidade"),
+    uf: text("uf"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("operacao_compradores_op_idx").on(t.operacaoId),
+    index("operacao_compradores_doc_idx").on(t.documento),
+  ],
+);
+
+export type OperacaoComprador = typeof operacaoCompradores.$inferSelect;
+export type NewOperacaoComprador = typeof operacaoCompradores.$inferInsert;
 
 /* =========================================
    CUSTOS DA OPERAÇÃO — itens livres (título + valor) cadastrados pelo
@@ -762,6 +807,25 @@ export const pendingOperacoes = pgTable(
     createdByUserId: text("created_by_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    /** 'construtora' (default) ou 'compradores' — quando vira operação, é
+     *  copiado pra operacoes.pagadorTipo. */
+    pagadorTipo: text("pagador_tipo").notNull().default("construtora"),
+    /** Quando pagadorTipo='compradores', payload com a lista de compradores
+     *  (estrutura idêntica a operacao_compradores, sem id/operacaoId).
+     *  Copiado pra operacao_compradores quando vira operação. */
+    compradores: jsonb("compradores").$type<
+      Array<{
+        tipoPessoa: "fisica" | "juridica";
+        nome: string;
+        documento: string;
+        telefone: string;
+        email: string;
+        cep?: string | null;
+        endereco?: string | null;
+        cidade?: string | null;
+        uf?: string | null;
+      }>
+    >(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

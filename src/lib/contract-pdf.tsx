@@ -257,6 +257,19 @@ type ContractData = {
   construtoraUf: string | null;
   construtoraTelefone: string | null;
   construtoraEmail: string | null;
+  // Pagador (sacado das parcelas — pode ser construtora ou compradores)
+  pagadorTipo: "construtora" | "compradores";
+  compradores: Array<{
+    tipoPessoa: "fisica" | "juridica";
+    nome: string;
+    documento: string;
+    telefone: string;
+    email: string;
+    endereco: string | null;
+    cidade: string | null;
+    uf: string | null;
+    cep: string | null;
+  }>;
   // Parcelas (já com cálculo)
   parcelas: {
     numero: number;
@@ -375,6 +388,22 @@ export function ContractDocument({ data }: { data: ContractData }) {
           Avenças, o qual será regido nos termos da Lei 10.406/02 e nas
           seguintes condições:
         </Text>
+
+        {data.pagadorTipo === "compradores" && data.compradores.length > 0 && (
+          <Text style={styles.paragraph}>
+            <Text style={styles.bold}>SACADO(S) — comprador(es) do imóvel:</Text>{" "}
+            {data.compradores
+              .map(
+                (c) =>
+                  `${c.nome} (${c.tipoPessoa === "fisica" ? "CPF" : "CNPJ"} ${c.documento}, ${c.email}, ${c.telefone}${c.cidade ? `, ${c.cidade}/${c.uf ?? ""}` : ""})`,
+              )
+              .join("; ")}
+            . Os SACADOS, como adquirentes do imóvel objeto desta cessão, são
+            responsáveis solidários pelo pagamento das parcelas da comissão
+            cedida, na qualidade de fiéis devedores, sem prejuízo da
+            responsabilidade da DEVEDORA SOLIDÁRIA acima qualificada.
+          </Text>
+        )}
 
         <Text style={styles.sectionTitle}>DO OBJETO</Text>
 
