@@ -59,7 +59,7 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
   const valorComissao = parseFloat(convite.valorComissao);
   const valorVenda = parseFloat(convite.valorVenda);
 
-  const { vp, desagio, parcelas } = useMemo(() => {
+  const { vp, parcelas } = useMemo(() => {
     const valorParcela = valorComissao / convite.numeroParcelas;
     const start = new Date(convite.dataPrimeiraParcela + "T00:00:00");
     const today = new Date();
@@ -81,15 +81,13 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
       })),
       taxaMensalSugerida,
     );
-    return { vp: v, desagio: valorComissao - v, parcelas: arr };
+    return { vp: v, parcelas: arr };
   }, [
     convite.dataPrimeiraParcela,
     convite.numeroParcelas,
     valorComissao,
     taxaMensalSugerida,
   ]);
-
-  const taxaPct = (taxaMensalSugerida * 100).toFixed(2).replace(".", ",");
 
   return (
     <form action={action} className="grid lg:grid-cols-12 gap-6">
@@ -221,32 +219,23 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
           <div className="absolute inset-0 bg-mesh-dark pointer-events-none" aria-hidden />
           <div className="relative">
             <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-fg-inverse/70 mb-2">
-              você recebe
+              receba amanhã
             </div>
-            <div className="font-mono tabular text-4xl md:text-5xl font-bold tracking-tight text-gradient-blue">
+            <div className="font-mono tabular text-3xl md:text-5xl font-bold tracking-tight text-gradient-blue leading-tight">
               {formatBRL(vp)}
             </div>
-            <div className="mt-1 text-fg-inverse/60 text-sm">
-              taxa {taxaPct}% a.m. · em até 1 dia útil após aprovação
+            <div className="mt-2 text-fg-inverse text-sm font-semibold">
+              na sua conta!
             </div>
-            <div className="mt-1 text-fg-inverse/45 text-[11px] italic">
-              Taxa de juros sugerida — pode ser alterada na aprovação da
-              operação.
+            <div className="mt-3 rounded-xl bg-white/10 border border-white/15 p-3 text-[11px] leading-relaxed text-fg-inverse/85">
+              Esta é uma <strong>estimativa</strong>. O valor exato e a taxa
+              final são definidos pelo fundo na aprovação e aparecem no
+              borderô.
             </div>
 
             <div className="mt-7 pt-6 border-t border-white/10 space-y-3 text-sm">
               <Row label="Comissão total" value={formatBRL(valorComissao)} />
               <Row label="Parcelas" value={`${convite.numeroParcelas}x`} />
-              <Row
-                label="Deságio"
-                value={`− ${formatBRL(desagio)}`}
-                highlight="warn"
-              />
-              <Row
-                label="% deságio"
-                value={`${((desagio / valorComissao) * 100).toFixed(2)}%`}
-                highlight="muted"
-              />
             </div>
           </div>
         </div>

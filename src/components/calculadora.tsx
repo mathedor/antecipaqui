@@ -34,8 +34,6 @@ export function Calculadora({
     };
   }, [valor, parcelas, TAXA_MENSAL]);
 
-  const taxaPct = (TAXA_MENSAL * 100).toFixed(2).replace(".", ",");
-
   return (
     <div className="rounded-3xl border border-border bg-bg-elev shadow-xl overflow-hidden">
       <div className="grid md:grid-cols-2 gap-0">
@@ -43,9 +41,6 @@ export function Calculadora({
         <div className="p-7 md:p-9 border-b md:border-b-0 md:border-r border-border bg-bg-elev">
           <div className="flex items-center justify-between mb-2">
             <div className="eyebrow">simulador</div>
-            <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-              taxa {taxaPct}% a.m.
-            </span>
           </div>
           <h3 className="text-2xl md:text-3xl font-bold tracking-tight">
             Quanto você recebe hoje?
@@ -54,7 +49,8 @@ export function Calculadora({
             Arraste pra simular. O cálculo é em tempo real.
           </p>
           <p className="mt-1 text-[11px] text-fg-dim italic">
-            Taxa de juros sugerida — pode ser alterada na aprovação da operação.
+            A taxa final é definida pelo fundo na aprovação da operação e
+            aparece no borderô.
           </p>
 
           {/* Presets */}
@@ -136,13 +132,13 @@ export function Calculadora({
           <div className="absolute inset-0 bg-mesh-dark pointer-events-none" aria-hidden />
           <div className="relative">
             <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-fg-inverse/70 mb-2">
-              você recebe hoje
+              receba amanhã
             </div>
-            <div className="font-mono tabular text-4xl md:text-6xl font-bold tracking-tight text-gradient-blue">
+            <div className="font-mono tabular text-4xl md:text-6xl font-bold tracking-tight text-gradient-blue leading-tight">
               {formatBRL(resultado.valorHoje)}
             </div>
-            <div className="mt-1 text-fg-inverse/60 text-sm">
-              em até 1 dia útil após aprovação
+            <div className="mt-2 text-fg-inverse text-base md:text-lg font-semibold">
+              na sua conta!
             </div>
 
             <div className="mt-8 pt-6 border-t border-white/10 space-y-3 text-sm">

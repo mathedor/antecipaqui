@@ -77,7 +77,6 @@ export function NovaOperacaoForm({
   taxaMensalSugerida = 0.06,
 }: Props) {
   const TAXA_MENSAL = taxaMensalSugerida;
-  const taxaPct = (TAXA_MENSAL * 100).toFixed(2).replace(".", ",");
   const [state, action, pending] = useActionState<
     CreateOperacaoState,
     FormData
@@ -123,22 +122,15 @@ export function NovaOperacaoForm({
     }
   }, [state, router, alertSuccess, alertError]);
 
-  // Valor presente em tempo real
-  const { vp, desagio, percentDesagio } = useMemo(() => {
-    if (parcelas.length === 0 || valorComissaoNum === 0)
-      return { vp: 0, desagio: 0, percentDesagio: 0 };
+  // Estimativa de VP em tempo real (taxa não exposta ao corretor — só no borderô)
+  const vp = useMemo(() => {
+    if (parcelas.length === 0 || valorComissaoNum === 0) return 0;
     const today = new Date();
     const arr = parcelas.map((p) => ({
       valor: parseBRLNumber(p.valor),
       mesesAteVencimento: Math.max(monthsBetween(today, new Date(p.vencimento)), 0),
     }));
-    const v = valorPresente(arr, TAXA_MENSAL);
-    const d = valorComissaoNum - v;
-    return {
-      vp: v,
-      desagio: d,
-      percentDesagio: d / valorComissaoNum,
-    };
+    return valorPresente(arr, TAXA_MENSAL);
   }, [parcelas, valorComissaoNum, TAXA_MENSAL]);
 
   function updateParcela(idx: number, key: keyof Parcela, value: string) {
@@ -422,17 +414,18 @@ export function NovaOperacaoForm({
             <div className="absolute inset-0 bg-mesh-dark pointer-events-none" aria-hidden />
             <div className="relative">
               <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-fg-inverse/70 mb-2">
-                você recebe
+                receba amanhã
               </div>
-              <div className="font-mono tabular text-4xl md:text-5xl font-bold tracking-tight text-gradient-blue">
+              <div className="font-mono tabular text-3xl md:text-5xl font-bold tracking-tight text-gradient-blue leading-tight">
                 {formatBRL(vp)}
               </div>
-              <div className="mt-1 text-fg-inverse/60 text-sm">
-                taxa {taxaPct}% a.m. · em até 1 dia útil após aprovação
+              <div className="mt-2 text-fg-inverse text-sm font-semibold">
+                na sua conta!
               </div>
-              <div className="mt-1 text-fg-inverse/45 text-[11px] italic">
-                Taxa de juros sugerida — pode ser alterada na aprovação da
-                operação.
+              <div className="mt-3 rounded-xl bg-white/10 border border-white/15 p-3 text-[11px] leading-relaxed text-fg-inverse/85">
+                Esta é uma <strong>estimativa</strong>. A taxa final, valor
+                presente e deságio definitivos são <strong>definidos pelo
+                fundo na aprovação da operação</strong> e aparecem no borderô.
               </div>
 
               <div className="mt-7 pt-6 border-t border-white/10 space-y-3 text-sm">
@@ -444,24 +437,6 @@ export function NovaOperacaoForm({
                   label="Parcelas"
                   value={`${parcelas.length}x`}
                 />
-                <Row
-                  label="Deságio"
-                  value={`− ${formatBRL(desagio)}`}
-                  highlight="warn"
-                />
-                <Row
-                  label="% deságio"
-                  value={`${(percentDesagio * 100).toFixed(2)}%`}
-                  highlight="muted"
-                />
-              </div>
-
-              <div className="mt-6 rounded-xl bg-white/5 border border-white/10 p-4 text-xs leading-relaxed text-fg-inverse/70">
-                <div className="font-mono text-[10px] uppercase tracking-wider text-accent mb-2">
-                  como esse cálculo funciona
-                </div>
-                Cada parcela é trazida a valor presente usando juros compostos
-                mensais. Quanto mais distante a parcela, maior o deságio.
               </div>
             </div>
           </div>
