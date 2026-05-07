@@ -9,8 +9,15 @@ import {
   MobileBottomNav,
   type MobileNavItem,
 } from "@/components/mobile-bottom-nav";
+import {
+  ADMIN_PROFILE_LABEL,
+  hasAdminPermission,
+  pathToAdminArea,
+  resolveAdminProfile,
+} from "@/lib/admin-permissions";
+import { getCurrentDbUser } from "@/lib/auth-user";
 
-const nav: AdminNavItem[] = [
+const navFull: AdminNavItem[] = [
   {
     type: "submenu",
     label: "Cadastrar",
@@ -42,6 +49,7 @@ const nav: AdminNavItem[] = [
       { href: "/admin/construtoras", label: "Construtoras" },
       { href: "/admin/fundos", label: "Fundos investidores" },
       { href: "/admin/comerciais", label: "Comerciais" },
+      { href: "/admin/usuarios/admins", label: "Administradores" },
     ],
   },
   { type: "link", href: "/admin/tickets", label: "Tickets" },
@@ -71,8 +79,37 @@ const nav: AdminNavItem[] = [
       { href: "/admin/relatorios/saude", label: "Saúde do sistema" },
     ],
   },
+  {
+    type: "submenu",
+    label: "Interno",
+    matchPrefix: ["/admin/interno"],
+    items: [{ href: "/admin/interno/invoice", label: "Invoice" }],
+  },
   { type: "link", href: "/admin/configuracoes", label: "Configurações" },
 ];
+
+/** Filtra menu items pelo perfil do admin. */
+function filterNavForProfile(
+  profile: string | null | undefined,
+): AdminNavItem[] {
+  return navFull
+    .map((item): AdminNavItem | null => {
+      if (item.type === "link") {
+        const area = pathToAdminArea(item.href);
+        if (area && !hasAdminPermission(profile, area)) return null;
+        return item;
+      }
+      // submenu — filtra items, retorna null se sobrar 0
+      const allowedItems = item.items.filter((sub) => {
+        const area = pathToAdminArea(sub.href);
+        if (!area) return true;
+        return hasAdminPermission(profile, area);
+      });
+      if (allowedItems.length === 0) return null;
+      return { ...item, items: allowedItems };
+    })
+    .filter((x): x is AdminNavItem => x !== null);
+}
 
 const mobileShortcuts: MobileNavItem[] = [
   { href: "/admin", label: "Painel", icon: "home" },
@@ -116,7 +153,7 @@ const mobileFullMenu: { section: string; items: MobileNavItem[] }[] = [
   },
 ];
 
-export function AdminShell({
+export async function AdminShell({
   children,
   active,
   userName,
@@ -126,6 +163,10 @@ export function AdminShell({
   userName?: string | null;
 }) {
   const userLabel = userName ?? "Admin";
+  const me = await getCurrentDbUser();
+  const profile = resolveAdminProfile(me?.adminProfile);
+  const nav = filterNavForProfile(me?.adminProfile);
+  const profileLabel = ADMIN_PROFILE_LABEL[profile];
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border">
@@ -139,8 +180,12 @@ export function AdminShell({
           </Link>
           <AdminNav nav={nav} active={active} />
           <div className="flex items-center gap-2 md:gap-3">
-            <span className="hidden md:inline-flex chip chip-accent">
-              admin{userName ? ` · ${userName.split(" ")[0]}` : ""}
+            <span
+              className="hidden md:inline-flex chip chip-accent"
+              title={profileLabel}
+            >
+              {profileLabel.toLowerCase()}
+              {userName ? ` · ${userName.split(" ")[0]}` : ""}
             </span>
             <NotificationBell />
             <span className="hidden md:inline-flex">

@@ -98,6 +98,14 @@ export function AdminFundoForm({ fundo }: Props) {
   const taxaInicial = fundo
     ? (parseFloat(fundo.taxaMensalBase) * 100).toFixed(2).replace(".", ",")
     : "";
+  const custoFinanceiroInicial = fundo
+    ? (parseFloat(fundo.custoFinanceiroPct ?? "0") * 100)
+        .toFixed(2)
+        .replace(".", ",")
+    : "";
+  const impostosInicial = fundo
+    ? (parseFloat(fundo.impostosPct ?? "0") * 100).toFixed(2).replace(".", ",")
+    : "";
 
   return (
     <form action={action} className="space-y-6">
@@ -268,6 +276,50 @@ export function AdminFundoForm({ fundo }: Props) {
                 />
               </label>
             )}
+          </Field>
+        </div>
+      </Card>
+
+      {/* === Rateio interno (Antecipaqui) === */}
+      <Card
+        title="Rateio interno · Antecipaqui"
+        subtitle="Configura como o juros de cada operação desse fundo é dividido. Visível só pelo admin no relatório de Invoice."
+      >
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Custo financeiro / % rateio (% sobre o juros)">
+            <div className="flex items-stretch rounded-xl border border-border-strong overflow-hidden focus-within:border-accent transition-colors">
+              <input
+                name="custoFinanceiroPct"
+                inputMode="decimal"
+                placeholder="40,00"
+                defaultValue={custoFinanceiroInicial}
+                className="flex-1 min-w-0 bg-bg h-12 px-4 text-fg placeholder:text-fg-dim outline-none tabular text-right"
+              />
+              <span className="bg-bg-soft px-3 flex items-center text-fg-muted text-sm font-mono border-l border-border-strong shrink-0">
+                %
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-fg-dim">
+              Fatia do juros que retorna pra Antecipaqui (rateio).
+            </p>
+          </Field>
+
+          <Field label="Impostos do fundo (% sobre o juros)">
+            <div className="flex items-stretch rounded-xl border border-border-strong overflow-hidden focus-within:border-accent transition-colors">
+              <input
+                name="impostosPct"
+                inputMode="decimal"
+                placeholder="4,50"
+                defaultValue={impostosInicial}
+                className="flex-1 min-w-0 bg-bg h-12 px-4 text-fg placeholder:text-fg-dim outline-none tabular text-right"
+              />
+              <span className="bg-bg-soft px-3 flex items-center text-fg-muted text-sm font-mono border-l border-border-strong shrink-0">
+                %
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-fg-dim">
+              PIS / COFINS / IR sobre o juros recebido.
+            </p>
           </Field>
         </div>
       </Card>

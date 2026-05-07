@@ -108,6 +108,14 @@ export const users = pgTable(
     nome: text("nome"),
     telefone: text("telefone"),
     role: userRoleEnum("role").notNull().default("corretor"),
+    /** Perfil de admin (só preenchido quando role='admin'):
+     *  - 'super'      → tudo + gerencia outros admins
+     *  - 'financeiro' → Interno (Invoice), Fundos, Relatórios, Comerciais
+     *  - 'operacoes'  → Operações, Construtoras, Cadastrar, Convites
+     *  - 'suporte'    → Tickets, Mural, Daily, Usuários (read)
+     *
+     *  null = comportamento legado (admins antigos = super). */
+    adminProfile: text("admin_profile"),
     onboardingStatus: onboardingStatusEnum("onboarding_status")
       .notNull()
       .default("pendente"),
@@ -288,6 +296,18 @@ export const fundos = pgTable(
     taxaMensalBase: numeric("taxa_mensal_base", { precision: 6, scale: 4 })
       .notNull()
       .default("0.0600"),
+    /** Custo financeiro / % de rateio — fatia do juros que vai pra
+     *  Antecipaqui em cada operação desse fundo. Decimal 0–1 (ex 0.40 = 40%).
+     *  Usado no relatório de invoice interno. */
+    custoFinanceiroPct: numeric("custo_financeiro_pct", { precision: 6, scale: 4 })
+      .notNull()
+      .default("0.0000"),
+    /** % de impostos que o fundo paga sobre os juros recebidos (PIS/COFINS/IR
+     *  etc.). Decimal 0–1 (ex 0.045 = 4,5%). Descontado antes de aplicar
+     *  o rateio. */
+    impostosPct: numeric("impostos_pct", { precision: 6, scale: 4 })
+      .notNull()
+      .default("0.0000"),
     /* === Dados bancários — pra recebimento de pagamentos de duplicatas === */
     bancoNome: text("banco_nome"),
     /** Código do banco (3 dígitos: 001 BB, 341 Itaú, etc.) */

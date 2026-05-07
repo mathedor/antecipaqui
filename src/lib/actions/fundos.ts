@@ -19,6 +19,20 @@ import { audit } from "@/lib/audit";
    ADMIN — CRUD de fundos
    ========================================= */
 
+/** Parseia uma string percentual ("40", "40,00", "40%", "0.40", "") em
+ *  decimal (0–1). Vazio = 0 (default). Valores claramente percentuais (>=1)
+ *  são convertidos por /100. Retorna "INVALID" se não der pra parsear ou
+ *  se o resultado ficar fora de [0, 1]. */
+function parsePctOpcional(input: string): number | "INVALID" {
+  const trimmed = input.trim();
+  if (!trimmed) return 0;
+  const n = parseFloat(trimmed.replace(",", ".").replace("%", ""));
+  if (!Number.isFinite(n) || n < 0) return "INVALID";
+  const decimal = n >= 1 ? n / 100 : n;
+  if (decimal < 0 || decimal > 1) return "INVALID";
+  return decimal;
+}
+
 export type FundoState =
   | { ok: false; error: string }
   | { ok: true; fundoId: string }
@@ -69,6 +83,17 @@ export async function createFundoAction(
   if (taxaMensal < 0.001 || taxaMensal > 0.5)
     return { ok: false, error: "Taxa fora do limite (0,1% a 50%)" };
 
+  const custoFinanceiroPct = parsePctOpcional(
+    String(formData.get("custoFinanceiroPct") || ""),
+  );
+  if (custoFinanceiroPct === "INVALID")
+    return { ok: false, error: "Custo financeiro / rateio inválido" };
+  const impostosPct = parsePctOpcional(
+    String(formData.get("impostosPct") || ""),
+  );
+  if (impostosPct === "INVALID")
+    return { ok: false, error: "% de impostos inválido" };
+
   const existing = await db
     .select()
     .from(fundos)
@@ -94,6 +119,8 @@ export async function createFundoAction(
       contratoUrl,
       contratoNome,
       taxaMensalBase: taxaMensal.toFixed(4),
+      custoFinanceiroPct: custoFinanceiroPct.toFixed(4),
+      impostosPct: impostosPct.toFixed(4),
       bancoNome: String(formData.get("bancoNome") || "").trim() || null,
       bancoCodigo:
         String(formData.get("bancoCodigo") || "").trim() || null,
@@ -143,6 +170,17 @@ export async function editFundoAction(
   if (taxaMensal < 0.001 || taxaMensal > 0.5)
     return { ok: false, error: "Taxa fora do limite (0,1% a 50%)" };
 
+  const custoFinanceiroPct = parsePctOpcional(
+    String(formData.get("custoFinanceiroPct") || ""),
+  );
+  if (custoFinanceiroPct === "INVALID")
+    return { ok: false, error: "Custo financeiro / rateio inválido" };
+  const impostosPct = parsePctOpcional(
+    String(formData.get("impostosPct") || ""),
+  );
+  if (impostosPct === "INVALID")
+    return { ok: false, error: "% de impostos inválido" };
+
   await db
     .update(fundos)
     .set({
@@ -168,6 +206,8 @@ export async function editFundoAction(
       contratoNome:
         String(formData.get("contratoNome") || "").trim() || null,
       taxaMensalBase: taxaMensal.toFixed(4),
+      custoFinanceiroPct: custoFinanceiroPct.toFixed(4),
+      impostosPct: impostosPct.toFixed(4),
       bancoNome: String(formData.get("bancoNome") || "").trim() || null,
       bancoCodigo:
         String(formData.get("bancoCodigo") || "").trim() || null,

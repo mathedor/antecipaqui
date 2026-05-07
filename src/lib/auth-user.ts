@@ -210,6 +210,26 @@ export async function requireAdmin(): Promise<User> {
 }
 
 /**
+ * Variante que também checa permissão por área (perfil de admin).
+ * Se o admin não tem acesso à área, redireciona pra /admin (dashboard).
+ */
+export async function requireAdminArea(
+  area: import("@/lib/admin-permissions").AdminArea,
+): Promise<User> {
+  const user = await requireAdmin();
+  const { hasAdminPermission } = await import("@/lib/admin-permissions");
+  if (!hasAdminPermission(user.adminProfile, area)) {
+    redirect("/admin?denied=" + encodeURIComponent(area));
+  }
+  return user;
+}
+
+/** Apenas super-admin (gerencia outros admins). */
+export async function requireSuperAdmin(): Promise<User> {
+  return requireAdminArea("manage_admins");
+}
+
+/**
  * Permite admin OU fundo. Pra ações compartilhadas (aprovação final, cadastro
  * de operação, cadastro de custos). Dispara erro (não redirect) — caller
  * decide o que fazer.
