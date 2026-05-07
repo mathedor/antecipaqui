@@ -52,12 +52,36 @@ export default async function AdminFundoDetail({ params }: Params) {
               CNPJ {fundo.cnpj}
             </span>
             <span className="size-1 rounded-full bg-fg-dim" />
-            <span className="chip chip-accent">
+            <span className="chip chip-accent" title="Taxa de juros base">
               {(parseFloat(fundo.taxaMensalBase) * 100)
                 .toFixed(2)
                 .replace(".", ",")}
               % a.m.
             </span>
+            {parseFloat(fundo.custoFinanceiroPct ?? "0") > 0 && (
+              <span
+                className="chip bg-green-50 border-success/40 text-success"
+                title="Custo financeiro / % de rateio devolvido pra Antecipaqui"
+              >
+                rateio{" "}
+                {(parseFloat(fundo.custoFinanceiroPct) * 100)
+                  .toFixed(2)
+                  .replace(".", ",")}
+                %
+              </span>
+            )}
+            {parseFloat(fundo.impostosPct ?? "0") > 0 && (
+              <span
+                className="chip bg-yellow-50 border-warn/40 text-warn"
+                title="% de impostos sobre os juros"
+              >
+                impostos{" "}
+                {(parseFloat(fundo.impostosPct) * 100)
+                  .toFixed(2)
+                  .replace(".", ",")}
+                %
+              </span>
+            )}
             {!fundo.isActive && (
               <span className="chip bg-red-50 border-danger/40 text-danger">
                 ⛔ inativo
@@ -134,6 +158,40 @@ export default async function AdminFundoDetail({ params }: Params) {
               <FieldR label="Conta" value={fundo.bancoConta} mono />
               <FieldR label="PIX" value={fundo.bancoPix} mono />
             </Grid>
+          </Card>
+
+          <Card label="Rateio interno · Antecipaqui">
+            <Grid>
+              <FieldR
+                label="Custo financeiro / % rateio"
+                value={
+                  fundo.custoFinanceiroPct
+                    ? `${(parseFloat(fundo.custoFinanceiroPct) * 100).toFixed(2).replace(".", ",")}%`
+                    : null
+                }
+                mono
+              />
+              <FieldR
+                label="Impostos do fundo (% sobre juros)"
+                value={
+                  fundo.impostosPct
+                    ? `${(parseFloat(fundo.impostosPct) * 100).toFixed(2).replace(".", ",")}%`
+                    : null
+                }
+                mono
+              />
+            </Grid>
+            <p className="mt-3 text-[11px] text-fg-dim leading-relaxed">
+              Saldo de repasse pra Antecipaqui = (Juros − Impostos) × % rateio.
+              Veja todas as operações desse fundo em{" "}
+              <a
+                href={`/admin/interno/invoice?fundoId=${id}`}
+                className="text-accent hover:underline"
+              >
+                Interno · Invoice
+              </a>
+              .
+            </p>
           </Card>
 
           <Card label="Configurações · integrações">

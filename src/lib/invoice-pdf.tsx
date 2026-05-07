@@ -323,24 +323,10 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
           </View>
         </View>
 
-        {/* DE / PARA */}
+        {/* DE / PARA — DE = quem paga (fundo), PARA = quem recebe (Antecipaqui) */}
         <View style={styles.fromToRow}>
           <View style={styles.fromToBox}>
-            <Text style={styles.fromToLabel}>De · credor</Text>
-            <Text style={styles.partyName}>{EMITENTE.razaoSocial}</Text>
-            <Text style={styles.partyDetail}>
-              CNPJ {fmtCNPJ(EMITENTE.cnpj)}
-            </Text>
-            <Text style={styles.partyDetail}>{EMITENTE.endereco}</Text>
-            <Text style={styles.partyDetail}>
-              {EMITENTE.cidade}/{EMITENTE.uf} · CEP {EMITENTE.cep}
-            </Text>
-            <Text style={styles.partyDetail}>
-              {EMITENTE.email} · {EMITENTE.telefone}
-            </Text>
-          </View>
-          <View style={styles.fromToBox}>
-            <Text style={styles.fromToLabel}>Para · devedor</Text>
+            <Text style={styles.fromToLabel}>De · pagador</Text>
             {data.fundoUnico ? (
               <>
                 <Text style={styles.partyName}>
@@ -370,6 +356,20 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
                 </Text>
               </>
             )}
+          </View>
+          <View style={styles.fromToBox}>
+            <Text style={styles.fromToLabel}>Para · recebedor</Text>
+            <Text style={styles.partyName}>{EMITENTE.razaoSocial}</Text>
+            <Text style={styles.partyDetail}>
+              CNPJ {fmtCNPJ(EMITENTE.cnpj)}
+            </Text>
+            <Text style={styles.partyDetail}>{EMITENTE.endereco}</Text>
+            <Text style={styles.partyDetail}>
+              {EMITENTE.cidade}/{EMITENTE.uf} · CEP {EMITENTE.cep}
+            </Text>
+            <Text style={styles.partyDetail}>
+              {EMITENTE.email} · {EMITENTE.telefone}
+            </Text>
           </View>
         </View>
 

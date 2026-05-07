@@ -273,6 +273,24 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
       </form>
 
       {/* Tabela */}
+      {/* Repasse credor (sempre Antecipaqui) */}
+      <section className="rounded-2xl border border-accent/30 bg-accent-soft p-5 mb-6 flex items-center gap-4 flex-wrap">
+        <div className="size-10 rounded-full bg-accent text-white flex items-center justify-center font-mono text-xs font-bold shrink-0">
+          AQ
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent mb-0.5">
+            Repasse devido a
+          </div>
+          <div className="font-bold text-fg">
+            Antecipaqui · CRITÉRIA CAPITAL S/A
+          </div>
+          <div className="font-mono text-xs text-fg-muted">
+            CNPJ 32.708.702/0001-10 · pagador definido por operação na tabela
+          </div>
+        </div>
+      </section>
+
       {/* Charts mensais (12 meses) */}
       <InvoiceMonthlyCharts data={monthly} />
 
