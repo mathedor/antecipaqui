@@ -12,7 +12,14 @@ import { listFundosForSelector } from "@/lib/actions/fundos";
 import { listConstrutorasForSelector } from "@/lib/actions/admin-cadastrar";
 import { listImobiliariasForLote } from "@/lib/actions/pending-operacoes";
 import { listComerciaisForSelector } from "@/lib/actions/comerciais";
+import { getAntecipaquiData } from "@/lib/antecipaqui-fundo";
 import { formatBRL } from "@/lib/format";
+
+function fmtCNPJ(s: string) {
+  const c = s.replace(/\D/g, "");
+  if (c.length !== 14) return s;
+  return c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+}
 
 export const metadata = { title: "Admin · Interno · Invoice" };
 
@@ -54,20 +61,28 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
     comercialId: params.comercialId,
   };
 
-  const [data, monthly, fundos, construtoras, imobiliarias, comerciais] =
-    await Promise.all([
-      getInvoiceData(filters),
-      getInvoiceMonthly({
-        fundoId: filters.fundoId,
-        construtoraId: filters.construtoraId,
-        imobiliariaId: filters.imobiliariaId,
-        comercialId: filters.comercialId,
-      }),
-      listFundosForSelector(),
-      listConstrutorasForSelector(),
-      listImobiliariasForLote(),
-      listComerciaisForSelector(),
-    ]);
+  const [
+    data,
+    monthly,
+    fundos,
+    construtoras,
+    imobiliarias,
+    comerciais,
+    emitente,
+  ] = await Promise.all([
+    getInvoiceData(filters),
+    getInvoiceMonthly({
+      fundoId: filters.fundoId,
+      construtoraId: filters.construtoraId,
+      imobiliariaId: filters.imobiliariaId,
+      comercialId: filters.comercialId,
+    }),
+    listFundosForSelector(),
+    listConstrutorasForSelector(),
+    listImobiliariasForLote(),
+    listComerciaisForSelector(),
+    getAntecipaquiData(),
+  ]);
 
   // Querystring para os botões de export — preserva todos os filtros ativos
   const qs = new URLSearchParams();
@@ -273,7 +288,7 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
       </form>
 
       {/* Tabela */}
-      {/* Repasse credor (sempre Antecipaqui) */}
+      {/* Repasse credor — dados lidos do registro do fundo Antecipaqui */}
       <section className="rounded-2xl border border-accent/30 bg-accent-soft p-5 mb-6 flex items-center gap-4 flex-wrap">
         <div className="size-10 rounded-full bg-accent text-white flex items-center justify-center font-mono text-xs font-bold shrink-0">
           AQ
@@ -283,10 +298,12 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
             Repasse devido a
           </div>
           <div className="font-bold text-fg">
-            Antecipaqui · CRITÉRIA CAPITAL S/A
+            {emitente.nomeFantasia ?? "Antecipaqui"} · {emitente.razaoSocial}
           </div>
           <div className="font-mono text-xs text-fg-muted">
-            CNPJ 32.708.702/0001-10 · pagador definido por operação na tabela
+            CNPJ {fmtCNPJ(emitente.cnpj)}
+            {emitente.cidade && ` · ${emitente.cidade}/${emitente.uf ?? ""}`}
+            {" · "}pagador definido por operação na tabela
           </div>
         </div>
       </section>

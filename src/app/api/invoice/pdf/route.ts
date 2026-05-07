@@ -7,6 +7,7 @@ import { fundos } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
 import { getInvoiceData, type InvoiceFilters } from "@/lib/actions/invoice";
 import { InvoicePdf } from "@/lib/invoice-pdf";
+import { getAntecipaquiData } from "@/lib/antecipaqui-fundo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,6 +68,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const emitente = await getAntecipaquiData();
   const buffer = await renderToBuffer(
     React.createElement(InvoicePdf, {
       data: {
@@ -75,6 +77,7 @@ export async function GET(req: NextRequest) {
         fundoUnico,
         payload,
         logoUrl: getLogoUrl(),
+        emitente,
       },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,

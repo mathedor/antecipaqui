@@ -7,6 +7,7 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import type { InvoicePayload } from "@/lib/actions/invoice";
+import type { AntecipaquiData } from "@/lib/antecipaqui-fundo";
 
 const COLOR_ACCENT = "#1c6dd0";
 const COLOR_ACCENT_SOFT = "#e6efff";
@@ -17,24 +18,21 @@ const COLOR_BORDER = "#e2e8f0";
 const COLOR_WARN = "#b45309";
 const COLOR_SUCCESS = "#15803d";
 
-const EMITENTE = {
-  razaoSocial: "CRITÉRIA CAPITAL S/A",
-  marca: "ANTECIPAQUI",
-  endereco:
-    "Avenida Magalhães de Castro, 4.800, Conjunto 105, Jardim Panorama",
-  cep: "05676-120",
-  cidade: "São Paulo",
-  uf: "SP",
-  cnpj: "32.708.702/0001-10",
-  telefone: "(11) 97204-9004",
-  email: "emiliano@criteriacapital.com.br",
-  // Dados pra cobrança
-  bancoNome: "—",
-  bancoAgencia: "—",
-  bancoConta: "—",
-  pix: "32708702000110",
-  pixTipo: "CNPJ",
-};
+const MARCA = "ANTECIPAQUI";
+
+function fmtPhone(p: string | null) {
+  if (!p) return "";
+  const d = p.replace(/\D/g, "");
+  if (d.length === 11) return d.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+  if (d.length === 10) return d.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+  return p;
+}
+function fmtCep(c: string | null) {
+  if (!c) return "";
+  const d = c.replace(/\D/g, "");
+  if (d.length === 8) return d.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+  return c;
+}
 
 const styles = StyleSheet.create({
   page: { padding: 32, fontSize: 8.5, fontFamily: "Helvetica", color: COLOR_FG },
@@ -291,10 +289,13 @@ export type InvoicePdfData = {
   } | null;
   payload: InvoicePayload;
   logoUrl: string;
+  /** Dados do credor (Antecipaqui) lidos do registro do fundo. */
+  emitente: AntecipaquiData;
 };
 
 export function InvoicePdf({ data }: { data: InvoicePdfData }) {
   const { rows, totals, periodLabel } = data.payload;
+  const e = data.emitente;
   return (
     <Document title={`Invoice-${data.numero}`}>
       <Page size="A4" orientation="landscape" style={styles.page} wrap>
@@ -303,7 +304,7 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
             {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image src={data.logoUrl} style={styles.brandLogo} />
             <View>
-              <Text style={styles.brandText}>{EMITENTE.marca}</Text>
+              <Text style={styles.brandText}>{MARCA}</Text>
               <Text style={styles.brandTagline}>
                 fatura · repasse de comissão antecipada
               </Text>
@@ -359,17 +360,25 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
           </View>
           <View style={styles.fromToBox}>
             <Text style={styles.fromToLabel}>Para · recebedor</Text>
-            <Text style={styles.partyName}>{EMITENTE.razaoSocial}</Text>
-            <Text style={styles.partyDetail}>
-              CNPJ {fmtCNPJ(EMITENTE.cnpj)}
-            </Text>
-            <Text style={styles.partyDetail}>{EMITENTE.endereco}</Text>
-            <Text style={styles.partyDetail}>
-              {EMITENTE.cidade}/{EMITENTE.uf} · CEP {EMITENTE.cep}
-            </Text>
-            <Text style={styles.partyDetail}>
-              {EMITENTE.email} · {EMITENTE.telefone}
-            </Text>
+            <Text style={styles.partyName}>{e.razaoSocial}</Text>
+            <Text style={styles.partyDetail}>CNPJ {fmtCNPJ(e.cnpj)}</Text>
+            {e.endereco && (
+              <Text style={styles.partyDetail}>{e.endereco}</Text>
+            )}
+            {(e.cidade || e.uf || e.cep) && (
+              <Text style={styles.partyDetail}>
+                {e.cidade ?? ""}
+                {e.uf ? `/${e.uf}` : ""}
+                {e.cep ? ` · CEP ${fmtCep(e.cep)}` : ""}
+              </Text>
+            )}
+            {(e.email || e.telefone) && (
+              <Text style={styles.partyDetail}>
+                {e.email ?? ""}
+                {e.email && e.telefone ? " · " : ""}
+                {e.telefone ? fmtPhone(e.telefone) : ""}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -649,31 +658,39 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
           </Text>
           <View style={styles.pagRow}>
             <View style={styles.pagItem}>
-              <Text style={styles.pagLabel}>PIX (CNPJ)</Text>
-              <Text style={styles.pagValue}>{fmtCNPJ(EMITENTE.pix)}</Text>
+              <Text style={styles.pagLabel}>
+                PIX{e.bancoPix && e.bancoPix.replace(/\D/g, "").length === 14 ? " (CNPJ)" : ""}
+              </Text>
+              <Text style={styles.pagValue}>
+                {e.bancoPix
+                  ? e.bancoPix.replace(/\D/g, "").length === 14
+                    ? fmtCNPJ(e.bancoPix)
+                    : e.bancoPix
+                  : "—"}
+              </Text>
             </View>
             <View style={styles.pagItem}>
               <Text style={styles.pagLabel}>Razão social</Text>
-              <Text style={styles.pagValue}>{EMITENTE.razaoSocial}</Text>
+              <Text style={styles.pagValue}>{e.razaoSocial}</Text>
             </View>
             <View style={styles.pagItem}>
               <Text style={styles.pagLabel}>Banco / Agência / Conta</Text>
               <Text style={styles.pagValue}>
-                {EMITENTE.bancoNome} · ag {EMITENTE.bancoAgencia} · cc{" "}
-                {EMITENTE.bancoConta}
+                {e.bancoNome ?? "—"}
+                {e.bancoCodigo ? ` (${e.bancoCodigo})` : ""} · ag{" "}
+                {e.bancoAgencia ?? "—"} · cc {e.bancoConta ?? "—"}
               </Text>
             </View>
             <View style={styles.pagItem}>
               <Text style={styles.pagLabel}>Contato</Text>
-              <Text style={styles.pagValue}>{EMITENTE.email}</Text>
+              <Text style={styles.pagValue}>{e.email ?? "—"}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.footer} fixed>
           <Text>
-            {EMITENTE.marca} · {EMITENTE.razaoSocial} · CNPJ{" "}
-            {fmtCNPJ(EMITENTE.cnpj)}
+            {MARCA} · {e.razaoSocial} · CNPJ {fmtCNPJ(e.cnpj)}
           </Text>
           <Text
             render={({ pageNumber, totalPages }) =>
