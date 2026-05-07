@@ -4,8 +4,10 @@ import { AdminShell } from "@/components/admin-shell";
 import { InvoiceTable } from "@/components/invoice-table";
 import {
   getInvoiceData,
+  getInvoiceMonthly,
   type InvoiceFilters,
 } from "@/lib/actions/invoice";
+import { InvoiceMonthlyCharts } from "@/components/invoice-charts";
 import { listFundosForSelector } from "@/lib/actions/fundos";
 import { listConstrutorasForSelector } from "@/lib/actions/admin-cadastrar";
 import { listImobiliariasForLote } from "@/lib/actions/pending-operacoes";
@@ -52,9 +54,15 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
     comercialId: params.comercialId,
   };
 
-  const [data, fundos, construtoras, imobiliarias, comerciais] =
+  const [data, monthly, fundos, construtoras, imobiliarias, comerciais] =
     await Promise.all([
       getInvoiceData(filters),
+      getInvoiceMonthly({
+        fundoId: filters.fundoId,
+        construtoraId: filters.construtoraId,
+        imobiliariaId: filters.imobiliariaId,
+        comercialId: filters.comercialId,
+      }),
       listFundosForSelector(),
       listConstrutorasForSelector(),
       listImobiliariasForLote(),
@@ -83,12 +91,8 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
         </p>
       </div>
 
-      {/* Filtros */}
-      <form
-        method="get"
-        className="rounded-2xl border border-border bg-bg-elev p-4 mb-6 space-y-4"
-      >
-        {/* Período */}
+      {/* Filtros — período fica fora do form principal pra navegação direta */}
+      <div className="rounded-2xl border border-border bg-bg-elev p-4 mb-6 space-y-4">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-2">
             Período
@@ -96,28 +100,42 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
           <div className="flex flex-wrap gap-2">
             {(["atual", "passado", "proximo", "custom"] as const).map((p) => {
               const isActive = periodo === p;
+              // Cria URL preservando os outros filtros, trocando só o periodo
+              const url = new URLSearchParams();
+              for (const [k, v] of Object.entries(params)) {
+                if (k === "periodo") continue;
+                if (k === "from" || k === "to") {
+                  if (p === "custom" && v) url.set(k, v);
+                  continue;
+                }
+                if (v) url.set(k, v);
+              }
+              url.set("periodo", p);
+              const href = `/admin/interno/invoice?${url.toString()}`;
               return (
-                <label
+                <Link
                   key={p}
-                  className={`cursor-pointer px-3 py-2 rounded-lg border-2 text-xs font-semibold transition-colors ${
+                  href={href}
+                  className={`px-3 py-2 rounded-lg border-2 text-xs font-semibold transition-colors ${
                     isActive
                       ? "border-accent bg-accent-soft text-accent"
                       : "border-border bg-bg text-fg-muted hover:border-accent/40"
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name="periodo"
-                    value={p}
-                    defaultChecked={isActive}
-                    className="sr-only"
-                  />
                   {PERIODO_LABEL[p]}
-                </label>
+                </Link>
               );
             })}
           </div>
         </div>
+      </div>
+
+      {/* Filtros adicionais (mantém periodo via hidden) */}
+      <form
+        method="get"
+        className="rounded-2xl border border-border bg-bg-elev p-4 mb-6 space-y-4"
+      >
+        <input type="hidden" name="periodo" value={periodo} />
 
         {periodo === "custom" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -255,6 +273,9 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
       </form>
 
       {/* Tabela */}
+      {/* Charts mensais (12 meses) */}
+      <InvoiceMonthlyCharts data={monthly} />
+
       <InvoiceTable rows={data.rows} totals={data.totals} />
 
       {/* Saldo destaque */}

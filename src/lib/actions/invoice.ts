@@ -210,3 +210,139 @@ export async function getInvoiceData(
 
   return { rows, totals, periodLabel: { from, to } };
 }
+
+/* =========================================================================
+   HISTÓRICO MENSAL — pra gráficos (últimos 12 meses)
+   ========================================================================= */
+
+export type InvoiceMonthly = {
+  /** YYYY-MM */
+  ym: string;
+  /** Label "mai/26" pra exibir no eixo. */
+  label: string;
+  qtdOperacoes: number;
+  valorOperacao: number;
+  juros: number;
+  custoFinanceiro: number;
+  impostos: number;
+  saldoRepasse: number;
+};
+
+const MES_CURTO = [
+  "jan",
+  "fev",
+  "mar",
+  "abr",
+  "mai",
+  "jun",
+  "jul",
+  "ago",
+  "set",
+  "out",
+  "nov",
+  "dez",
+];
+
+/** Retorna saldo de repasse e qtd de ops por mês — últimos 12 meses (incluindo
+ *  o atual). Aceita os mesmos filtros do invoice (fundo, construtora, etc.)
+ *  pra contextualizar os gráficos. */
+export async function getInvoiceMonthly(
+  filters: Pick<
+    InvoiceFilters,
+    "fundoId" | "construtoraId" | "imobiliariaId" | "comercialId"
+  > = {},
+): Promise<InvoiceMonthly[]> {
+  await requireAdmin();
+
+  const conds: ReturnType<typeof sql>[] = [
+    sql`o.status IN ('enviada_para_pagamento', 'realizada')`,
+    sql`o.aprovado_em IS NOT NULL`,
+    sql`o.aprovado_em >= (date_trunc('month', CURRENT_DATE) - interval '11 months')`,
+    sql`o.aprovado_em < (date_trunc('month', CURRENT_DATE) + interval '1 month')`,
+  ];
+  if (filters.fundoId) {
+    if (filters.fundoId === "_no_fundo_")
+      conds.push(sql`o.fundo_id IS NULL`);
+    else conds.push(sql`o.fundo_id = ${filters.fundoId}::uuid`);
+  }
+  if (filters.construtoraId)
+    conds.push(sql`o.construtora_id = ${filters.construtoraId}::uuid`);
+  if (filters.imobiliariaId)
+    conds.push(sql`o.imobiliaria_id = ${filters.imobiliariaId}::uuid`);
+  if (filters.comercialId) {
+    conds.push(
+      sql`(o.comercial_id = ${filters.comercialId}::uuid
+        OR c.comercial_id = ${filters.comercialId}::uuid
+        OR im.comercial_id = ${filters.comercialId}::uuid)`,
+    );
+  }
+  const where = sql.join(conds, sql` AND `);
+
+  const result = await db.execute(sql`
+    SELECT
+      to_char(date_trunc('month', o.aprovado_em), 'YYYY-MM') AS ym,
+      EXTRACT(YEAR FROM o.aprovado_em)::int AS ano,
+      EXTRACT(MONTH FROM o.aprovado_em)::int AS mes,
+      COUNT(*)::int AS qtd_operacoes,
+      COALESCE(SUM(o.valor_presente), 0)::float AS valor_operacao,
+      COALESCE(SUM(o.desagio), 0)::float AS juros_total,
+      COALESCE(SUM(o.desagio * COALESCE(f.custo_financeiro_pct, 0)), 0)::float
+        AS custo_financeiro,
+      COALESCE(SUM(o.desagio * COALESCE(f.impostos_pct, 0)), 0)::float
+        AS impostos,
+      COALESCE(
+        SUM(
+          (o.desagio - o.desagio * COALESCE(f.impostos_pct, 0))
+          * COALESCE(f.custo_financeiro_pct, 0)
+        ),
+        0
+      )::float AS saldo_repasse
+    FROM operacoes o
+    LEFT JOIN fundos f ON f.id = o.fundo_id
+    LEFT JOIN construtoras c ON c.id = o.construtora_id
+    LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
+    WHERE ${where}
+    GROUP BY date_trunc('month', o.aprovado_em),
+             EXTRACT(YEAR FROM o.aprovado_em),
+             EXTRACT(MONTH FROM o.aprovado_em)
+    ORDER BY date_trunc('month', o.aprovado_em) ASC
+  `);
+
+  type Raw = {
+    ym: string;
+    ano: number;
+    mes: number;
+    qtd_operacoes: number;
+    valor_operacao: number;
+    juros_total: number;
+    custo_financeiro: number;
+    impostos: number;
+    saldo_repasse: number;
+  };
+  const rowsByYm = new Map<string, Raw>(
+    ((result as unknown as { rows: Raw[] }).rows ?? []).map((r) => [r.ym, r]),
+  );
+
+  // Preenche os 12 meses, mesmo que sem dados (zero)
+  const out: InvoiceMonthly[] = [];
+  const now = new Date();
+  now.setDate(1);
+  now.setHours(0, 0, 0, 0);
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - i);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const r = rowsByYm.get(ym);
+    out.push({
+      ym,
+      label: `${MES_CURTO[d.getMonth()]}/${String(d.getFullYear()).slice(-2)}`,
+      qtdOperacoes: r?.qtd_operacoes ?? 0,
+      valorOperacao: r?.valor_operacao ?? 0,
+      juros: r?.juros_total ?? 0,
+      custoFinanceiro: r?.custo_financeiro ?? 0,
+      impostos: r?.impostos ?? 0,
+      saldoRepasse: r?.saldo_repasse ?? 0,
+    });
+  }
+  return out;
+}
