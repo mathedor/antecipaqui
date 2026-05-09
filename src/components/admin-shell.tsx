@@ -52,8 +52,15 @@ const navFull: AdminNavItem[] = [
       { href: "/admin/usuarios/admins", label: "Administradores" },
     ],
   },
-  { type: "link", href: "/admin/tickets", label: "Tickets" },
-  { type: "link", href: "/admin/mural", label: "Mural" },
+  {
+    type: "submenu",
+    label: "Comunicação",
+    matchPrefix: ["/admin/tickets", "/admin/mural"],
+    items: [
+      { href: "/admin/tickets", label: "Tickets" },
+      { href: "/admin/mural", label: "Mural" },
+    ],
+  },
   {
     type: "submenu",
     label: "Relatórios",
@@ -82,10 +89,12 @@ const navFull: AdminNavItem[] = [
   {
     type: "submenu",
     label: "Interno",
-    matchPrefix: ["/admin/interno"],
-    items: [{ href: "/admin/interno/invoice", label: "Invoice" }],
+    matchPrefix: ["/admin/interno", "/admin/configuracoes"],
+    items: [
+      { href: "/admin/interno/invoice", label: "Invoice" },
+      { href: "/admin/configuracoes", label: "Configurações" },
+    ],
   },
-  { type: "link", href: "/admin/configuracoes", label: "Configurações" },
 ];
 
 /** Filtra menu items pelo perfil do admin. */
