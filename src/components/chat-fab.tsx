@@ -84,7 +84,7 @@ export function ChatFab({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Abrir chats"
-        className="fixed bottom-6 right-6 z-50 size-14 rounded-full bg-accent text-white shadow-2xl hover:scale-105 transition-transform flex items-center justify-center print:hidden"
+        className="fixed bottom-6 left-6 right-auto md:left-auto md:right-6 z-50 size-7 md:size-14 rounded-full bg-accent text-white shadow-2xl hover:scale-105 transition-transform flex items-center justify-center print:hidden"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -94,7 +94,7 @@ export function ChatFab({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="size-6"
+          className="size-3 md:size-6"
         >
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
