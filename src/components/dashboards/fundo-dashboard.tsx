@@ -60,9 +60,9 @@ export async function FundoDashboard({ user }: { user: User }) {
           tone="success"
         />
         <Stat
-          label="Lucro acumulado"
+          label="Resultado acumulado"
           value={formatBRL(totals.lucroAcumulado)}
-          sub="deságio das aprovadas"
+          sub="juros − custos das aprovadas"
         />
       </div>
 

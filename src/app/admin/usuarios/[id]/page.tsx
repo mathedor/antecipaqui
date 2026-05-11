@@ -91,7 +91,7 @@ export default async function AdminUsuarioDetail({ params }: Params) {
     0,
   );
   const totalLucro = operacoes.reduce(
-    (s, op) => s + parseFloat(op.desagio),
+    (s, op) => s + parseFloat(op.desagio) - (op.custosTotal ?? 0),
     0,
   );
 
@@ -241,7 +241,7 @@ export default async function AdminUsuarioDetail({ params }: Params) {
           highlight
         />
         <Stat label="Comissão total" value={formatBRL(totalComissao)} />
-        <Stat label="Deságio (lucro AQ)" value={formatBRL(totalLucro)} />
+        <Stat label="Resultado (AQ)" value={formatBRL(totalLucro)} />
       </div>
 
       {/* Gráficos 12 meses */}

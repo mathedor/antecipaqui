@@ -3,6 +3,11 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { requireAdmin } from "@/lib/auth-user";
+import {
+  calcCustoDinheiroFundo,
+  calcResultadoOperacao,
+  calcSaldoInvoice,
+} from "@/lib/operacao-resultado";
 
 export type InvoiceFilters = {
   /** "atual" | "passado" | "proximo" | "custom" — calculados em from/to */
@@ -30,13 +35,14 @@ export type InvoiceRow = {
   dataAprovacao: string | null;
   /** Data da venda — informativo. */
   dataVenda: string;
-  valorOperacao: number; // valor presente
+  valorOperacao: number; // valor_presente
   juros: number; // = desagio
-  custoFinanceiroPct: number; // 0..1
-  impostosPct: number; // 0..1
-  custoFinanceiro: number; // R$ = juros × custoFinanceiroPct
-  impostos: number; // R$ = juros × impostosPct
-  saldoRepasse: number; // R$ = (juros − impostos) × custoFinanceiroPct
+  custos: number; // R$ = SUM(custos_operacao.valor)
+  resultado: number; // R$ = juros − custos
+  taxaMensalFundo: number; // decimal 0..1 ao mês
+  prazoMeses: number; // = numero_parcelas
+  custoDinheiroFundo: number; // R$ = valor_presente × taxa_mensal × prazo
+  saldoRepasse: number; // R$ = (resultado − custoDinheiroFundo) / 2
 };
 
 export type InvoicePayload = {
@@ -44,8 +50,9 @@ export type InvoicePayload = {
   totals: {
     valorOperacao: number;
     juros: number;
-    custoFinanceiro: number;
-    impostos: number;
+    custos: number;
+    resultado: number;
+    custoDinheiroFundo: number;
     saldoRepasse: number;
   };
   periodLabel: { from: string; to: string };
@@ -132,13 +139,19 @@ export async function getInvoiceData(
       o.data_venda::text AS data_venda,
       o.valor_presente::float AS valor_operacao,
       o.desagio::float AS juros,
-      COALESCE(f.custo_financeiro_pct, 0)::float AS custo_financeiro_pct,
-      COALESCE(f.impostos_pct, 0)::float AS impostos_pct
+      COALESCE(o.numero_parcelas, 0)::int AS prazo_meses,
+      COALESCE(f.taxa_mensal_base, 0)::float AS taxa_mensal_fundo,
+      COALESCE(custos.total, 0)::float AS custos
     FROM operacoes o
     LEFT JOIN fundos f ON f.id = o.fundo_id
     LEFT JOIN construtoras c ON c.id = o.construtora_id
     LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
     LEFT JOIN comerciais com ON com.id = o.comercial_id
+    LEFT JOIN (
+      SELECT operacao_id, SUM(valor) AS total
+      FROM custos_operacao
+      GROUP BY operacao_id
+    ) custos ON custos.operacao_id = o.id
     WHERE ${where}
     ORDER BY o.aprovado_em DESC
   `);
@@ -158,16 +171,29 @@ export async function getInvoiceData(
     data_venda: string;
     valor_operacao: number;
     juros: number;
-    custo_financeiro_pct: number;
-    impostos_pct: number;
+    prazo_meses: number;
+    taxa_mensal_fundo: number;
+    custos: number;
   };
   const rows = (
     (result as unknown as { rows: Raw[] }).rows ?? []
   ).map((r): InvoiceRow => {
-    const juros = r.juros;
-    const impostos = juros * r.impostos_pct;
-    const custoFinanceiro = juros * r.custo_financeiro_pct;
-    const saldoRepasse = (juros - impostos) * r.custo_financeiro_pct;
+    const resultado = calcResultadoOperacao({
+      juros: r.juros,
+      custos: r.custos,
+    });
+    const custoDinheiroFundo = calcCustoDinheiroFundo(
+      r.valor_operacao,
+      r.taxa_mensal_fundo,
+      r.prazo_meses,
+    );
+    const saldoRepasse = calcSaldoInvoice({
+      juros: r.juros,
+      custos: r.custos,
+      valorPresente: r.valor_operacao,
+      taxaMensalFundo: r.taxa_mensal_fundo,
+      prazoMeses: r.prazo_meses,
+    });
     return {
       operacaoId: r.operacao_id,
       operacaoNumero: r.operacao_numero,
@@ -182,11 +208,12 @@ export async function getInvoiceData(
       dataAprovacao: r.data_aprovacao,
       dataVenda: r.data_venda,
       valorOperacao: r.valor_operacao,
-      juros,
-      custoFinanceiroPct: r.custo_financeiro_pct,
-      impostosPct: r.impostos_pct,
-      custoFinanceiro,
-      impostos,
+      juros: r.juros,
+      custos: r.custos,
+      resultado,
+      taxaMensalFundo: r.taxa_mensal_fundo,
+      prazoMeses: r.prazo_meses,
+      custoDinheiroFundo,
       saldoRepasse,
     };
   });
@@ -195,15 +222,17 @@ export async function getInvoiceData(
     (acc, r) => ({
       valorOperacao: acc.valorOperacao + r.valorOperacao,
       juros: acc.juros + r.juros,
-      custoFinanceiro: acc.custoFinanceiro + r.custoFinanceiro,
-      impostos: acc.impostos + r.impostos,
+      custos: acc.custos + r.custos,
+      resultado: acc.resultado + r.resultado,
+      custoDinheiroFundo: acc.custoDinheiroFundo + r.custoDinheiroFundo,
       saldoRepasse: acc.saldoRepasse + r.saldoRepasse,
     }),
     {
       valorOperacao: 0,
       juros: 0,
-      custoFinanceiro: 0,
-      impostos: 0,
+      custos: 0,
+      resultado: 0,
+      custoDinheiroFundo: 0,
       saldoRepasse: 0,
     },
   );
@@ -223,8 +252,9 @@ export type InvoiceMonthly = {
   qtdOperacoes: number;
   valorOperacao: number;
   juros: number;
-  custoFinanceiro: number;
-  impostos: number;
+  custos: number;
+  resultado: number;
+  custoDinheiroFundo: number;
   saldoRepasse: number;
 };
 
@@ -279,33 +309,49 @@ export async function getInvoiceMonthly(
   const where = sql.join(conds, sql` AND `);
 
   const result = await db.execute(sql`
+    WITH ops AS (
+      SELECT
+        o.id,
+        o.aprovado_em,
+        o.valor_presente,
+        o.desagio,
+        COALESCE(o.numero_parcelas, 0) AS prazo_meses,
+        COALESCE(f.taxa_mensal_base, 0) AS taxa_mensal_fundo,
+        COALESCE(custos.total, 0) AS custos
+      FROM operacoes o
+      LEFT JOIN fundos f ON f.id = o.fundo_id
+      LEFT JOIN construtoras c ON c.id = o.construtora_id
+      LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
+      LEFT JOIN (
+        SELECT operacao_id, SUM(valor) AS total
+        FROM custos_operacao
+        GROUP BY operacao_id
+      ) custos ON custos.operacao_id = o.id
+      WHERE ${where}
+    )
     SELECT
-      to_char(date_trunc('month', o.aprovado_em), 'YYYY-MM') AS ym,
-      EXTRACT(YEAR FROM o.aprovado_em)::int AS ano,
-      EXTRACT(MONTH FROM o.aprovado_em)::int AS mes,
+      to_char(date_trunc('month', aprovado_em), 'YYYY-MM') AS ym,
+      EXTRACT(YEAR FROM aprovado_em)::int AS ano,
+      EXTRACT(MONTH FROM aprovado_em)::int AS mes,
       COUNT(*)::int AS qtd_operacoes,
-      COALESCE(SUM(o.valor_presente), 0)::float AS valor_operacao,
-      COALESCE(SUM(o.desagio), 0)::float AS juros_total,
-      COALESCE(SUM(o.desagio * COALESCE(f.custo_financeiro_pct, 0)), 0)::float
-        AS custo_financeiro,
-      COALESCE(SUM(o.desagio * COALESCE(f.impostos_pct, 0)), 0)::float
-        AS impostos,
+      COALESCE(SUM(valor_presente), 0)::float AS valor_operacao,
+      COALESCE(SUM(desagio), 0)::float AS juros_total,
+      COALESCE(SUM(custos), 0)::float AS custos_total,
+      COALESCE(SUM(desagio - custos), 0)::float AS resultado_total,
+      COALESCE(SUM(valor_presente * taxa_mensal_fundo * prazo_meses), 0)::float
+        AS custo_dinheiro_fundo,
       COALESCE(
         SUM(
-          (o.desagio - o.desagio * COALESCE(f.impostos_pct, 0))
-          * COALESCE(f.custo_financeiro_pct, 0)
+          ((desagio - custos)
+           - valor_presente * taxa_mensal_fundo * prazo_meses) / 2
         ),
         0
       )::float AS saldo_repasse
-    FROM operacoes o
-    LEFT JOIN fundos f ON f.id = o.fundo_id
-    LEFT JOIN construtoras c ON c.id = o.construtora_id
-    LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
-    WHERE ${where}
-    GROUP BY date_trunc('month', o.aprovado_em),
-             EXTRACT(YEAR FROM o.aprovado_em),
-             EXTRACT(MONTH FROM o.aprovado_em)
-    ORDER BY date_trunc('month', o.aprovado_em) ASC
+    FROM ops
+    GROUP BY date_trunc('month', aprovado_em),
+             EXTRACT(YEAR FROM aprovado_em),
+             EXTRACT(MONTH FROM aprovado_em)
+    ORDER BY date_trunc('month', aprovado_em) ASC
   `);
 
   type Raw = {
@@ -315,8 +361,9 @@ export async function getInvoiceMonthly(
     qtd_operacoes: number;
     valor_operacao: number;
     juros_total: number;
-    custo_financeiro: number;
-    impostos: number;
+    custos_total: number;
+    resultado_total: number;
+    custo_dinheiro_fundo: number;
     saldo_repasse: number;
   };
   const rowsByYm = new Map<string, Raw>(
@@ -339,8 +386,9 @@ export async function getInvoiceMonthly(
       qtdOperacoes: r?.qtd_operacoes ?? 0,
       valorOperacao: r?.valor_operacao ?? 0,
       juros: r?.juros_total ?? 0,
-      custoFinanceiro: r?.custo_financeiro ?? 0,
-      impostos: r?.impostos ?? 0,
+      custos: r?.custos_total ?? 0,
+      resultado: r?.resultado_total ?? 0,
+      custoDinheiroFundo: r?.custo_dinheiro_fundo ?? 0,
       saldoRepasse: r?.saldo_repasse ?? 0,
     });
   }

@@ -160,8 +160,8 @@ export function InvoiceMonthlyCharts({
       </ChartCard>
 
       <ChartCard
-        title="Composição do juros · 12 meses"
-        subtitle={`Custo financeiro vs impostos (R$ acumulado por mês)`}
+        title="Resultado vs custo do dinheiro · 12 meses"
+        subtitle="Resultado da operação (juros − custos) vs custo de capital do fundo"
         full
       >
         <ResponsiveContainer width="100%" height={200}>
@@ -185,15 +185,14 @@ export function InvoiceMonthlyCharts({
               content={<CustomTooltip formatter={(n) => fmtBRL(n)} />}
             />
             <Bar
-              dataKey="custoFinanceiro"
-              stackId="a"
-              name="Custo financeiro"
-              fill={ACCENT}
+              dataKey="resultado"
+              name="Resultado"
+              fill={SUCCESS}
+              radius={[4, 4, 0, 0]}
             />
             <Bar
-              dataKey="impostos"
-              stackId="a"
-              name="Impostos"
+              dataKey="custoDinheiroFundo"
+              name="Custo do dinheiro"
               fill={WARN}
               radius={[4, 4, 0, 0]}
             />

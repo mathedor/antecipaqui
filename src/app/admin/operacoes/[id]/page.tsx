@@ -525,6 +525,23 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                     </li>
                   ))}
                 </ul>
+                <div className="flex items-center justify-between gap-3 pt-2 mt-2 border-t border-border">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Resultado da operação
+                    <span className="ml-1 text-fg-dim normal-case">
+                      (juros − custos)
+                    </span>
+                  </span>
+                  <span
+                    className={`font-mono tabular text-sm font-bold ${
+                      parseFloat(op.desagio) - totalCustos >= 0
+                        ? "text-success"
+                        : "text-danger"
+                    }`}
+                  >
+                    {formatBRL(parseFloat(op.desagio) - totalCustos)}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between gap-3 pt-2 mt-2 border-t border-border-strong">
                   <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
                     Líquido cedente
@@ -535,6 +552,19 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                     )}
                   </span>
                 </div>
+              </div>
+            )}
+            {custos.length === 0 && (
+              <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-3">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                  Resultado da operação
+                  <span className="ml-1 text-fg-dim normal-case">
+                    (sem custos — = deságio)
+                  </span>
+                </span>
+                <span className="font-mono tabular text-sm font-bold text-success">
+                  {formatBRL(parseFloat(op.desagio))}
+                </span>
               </div>
             )}
           </Card>

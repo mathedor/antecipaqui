@@ -184,7 +184,7 @@ export function AdminCharts({ data }: { data: AdminPoint[] }) {
       {/* Stat strip de fechamento mensal */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat
-          label="Lucro este mês"
+          label="Resultado este mês"
           value={fmtBRLcompact(lucroAtual)}
           extra={
             variacaoLucro !== null
@@ -195,7 +195,7 @@ export function AdminCharts({ data }: { data: AdminPoint[] }) {
           highlight
         />
         <Stat
-          label="Lucro 12 meses"
+          label="Resultado 12 meses"
           value={fmtBRLcompact(lucroTotal)}
         />
         <Stat
@@ -213,8 +213,8 @@ export function AdminCharts({ data }: { data: AdminPoint[] }) {
       <div className="grid lg:grid-cols-2 gap-5">
         {/* Lucro mensal */}
         <ChartCard
-          title="lucro mensal · deságio"
-          subtitle="Últimos 12 meses"
+          title="resultado mensal"
+          subtitle="Juros − custos · últimos 12 meses"
           total={fmtBRLcompact(lucroTotal)}
           highlight
         >
@@ -253,7 +253,7 @@ export function AdminCharts({ data }: { data: AdminPoint[] }) {
               <Area
                 type="monotone"
                 dataKey="lucro"
-                name="Lucro"
+                name="Resultado"
                 stroke="var(--accent)"
                 strokeWidth={2}
                 fill="url(#gradLucro)"

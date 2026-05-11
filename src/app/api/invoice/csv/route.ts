@@ -16,7 +16,7 @@ function fmtBRL(n: number) {
   return n.toFixed(2).replace(".", ",");
 }
 function fmtPct(n: number) {
-  return (n * 100).toFixed(2).replace(".", ",");
+  return (n * 100).toFixed(4).replace(".", ",");
 }
 
 export async function GET(req: NextRequest) {
@@ -44,10 +44,11 @@ export async function GET(req: NextRequest) {
     "Data venda",
     "Valor operação (R$)",
     "Juros (R$)",
-    "Custo financeiro (R$)",
-    "% Rateio",
-    "Impostos (R$)",
-    "% Impostos",
+    "Custos (R$)",
+    "Resultado (R$)",
+    "Taxa mensal fundo",
+    "Prazo (meses)",
+    "Custo do dinheiro (R$)",
     "Saldo de repasse (R$)",
   ];
   const lines = [
@@ -63,10 +64,11 @@ export async function GET(req: NextRequest) {
         r.dataVenda ?? "",
         fmtBRL(r.valorOperacao),
         fmtBRL(r.juros),
-        fmtBRL(r.custoFinanceiro),
-        fmtPct(r.custoFinanceiroPct),
-        fmtBRL(r.impostos),
-        fmtPct(r.impostosPct),
+        fmtBRL(r.custos),
+        fmtBRL(r.resultado),
+        fmtPct(r.taxaMensalFundo),
+        String(r.prazoMeses),
+        fmtBRL(r.custoDinheiroFundo),
         fmtBRL(r.saldoRepasse),
       ]
         .map(csvEscape)
@@ -82,10 +84,11 @@ export async function GET(req: NextRequest) {
       "",
       fmtBRL(payload.totals.valorOperacao),
       fmtBRL(payload.totals.juros),
-      fmtBRL(payload.totals.custoFinanceiro),
+      fmtBRL(payload.totals.custos),
+      fmtBRL(payload.totals.resultado),
       "",
-      fmtBRL(payload.totals.impostos),
       "",
+      fmtBRL(payload.totals.custoDinheiroFundo),
       fmtBRL(payload.totals.saldoRepasse),
     ]
       .map(csvEscape)

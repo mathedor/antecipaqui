@@ -421,6 +421,21 @@ export async function getFundoDashboard() {
         .where(sql`${parcelasComissao.operacaoId} = ANY(${opIds})`)
     : [];
 
+  // Soma de custos por operação — pro cálculo de resultado (juros − custos)
+  const custosByOp = new Map<string, number>();
+  if (opIds.length) {
+    const custosResult = await db.execute(sql`
+      SELECT operacao_id::text AS op_id, SUM(valor)::float AS total
+      FROM custos_operacao
+      WHERE operacao_id = ANY(${opIds})
+      GROUP BY operacao_id
+    `);
+    const rows =
+      (custosResult as unknown as { rows: { op_id: string; total: number }[] })
+        .rows ?? [];
+    for (const r of rows) custosByOp.set(r.op_id, r.total);
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -447,7 +462,8 @@ export async function getFundoDashboard() {
         o.status,
       )
     ) {
-      totalLucro += parseFloat(o.desagio);
+      const custos = custosByOp.get(o.id) ?? 0;
+      totalLucro += parseFloat(o.desagio) - custos;
     }
   }
 

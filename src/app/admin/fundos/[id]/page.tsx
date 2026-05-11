@@ -117,7 +117,7 @@ export default async function AdminFundoDetail({ params }: Params) {
           tone="success"
         />
         <Stat
-          label="Lucro acumulado (deságio)"
+          label="Resultado acumulado"
           value={formatBRL(totals.lucroDesagio)}
         />
       </div>

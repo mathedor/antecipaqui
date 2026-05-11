@@ -121,15 +121,20 @@ export async function getAdminMonthlyStats() {
   await requireAdmin();
   const result = await db.execute(sql`
     SELECT
-      to_char(date_trunc('month', created_at), 'YYYY-MM') AS month,
+      to_char(date_trunc('month', o.created_at), 'YYYY-MM') AS month,
       COUNT(*)::int AS operacoes,
-      COALESCE(SUM(desagio), 0)::float AS lucro,
-      COALESCE(SUM(valor_presente), 0)::float AS valor_antecipado,
-      COALESCE(SUM(valor_comissao), 0)::float AS valor_comissao
-    FROM operacoes
-    WHERE created_at >= date_trunc('month', now()) - interval '11 months'
-      AND status NOT IN ('rascunho', 'recusada', 'cancelada')
-    GROUP BY date_trunc('month', created_at)
+      COALESCE(SUM(o.desagio - COALESCE(custos.total, 0)), 0)::float AS lucro,
+      COALESCE(SUM(o.valor_presente), 0)::float AS valor_antecipado,
+      COALESCE(SUM(o.valor_comissao), 0)::float AS valor_comissao
+    FROM operacoes o
+    LEFT JOIN (
+      SELECT operacao_id, SUM(valor) AS total
+      FROM custos_operacao
+      GROUP BY operacao_id
+    ) custos ON custos.operacao_id = o.id
+    WHERE o.created_at >= date_trunc('month', now()) - interval '11 months'
+      AND o.status NOT IN ('rascunho', 'recusada', 'cancelada')
+    GROUP BY date_trunc('month', o.created_at)
   `);
 
   const rows = extractRows<{
@@ -626,16 +631,21 @@ export async function listAllConstrutoras() {
 export async function getUserMonthlyStats(userId: string) {
   const result = await db.execute(sql`
     SELECT
-      to_char(date_trunc('month', created_at), 'YYYY-MM') AS month,
+      to_char(date_trunc('month', o.created_at), 'YYYY-MM') AS month,
       COUNT(*)::int AS operacoes,
-      COALESCE(SUM(valor_presente), 0)::float AS valor_antecipado,
-      COALESCE(SUM(valor_comissao), 0)::float AS valor_comissao,
-      COALESCE(SUM(desagio), 0)::float AS lucro
-    FROM operacoes
-    WHERE corretor_user_id = ${userId}
-      AND created_at >= date_trunc('month', now()) - interval '11 months'
-      AND status NOT IN ('rascunho', 'recusada', 'cancelada')
-    GROUP BY date_trunc('month', created_at)
+      COALESCE(SUM(o.valor_presente), 0)::float AS valor_antecipado,
+      COALESCE(SUM(o.valor_comissao), 0)::float AS valor_comissao,
+      COALESCE(SUM(o.desagio - COALESCE(custos.total, 0)), 0)::float AS lucro
+    FROM operacoes o
+    LEFT JOIN (
+      SELECT operacao_id, SUM(valor) AS total
+      FROM custos_operacao
+      GROUP BY operacao_id
+    ) custos ON custos.operacao_id = o.id
+    WHERE o.corretor_user_id = ${userId}
+      AND o.created_at >= date_trunc('month', now()) - interval '11 months'
+      AND o.status NOT IN ('rascunho', 'recusada', 'cancelada')
+    GROUP BY date_trunc('month', o.created_at)
   `);
   const rows = extractRows<{
     month: string;
@@ -672,7 +682,7 @@ export async function getUserDetail(userId: string) {
     .from(documentos)
     .where(eq(documentos.userId, userId));
 
-  const userOps = await db
+  const userOpsRaw = await db
     .select({
       id: operacoes.id,
       numero: operacoes.numero,
@@ -689,6 +699,26 @@ export async function getUserDetail(userId: string) {
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
     .where(eq(operacoes.corretorUserId, userId))
     .orderBy(desc(operacoes.createdAt));
+
+  // Soma custos por operação pra calcular resultado (desagio − custos)
+  const opIds = userOpsRaw.map((o) => o.id);
+  const custosByOp = new Map<string, number>();
+  if (opIds.length) {
+    const custosResult = await db.execute(sql`
+      SELECT operacao_id::text AS op_id, SUM(valor)::float AS total
+      FROM custos_operacao
+      WHERE operacao_id = ANY(${opIds})
+      GROUP BY operacao_id
+    `);
+    const rows =
+      (custosResult as unknown as { rows: { op_id: string; total: number }[] })
+        .rows ?? [];
+    for (const r of rows) custosByOp.set(r.op_id, r.total);
+  }
+  const userOps = userOpsRaw.map((o) => ({
+    ...o,
+    custosTotal: custosByOp.get(o.id) ?? 0,
+  }));
 
   // Agrupa construtoras únicas com agregados (qtd operações + total antecipado)
   const construtorasMap = new Map<

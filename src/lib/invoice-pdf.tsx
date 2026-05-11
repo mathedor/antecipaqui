@@ -265,15 +265,16 @@ function fmtCNPJ(s: string | null | undefined) {
 }
 
 const COL_WIDTHS = {
-  numero: "9%",
-  fundo: "11%",
-  construtora: "12%",
-  imob: "11%",
-  data: "8%",
-  valor: "10%",
-  juros: "10%",
-  custoFin: "10%",
-  impostos: "9%",
+  numero: "8%",
+  fundo: "10%",
+  construtora: "11%",
+  imob: "10%",
+  data: "7%",
+  valor: "9%",
+  juros: "9%",
+  custos: "8%",
+  resultado: "9%",
+  custoDinheiro: "9%",
   saldo: "10%",
 };
 
@@ -434,18 +435,26 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
             <Text
               style={[
                 styles.tableHeadCell,
-                { width: COL_WIDTHS.custoFin, textAlign: "right" },
+                { width: COL_WIDTHS.custos, textAlign: "right" },
               ]}
             >
-              Custo fin.
+              Custos
             </Text>
             <Text
               style={[
                 styles.tableHeadCell,
-                { width: COL_WIDTHS.impostos, textAlign: "right" },
+                { width: COL_WIDTHS.resultado, textAlign: "right" },
               ]}
             >
-              Impostos
+              Resultado
+            </Text>
+            <Text
+              style={[
+                styles.tableHeadCell,
+                { width: COL_WIDTHS.custoDinheiro, textAlign: "right" },
+              ]}
+            >
+              Custo dinheiro
             </Text>
             <Text
               style={[
@@ -509,32 +518,40 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
                 style={[
                   styles.tableCell,
                   {
-                    width: COL_WIDTHS.custoFin,
-                    textAlign: "right",
-                    color: COLOR_ACCENT,
-                  },
-                ]}
-              >
-                {fmtBRL(r.custoFinanceiro)}
-                {"\n"}
-                <Text style={{ fontSize: 6.5, color: COLOR_FG_DIM }}>
-                  ({fmtPct(r.custoFinanceiroPct)})
-                </Text>
-              </Text>
-              <Text
-                style={[
-                  styles.tableCell,
-                  {
-                    width: COL_WIDTHS.impostos,
+                    width: COL_WIDTHS.custos,
                     textAlign: "right",
                     color: COLOR_WARN,
                   },
                 ]}
               >
-                {fmtBRL(r.impostos)}
+                {fmtBRL(r.custos)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  {
+                    width: COL_WIDTHS.resultado,
+                    textAlign: "right",
+                    fontFamily: "Helvetica-Bold",
+                  },
+                ]}
+              >
+                {fmtBRL(r.resultado)}
+              </Text>
+              <Text
+                style={[
+                  styles.tableCell,
+                  {
+                    width: COL_WIDTHS.custoDinheiro,
+                    textAlign: "right",
+                    color: COLOR_ACCENT,
+                  },
+                ]}
+              >
+                {fmtBRL(r.custoDinheiroFundo)}
                 {"\n"}
                 <Text style={{ fontSize: 6.5, color: COLOR_FG_DIM }}>
-                  ({fmtPct(r.impostosPct)})
+                  ({fmtPct(r.taxaMensalFundo, 2)}/m × {r.prazoMeses}m)
                 </Text>
               </Text>
               <Text
@@ -597,21 +614,7 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
               style={[
                 styles.tableCell,
                 {
-                  width: COL_WIDTHS.custoFin,
-                  textAlign: "right",
-                  fontFamily: "Helvetica-Bold",
-                  fontSize: 8.5,
-                  color: COLOR_ACCENT,
-                },
-              ]}
-            >
-              {fmtBRL(totals.custoFinanceiro)}
-            </Text>
-            <Text
-              style={[
-                styles.tableCell,
-                {
-                  width: COL_WIDTHS.impostos,
+                  width: COL_WIDTHS.custos,
                   textAlign: "right",
                   fontFamily: "Helvetica-Bold",
                   fontSize: 8.5,
@@ -619,7 +622,34 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
                 },
               ]}
             >
-              {fmtBRL(totals.impostos)}
+              {fmtBRL(totals.custos)}
+            </Text>
+            <Text
+              style={[
+                styles.tableCell,
+                {
+                  width: COL_WIDTHS.resultado,
+                  textAlign: "right",
+                  fontFamily: "Helvetica-Bold",
+                  fontSize: 8.5,
+                },
+              ]}
+            >
+              {fmtBRL(totals.resultado)}
+            </Text>
+            <Text
+              style={[
+                styles.tableCell,
+                {
+                  width: COL_WIDTHS.custoDinheiro,
+                  textAlign: "right",
+                  fontFamily: "Helvetica-Bold",
+                  fontSize: 8.5,
+                  color: COLOR_ACCENT,
+                },
+              ]}
+            >
+              {fmtBRL(totals.custoDinheiroFundo)}
             </Text>
             <Text
               style={[

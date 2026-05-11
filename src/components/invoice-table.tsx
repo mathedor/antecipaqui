@@ -13,9 +13,9 @@ type SortKey =
   | "dataAprovacao"
   | "valorOperacao"
   | "juros"
-  | "custoFinanceiro"
-  | "impostos"
-  | "custoFinanceiroPct"
+  | "custos"
+  | "resultado"
+  | "custoDinheiroFundo"
   | "saldoRepasse";
 
 type SortDir = "asc" | "desc";
@@ -23,10 +23,6 @@ type SortDir = "asc" | "desc";
 function fmtDate(d: string | null) {
   if (!d) return "—";
   return new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
-}
-
-function fmtPct(n: number) {
-  return (n * 100).toFixed(2).replace(".", ",") + "%";
 }
 
 export function InvoiceTable({
@@ -37,8 +33,9 @@ export function InvoiceTable({
   totals: {
     valorOperacao: number;
     juros: number;
-    custoFinanceiro: number;
-    impostos: number;
+    custos: number;
+    resultado: number;
+    custoDinheiroFundo: number;
     saldoRepasse: number;
   };
 }) {
@@ -122,15 +119,15 @@ export function InvoiceTable({
                 align="right"
               />
               <SortableTh label="Juros" keyof="juros" align="right" />
+              <SortableTh label="Custos" keyof="custos" align="right" />
               <SortableTh
-                label="Custo fin."
-                keyof="custoFinanceiro"
+                label="Resultado"
+                keyof="resultado"
                 align="right"
               />
-              <SortableTh label="Impostos" keyof="impostos" align="right" />
               <SortableTh
-                label="% Rateio"
-                keyof="custoFinanceiroPct"
+                label="Custo dinheiro"
+                keyof="custoDinheiroFundo"
                 align="right"
               />
               <SortableTh
@@ -170,16 +167,23 @@ export function InvoiceTable({
                 <td className="px-3 py-2.5 text-right font-mono tabular text-fg">
                   {formatBRL(r.juros)}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular text-accent font-semibold">
-                  {formatBRL(r.custoFinanceiro)}
-                </td>
                 <td className="px-3 py-2.5 text-right font-mono tabular text-warn">
-                  {formatBRL(r.impostos)}
+                  {formatBRL(r.custos)}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular text-fg-muted">
-                  {fmtPct(r.custoFinanceiroPct)}
+                <td className="px-3 py-2.5 text-right font-mono tabular text-fg font-semibold">
+                  {formatBRL(r.resultado)}
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono tabular text-success font-bold">
+                <td
+                  className="px-3 py-2.5 text-right font-mono tabular text-accent"
+                  title={`Valor presente × ${(r.taxaMensalFundo * 100).toFixed(2)}% × ${r.prazoMeses} meses`}
+                >
+                  {formatBRL(r.custoDinheiroFundo)}
+                </td>
+                <td
+                  className={`px-3 py-2.5 text-right font-mono tabular font-bold ${
+                    r.saldoRepasse >= 0 ? "text-success" : "text-danger"
+                  }`}
+                >
                   {formatBRL(r.saldoRepasse)}
                 </td>
                 <td className="px-3 py-2.5 text-right">
@@ -208,14 +212,20 @@ export function InvoiceTable({
               <td className="px-3 py-3 text-right tabular font-bold text-fg">
                 {formatBRL(totals.juros)}
               </td>
-              <td className="px-3 py-3 text-right tabular font-bold text-accent">
-                {formatBRL(totals.custoFinanceiro)}
-              </td>
               <td className="px-3 py-3 text-right tabular font-bold text-warn">
-                {formatBRL(totals.impostos)}
+                {formatBRL(totals.custos)}
               </td>
-              <td className="px-3 py-3"></td>
-              <td className="px-3 py-3 text-right tabular font-bold text-success">
+              <td className="px-3 py-3 text-right tabular font-bold text-fg">
+                {formatBRL(totals.resultado)}
+              </td>
+              <td className="px-3 py-3 text-right tabular font-bold text-accent">
+                {formatBRL(totals.custoDinheiroFundo)}
+              </td>
+              <td
+                className={`px-3 py-3 text-right tabular font-bold ${
+                  totals.saldoRepasse >= 0 ? "text-success" : "text-danger"
+                }`}
+              >
                 {formatBRL(totals.saldoRepasse)}
               </td>
               <td></td>

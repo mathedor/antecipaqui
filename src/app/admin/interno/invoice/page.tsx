@@ -100,9 +100,14 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
           fundos
         </h1>
         <p className="mt-2 text-fg-muted max-w-2xl">
-          Demonstrativo de repasse devido pelos fundos investidores. Saldo =
-          (Juros − Impostos) × % rateio. Período baseado na data de aprovação
-          (status &quot;enviada para pagamento&quot; ou superior).
+          Demonstrativo de repasse devido pelos fundos investidores.{" "}
+          <span className="font-mono text-xs">
+            Resultado = Juros − Custos. Custo do dinheiro = Valor presente ×
+            taxa mensal do fundo × prazo (parcelas). Saldo = (Resultado − Custo
+            do dinheiro) ÷ 2.
+          </span>{" "}
+          Período baseado na data de aprovação (status &quot;enviada para
+          pagamento&quot; ou superior).
         </p>
       </div>
 
