@@ -324,24 +324,28 @@ export function AdminCadastrarOperacaoForm({
           <FileUploadField
             label="Contrato de compra e venda"
             name="doc_contrato_venda"
+            tipo="contrato_venda"
             folder="operacoes/contrato-venda"
             onChange={setDocContratoVenda}
           />
           <FileUploadField
             label="Contrato de comissionamento"
             name="doc_contrato_comissao"
+            tipo="contrato_comissao"
             folder="operacoes/contrato-comissao"
             onChange={setDocContratoComissao}
           />
           <FileUploadField
             label="Nota fiscal da comissão"
             name="doc_nota_fiscal"
+            tipo="nota_fiscal"
             folder="operacoes/nota-fiscal"
             onChange={setDocNotaFiscal}
           />
           <FileUploadField
             label="Comprovante de pagamento da entrada"
             name="doc_comprovante_entrada"
+            tipo="comprovante_entrada"
             folder="operacoes/comprovante-entrada"
             onChange={setDocComprovanteEntrada}
           />

@@ -11,6 +11,10 @@ export type UploadedBlob = {
   size: number;
   name: string;
   contentType?: string;
+  /** Resultado da validação IA quando `tipo` foi passado. */
+  validacaoStatus?: "ok" | "revisao";
+  validacaoMotivo?: string;
+  validacaoConfianca?: number;
 };
 
 type Props = {
@@ -19,8 +23,12 @@ type Props = {
   name: string;
   required?: boolean;
   description?: string;
-  /** Pasta de prefixo no Blob (ex: 'kyc' ou 'operacoes/...') */
+  /** Pasta de prefixo no Blob (ex: 'kyc' ou 'operacoes/...') — usado só
+   *  quando `tipo` não é passado (fluxo antigo). */
   folder?: string;
+  /** Tipo de documento esperado. Quando passado, ativa a validação IA
+   *  do conteúdo do arquivo antes de aceitar o upload. */
+  tipo?: string;
   /** Tipo MIME aceito */
   accept?: string;
   /** Tamanho máximo em MB */
@@ -38,6 +46,7 @@ export function FileUploadField({
   required,
   description,
   folder = "geral",
+  tipo,
   accept = "application/pdf,image/jpeg,image/png,image/webp",
   maxMB = 15,
   onChange,
@@ -56,22 +65,92 @@ export function FileUploadField({
       : null,
   );
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState<"idle" | "uploading" | "done" | "error">(
-    initial ? "done" : "idle",
-  );
+  const [status, setStatus] = useState<
+    "idle" | "uploading" | "validating" | "done" | "error" | "rejected"
+  >(initial ? "done" : "idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [rejectionMotivo, setRejectionMotivo] = useState<string | null>(null);
 
   function reset() {
     setBlob(null);
     setProgress(0);
     setStatus("idle");
     setErrorMsg(null);
+    setRejectionMotivo(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     onChange?.(null);
   }
 
+  /** Fluxo legado: upload client-side direto pro Blob via @vercel/blob/client */
+  async function uploadLegado(file: File) {
+    const safeName = sanitizeFileName(file.name);
+    const path = `${folder}/${Date.now()}-${safeName}`;
+    const newBlob = await upload(path, file, {
+      access: "private",
+      handleUploadUrl: "/api/upload",
+      contentType: file.type || undefined,
+      onUploadProgress: (e) => setProgress(e.percentage),
+    });
+    return {
+      url: newBlob.url,
+      pathname: newBlob.pathname,
+      size: file.size,
+      name: file.name,
+      contentType: file.type,
+    } as UploadedBlob;
+  }
+
+  /** Fluxo com validação IA: POST multipart pro /api/upload-validado */
+  async function uploadValidado(
+    file: File,
+    tipoDoc: string,
+  ): Promise<{ ok: true; blob: UploadedBlob } | { ok: false; motivo: string }> {
+    setStatus("validating");
+    const progressInterval = setInterval(() => {
+      setProgress((p) => (p < 85 ? p + 5 : p));
+    }, 400);
+    let res: Response;
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("tipo", tipoDoc);
+      res = await fetch("/api/upload-validado", {
+        method: "POST",
+        body: form,
+      });
+    } finally {
+      clearInterval(progressInterval);
+    }
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 422) {
+      return {
+        ok: false,
+        motivo:
+          data.motivo ??
+          "O arquivo não bate com o tipo esperado. Envie versão mais clara.",
+      };
+    }
+    if (!res.ok) {
+      throw new Error(data.error ?? `Erro ${res.status} no upload`);
+    }
+    return {
+      ok: true,
+      blob: {
+        url: data.url,
+        pathname: data.pathname,
+        size: file.size,
+        name: file.name,
+        contentType: file.type,
+        validacaoStatus: data.status,
+        validacaoMotivo: data.motivo,
+        validacaoConfianca: data.confianca,
+      },
+    };
+  }
+
   async function handleFile(file: File) {
     setErrorMsg(null);
+    setRejectionMotivo(null);
     if (file.size > maxMB * 1024 * 1024) {
       setStatus("error");
       setErrorMsg(`Arquivo maior que ${maxMB}MB`);
@@ -80,21 +159,19 @@ export function FileUploadField({
     setStatus("uploading");
     setProgress(0);
     try {
-      const safeName = sanitizeFileName(file.name);
-      const path = `${folder}/${Date.now()}-${safeName}`;
-      const newBlob = await upload(path, file, {
-        access: "private",
-        handleUploadUrl: "/api/upload",
-        contentType: file.type || undefined,
-        onUploadProgress: (e) => setProgress(e.percentage),
-      });
-      const uploaded: UploadedBlob = {
-        url: newBlob.url,
-        pathname: newBlob.pathname,
-        size: file.size,
-        name: file.name,
-        contentType: file.type,
-      };
+      let uploaded: UploadedBlob;
+      if (tipo) {
+        const result = await uploadValidado(file, tipo);
+        if (!result.ok) {
+          setStatus("rejected");
+          setRejectionMotivo(result.motivo);
+          onChange?.(null);
+          return;
+        }
+        uploaded = result.blob;
+      } else {
+        uploaded = await uploadLegado(file);
+      }
       setBlob(uploaded);
       setStatus("done");
       setProgress(100);
@@ -102,7 +179,11 @@ export function FileUploadField({
     } catch (e) {
       setStatus("error");
       const msg = (e as Error).message || "Erro no upload";
-      console.error("[file-upload]", e, { file: file.name, type: file.type, size: file.size });
+      console.error("[file-upload]", e, {
+        file: file.name,
+        type: file.type,
+        size: file.size,
+      });
       setErrorMsg(msg);
     }
   }
@@ -158,10 +239,14 @@ export function FileUploadField({
         </label>
       )}
 
-      {status === "uploading" && (
+      {(status === "uploading" || status === "validating") && (
         <div className="flex items-center gap-3 px-4 h-12 rounded-xl border border-accent/50 bg-accent-soft text-sm">
           <div className="flex-1">
-            <div className="text-fg text-xs mb-1">Enviando…</div>
+            <div className="text-fg text-xs mb-1">
+              {status === "validating"
+                ? "Validando conteúdo do arquivo…"
+                : "Enviando…"}
+            </div>
             <div className="h-1 bg-bg-soft rounded-full overflow-hidden">
               <div
                 className="h-full bg-accent transition-all"
@@ -176,29 +261,69 @@ export function FileUploadField({
       )}
 
       {status === "done" && blob && (
-        <div className="flex items-center gap-3 px-4 h-12 rounded-xl border border-success/50 bg-green-50 text-sm">
-          <span className="size-5 rounded-full bg-success text-white text-[10px] flex items-center justify-center shrink-0">
-            ✓
-          </span>
-          <a
-            href={toBlobProxyHref(blob.url)}
-            target="_blank"
-            rel="noopener"
-            className="flex-1 truncate text-fg hover:text-accent transition-colors"
-            title={blob.name}
+        <div className="space-y-1.5">
+          <div
+            className={`flex items-center gap-3 px-4 h-12 rounded-xl border text-sm ${
+              blob.validacaoStatus === "revisao"
+                ? "border-warn/50 bg-yellow-50"
+                : "border-success/50 bg-green-50"
+            }`}
           >
-            {blob.name}
-          </a>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-            {sizeLabel(blob.size)}
+            <span
+              className={`size-5 rounded-full text-white text-[10px] flex items-center justify-center shrink-0 ${
+                blob.validacaoStatus === "revisao" ? "bg-warn" : "bg-success"
+              }`}
+            >
+              {blob.validacaoStatus === "revisao" ? "?" : "✓"}
+            </span>
+            <a
+              href={toBlobProxyHref(blob.url)}
+              target="_blank"
+              rel="noopener"
+              className="flex-1 truncate text-fg hover:text-accent transition-colors"
+              title={blob.name}
+            >
+              {blob.name}
+            </a>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+              {sizeLabel(blob.size)}
+            </span>
+            <button
+              type="button"
+              onClick={reset}
+              className="text-fg-dim hover:text-danger text-xs"
+              aria-label="Remover"
+            >
+              ✕
+            </button>
+          </div>
+          {blob.validacaoMotivo && blob.validacaoStatus && (
+            <p
+              className={`text-[11px] ${
+                blob.validacaoStatus === "revisao" ? "text-warn" : "text-fg-dim"
+              }`}
+            >
+              {blob.validacaoStatus === "revisao" && "⚠ "}
+              {blob.validacaoMotivo}
+            </p>
+          )}
+        </div>
+      )}
+
+      {status === "rejected" && (
+        <div className="flex items-start gap-3 px-4 py-2.5 rounded-xl border border-danger/50 bg-red-50 text-sm">
+          <span className="size-5 rounded-full bg-danger text-white text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+            ✕
+          </span>
+          <span className="flex-1 text-danger text-xs leading-relaxed">
+            {rejectionMotivo}
           </span>
           <button
             type="button"
             onClick={reset}
-            className="text-fg-dim hover:text-danger text-xs"
-            aria-label="Remover"
+            className="text-fg-dim hover:text-fg text-xs whitespace-nowrap shrink-0"
           >
-            ✕
+            tentar outro
           </button>
         </div>
       )}

@@ -27,7 +27,8 @@
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
     "resend": "^6.12.2",
-    "twilio": "^6.0.0"
+    "twilio": "^6.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

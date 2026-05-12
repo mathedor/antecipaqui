@@ -361,6 +361,18 @@ export const documentos = pgTable(
       onDelete: "cascade",
     }),
     operacaoId: uuid("operacao_id"),
+    /** Resultado da validação por IA do conteúdo do arquivo no upload.
+     *  - 'ok'      : conteúdo bate com o tipo, alta confiança
+     *  - 'revisao' : conteúdo bate mas confiança baixa (admin revisa)
+     *  NULL = upload anterior à validação por IA. */
+    validacaoStatus: text("validacao_status"),
+    /** Decimal 0–1 retornado pelo Claude (confiança da classificação). */
+    validacaoConfianca: numeric("validacao_confianca", {
+      precision: 3,
+      scale: 2,
+    }),
+    /** Justificativa textual do Claude (mostra ao admin se revisão). */
+    validacaoMotivo: text("validacao_motivo"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -368,6 +380,7 @@ export const documentos = pgTable(
   (t) => [
     index("documentos_user_idx").on(t.userId),
     index("documentos_operacao_idx").on(t.operacaoId),
+    index("documentos_validacao_idx").on(t.validacaoStatus),
   ],
 );
 

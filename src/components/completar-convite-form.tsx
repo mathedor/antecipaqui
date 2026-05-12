@@ -162,6 +162,7 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
             label="Contrato de compra e venda do imóvel"
             name="doc_contrato_venda"
             required
+            tipo="contrato_venda"
             folder="operacoes/contrato-venda"
             description="Contrato assinado com o comprador final."
             onChange={setDocContratoVenda}
@@ -170,6 +171,7 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
             label="Contrato de comissionamento"
             name="doc_contrato_comissao"
             required
+            tipo="contrato_comissao"
             folder="operacoes/contrato-comissao"
             description="Contrato firmado entre você e a construtora."
             onChange={setDocContratoComissao}
@@ -178,6 +180,7 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
             label="Nota fiscal da comissão"
             name="doc_nota_fiscal"
             required
+            tipo="nota_fiscal"
             folder="operacoes/nota-fiscal"
             description="NF emitida pelo cedente pra construtora."
             onChange={setDocNotaFiscal}

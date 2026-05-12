@@ -384,6 +384,7 @@ export function OnboardingForm({
             label="Contrato social"
             name="doc_contrato_social"
             required
+            tipo="contrato_social"
             folder="kyc/contrato-social"
             description="Última alteração contratual atualizada na Junta Comercial."
             initial={initContratoSocial}
@@ -393,6 +394,7 @@ export function OnboardingForm({
             label="Comprovante de endereço"
             name="doc_comprovante_endereco"
             required
+            tipo="comprovante_endereco"
             folder="kyc/comprovante-endereco"
             description="Conta de luz, água, telefone ou contrato de locação — últimos 90 dias."
             initial={initComprovEnd}
@@ -403,6 +405,7 @@ export function OnboardingForm({
               label="Comprovante de CRECI"
               name="doc_creci"
               required
+              tipo="creci"
               folder="kyc/creci"
               description="Carteira ou certidão de regularidade do CRECI."
               initial={initCreci}

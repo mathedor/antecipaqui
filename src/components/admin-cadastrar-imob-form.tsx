@@ -137,18 +137,21 @@ export function AdminCadastrarImobForm() {
           <FileUploadField
             label="Contrato social"
             name="doc_contrato_social"
+            tipo="contrato_social"
             folder="kyc/imob-cadastro/contrato-social"
             description="PDF do contrato social ou MEI"
           />
           <FileUploadField
             label="Comprovante de endereço"
             name="doc_comprovante_endereco"
+            tipo="comprovante_endereco"
             folder="kyc/imob-cadastro/comprovante-endereco"
             description="Conta de luz, água ou telefone"
           />
           <FileUploadField
             label="Cartão CNPJ"
             name="doc_cartao_cnpj"
+            tipo="cartao_cnpj"
             folder="kyc/imob-cadastro/cartao-cnpj"
             description="Cartão CNPJ atualizado"
           />

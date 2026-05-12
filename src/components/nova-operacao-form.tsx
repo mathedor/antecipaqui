@@ -261,6 +261,7 @@ export function NovaOperacaoForm({
               <FileUploadField
                 label="Comprovante de pagamento da entrada"
                 name="doc_comprovante_entrada"
+                tipo="comprovante_entrada"
                 folder="operacoes/comprovante-entrada"
                 description="PDF ou imagem do comprovante (TED, PIX, recibo)"
                 accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -366,6 +367,7 @@ export function NovaOperacaoForm({
               label="Contrato de compra e venda do imóvel"
               name="doc_contrato_venda"
               required
+              tipo="contrato_venda"
               folder="operacoes/contrato-venda"
               description="Contrato assinado com o comprador final."
               onChange={setDocContratoVenda}
@@ -374,6 +376,7 @@ export function NovaOperacaoForm({
               label="Contrato de comissionamento"
               name="doc_contrato_comissao"
               required
+              tipo="contrato_comissao"
               folder="operacoes/contrato-comissao"
               description="Contrato firmado entre você (corretor/imobiliária) e a construtora."
               onChange={setDocContratoComissao}
@@ -382,6 +385,7 @@ export function NovaOperacaoForm({
               label="Nota fiscal da comissão"
               name="doc_nota_fiscal"
               required
+              tipo="nota_fiscal"
               folder="operacoes/nota-fiscal"
               description="NF emitida pelo corretor/imobiliária pra construtora."
               onChange={setDocNotaFiscal}

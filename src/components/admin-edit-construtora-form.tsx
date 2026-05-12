@@ -177,12 +177,14 @@ export function AdminEditConstrutoraForm({
           <FileUploadField
             label="Contrato social"
             name="doc_contrato_social"
+            tipo="contrato_social"
             folder={`kyc/construtora-${construtora.id}/contrato-social`}
             initial={initialDocs.contratoSocial ?? null}
           />
           <FileUploadField
             label="Comprovante de endereço"
             name="doc_comprovante_endereco"
+            tipo="comprovante_endereco"
             folder={`kyc/construtora-${construtora.id}/comprovante-endereco`}
             initial={initialDocs.comprovanteEndereco ?? null}
           />

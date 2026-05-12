@@ -197,18 +197,21 @@ export function AdminEditUserForm({
             <FileUploadField
               label="Contrato social"
               name="doc_contrato_social"
+              tipo="contrato_social"
               folder={`kyc/user-${user.id}/contrato-social`}
               initial={initialDocs.contratoSocial ?? null}
             />
             <FileUploadField
               label="Comprovante de endereço"
               name="doc_comprovante_endereco"
+              tipo="comprovante_endereco"
               folder={`kyc/user-${user.id}/comprovante-endereco`}
               initial={initialDocs.comprovanteEndereco ?? null}
             />
             <FileUploadField
               label="CRECI (opcional)"
               name="doc_creci"
+              tipo="creci"
               folder={`kyc/user-${user.id}/creci`}
               initial={initialDocs.creci ?? null}
             />
