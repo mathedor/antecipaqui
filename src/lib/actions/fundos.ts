@@ -397,7 +397,7 @@ export async function getFundoDashboard() {
       valorComissao: operacoes.valorComissao,
       valorPresente: operacoes.valorPresente,
       desagio: operacoes.desagio,
-      taxaMensal: operacoes.taxaMensal,
+      taxaMensalOp: operacoes.taxaMensal,
       numeroParcelas: operacoes.numeroParcelas,
       dataVenda: operacoes.dataVenda,
       createdAt: operacoes.createdAt,
@@ -458,7 +458,8 @@ export async function getFundoDashboard() {
     }
   }
   // totalLucro pro fundo = parte_fundo = custo_dinheiro + spread/2
-  // custo_dinheiro = VP × taxa_fundo × prazo (numero_parcelas)
+  // custo_dinheiro = juros × (taxa_fundo / taxa_op)
+  // spread        = max(0, juros − custo_dinheiro)
   const taxaFundo = parseFloat(fundo.taxaMensalBase ?? "0");
   for (const o of ops) {
     if (
@@ -467,10 +468,11 @@ export async function getFundoDashboard() {
       )
     ) {
       const juros = parseFloat(o.desagio);
-      const vp = parseFloat(o.valorPresente);
-      const prazo = o.numeroParcelas ?? 0;
-      const custoDinheiro = vp * taxaFundo * prazo;
-      const spread = juros - custoDinheiro;
+      const taxaOp = parseFloat(o.taxaMensalOp ?? "0");
+      if (taxaOp <= 0) continue;
+      const razao = Math.min(1, taxaFundo / taxaOp);
+      const custoDinheiro = juros * razao;
+      const spread = Math.max(0, juros - custoDinheiro);
       totalLucro += custoDinheiro + spread / 2;
     }
   }

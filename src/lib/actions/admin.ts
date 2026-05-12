@@ -120,17 +120,27 @@ function extractRows<T>(result: unknown): T[] {
 
 export async function getAdminMonthlyStats() {
   await requireAdmin();
-  // resultado_op_aq = custos + (juros − VP × taxa_fundo × prazo) / 2
+  // resultado_op_aq = custos + max(0, juros × (1 − taxa_fundo/taxa_op)) / 2
   const result = await db.execute(sql`
     SELECT
       to_char(date_trunc('month', o.created_at), 'YYYY-MM') AS month,
       COUNT(*)::int AS operacoes,
       COALESCE(
         SUM(
-          COALESCE(custos.total, 0)
-          + (o.desagio
-             - o.valor_presente * COALESCE(f.taxa_mensal_base, 0)
-                                * COALESCE(o.numero_parcelas, 0)) / 2
+          GREATEST(
+            0,
+            COALESCE(custos.total, 0)
+            + GREATEST(
+                0,
+                o.desagio * (
+                  1 - LEAST(
+                    1,
+                    COALESCE(f.taxa_mensal_base, 0)
+                      / NULLIF(o.taxa_mensal, 0)
+                  )
+                )
+              ) / 2
+          )
         ),
         0
       )::float AS lucro,
@@ -643,7 +653,7 @@ export async function listAllConstrutoras() {
 }
 
 /** Stats mensais (12 meses) das operações de um corretor específico.
- *  lucro = resultado_op_AQ = custos + (juros − custo_dinheiro_fundo)/2 */
+ *  lucro = resultado_op_AQ = custos + max(0, spread)/2 */
 export async function getUserMonthlyStats(userId: string) {
   const result = await db.execute(sql`
     SELECT
@@ -653,10 +663,20 @@ export async function getUserMonthlyStats(userId: string) {
       COALESCE(SUM(o.valor_comissao), 0)::float AS valor_comissao,
       COALESCE(
         SUM(
-          COALESCE(custos.total, 0)
-          + (o.desagio
-             - o.valor_presente * COALESCE(f.taxa_mensal_base, 0)
-                                * COALESCE(o.numero_parcelas, 0)) / 2
+          GREATEST(
+            0,
+            COALESCE(custos.total, 0)
+            + GREATEST(
+                0,
+                o.desagio * (
+                  1 - LEAST(
+                    1,
+                    COALESCE(f.taxa_mensal_base, 0)
+                      / NULLIF(o.taxa_mensal, 0)
+                  )
+                )
+              ) / 2
+          )
         ),
         0
       )::float AS lucro
@@ -716,6 +736,7 @@ export async function getUserDetail(userId: string) {
       valorComissao: operacoes.valorComissao,
       desagio: operacoes.desagio,
       numeroParcelas: operacoes.numeroParcelas,
+      taxaMensalOp: operacoes.taxaMensal,
       taxaMensalFundo: fundos.taxaMensalBase,
       createdAt: operacoes.createdAt,
       construtoraId: operacoes.construtoraId,

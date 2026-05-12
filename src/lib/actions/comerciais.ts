@@ -352,6 +352,7 @@ export async function getComercialDashboard(comercialId: string) {
       valorPresente: operacoes.valorPresente,
       desagio: operacoes.desagio,
       numeroParcelas: operacoes.numeroParcelas,
+      taxaMensalOp: operacoes.taxaMensal,
       taxaMensalFundo: fundos.taxaMensalBase,
       createdAt: operacoes.createdAt,
       construtoraNome: construtoras.razaoSocial,
@@ -419,8 +420,8 @@ export async function getComercialDashboard(comercialId: string) {
     }
   }
 
-  // Comissão calculada sobre o spread = juros − custo_dinheiro_fundo.
-  // spread = desagio − VP × taxa_fundo × numero_parcelas
+  // Comissão calculada sobre o spread (positivo).
+  // spread = max(0, juros × (1 − taxa_fundo/taxa_op))
   let comissaoAcumulada = 0;
   let comissaoPendente = 0;
   let comissaoRealizada = 0;
@@ -430,10 +431,11 @@ export async function getComercialDashboard(comercialId: string) {
     )
       continue;
     const juros = parseFloat(o.desagio);
-    const vp = parseFloat(o.valorPresente);
-    const taxa = parseFloat(o.taxaMensalFundo ?? "0");
-    const prazo = o.numeroParcelas ?? 0;
-    const spread = juros - vp * taxa * prazo;
+    const taxaOp = parseFloat(o.taxaMensalOp ?? "0");
+    const taxaFundo = parseFloat(o.taxaMensalFundo ?? "0");
+    if (taxaOp <= 0) continue;
+    const razao = Math.min(1, taxaFundo / taxaOp);
+    const spread = Math.max(0, juros * (1 - razao));
     const com = calcComissaoComercial(spread);
     comissaoAcumulada += com;
     if (o.status === "realizada") comissaoRealizada += com;
@@ -462,7 +464,7 @@ export async function getComercialDashboard(comercialId: string) {
     }
   }
 
-  // Ranking por mês — comissão calculada sobre spread (juros − custo_dinheiro)
+  // Ranking por mês — comissão sobre max(0, juros × (1 − taxa_fundo/taxa_op))
   const porMesRes = await db.execute(sql`
     SELECT
       to_char(date_trunc('month', o.created_at), 'YYYY-MM') AS month,
@@ -470,9 +472,16 @@ export async function getComercialDashboard(comercialId: string) {
       COALESCE(SUM(o.valor_presente)::float, 0) AS volume,
       COALESCE(
         SUM(
-          o.desagio
-          - o.valor_presente * COALESCE(f.taxa_mensal_base, 0)
-                             * COALESCE(o.numero_parcelas, 0)
+          GREATEST(
+            0,
+            o.desagio * (
+              1 - LEAST(
+                1,
+                COALESCE(f.taxa_mensal_base, 0)
+                  / NULLIF(o.taxa_mensal, 0)
+              )
+            )
+          )
         )::float,
         0
       ) AS spread
@@ -553,9 +562,16 @@ export async function getDesempenhoComerciais(filters: {
       COALESCE(SUM(o.desagio)::float, 0) AS juros_total,
       COALESCE(
         SUM(
-          o.desagio
-          - o.valor_presente * COALESCE(f.taxa_mensal_base, 0)
-                             * COALESCE(o.numero_parcelas, 0)
+          GREATEST(
+            0,
+            o.desagio * (
+              1 - LEAST(
+                1,
+                COALESCE(f.taxa_mensal_base, 0)
+                  / NULLIF(o.taxa_mensal, 0)
+              )
+            )
+          )
         )::float,
         0
       ) AS spread_total,

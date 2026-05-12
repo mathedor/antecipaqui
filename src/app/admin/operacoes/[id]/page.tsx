@@ -509,14 +509,15 @@ export default async function AdminOperacaoDetail({ params }: Params) {
             </div>
             {(() => {
               const juros = parseFloat(op.desagio);
-              const vp = parseFloat(op.valorPresente);
+              const taxaOp = parseFloat(op.taxaMensal);
               const taxaFundo = parseFloat(op.taxaMensalFundo ?? "0");
               const prazo = op.numeroParcelas;
-              const custoDinheiro = vp * taxaFundo * prazo;
-              const spread = juros - custoDinheiro;
+              const razao = taxaOp > 0 ? Math.min(1, taxaFundo / taxaOp) : 0;
+              const custoDinheiro = juros * razao;
+              const spread = Math.max(0, juros - custoDinheiro);
               const parteAQspread = spread / 2;
               const parteFundoSpread = spread / 2;
-              const resultadoAQ = totalCustos + parteAQspread;
+              const resultadoAQ = Math.max(0, totalCustos + parteAQspread);
               const parteFundoTotal = custoDinheiro + parteFundoSpread;
               return (
                 <div className="mt-4 pt-4 border-t border-border space-y-3">
@@ -555,7 +556,8 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                       <span className="text-xs text-fg">
                         Custo do dinheiro (fundo)
                         <span className="ml-1 text-fg-dim text-[9px]">
-                          VP × {(taxaFundo * 100).toFixed(2)}%/m × {prazo}m
+                          juros × {(taxaFundo * 100).toFixed(2)}% ÷{" "}
+                          {(taxaOp * 100).toFixed(2)}%
                         </span>
                       </span>
                       <span className="font-mono tabular text-xs text-accent">
@@ -580,11 +582,7 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                       <div className="text-xs text-fg-muted">
                         custos + spread÷2
                       </div>
-                      <div
-                        className={`font-mono tabular text-lg font-bold mt-1 ${
-                          resultadoAQ >= 0 ? "text-success" : "text-danger"
-                        }`}
-                      >
+                      <div className="font-mono tabular text-lg font-bold text-success mt-1">
                         {formatBRL(resultadoAQ)}
                       </div>
                     </div>
@@ -610,7 +608,7 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                         </span>
                       </span>
                       <span className="font-mono tabular text-sm font-bold text-accent">
-                        {formatBRL(Math.max(vp - totalCustos, 0))}
+                        {formatBRL(Math.max(parseFloat(op.valorPresente) - totalCustos, 0))}
                       </span>
                     </div>
                   )}

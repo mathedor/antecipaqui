@@ -104,7 +104,9 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
           <strong>parcelas pagas no período</strong> e calcula o repasse
           proporcional ao % pago.{" "}
           <span className="font-mono text-xs block mt-1">
-            spread = juros − (VP × taxa fundo × prazo)
+            custo do dinheiro = juros × (taxa fundo ÷ taxa operação)
+            <br />
+            spread = juros − custo do dinheiro (sempre ≥ 0)
             <br />
             resultado AQ = custos + spread÷2
             <br />

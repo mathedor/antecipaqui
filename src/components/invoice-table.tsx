@@ -195,9 +195,7 @@ export function InvoiceTable({
                   {formatBRL(r.custos)}
                 </td>
                 <td
-                  className={`px-3 py-2.5 text-right font-mono tabular font-bold ${
-                    r.saldoRepasse >= 0 ? "text-success" : "text-danger"
-                  }`}
+                  className="px-3 py-2.5 text-right font-mono tabular font-bold text-success"
                   title={`Resultado op inteira × % pago = ${formatBRL(r.resultadoOpAQ)} × ${fmtPct(r.pctPago)}`}
                 >
                   {formatBRL(r.saldoRepasse)}
@@ -241,11 +239,7 @@ export function InvoiceTable({
               <td className="px-3 py-3 text-right tabular font-bold text-warn">
                 {formatBRL(totals.custos)}
               </td>
-              <td
-                className={`px-3 py-3 text-right tabular font-bold ${
-                  totals.saldoRepasse >= 0 ? "text-success" : "text-danger"
-                }`}
-              >
+              <td className="px-3 py-3 text-right tabular font-bold text-success">
                 {formatBRL(totals.saldoRepasse)}
               </td>
               <td></td>

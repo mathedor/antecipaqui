@@ -90,15 +90,17 @@ export default async function AdminUsuarioDetail({ params }: Params) {
     (s, op) => s + parseFloat(op.valorComissao),
     0,
   );
-  // resultado_op_AQ = custos + (juros − VP × taxa_fundo × prazo) / 2
+  // resultado_op_AQ = custos + max(0, spread) / 2
+  // spread = juros × (1 − taxa_fundo/taxa_op)
   const totalLucro = operacoes.reduce((s, op) => {
     const juros = parseFloat(op.desagio);
-    const vp = parseFloat(op.valorPresente);
     const custos = op.custosTotal ?? 0;
-    const taxa = parseFloat(op.taxaMensalFundo ?? "0");
-    const prazo = op.numeroParcelas ?? 0;
-    const spread = juros - vp * taxa * prazo;
-    return s + custos + spread / 2;
+    const taxaOp = parseFloat(op.taxaMensalOp ?? "0");
+    const taxaFundo = parseFloat(op.taxaMensalFundo ?? "0");
+    if (taxaOp <= 0) return s + custos;
+    const razao = Math.min(1, taxaFundo / taxaOp);
+    const spread = Math.max(0, juros * (1 - razao));
+    return s + Math.max(0, custos + spread / 2);
   }, 0);
 
   async function approve() {

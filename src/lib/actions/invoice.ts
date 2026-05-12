@@ -44,10 +44,11 @@ export type InvoiceRow = {
   pctPago: number;
   juros: number;
   custos: number;
+  taxaMensalOp: number;
   taxaMensalFundo: number;
   prazoMeses: number;
   custoDinheiroFundo: number;
-  spread: number; // juros − custoDinheiroFundo
+  spread: number; // max(0, juros − custoDinheiroFundo)
   /** Resultado AQ na op INTEIRA (potencial) = custos + spread/2 */
   resultadoOpAQ: number;
   /** Repasse devido no PERÍODO = resultadoOpAQ × pctPago */
@@ -144,6 +145,7 @@ export async function getInvoiceData(
       o.valor_presente::float AS valor_presente,
       o.desagio::float AS juros,
       COALESCE(o.numero_parcelas, 0)::int AS prazo_meses,
+      o.taxa_mensal::float AS taxa_mensal_op,
       COALESCE(f.taxa_mensal_base, 0)::float AS taxa_mensal_fundo,
       COALESCE(custos.total, 0)::float AS custos,
       pagos.total_pago_no_periodo::float AS pago_no_periodo
@@ -190,6 +192,7 @@ export async function getInvoiceData(
     valor_presente: number;
     juros: number;
     prazo_meses: number;
+    taxa_mensal_op: number;
     taxa_mensal_fundo: number;
     custos: number;
     pago_no_periodo: number;
@@ -200,9 +203,8 @@ export async function getInvoiceData(
   ).map((r): InvoiceRow => {
     const baseInputs = {
       juros: r.juros,
-      valorPresente: r.valor_presente,
+      taxaMensalOp: r.taxa_mensal_op,
       taxaMensalFundo: r.taxa_mensal_fundo,
-      prazoMeses: r.prazo_meses,
     };
     const custoDinheiroFundo = calcCustoDinheiroFundo(baseInputs);
     const spread = calcSpread(baseInputs);
@@ -239,6 +241,7 @@ export async function getInvoiceData(
       pctPago,
       juros: r.juros,
       custos: r.custos,
+      taxaMensalOp: r.taxa_mensal_op,
       taxaMensalFundo: r.taxa_mensal_fundo,
       prazoMeses: r.prazo_meses,
       custoDinheiroFundo,
@@ -332,8 +335,10 @@ export async function getInvoiceMonthly(
     ? sql`AND ${sql.join(conds, sql` AND `)}`
     : sql``;
 
-  // SUM por mês de pago_em do (resultado_op_aq × pago_valor / valor_comissao)
-  // resultado_op_aq = custos + (desagio − VP × taxa_fundo × prazo) / 2
+  // resultado_op_aq = custos + spread/2
+  // spread = GREATEST(0, desagio − desagio × LEAST(1, taxa_fundo/taxa_op))
+  //        = GREATEST(0, desagio × (1 − LEAST(1, taxa_fundo/taxa_op)))
+  // saldo_repasse = SUM(resultado_op_aq × pago_no_op / valor_comissao_op)
   const result = await db.execute(sql`
     SELECT
       to_char(date_trunc('month', p.pago_em), 'YYYY-MM') AS ym,
@@ -341,11 +346,19 @@ export async function getInvoiceMonthly(
       COALESCE(SUM(COALESCE(p.pago_valor, p.valor))::float, 0) AS pago_no_periodo,
       COALESCE(
         SUM(
-          (
+          GREATEST(
+            0,
             COALESCE(custos.total, 0)
-            + (o.desagio
-               - o.valor_presente * COALESCE(f.taxa_mensal_base, 0)
-                                  * COALESCE(o.numero_parcelas, 0)) / 2
+            + GREATEST(
+                0,
+                o.desagio * (
+                  1 - LEAST(
+                    1,
+                    COALESCE(f.taxa_mensal_base, 0)
+                      / NULLIF(o.taxa_mensal, 0)
+                  )
+                )
+              ) / 2
           )
           * COALESCE(p.pago_valor, p.valor)
           / NULLIF(o.valor_comissao, 0)
