@@ -45,7 +45,7 @@ const RELATORIOS = [
   {
     href: "/admin/relatorios/comerciais",
     title: "Ranking de comerciais",
-    desc: "Comerciais com mais operações sob responsabilidade — lucro / desagio gerado.",
+    desc: "Comerciais com mais operações sob responsabilidade — resultado gerado e comissão.",
     icon: "💼",
     section: "Rankings",
   },

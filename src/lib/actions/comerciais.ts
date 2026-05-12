@@ -379,6 +379,21 @@ export async function getComercialDashboard(comercialId: string) {
         .where(sql`${parcelasComissao.operacaoId} = ANY(${opIds})`)
     : [];
 
+  // Custos por operação — resultado = desagio − custos
+  const custosByOp = new Map<string, number>();
+  if (opIds.length) {
+    const custosResult = await db.execute(sql`
+      SELECT operacao_id::text AS op_id, SUM(valor)::float AS total
+      FROM custos_operacao
+      WHERE operacao_id = ANY(${opIds})
+      GROUP BY operacao_id
+    `);
+    const rows =
+      (custosResult as unknown as { rows: { op_id: string; total: number }[] })
+        .rows ?? [];
+    for (const r of rows) custosByOp.set(r.op_id, r.total);
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -399,7 +414,7 @@ export async function getComercialDashboard(comercialId: string) {
     }
   }
 
-  // Lucro / comissão calculados em cima do deságio das ops aprovadas
+  // Comissão calculada em cima do resultado (juros − custos) das ops aprovadas
   let comissaoAcumulada = 0;
   let comissaoPendente = 0;
   let comissaoRealizada = 0;
@@ -408,8 +423,8 @@ export async function getComercialDashboard(comercialId: string) {
       ["rascunho", "recusada", "cancelada"].includes(o.status)
     )
       continue;
-    const desagio = parseFloat(o.desagio);
-    const com = calcComissaoComercial(desagio);
+    const resultado = parseFloat(o.desagio) - (custosByOp.get(o.id) ?? 0);
+    const com = calcComissaoComercial(resultado);
     comissaoAcumulada += com;
     if (o.status === "realizada") comissaoRealizada += com;
     else comissaoPendente += com;
@@ -443,10 +458,15 @@ export async function getComercialDashboard(comercialId: string) {
       to_char(date_trunc('month', o.created_at), 'YYYY-MM') AS month,
       COUNT(*)::int AS qtd,
       COALESCE(SUM(o.valor_presente)::float, 0) AS volume,
-      COALESCE(SUM(o.desagio)::float, 0) AS juros
+      COALESCE(SUM(o.desagio - COALESCE(custos.total, 0))::float, 0) AS resultado
     FROM operacoes o
     LEFT JOIN construtoras c ON c.id = o.construtora_id
     LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
+    LEFT JOIN (
+      SELECT operacao_id, SUM(valor) AS total
+      FROM custos_operacao
+      GROUP BY operacao_id
+    ) custos ON custos.operacao_id = o.id
     WHERE (o.comercial_id = ${comercialId}::uuid
       OR c.comercial_id = ${comercialId}::uuid
       OR im.comercial_id = ${comercialId}::uuid)
@@ -459,14 +479,14 @@ export async function getComercialDashboard(comercialId: string) {
     month: string;
     qtd: number;
     volume: number;
-    juros: number;
+    resultado: number;
   };
   const porMesRows = (
     porMesRes as unknown as { rows?: MesRow[] }
   ).rows ?? [];
   const porMes = porMesRows.map((m) => ({
     ...m,
-    comissao: calcComissaoComercial(m.juros),
+    comissao: calcComissaoComercial(m.resultado),
   }));
 
   return {
@@ -518,6 +538,7 @@ export async function getDesempenhoComerciais(filters: {
       COALESCE(SUM(o.valor_presente)::float, 0) AS volume_operado,
       COALESCE(SUM(o.valor_comissao)::float, 0) AS comissoes_intermediadas,
       COALESCE(SUM(o.desagio)::float, 0) AS juros_total,
+      COALESCE(SUM(o.desagio - COALESCE(custos.total, 0))::float, 0) AS resultado_total,
       COUNT(o.id) FILTER (WHERE o.status = 'realizada')::int AS qtd_realizadas
     FROM comerciais cm
     LEFT JOIN operacoes o
@@ -525,6 +546,11 @@ export async function getDesempenhoComerciais(filters: {
         OR o.construtora_id IN (SELECT id FROM construtoras WHERE comercial_id = cm.id)
         OR o.imobiliaria_id IN (SELECT id FROM imobiliarias WHERE comercial_id = cm.id))
       AND ${where}
+    LEFT JOIN (
+      SELECT operacao_id, SUM(valor) AS total
+      FROM custos_operacao
+      GROUP BY operacao_id
+    ) custos ON custos.operacao_id = o.id
     WHERE cm.is_active = TRUE
     GROUP BY cm.id, cm.nome_completo, cm.apelido, cm.tipo_pessoa, cm.email
     ORDER BY volume_operado DESC, qtd_operacoes DESC
@@ -540,6 +566,7 @@ export async function getDesempenhoComerciais(filters: {
     volume_operado: number;
     comissoes_intermediadas: number;
     juros_total: number;
+    resultado_total: number;
     qtd_realizadas: number;
   };
   const rows = (result as unknown as { rows: Row[] }).rows;
@@ -555,7 +582,8 @@ export async function getDesempenhoComerciais(filters: {
     volumeOperado: Number(r.volume_operado),
     comissoesIntermediadas: Number(r.comissoes_intermediadas),
     jurosTotal: Number(r.juros_total),
-    lucroLiquido: calcLucroOperacao(Number(r.juros_total)),
-    comissaoComercial: calcComissaoComercial(Number(r.juros_total)),
+    resultadoTotal: Number(r.resultado_total),
+    lucroLiquido: calcLucroOperacao(Number(r.resultado_total)),
+    comissaoComercial: calcComissaoComercial(Number(r.resultado_total)),
   }));
 }

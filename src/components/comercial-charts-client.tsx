@@ -25,7 +25,7 @@ type MesData = {
   month: string;
   qtd: number;
   volume: number;
-  juros: number;
+  resultado: number;
   comissao: number;
 };
 
