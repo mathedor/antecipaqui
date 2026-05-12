@@ -398,6 +398,7 @@ export async function getFundoDashboard() {
       valorPresente: operacoes.valorPresente,
       desagio: operacoes.desagio,
       taxaMensalOp: operacoes.taxaMensal,
+      taxaFundoSnapshot: operacoes.taxaFundoSnapshot,
       numeroParcelas: operacoes.numeroParcelas,
       dataVenda: operacoes.dataVenda,
       createdAt: operacoes.createdAt,
@@ -470,7 +471,11 @@ export async function getFundoDashboard() {
       const juros = parseFloat(o.desagio);
       const taxaOp = parseFloat(o.taxaMensalOp ?? "0");
       if (taxaOp <= 0) continue;
-      const razao = Math.min(1, taxaFundo / taxaOp);
+      // Usa snapshot por op se disponível, senão taxa atual do fundo.
+      const taxaFundoEfetiva = o.taxaFundoSnapshot
+        ? parseFloat(o.taxaFundoSnapshot)
+        : taxaFundo;
+      const razao = Math.min(1, taxaFundoEfetiva / taxaOp);
       const custoDinheiro = juros * razao;
       const spread = Math.max(0, juros - custoDinheiro);
       totalLucro += custoDinheiro + spread / 2;

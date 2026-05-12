@@ -135,7 +135,7 @@ export async function getAdminMonthlyStats() {
                 o.desagio * (
                   1 - LEAST(
                     1,
-                    COALESCE(f.taxa_mensal_base, 0)
+                    COALESCE(o.taxa_fundo_snapshot, f.taxa_mensal_base, 0)
                       / NULLIF(o.taxa_mensal, 0)
                   )
                 )
@@ -382,6 +382,7 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
       construtoraCep: construtoras.cep,
       construtoraOwnerUserId: construtoras.ownerUserId,
       fundoId: operacoes.fundoId,
+      taxaFundoSnapshot: operacoes.taxaFundoSnapshot,
       taxaMensalFundo: fundos.taxaMensalBase,
       fundoNomeFantasia: fundos.nomeFantasia,
       fundoRazaoSocial: fundos.razaoSocial,
@@ -671,7 +672,7 @@ export async function getUserMonthlyStats(userId: string) {
                 o.desagio * (
                   1 - LEAST(
                     1,
-                    COALESCE(f.taxa_mensal_base, 0)
+                    COALESCE(o.taxa_fundo_snapshot, f.taxa_mensal_base, 0)
                       / NULLIF(o.taxa_mensal, 0)
                   )
                 )
@@ -737,6 +738,7 @@ export async function getUserDetail(userId: string) {
       desagio: operacoes.desagio,
       numeroParcelas: operacoes.numeroParcelas,
       taxaMensalOp: operacoes.taxaMensal,
+      taxaFundoSnapshot: operacoes.taxaFundoSnapshot,
       taxaMensalFundo: fundos.taxaMensalBase,
       createdAt: operacoes.createdAt,
       construtoraId: operacoes.construtoraId,

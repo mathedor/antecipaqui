@@ -96,7 +96,9 @@ export default async function AdminUsuarioDetail({ params }: Params) {
     const juros = parseFloat(op.desagio);
     const custos = op.custosTotal ?? 0;
     const taxaOp = parseFloat(op.taxaMensalOp ?? "0");
-    const taxaFundo = parseFloat(op.taxaMensalFundo ?? "0");
+    const taxaFundo = parseFloat(
+      op.taxaFundoSnapshot ?? op.taxaMensalFundo ?? "0",
+    );
     if (taxaOp <= 0) return s + custos;
     const razao = Math.min(1, taxaFundo / taxaOp);
     const spread = Math.max(0, juros * (1 - razao));

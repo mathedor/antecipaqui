@@ -146,7 +146,7 @@ export async function getInvoiceData(
       o.desagio::float AS juros,
       COALESCE(o.numero_parcelas, 0)::int AS prazo_meses,
       o.taxa_mensal::float AS taxa_mensal_op,
-      COALESCE(f.taxa_mensal_base, 0)::float AS taxa_mensal_fundo,
+      COALESCE(o.taxa_fundo_snapshot, f.taxa_mensal_base, 0)::float AS taxa_mensal_fundo,
       COALESCE(custos.total, 0)::float AS custos,
       pagos.total_pago_no_periodo::float AS pago_no_periodo
     FROM operacoes o
@@ -354,7 +354,7 @@ export async function getInvoiceMonthly(
                 o.desagio * (
                   1 - LEAST(
                     1,
-                    COALESCE(f.taxa_mensal_base, 0)
+                    COALESCE(o.taxa_fundo_snapshot, f.taxa_mensal_base, 0)
                       / NULLIF(o.taxa_mensal, 0)
                   )
                 )

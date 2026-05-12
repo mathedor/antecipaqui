@@ -353,6 +353,7 @@ export async function getComercialDashboard(comercialId: string) {
       desagio: operacoes.desagio,
       numeroParcelas: operacoes.numeroParcelas,
       taxaMensalOp: operacoes.taxaMensal,
+      taxaFundoSnapshot: operacoes.taxaFundoSnapshot,
       taxaMensalFundo: fundos.taxaMensalBase,
       createdAt: operacoes.createdAt,
       construtoraNome: construtoras.razaoSocial,
@@ -432,7 +433,9 @@ export async function getComercialDashboard(comercialId: string) {
       continue;
     const juros = parseFloat(o.desagio);
     const taxaOp = parseFloat(o.taxaMensalOp ?? "0");
-    const taxaFundo = parseFloat(o.taxaMensalFundo ?? "0");
+    const taxaFundo = parseFloat(
+      o.taxaFundoSnapshot ?? o.taxaMensalFundo ?? "0",
+    );
     if (taxaOp <= 0) continue;
     const razao = Math.min(1, taxaFundo / taxaOp);
     const spread = Math.max(0, juros * (1 - razao));
@@ -477,7 +480,7 @@ export async function getComercialDashboard(comercialId: string) {
             o.desagio * (
               1 - LEAST(
                 1,
-                COALESCE(f.taxa_mensal_base, 0)
+                COALESCE(o.taxa_fundo_snapshot, f.taxa_mensal_base, 0)
                   / NULLIF(o.taxa_mensal, 0)
               )
             )
@@ -567,7 +570,7 @@ export async function getDesempenhoComerciais(filters: {
             o.desagio * (
               1 - LEAST(
                 1,
-                COALESCE(f.taxa_mensal_base, 0)
+                COALESCE(o.taxa_fundo_snapshot, f.taxa_mensal_base, 0)
                   / NULLIF(o.taxa_mensal, 0)
               )
             )

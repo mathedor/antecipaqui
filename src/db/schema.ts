@@ -410,6 +410,14 @@ export const operacoes = pgTable(
     taxaMensal: numeric("taxa_mensal", { precision: 6, scale: 4 })
       .notNull()
       .default("0.0600"),
+    /** Snapshot da taxa mensal do fundo no momento da aprovação. Congela o
+     *  custo de capital pra que mudanças futuras em fundos.taxa_mensal_base
+     *  não distorçam o histórico financeiro. NULL = usar f.taxa_mensal_base
+     *  como fallback (ops legadas pré-snapshot). */
+    taxaFundoSnapshot: numeric("taxa_fundo_snapshot", {
+      precision: 6,
+      scale: 4,
+    }),
     valorPresente: numeric("valor_presente", { precision: 15, scale: 2 }).notNull(),
     desagio: numeric("desagio", { precision: 15, scale: 2 }).notNull(),
     // Estado

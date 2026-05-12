@@ -134,6 +134,18 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
       updates.fundoId = input.fundoId;
     }
 
+    // Snapshot da taxa do fundo: congela no momento da aprovação pra
+    // proteger o histórico de mudanças futuras na tabela fundos.
+    const fundoIdParaSnapshot = input.fundoId ?? op.fundoId;
+    if (fundoIdParaSnapshot && !op.taxaFundoSnapshot) {
+      const [f] = await db
+        .select({ taxa: fundos.taxaMensalBase })
+        .from(fundos)
+        .where(eq(fundos.id, fundoIdParaSnapshot))
+        .limit(1);
+      if (f) updates.taxaFundoSnapshot = f.taxa;
+    }
+
     // Se o admin enviou nova taxa, recalcula VP + deságio das parcelas
     if (typeof input.novaTaxaMensal === "number") {
       if (input.novaTaxaMensal < 0.005 || input.novaTaxaMensal > 0.2) {

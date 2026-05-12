@@ -510,7 +510,9 @@ export default async function AdminOperacaoDetail({ params }: Params) {
             {(() => {
               const juros = parseFloat(op.desagio);
               const taxaOp = parseFloat(op.taxaMensal);
-              const taxaFundo = parseFloat(op.taxaMensalFundo ?? "0");
+              const taxaFundo = parseFloat(
+                op.taxaFundoSnapshot ?? op.taxaMensalFundo ?? "0",
+              );
               const prazo = op.numeroParcelas;
               const razao = taxaOp > 0 ? Math.min(1, taxaFundo / taxaOp) : 0;
               const custoDinheiro = juros * razao;
