@@ -507,66 +507,116 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                 value={`${(((parseFloat(op.desagio)) / parseFloat(op.valorComissao)) * 100).toFixed(2)}%`}
               />
             </div>
-            {custos.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-2">
-                  custos cadastrados ({custos.length})
-                </div>
-                <ul className="divide-y divide-border">
-                  {custos.map((c) => (
-                    <li
-                      key={c.id}
-                      className="flex items-center justify-between gap-3 py-1.5"
-                    >
-                      <span className="text-xs text-fg">{c.titulo}</span>
-                      <span className="font-mono tabular text-xs text-warn font-semibold">
-                        − {formatBRL(parseFloat(c.valor))}
+            {(() => {
+              const juros = parseFloat(op.desagio);
+              const vp = parseFloat(op.valorPresente);
+              const taxaFundo = parseFloat(op.taxaMensalFundo ?? "0");
+              const prazo = op.numeroParcelas;
+              const custoDinheiro = vp * taxaFundo * prazo;
+              const spread = juros - custoDinheiro;
+              const parteAQspread = spread / 2;
+              const parteFundoSpread = spread / 2;
+              const resultadoAQ = totalCustos + parteAQspread;
+              const parteFundoTotal = custoDinheiro + parteFundoSpread;
+              return (
+                <div className="mt-4 pt-4 border-t border-border space-y-3">
+                  {custos.length > 0 && (
+                    <div>
+                      <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-2">
+                        custos cadastrados ({custos.length}) · 100% AQ
+                      </div>
+                      <ul className="divide-y divide-border">
+                        {custos.map((c) => (
+                          <li
+                            key={c.id}
+                            className="flex items-center justify-between gap-3 py-1.5"
+                          >
+                            <span className="text-xs text-fg">{c.titulo}</span>
+                            <span className="font-mono tabular text-xs text-warn font-semibold">
+                              − {formatBRL(parseFloat(c.valor))}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="rounded-lg border border-border bg-bg-card p-3 space-y-1.5">
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-1">
+                      decomposição financeira
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-fg">Juros (deságio)</span>
+                      <span className="font-mono tabular text-xs text-fg">
+                        {formatBRL(juros)}
                       </span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex items-center justify-between gap-3 pt-2 mt-2 border-t border-border">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-                    Resultado da operação
-                    <span className="ml-1 text-fg-dim normal-case">
-                      (juros − custos)
-                    </span>
-                  </span>
-                  <span
-                    className={`font-mono tabular text-sm font-bold ${
-                      parseFloat(op.desagio) - totalCustos >= 0
-                        ? "text-success"
-                        : "text-danger"
-                    }`}
-                  >
-                    {formatBRL(parseFloat(op.desagio) - totalCustos)}
-                  </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-fg">
+                        Custo do dinheiro (fundo)
+                        <span className="ml-1 text-fg-dim text-[9px]">
+                          VP × {(taxaFundo * 100).toFixed(2)}%/m × {prazo}m
+                        </span>
+                      </span>
+                      <span className="font-mono tabular text-xs text-accent">
+                        − {formatBRL(custoDinheiro)}
+                      </span>
+                    </div>
+                    <div className="border-t border-border pt-1.5 flex items-center justify-between gap-3">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                        Spread
+                      </span>
+                      <span className="font-mono tabular text-xs text-fg font-semibold">
+                        {formatBRL(spread)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-lg border border-success/30 bg-green-50 p-3">
+                      <div className="font-mono text-[9px] uppercase tracking-wider text-success mb-1">
+                        Antecipaqui
+                      </div>
+                      <div className="text-xs text-fg-muted">
+                        custos + spread÷2
+                      </div>
+                      <div
+                        className={`font-mono tabular text-lg font-bold mt-1 ${
+                          resultadoAQ >= 0 ? "text-success" : "text-danger"
+                        }`}
+                      >
+                        {formatBRL(resultadoAQ)}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-accent/30 bg-accent-soft p-3">
+                      <div className="font-mono text-[9px] uppercase tracking-wider text-accent mb-1">
+                        Fundo
+                      </div>
+                      <div className="text-xs text-fg-muted">
+                        custo $ + spread÷2
+                      </div>
+                      <div className="font-mono tabular text-lg font-bold text-accent mt-1">
+                        {formatBRL(parteFundoTotal)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {custos.length > 0 && (
+                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-border-strong">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                        Líquido cedente
+                        <span className="ml-1 text-fg-dim normal-case">
+                          (VP − custos)
+                        </span>
+                      </span>
+                      <span className="font-mono tabular text-sm font-bold text-accent">
+                        {formatBRL(Math.max(vp - totalCustos, 0))}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center justify-between gap-3 pt-2 mt-2 border-t border-border-strong">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-                    Líquido cedente
-                  </span>
-                  <span className="font-mono tabular text-sm font-bold text-accent">
-                    {formatBRL(
-                      Math.max(parseFloat(op.valorPresente) - totalCustos, 0),
-                    )}
-                  </span>
-                </div>
-              </div>
-            )}
-            {custos.length === 0 && (
-              <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-3">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
-                  Resultado da operação
-                  <span className="ml-1 text-fg-dim normal-case">
-                    (sem custos — = deságio)
-                  </span>
-                </span>
-                <span className="font-mono tabular text-sm font-bold text-success">
-                  {formatBRL(parseFloat(op.desagio))}
-                </span>
-              </div>
-            )}
+              );
+            })()}
           </Card>
 
         </div>

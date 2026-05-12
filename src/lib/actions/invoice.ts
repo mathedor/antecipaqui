@@ -5,12 +5,12 @@ import { db } from "@/db";
 import { requireAdmin } from "@/lib/auth-user";
 import {
   calcCustoDinheiroFundo,
+  calcRepasseInvoice,
   calcResultadoOperacao,
-  calcSaldoInvoice,
+  calcSpread,
 } from "@/lib/operacao-resultado";
 
 export type InvoiceFilters = {
-  /** "atual" | "passado" | "proximo" | "custom" — calculados em from/to */
   periodo?: "atual" | "passado" | "proximo" | "custom";
   from?: string; // YYYY-MM-DD
   to?: string;
@@ -20,6 +20,8 @@ export type InvoiceFilters = {
   comercialId?: string;
 };
 
+/** Uma linha do Invoice = uma operação com pelo menos 1 parcela paga no
+ *  período selecionado. Saldo de repasse é proporcional ao valor pago. */
 export type InvoiceRow = {
   operacaoId: string;
   operacaoNumero: string;
@@ -31,34 +33,42 @@ export type InvoiceRow = {
   imobiliariaNome: string | null;
   comercialId: string | null;
   comercialNome: string | null;
-  /** Data de aprovação final (envio pra pagamento). */
   dataAprovacao: string | null;
-  /** Data da venda — informativo. */
   dataVenda: string;
-  valorOperacao: number; // valor_presente
-  juros: number; // = desagio
-  custos: number; // R$ = SUM(custos_operacao.valor)
-  resultado: number; // R$ = juros − custos
-  taxaMensalFundo: number; // decimal 0..1 ao mês
-  prazoMeses: number; // = numero_parcelas
-  custoDinheiroFundo: number; // R$ = valor_presente × taxa_mensal × prazo
-  saldoRepasse: number; // R$ = (resultado − custoDinheiroFundo) / 2
+  /** valor_comissao da operação (total a ser pago pela construtora) */
+  valorComissaoTotal: number;
+  valorPresente: number;
+  /** Quanto a construtora pagou DESSA OP dentro do período */
+  pagoNoPeriodo: number;
+  /** pagoNoPeriodo / valorComissaoTotal */
+  pctPago: number;
+  juros: number;
+  custos: number;
+  taxaMensalFundo: number;
+  prazoMeses: number;
+  custoDinheiroFundo: number;
+  spread: number; // juros − custoDinheiroFundo
+  /** Resultado AQ na op INTEIRA (potencial) = custos + spread/2 */
+  resultadoOpAQ: number;
+  /** Repasse devido no PERÍODO = resultadoOpAQ × pctPago */
+  saldoRepasse: number;
 };
 
 export type InvoicePayload = {
   rows: InvoiceRow[];
   totals: {
-    valorOperacao: number;
+    valorComissaoTotal: number;
+    pagoNoPeriodo: number;
     juros: number;
     custos: number;
-    resultado: number;
     custoDinheiroFundo: number;
+    spread: number;
+    resultadoOpAQ: number;
     saldoRepasse: number;
   };
   periodLabel: { from: string; to: string };
 };
 
-/** Retorna o intervalo [from, to] (datas YYYY-MM-DD) baseado no periodo. */
 function resolvePeriodo(filters: InvoiceFilters): {
   from: string;
   to: string;
@@ -86,7 +96,6 @@ function resolvePeriodo(filters: InvoiceFilters): {
       to: filters.to ?? ymd(endOfMonth(today)),
     };
   }
-  // default = mês atual
   return { from: ymd(startOfMonth(today)), to: ymd(endOfMonth(today)) };
 }
 
@@ -96,14 +105,7 @@ export async function getInvoiceData(
   await requireAdmin();
   const { from, to } = resolvePeriodo(filters);
 
-  // Considera operações com aprovação final (status >= enviada_para_pagamento)
-  // dentro do período — usando aprovado_em como timestamp do "cash event".
-  const conds: ReturnType<typeof sql>[] = [
-    sql`o.status IN ('enviada_para_pagamento', 'realizada')`,
-    sql`o.aprovado_em IS NOT NULL`,
-    sql`o.aprovado_em::date >= ${from}::date`,
-    sql`o.aprovado_em::date <= ${to}::date`,
-  ];
+  const conds: ReturnType<typeof sql>[] = [];
   if (filters.fundoId) {
     if (filters.fundoId === "_no_fundo_")
       conds.push(sql`o.fundo_id IS NULL`);
@@ -120,8 +122,9 @@ export async function getInvoiceData(
         OR im.comercial_id = ${filters.comercialId}::uuid)`,
     );
   }
-
-  const where = sql.join(conds, sql` AND `);
+  const extra = conds.length
+    ? sql`AND ${sql.join(conds, sql` AND `)}`
+    : sql``;
 
   const result = await db.execute(sql`
     SELECT
@@ -137,11 +140,13 @@ export async function getInvoiceData(
       COALESCE(com.apelido, com.nome_completo) AS comercial_nome,
       o.aprovado_em::date::text AS data_aprovacao,
       o.data_venda::text AS data_venda,
-      o.valor_presente::float AS valor_operacao,
+      o.valor_comissao::float AS valor_comissao_total,
+      o.valor_presente::float AS valor_presente,
       o.desagio::float AS juros,
       COALESCE(o.numero_parcelas, 0)::int AS prazo_meses,
       COALESCE(f.taxa_mensal_base, 0)::float AS taxa_mensal_fundo,
-      COALESCE(custos.total, 0)::float AS custos
+      COALESCE(custos.total, 0)::float AS custos,
+      pagos.total_pago_no_periodo::float AS pago_no_periodo
     FROM operacoes o
     LEFT JOIN fundos f ON f.id = o.fundo_id
     LEFT JOIN construtoras c ON c.id = o.construtora_id
@@ -152,8 +157,20 @@ export async function getInvoiceData(
       FROM custos_operacao
       GROUP BY operacao_id
     ) custos ON custos.operacao_id = o.id
-    WHERE ${where}
-    ORDER BY o.aprovado_em DESC
+    INNER JOIN (
+      SELECT
+        operacao_id,
+        SUM(COALESCE(pago_valor, valor)) AS total_pago_no_periodo
+      FROM parcelas_comissao
+      WHERE status = 'paga'
+        AND pago_em IS NOT NULL
+        AND pago_em >= ${from}::date
+        AND pago_em <= ${to}::date
+      GROUP BY operacao_id
+    ) pagos ON pagos.operacao_id = o.id
+    WHERE o.status IN ('enviada_para_pagamento', 'realizada')
+      ${extra}
+    ORDER BY pagos.total_pago_no_periodo DESC
   `);
 
   type Raw = {
@@ -169,31 +186,40 @@ export async function getInvoiceData(
     comercial_nome: string | null;
     data_aprovacao: string | null;
     data_venda: string;
-    valor_operacao: number;
+    valor_comissao_total: number;
+    valor_presente: number;
     juros: number;
     prazo_meses: number;
     taxa_mensal_fundo: number;
     custos: number;
+    pago_no_periodo: number;
   };
+
   const rows = (
     (result as unknown as { rows: Raw[] }).rows ?? []
   ).map((r): InvoiceRow => {
-    const resultado = calcResultadoOperacao({
+    const baseInputs = {
       juros: r.juros,
-      custos: r.custos,
-    });
-    const custoDinheiroFundo = calcCustoDinheiroFundo(
-      r.valor_operacao,
-      r.taxa_mensal_fundo,
-      r.prazo_meses,
-    );
-    const saldoRepasse = calcSaldoInvoice({
-      juros: r.juros,
-      custos: r.custos,
-      valorPresente: r.valor_operacao,
+      valorPresente: r.valor_presente,
       taxaMensalFundo: r.taxa_mensal_fundo,
       prazoMeses: r.prazo_meses,
+    };
+    const custoDinheiroFundo = calcCustoDinheiroFundo(baseInputs);
+    const spread = calcSpread(baseInputs);
+    const resultadoOpAQ = calcResultadoOperacao({
+      ...baseInputs,
+      custos: r.custos,
     });
+    const saldoRepasse = calcRepasseInvoice({
+      resultadoOpAQ,
+      valorPagoNoPeriodo: r.pago_no_periodo,
+      valorComissao: r.valor_comissao_total,
+    });
+    const pctPago =
+      r.valor_comissao_total > 0
+        ? r.pago_no_periodo / r.valor_comissao_total
+        : 0;
+
     return {
       operacaoId: r.operacao_id,
       operacaoNumero: r.operacao_numero,
@@ -207,32 +233,40 @@ export async function getInvoiceData(
       comercialNome: r.comercial_nome,
       dataAprovacao: r.data_aprovacao,
       dataVenda: r.data_venda,
-      valorOperacao: r.valor_operacao,
+      valorComissaoTotal: r.valor_comissao_total,
+      valorPresente: r.valor_presente,
+      pagoNoPeriodo: r.pago_no_periodo,
+      pctPago,
       juros: r.juros,
       custos: r.custos,
-      resultado,
       taxaMensalFundo: r.taxa_mensal_fundo,
       prazoMeses: r.prazo_meses,
       custoDinheiroFundo,
+      spread,
+      resultadoOpAQ,
       saldoRepasse,
     };
   });
 
   const totals = rows.reduce(
     (acc, r) => ({
-      valorOperacao: acc.valorOperacao + r.valorOperacao,
+      valorComissaoTotal: acc.valorComissaoTotal + r.valorComissaoTotal,
+      pagoNoPeriodo: acc.pagoNoPeriodo + r.pagoNoPeriodo,
       juros: acc.juros + r.juros,
       custos: acc.custos + r.custos,
-      resultado: acc.resultado + r.resultado,
       custoDinheiroFundo: acc.custoDinheiroFundo + r.custoDinheiroFundo,
+      spread: acc.spread + r.spread,
+      resultadoOpAQ: acc.resultadoOpAQ + r.resultadoOpAQ,
       saldoRepasse: acc.saldoRepasse + r.saldoRepasse,
     }),
     {
-      valorOperacao: 0,
+      valorComissaoTotal: 0,
+      pagoNoPeriodo: 0,
       juros: 0,
       custos: 0,
-      resultado: 0,
       custoDinheiroFundo: 0,
+      spread: 0,
+      resultadoOpAQ: 0,
       saldoRepasse: 0,
     },
   );
@@ -245,16 +279,12 @@ export async function getInvoiceData(
    ========================================================================= */
 
 export type InvoiceMonthly = {
-  /** YYYY-MM */
   ym: string;
-  /** Label "mai/26" pra exibir no eixo. */
   label: string;
   qtdOperacoes: number;
-  valorOperacao: number;
-  juros: number;
-  custos: number;
-  resultado: number;
-  custoDinheiroFundo: number;
+  /** soma de pago_valor (parcelas pagas no mês) */
+  pagoNoPeriodo: number;
+  /** repasse devido = SUM(resultado_op_aq × pago_no_op / valor_comissao_op) */
   saldoRepasse: number;
 };
 
@@ -273,9 +303,6 @@ const MES_CURTO = [
   "dez",
 ];
 
-/** Retorna saldo de repasse e qtd de ops por mês — últimos 12 meses (incluindo
- *  o atual). Aceita os mesmos filtros do invoice (fundo, construtora, etc.)
- *  pra contextualizar os gráficos. */
 export async function getInvoiceMonthly(
   filters: Pick<
     InvoiceFilters,
@@ -284,12 +311,7 @@ export async function getInvoiceMonthly(
 ): Promise<InvoiceMonthly[]> {
   await requireAdmin();
 
-  const conds: ReturnType<typeof sql>[] = [
-    sql`o.status IN ('enviada_para_pagamento', 'realizada')`,
-    sql`o.aprovado_em IS NOT NULL`,
-    sql`o.aprovado_em >= (date_trunc('month', CURRENT_DATE) - interval '11 months')`,
-    sql`o.aprovado_em < (date_trunc('month', CURRENT_DATE) + interval '1 month')`,
-  ];
+  const conds: ReturnType<typeof sql>[] = [];
   if (filters.fundoId) {
     if (filters.fundoId === "_no_fundo_")
       conds.push(sql`o.fundo_id IS NULL`);
@@ -306,71 +328,60 @@ export async function getInvoiceMonthly(
         OR im.comercial_id = ${filters.comercialId}::uuid)`,
     );
   }
-  const where = sql.join(conds, sql` AND `);
+  const extra = conds.length
+    ? sql`AND ${sql.join(conds, sql` AND `)}`
+    : sql``;
 
+  // SUM por mês de pago_em do (resultado_op_aq × pago_valor / valor_comissao)
+  // resultado_op_aq = custos + (desagio − VP × taxa_fundo × prazo) / 2
   const result = await db.execute(sql`
-    WITH ops AS (
-      SELECT
-        o.id,
-        o.aprovado_em,
-        o.valor_presente,
-        o.desagio,
-        COALESCE(o.numero_parcelas, 0) AS prazo_meses,
-        COALESCE(f.taxa_mensal_base, 0) AS taxa_mensal_fundo,
-        COALESCE(custos.total, 0) AS custos
-      FROM operacoes o
-      LEFT JOIN fundos f ON f.id = o.fundo_id
-      LEFT JOIN construtoras c ON c.id = o.construtora_id
-      LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
-      LEFT JOIN (
-        SELECT operacao_id, SUM(valor) AS total
-        FROM custos_operacao
-        GROUP BY operacao_id
-      ) custos ON custos.operacao_id = o.id
-      WHERE ${where}
-    )
     SELECT
-      to_char(date_trunc('month', aprovado_em), 'YYYY-MM') AS ym,
-      EXTRACT(YEAR FROM aprovado_em)::int AS ano,
-      EXTRACT(MONTH FROM aprovado_em)::int AS mes,
-      COUNT(*)::int AS qtd_operacoes,
-      COALESCE(SUM(valor_presente), 0)::float AS valor_operacao,
-      COALESCE(SUM(desagio), 0)::float AS juros_total,
-      COALESCE(SUM(custos), 0)::float AS custos_total,
-      COALESCE(SUM(desagio - custos), 0)::float AS resultado_total,
-      COALESCE(SUM(valor_presente * taxa_mensal_fundo * prazo_meses), 0)::float
-        AS custo_dinheiro_fundo,
+      to_char(date_trunc('month', p.pago_em), 'YYYY-MM') AS ym,
+      COUNT(DISTINCT o.id)::int AS qtd_operacoes,
+      COALESCE(SUM(COALESCE(p.pago_valor, p.valor))::float, 0) AS pago_no_periodo,
       COALESCE(
         SUM(
-          ((desagio - custos)
-           - valor_presente * taxa_mensal_fundo * prazo_meses) / 2
-        ),
+          (
+            COALESCE(custos.total, 0)
+            + (o.desagio
+               - o.valor_presente * COALESCE(f.taxa_mensal_base, 0)
+                                  * COALESCE(o.numero_parcelas, 0)) / 2
+          )
+          * COALESCE(p.pago_valor, p.valor)
+          / NULLIF(o.valor_comissao, 0)
+        )::float,
         0
-      )::float AS saldo_repasse
-    FROM ops
-    GROUP BY date_trunc('month', aprovado_em),
-             EXTRACT(YEAR FROM aprovado_em),
-             EXTRACT(MONTH FROM aprovado_em)
-    ORDER BY date_trunc('month', aprovado_em) ASC
+      ) AS saldo_repasse
+    FROM parcelas_comissao p
+    INNER JOIN operacoes o ON o.id = p.operacao_id
+    LEFT JOIN fundos f ON f.id = o.fundo_id
+    LEFT JOIN construtoras c ON c.id = o.construtora_id
+    LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
+    LEFT JOIN (
+      SELECT operacao_id, SUM(valor) AS total
+      FROM custos_operacao
+      GROUP BY operacao_id
+    ) custos ON custos.operacao_id = o.id
+    WHERE p.status = 'paga'
+      AND p.pago_em IS NOT NULL
+      AND p.pago_em >= (date_trunc('month', CURRENT_DATE) - interval '11 months')
+      AND p.pago_em < (date_trunc('month', CURRENT_DATE) + interval '1 month')
+      AND o.status IN ('enviada_para_pagamento', 'realizada')
+      ${extra}
+    GROUP BY date_trunc('month', p.pago_em)
+    ORDER BY date_trunc('month', p.pago_em) ASC
   `);
 
   type Raw = {
     ym: string;
-    ano: number;
-    mes: number;
     qtd_operacoes: number;
-    valor_operacao: number;
-    juros_total: number;
-    custos_total: number;
-    resultado_total: number;
-    custo_dinheiro_fundo: number;
+    pago_no_periodo: number;
     saldo_repasse: number;
   };
   const rowsByYm = new Map<string, Raw>(
     ((result as unknown as { rows: Raw[] }).rows ?? []).map((r) => [r.ym, r]),
   );
 
-  // Preenche os 12 meses, mesmo que sem dados (zero)
   const out: InvoiceMonthly[] = [];
   const now = new Date();
   now.setDate(1);
@@ -384,11 +395,7 @@ export async function getInvoiceMonthly(
       ym,
       label: `${MES_CURTO[d.getMonth()]}/${String(d.getFullYear()).slice(-2)}`,
       qtdOperacoes: r?.qtd_operacoes ?? 0,
-      valorOperacao: r?.valor_operacao ?? 0,
-      juros: r?.juros_total ?? 0,
-      custos: r?.custos_total ?? 0,
-      resultado: r?.resultado_total ?? 0,
-      custoDinheiroFundo: r?.custo_dinheiro_fundo ?? 0,
+      pagoNoPeriodo: r?.pago_no_periodo ?? 0,
       saldoRepasse: r?.saldo_repasse ?? 0,
     });
   }

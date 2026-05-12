@@ -11,6 +11,7 @@ import {
   parcelasComissao,
   documentos,
   operacaoEvents,
+  fundos,
   type User,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
@@ -119,14 +120,24 @@ function extractRows<T>(result: unknown): T[] {
 
 export async function getAdminMonthlyStats() {
   await requireAdmin();
+  // resultado_op_aq = custos + (juros − VP × taxa_fundo × prazo) / 2
   const result = await db.execute(sql`
     SELECT
       to_char(date_trunc('month', o.created_at), 'YYYY-MM') AS month,
       COUNT(*)::int AS operacoes,
-      COALESCE(SUM(o.desagio - COALESCE(custos.total, 0)), 0)::float AS lucro,
+      COALESCE(
+        SUM(
+          COALESCE(custos.total, 0)
+          + (o.desagio
+             - o.valor_presente * COALESCE(f.taxa_mensal_base, 0)
+                                * COALESCE(o.numero_parcelas, 0)) / 2
+        ),
+        0
+      )::float AS lucro,
       COALESCE(SUM(o.valor_presente), 0)::float AS valor_antecipado,
       COALESCE(SUM(o.valor_comissao), 0)::float AS valor_comissao
     FROM operacoes o
+    LEFT JOIN fundos f ON f.id = o.fundo_id
     LEFT JOIN (
       SELECT operacao_id, SUM(valor) AS total
       FROM custos_operacao
@@ -361,10 +372,14 @@ export async function getAdminOperacaoDetail(operacaoId: string) {
       construtoraCep: construtoras.cep,
       construtoraOwnerUserId: construtoras.ownerUserId,
       fundoId: operacoes.fundoId,
+      taxaMensalFundo: fundos.taxaMensalBase,
+      fundoNomeFantasia: fundos.nomeFantasia,
+      fundoRazaoSocial: fundos.razaoSocial,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
     .leftJoin(users, eq(operacoes.corretorUserId, users.id))
+    .leftJoin(fundos, eq(operacoes.fundoId, fundos.id))
     .where(eq(operacoes.id, operacaoId))
     .limit(1);
 
@@ -627,7 +642,8 @@ export async function listAllConstrutoras() {
   });
 }
 
-/** Stats mensais (12 meses) das operações de um corretor específico. */
+/** Stats mensais (12 meses) das operações de um corretor específico.
+ *  lucro = resultado_op_AQ = custos + (juros − custo_dinheiro_fundo)/2 */
 export async function getUserMonthlyStats(userId: string) {
   const result = await db.execute(sql`
     SELECT
@@ -635,8 +651,17 @@ export async function getUserMonthlyStats(userId: string) {
       COUNT(*)::int AS operacoes,
       COALESCE(SUM(o.valor_presente), 0)::float AS valor_antecipado,
       COALESCE(SUM(o.valor_comissao), 0)::float AS valor_comissao,
-      COALESCE(SUM(o.desagio - COALESCE(custos.total, 0)), 0)::float AS lucro
+      COALESCE(
+        SUM(
+          COALESCE(custos.total, 0)
+          + (o.desagio
+             - o.valor_presente * COALESCE(f.taxa_mensal_base, 0)
+                                * COALESCE(o.numero_parcelas, 0)) / 2
+        ),
+        0
+      )::float AS lucro
     FROM operacoes o
+    LEFT JOIN fundos f ON f.id = o.fundo_id
     LEFT JOIN (
       SELECT operacao_id, SUM(valor) AS total
       FROM custos_operacao
@@ -690,6 +715,8 @@ export async function getUserDetail(userId: string) {
       valorPresente: operacoes.valorPresente,
       valorComissao: operacoes.valorComissao,
       desagio: operacoes.desagio,
+      numeroParcelas: operacoes.numeroParcelas,
+      taxaMensalFundo: fundos.taxaMensalBase,
       createdAt: operacoes.createdAt,
       construtoraId: operacoes.construtoraId,
       construtoraNome: construtoras.razaoSocial,
@@ -697,10 +724,11 @@ export async function getUserDetail(userId: string) {
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
+    .leftJoin(fundos, eq(operacoes.fundoId, fundos.id))
     .where(eq(operacoes.corretorUserId, userId))
     .orderBy(desc(operacoes.createdAt));
 
-  // Soma custos por operação pra calcular resultado (desagio − custos)
+  // Soma custos por operação — entra no resultado AQ (100% AQ).
   const opIds = userOpsRaw.map((o) => o.id);
   const custosByOp = new Map<string, number>();
   if (opIds.length) {

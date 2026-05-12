@@ -90,10 +90,16 @@ export default async function AdminUsuarioDetail({ params }: Params) {
     (s, op) => s + parseFloat(op.valorComissao),
     0,
   );
-  const totalLucro = operacoes.reduce(
-    (s, op) => s + parseFloat(op.desagio) - (op.custosTotal ?? 0),
-    0,
-  );
+  // resultado_op_AQ = custos + (juros − VP × taxa_fundo × prazo) / 2
+  const totalLucro = operacoes.reduce((s, op) => {
+    const juros = parseFloat(op.desagio);
+    const vp = parseFloat(op.valorPresente);
+    const custos = op.custosTotal ?? 0;
+    const taxa = parseFloat(op.taxaMensalFundo ?? "0");
+    const prazo = op.numeroParcelas ?? 0;
+    const spread = juros - vp * taxa * prazo;
+    return s + custos + spread / 2;
+  }, 0);
 
   async function approve() {
     "use server";

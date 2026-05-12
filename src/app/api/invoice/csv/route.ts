@@ -42,14 +42,17 @@ export async function GET(req: NextRequest) {
     "Comercial",
     "Data aprovação",
     "Data venda",
-    "Valor operação (R$)",
-    "Juros (R$)",
-    "Custos (R$)",
-    "Resultado (R$)",
+    "Valor total da op (R$)",
+    "Pago no período (R$)",
+    "% pago",
+    "Juros total da op (R$)",
     "Taxa mensal fundo",
     "Prazo (meses)",
     "Custo do dinheiro (R$)",
-    "Saldo de repasse (R$)",
+    "Spread (R$)",
+    "Custos (R$)",
+    "Resultado AQ op inteira (R$)",
+    "Repasse devido (R$)",
   ];
   const lines = [
     headers.map(csvEscape).join(";"),
@@ -62,13 +65,16 @@ export async function GET(req: NextRequest) {
         r.comercialNome ?? "",
         r.dataAprovacao ?? "",
         r.dataVenda ?? "",
-        fmtBRL(r.valorOperacao),
+        fmtBRL(r.valorComissaoTotal),
+        fmtBRL(r.pagoNoPeriodo),
+        fmtPct(r.pctPago),
         fmtBRL(r.juros),
-        fmtBRL(r.custos),
-        fmtBRL(r.resultado),
         fmtPct(r.taxaMensalFundo),
         String(r.prazoMeses),
         fmtBRL(r.custoDinheiroFundo),
+        fmtBRL(r.spread),
+        fmtBRL(r.custos),
+        fmtBRL(r.resultadoOpAQ),
         fmtBRL(r.saldoRepasse),
       ]
         .map(csvEscape)
@@ -82,20 +88,22 @@ export async function GET(req: NextRequest) {
       "",
       "",
       "",
-      fmtBRL(payload.totals.valorOperacao),
+      fmtBRL(payload.totals.valorComissaoTotal),
+      fmtBRL(payload.totals.pagoNoPeriodo),
+      "",
       fmtBRL(payload.totals.juros),
-      fmtBRL(payload.totals.custos),
-      fmtBRL(payload.totals.resultado),
       "",
       "",
       fmtBRL(payload.totals.custoDinheiroFundo),
+      fmtBRL(payload.totals.spread),
+      fmtBRL(payload.totals.custos),
+      fmtBRL(payload.totals.resultadoOpAQ),
       fmtBRL(payload.totals.saldoRepasse),
     ]
       .map(csvEscape)
       .join(";"),
   ];
 
-  // BOM pra Excel reconhecer UTF-8
   const csv = "﻿" + lines.join("\n");
   return new NextResponse(csv, {
     status: 200,

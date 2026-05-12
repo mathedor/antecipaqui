@@ -446,7 +446,7 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
                 { width: COL_WIDTHS.resultado, textAlign: "right" },
               ]}
             >
-              Resultado
+              Pago no mês
             </Text>
             <Text
               style={[
@@ -504,7 +504,7 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
                   { width: COL_WIDTHS.valor, textAlign: "right" },
                 ]}
               >
-                {fmtBRL(r.valorOperacao)}
+                {fmtBRL(r.valorComissaoTotal)}
               </Text>
               <Text
                 style={[
@@ -536,7 +536,11 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
                   },
                 ]}
               >
-                {fmtBRL(r.resultado)}
+                {fmtBRL(r.pagoNoPeriodo)}
+                {"\n"}
+                <Text style={{ fontSize: 6.5, color: COLOR_FG_DIM }}>
+                  ({fmtPct(r.pctPago, 1)} pago)
+                </Text>
               </Text>
               <Text
                 style={[
@@ -595,7 +599,7 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
                 },
               ]}
             >
-              {fmtBRL(totals.valorOperacao)}
+              {fmtBRL(totals.valorComissaoTotal)}
             </Text>
             <Text
               style={[
@@ -635,7 +639,7 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
                 },
               ]}
             >
-              {fmtBRL(totals.resultado)}
+              {fmtBRL(totals.pagoNoPeriodo)}
             </Text>
             <Text
               style={[

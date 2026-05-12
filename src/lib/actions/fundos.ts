@@ -398,6 +398,7 @@ export async function getFundoDashboard() {
       valorPresente: operacoes.valorPresente,
       desagio: operacoes.desagio,
       taxaMensal: operacoes.taxaMensal,
+      numeroParcelas: operacoes.numeroParcelas,
       dataVenda: operacoes.dataVenda,
       createdAt: operacoes.createdAt,
       construtoraNome: construtoras.razaoSocial,
@@ -456,14 +457,21 @@ export async function getFundoDashboard() {
       else aVencer += valor;
     }
   }
+  // totalLucro pro fundo = parte_fundo = custo_dinheiro + spread/2
+  // custo_dinheiro = VP × taxa_fundo × prazo (numero_parcelas)
+  const taxaFundo = parseFloat(fundo.taxaMensalBase ?? "0");
   for (const o of ops) {
     if (
       ["pre_aprovada", "analise_final", "enviada_para_assinatura", "enviada_para_pagamento", "realizada"].includes(
         o.status,
       )
     ) {
-      const custos = custosByOp.get(o.id) ?? 0;
-      totalLucro += parseFloat(o.desagio) - custos;
+      const juros = parseFloat(o.desagio);
+      const vp = parseFloat(o.valorPresente);
+      const prazo = o.numeroParcelas ?? 0;
+      const custoDinheiro = vp * taxaFundo * prazo;
+      const spread = juros - custoDinheiro;
+      totalLucro += custoDinheiro + spread / 2;
     }
   }
 

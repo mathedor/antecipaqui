@@ -16,7 +16,7 @@ type Row = {
   volumeOperado: number;
   comissoesIntermediadas: number;
   jurosTotal: number;
-  resultadoTotal: number;
+  spreadTotal: number;
   lucroLiquido: number;
   comissaoComercial: number;
 };
@@ -35,7 +35,7 @@ export function ComerciaisRankingTable({ rows }: { rows: Row[] }) {
             "Realizadas",
             "Volume operado (R$)",
             "Juros gerados (R$)",
-            "Resultado (R$)",
+            "Spread (R$)",
             "Lucro líquido (R$)",
             "Comissão comercial (R$)",
           ]}
@@ -48,7 +48,7 @@ export function ComerciaisRankingTable({ rows }: { rows: Row[] }) {
               r.qtdRealizadas,
               r.volumeOperado.toFixed(2),
               r.jurosTotal.toFixed(2),
-              r.resultadoTotal.toFixed(2),
+              r.spreadTotal.toFixed(2),
               r.lucroLiquido.toFixed(2),
               r.comissaoComercial.toFixed(2),
             ])
@@ -132,18 +132,18 @@ export function ComerciaisRankingTable({ rows }: { rows: Row[] }) {
             footer: (rs) => sumBy(rs, (r) => r.volumeOperado, formatBRL),
           },
           {
-            key: "resultadoTotal",
-            header: "Resultado",
+            key: "spreadTotal",
+            header: "Spread",
             align: "right",
             sortable: true,
-            sortValue: (r) => r.resultadoTotal,
+            sortValue: (r) => r.spreadTotal,
             hideOnMobile: true,
             render: (r) => (
               <span className="font-mono tabular text-fg">
-                {formatBRL(r.resultadoTotal)}
+                {formatBRL(r.spreadTotal)}
               </span>
             ),
-            footer: (rs) => sumBy(rs, (r) => r.resultadoTotal, formatBRL),
+            footer: (rs) => sumBy(rs, (r) => r.spreadTotal, formatBRL),
           },
           {
             key: "lucroLiquido",

@@ -100,14 +100,16 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
           fundos
         </h1>
         <p className="mt-2 text-fg-muted max-w-2xl">
-          Demonstrativo de repasse devido pelos fundos investidores.{" "}
-          <span className="font-mono text-xs">
-            Resultado = Juros − Custos. Custo do dinheiro = Valor presente ×
-            taxa mensal do fundo × prazo (parcelas). Saldo = (Resultado − Custo
-            do dinheiro) ÷ 2.
-          </span>{" "}
-          Período baseado na data de aprovação (status &quot;enviada para
-          pagamento&quot; ou superior).
+          Demonstrativo de repasse devido pelo fundo. Filtra operações com{" "}
+          <strong>parcelas pagas no período</strong> e calcula o repasse
+          proporcional ao % pago.{" "}
+          <span className="font-mono text-xs block mt-1">
+            spread = juros − (VP × taxa fundo × prazo)
+            <br />
+            resultado AQ = custos + spread÷2
+            <br />
+            repasse devido = resultado AQ × (pago no mês ÷ valor total da op)
+          </span>
         </p>
       </div>
 
@@ -329,8 +331,9 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
           </h2>
           <p className="mt-1 text-sm text-fg-muted">
             {data.rows.length}{" "}
-            {data.rows.length === 1 ? "operação" : "operações"} · soma de saldo
-            de repasse
+            {data.rows.length === 1 ? "operação" : "operações"} com parcelas
+            pagas no período · total recebido pelo fundo:{" "}
+            <strong>{formatBRL(data.totals.pagoNoPeriodo)}</strong>
           </p>
         </div>
         <div className="font-mono tabular text-4xl md:text-5xl font-bold text-success leading-none">

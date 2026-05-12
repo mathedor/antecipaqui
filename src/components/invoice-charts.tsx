@@ -160,8 +160,8 @@ export function InvoiceMonthlyCharts({
       </ChartCard>
 
       <ChartCard
-        title="Resultado vs custo do dinheiro · 12 meses"
-        subtitle="Resultado da operação (juros − custos) vs custo de capital do fundo"
+        title="Pago no mês vs repasse devido · 12 meses"
+        subtitle="Recebido pelo fundo (parcelas pagas) vs valor devido à Antecipaqui"
         full
       >
         <ResponsiveContainer width="100%" height={200}>
@@ -185,15 +185,15 @@ export function InvoiceMonthlyCharts({
               content={<CustomTooltip formatter={(n) => fmtBRL(n)} />}
             />
             <Bar
-              dataKey="resultado"
-              name="Resultado"
-              fill={SUCCESS}
+              dataKey="pagoNoPeriodo"
+              name="Pago no mês"
+              fill={WARN}
               radius={[4, 4, 0, 0]}
             />
             <Bar
-              dataKey="custoDinheiroFundo"
-              name="Custo do dinheiro"
-              fill={WARN}
+              dataKey="saldoRepasse"
+              name="Repasse devido"
+              fill={SUCCESS}
               radius={[4, 4, 0, 0]}
             />
           </BarChart>

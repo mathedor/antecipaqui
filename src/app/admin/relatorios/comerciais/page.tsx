@@ -23,7 +23,7 @@ export default async function ComerciaisRelatorioPage({ searchParams }: Search) 
   const totals = {
     operacoes: rows.reduce((s, r) => s + r.qtdOperacoes, 0),
     volume: rows.reduce((s, r) => s + r.volumeOperado, 0),
-    resultado: rows.reduce((s, r) => s + r.resultadoTotal, 0),
+    spread: rows.reduce((s, r) => s + r.spreadTotal, 0),
     comissao: rows.reduce((s, r) => s + r.comissaoComercial, 0),
   };
 
@@ -41,9 +41,9 @@ export default async function ComerciaisRelatorioPage({ searchParams }: Search) 
           Desempenho de <span className="text-gradient-blue">comerciais</span>
         </h1>
         <p className="mt-2 text-fg-muted max-w-2xl">
-          Quantidade de operações, volume operado, resultado (juros − custos) e
-          comissão calculada (~10% do lucro líquido sobre o resultado) por
-          comercial.
+          Quantidade de operações, volume operado, spread (juros − custo do
+          dinheiro do fundo) e comissão = 10% do lucro líquido sobre a
+          metade do spread.
         </p>
       </div>
 
