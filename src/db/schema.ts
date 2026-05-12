@@ -1015,6 +1015,59 @@ export const faturasFundo = pgTable(
 export type FaturaFundo = typeof faturasFundo.$inferSelect;
 
 /* =========================================
+   COMISSÕES DO COMERCIAL — ledger por operação
+   Uma row por (operacao, comercial). Gerada quando a op é aprovada.
+   Status pendente → paga conforme admin registra.
+   ========================================= */
+
+export const comissaoComercialStatusEnum = pgEnum("comissao_comercial_status", [
+  "pendente",
+  "paga",
+  "cancelada",
+]);
+
+export const comissoesComercial = pgTable(
+  "comissoes_comercial",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    operacaoId: uuid("operacao_id")
+      .notNull()
+      .references(() => operacoes.id, { onDelete: "cascade" }),
+    comercialId: uuid("comercial_id")
+      .notNull()
+      .references(() => comerciais.id, { onDelete: "restrict" }),
+    /** Valor congelado no momento da criação (= 10% do lucro AQ líquido).
+     *  Recalcula só se a op for editada antes do primeiro pagamento. */
+    valorDevido: numeric("valor_devido", { precision: 15, scale: 2 }).notNull(),
+    valorPago: numeric("valor_pago", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    status: comissaoComercialStatusEnum("status").notNull().default("pendente"),
+    geradaEm: timestamp("gerada_em", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    pagaEm: timestamp("paga_em", { withTimezone: true }),
+    pagaPorUserId: text("paga_por_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    observacao: text("observacao"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("comissoes_comercial_unica").on(t.operacaoId),
+    index("comissoes_comercial_comercial_idx").on(t.comercialId),
+    index("comissoes_comercial_status_idx").on(t.status),
+  ],
+);
+
+export type ComissaoComercial = typeof comissoesComercial.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 

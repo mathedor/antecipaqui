@@ -226,6 +226,43 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     .set(updates)
     .where(eq(operacoes.id, input.operacaoId));
 
+  // Gera/atualiza row de comissão do comercial (ledger) quando a op é
+  // aprovada e tem comercial vinculado. Idempotente.
+  if (
+    (input.newStatus === "pre_aprovada" ||
+      input.newStatus === "analise_final" ||
+      input.newStatus === "enviada_para_assinatura" ||
+      input.newStatus === "enviada_para_pagamento" ||
+      input.newStatus === "realizada") &&
+    op.comercialId
+  ) {
+    const taxaOpFinal = parseFloat(
+      (updates.taxaMensal as string | undefined) ?? op.taxaMensal,
+    );
+    const taxaFundoFinal = parseFloat(
+      (updates.taxaFundoSnapshot as string | undefined) ??
+        op.taxaFundoSnapshot ??
+        "0",
+    );
+    const juros = parseFloat(
+      (updates.desagio as string | undefined) ?? op.desagio,
+    );
+    if (taxaOpFinal > 0) {
+      const razao = Math.min(1, taxaFundoFinal / taxaOpFinal);
+      const spread = Math.max(0, juros * (1 - razao));
+      const { upsertComissaoParaOperacao } = await import(
+        "@/lib/actions/comissoes-comercial"
+      );
+      await upsertComissaoParaOperacao({
+        operacaoId: input.operacaoId,
+        comercialId: op.comercialId,
+        spread,
+      }).catch((e) =>
+        console.error("[status-flow] upsert comissao failed:", e),
+      );
+    }
+  }
+
   // Se o fundo mudou, sincroniza participantes dos chats vinculados
   if (
     typeof updates.fundoId === "string" &&

@@ -22,12 +22,20 @@ export default async function AdminComerciaisPage() {
             {list.length} comercial(is) cadastrado(s).
           </p>
         </div>
-        <Link
-          href="/admin/cadastrar/comercial"
-          className="btn-primary !h-11 !px-5"
-        >
-          + Novo comercial
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/comerciais/comissoes"
+            className="inline-flex items-center h-11 px-4 rounded-lg border border-border bg-bg-elev text-fg text-sm font-semibold hover:border-accent transition-colors"
+          >
+            💼 Comissões
+          </Link>
+          <Link
+            href="/admin/cadastrar/comercial"
+            className="btn-primary !h-11 !px-5"
+          >
+            + Novo comercial
+          </Link>
+        </div>
       </div>
 
       <ComerciaisTable rows={list} />
