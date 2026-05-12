@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   construtoras,
@@ -238,7 +238,8 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
   }
 
   // Custos de operação: substitui o conjunto atual pelo enviado.
-  // Aceito em qualquer transição de aprovação (final ou cashback).
+  // Trava: se já existe parcela paga (= já gerou repasse no Invoice),
+  // não permite editar — protege o histórico de cobrança do fundo.
   if (Array.isArray(input.custos)) {
     const validos = input.custos
       .map((c) => ({
@@ -247,18 +248,50 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
           typeof c.valor === "number" && Number.isFinite(c.valor) ? c.valor : 0,
       }))
       .filter((c) => c.titulo.length > 0 && c.valor > 0);
-    await db
-      .delete(custosOperacao)
+
+    // Verifica se algo mudou de fato comparado aos custos atuais
+    const atuais = await db
+      .select()
+      .from(custosOperacao)
       .where(eq(custosOperacao.operacaoId, input.operacaoId));
-    if (validos.length > 0) {
-      await db.insert(custosOperacao).values(
-        validos.map((c) => ({
-          operacaoId: input.operacaoId,
-          titulo: c.titulo,
-          valor: String(c.valor.toFixed(2)),
-          createdByUserId: actor.id,
-        })),
-      );
+    const atuaisNorm = atuais
+      .map((c) => `${c.titulo.trim()}|${parseFloat(c.valor).toFixed(2)}`)
+      .sort()
+      .join(",");
+    const novosNorm = validos
+      .map((c) => `${c.titulo}|${c.valor.toFixed(2)}`)
+      .sort()
+      .join(",");
+    const houveMudanca = atuaisNorm !== novosNorm;
+
+    if (houveMudanca) {
+      // Bloqueia se já tem parcela paga
+      const [parcelaPaga] = await db
+        .select({ id: parcelasComissao.id })
+        .from(parcelasComissao)
+        .where(
+          sql`${parcelasComissao.operacaoId} = ${input.operacaoId}
+              AND ${parcelasComissao.status} = 'paga'`,
+        )
+        .limit(1);
+      if (parcelaPaga) {
+        throw new Error(
+          "Operação já tem parcela paga e gerou repasse no Invoice — custos não podem mais ser editados. Pra ajuste extra, crie uma nova operação ou contate o fundo.",
+        );
+      }
+      await db
+        .delete(custosOperacao)
+        .where(eq(custosOperacao.operacaoId, input.operacaoId));
+      if (validos.length > 0) {
+        await db.insert(custosOperacao).values(
+          validos.map((c) => ({
+            operacaoId: input.operacaoId,
+            titulo: c.titulo,
+            valor: String(c.valor.toFixed(2)),
+            createdByUserId: actor.id,
+          })),
+        );
+      }
     }
   }
 
