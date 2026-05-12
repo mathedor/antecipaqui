@@ -632,15 +632,34 @@ export default async function AdminOperacaoDetail({ params }: Params) {
                 {op.documentos.map((d) => (
                   <li
                     key={d.id}
-                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-border bg-bg hover:border-accent transition-colors"
+                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border bg-bg hover:border-accent transition-colors ${
+                      d.validacaoStatus === "revisao"
+                        ? "border-warn/40"
+                        : "border-border"
+                    }`}
                   >
-                    <div className="min-w-0">
-                      <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-0.5">
-                        {TIPO_LABEL[d.tipo] ?? d.tipo}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                          {TIPO_LABEL[d.tipo] ?? d.tipo}
+                        </span>
+                        {d.validacaoStatus === "revisao" && (
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-mono font-semibold bg-yellow-50 text-warn border border-warn/30"
+                            title={d.validacaoMotivo ?? "Confiança baixa na IA — revisar"}
+                          >
+                            revisar
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm text-fg truncate">
                         {d.nomeOriginal}
                       </div>
+                      {d.validacaoStatus === "revisao" && d.validacaoMotivo && (
+                        <div className="mt-1 text-[10px] text-warn leading-relaxed">
+                          ⚠ {d.validacaoMotivo}
+                        </div>
+                      )}
                     </div>
                     <a
                       href={toBlobProxyHref(d.url) + "?download=1"}

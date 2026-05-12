@@ -17,6 +17,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { getTaxaMensal } from "@/lib/actions/settings";
+import { extractValidacao } from "@/lib/validacao-form";
 import { audit } from "@/lib/audit";
 import {
   parseCompradoresFromForm,
@@ -197,16 +198,23 @@ export async function cadastrarImobiliariaAction(
     nomeOriginal: string;
     userId: string;
     imobiliariaId: string;
+    validacaoStatus: "ok" | "revisao" | null;
+    validacaoConfianca: string | null;
+    validacaoMotivo: string | null;
   }> = [];
   for (const d of docInputs) {
     const url = String(formData.get(d.field) || "").trim();
     if (!url) continue;
+    const v = extractValidacao(formData, d.field);
     docsToInsert.push({
       tipo: d.tipo,
       url,
       nomeOriginal: String(formData.get(`${d.field}_nome`) || d.nomeDefault),
       userId,
       imobiliariaId: created.id,
+      validacaoStatus: v.validacaoStatus,
+      validacaoConfianca: v.validacaoConfianca,
+      validacaoMotivo: v.validacaoMotivo,
     });
   }
   if (docsToInsert.length > 0) {
@@ -491,7 +499,9 @@ export async function adminCadastrarOperacaoAction(
     url: string;
     nome: string;
   };
-  const docRows: DocRow[] = [];
+  const docRows: (DocRow & {
+    nameBase: string;
+  })[] = [];
   const addDoc = (
     field: string,
     tipo: DocRow["tipo"],
@@ -503,6 +513,7 @@ export async function adminCadastrarOperacaoAction(
       tipo,
       url,
       nome: String(formData.get(`${field}_nome`) || fallbackName),
+      nameBase: field,
     });
   };
   addDoc("doc_contrato_venda", "contrato_venda", "contrato_venda.pdf");
@@ -515,13 +526,19 @@ export async function adminCadastrarOperacaoAction(
   );
   if (docRows.length > 0) {
     await db.insert(documentos).values(
-      docRows.map((d) => ({
-        tipo: d.tipo,
-        url: d.url,
-        nomeOriginal: d.nome,
-        userId: corretorUserId,
-        operacaoId: op.id,
-      })),
+      docRows.map((d) => {
+        const v = extractValidacao(formData, d.nameBase);
+        return {
+          tipo: d.tipo,
+          url: d.url,
+          nomeOriginal: d.nome,
+          userId: corretorUserId,
+          operacaoId: op.id,
+          validacaoStatus: v.validacaoStatus,
+          validacaoConfianca: v.validacaoConfianca,
+          validacaoMotivo: v.validacaoMotivo,
+        };
+      }),
     );
   }
 

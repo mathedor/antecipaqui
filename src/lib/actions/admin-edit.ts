@@ -16,6 +16,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { getTaxaMensal } from "@/lib/actions/settings";
+import { extractValidacao } from "@/lib/validacao-form";
 
 type DocTipo = "contrato_social" | "comprovante_endereco" | "creci";
 
@@ -24,6 +25,8 @@ async function upsertDocumento(args: {
   tipo: DocTipo;
   url: string;
   nome: string;
+  formData: FormData;
+  nameBase: string;
   userId?: string | null;
   imobiliariaId?: string | null;
   construtoraId?: string | null;
@@ -57,6 +60,7 @@ async function upsertDocumento(args: {
         ),
       );
   }
+  const v = extractValidacao(args.formData, args.nameBase);
   await db.insert(documentos).values({
     tipo: args.tipo,
     url: args.url,
@@ -64,6 +68,9 @@ async function upsertDocumento(args: {
     userId: args.userId ?? null,
     imobiliariaId: args.imobiliariaId ?? null,
     construtoraId: args.construtoraId ?? null,
+    validacaoStatus: v.validacaoStatus,
+    validacaoConfianca: v.validacaoConfianca,
+    validacaoMotivo: v.validacaoMotivo,
   });
 }
 
@@ -155,6 +162,8 @@ export async function editUserAction(
       tipo: d.tipo,
       url,
       nome,
+      formData,
+      nameBase: d.field,
       userId,
       imobiliariaId,
     });
@@ -229,6 +238,8 @@ export async function editConstrutoraAction(
       tipo: d.tipo,
       url,
       nome,
+      formData,
+      nameBase: d.field,
       construtoraId,
     });
   }

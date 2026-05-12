@@ -17,6 +17,7 @@ import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { sendEmail } from "@/lib/email";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { getTaxaMensal } from "@/lib/actions/settings";
+import { extractValidacao } from "@/lib/validacao-form";
 import {
   parseCompradoresFromForm,
   parsePagadorTipo,
@@ -134,15 +135,22 @@ export async function createConstrutoraAction(
     url: string;
     nomeOriginal: string;
     construtoraId: string;
+    validacaoStatus: "ok" | "revisao" | null;
+    validacaoConfianca: string | null;
+    validacaoMotivo: string | null;
   }> = [];
   for (const d of docInputs) {
     const url = String(formData.get(d.field) || "").trim();
     if (!url) continue;
+    const v = extractValidacao(formData, d.field);
     docsToInsert.push({
       tipo: d.tipo,
       url,
       nomeOriginal: String(formData.get(`${d.field}_nome`) || d.nomeDefault),
       construtoraId: created.id,
+      validacaoStatus: v.validacaoStatus,
+      validacaoConfianca: v.validacaoConfianca,
+      validacaoMotivo: v.validacaoMotivo,
     });
   }
   if (docsToInsert.length > 0) {
@@ -432,22 +440,26 @@ export async function createOperacaoAction(
       | "comprovante_entrada";
     url: string;
     nome: string;
+    nameBase: string;
   };
   const docRows: DocRow[] = [
     {
       tipo: "contrato_venda",
       url: docContratoVendaUrl,
       nome: String(formData.get("doc_contrato_venda_nome") || "contrato_venda.pdf"),
+      nameBase: "doc_contrato_venda",
     },
     {
       tipo: "contrato_comissao",
       url: docContratoComissaoUrl,
       nome: String(formData.get("doc_contrato_comissao_nome") || "contrato_comissao.pdf"),
+      nameBase: "doc_contrato_comissao",
     },
     {
       tipo: "nota_fiscal",
       url: docNotaFiscalUrl,
       nome: String(formData.get("doc_nota_fiscal_nome") || "nota_fiscal.pdf"),
+      nameBase: "doc_nota_fiscal",
     },
   ];
   if (docComprovanteEntradaUrl) {
@@ -458,18 +470,25 @@ export async function createOperacaoAction(
         formData.get("doc_comprovante_entrada_nome") ||
           "comprovante_entrada.pdf",
       ),
+      nameBase: "doc_comprovante_entrada",
     });
   }
 
   if (docRows.length > 0) {
     await db.insert(documentos).values(
-      docRows.map((d) => ({
-        tipo: d.tipo,
-        url: d.url,
-        nomeOriginal: d.nome,
-        userId: user.id,
-        operacaoId: op.id,
-      })),
+      docRows.map((d) => {
+        const v = extractValidacao(formData, d.nameBase);
+        return {
+          tipo: d.tipo,
+          url: d.url,
+          nomeOriginal: d.nome,
+          userId: user.id,
+          operacaoId: op.id,
+          validacaoStatus: v.validacaoStatus,
+          validacaoConfianca: v.validacaoConfianca,
+          validacaoMotivo: v.validacaoMotivo,
+        };
+      }),
     );
   }
 

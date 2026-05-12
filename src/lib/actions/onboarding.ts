@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { users, imobiliarias, construtoras, documentos } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
+import { extractValidacao } from "@/lib/validacao-form";
 
 type DocumentoTipo =
   | "contrato_social"
@@ -18,19 +19,26 @@ async function persistDocumentos(
     userId: string;
     imobiliariaId?: string;
     construtoraId?: string;
-    docs: { tipo: DocumentoTipo; url: string; nome: string }[];
+    formData: FormData;
+    docs: { tipo: DocumentoTipo; url: string; nome: string; nameBase: string }[];
   },
 ) {
   const rows = args.docs
     .filter((d) => d.url)
-    .map((d) => ({
-      tipo: d.tipo,
-      url: d.url,
-      nomeOriginal: d.nome,
-      userId: args.userId,
-      imobiliariaId: args.imobiliariaId ?? null,
-      construtoraId: args.construtoraId ?? null,
-    }));
+    .map((d) => {
+      const v = extractValidacao(args.formData, d.nameBase);
+      return {
+        tipo: d.tipo,
+        url: d.url,
+        nomeOriginal: d.nome,
+        userId: args.userId,
+        imobiliariaId: args.imobiliariaId ?? null,
+        construtoraId: args.construtoraId ?? null,
+        validacaoStatus: v.validacaoStatus,
+        validacaoConfianca: v.validacaoConfianca,
+        validacaoMotivo: v.validacaoMotivo,
+      };
+    });
   if (rows.length === 0) return;
   await db.insert(documentos).values(rows);
 }
@@ -222,10 +230,11 @@ export async function saveCompanyDataAction(
     await persistDocumentos({
       userId: user.id,
       imobiliariaId,
+      formData,
       docs: [
-        { tipo: "contrato_social", url: docContratoSocial, nome: nomeContratoSocial },
-        { tipo: "comprovante_endereco", url: docComprovEndereco, nome: nomeComprovEndereco },
-        { tipo: "creci", url: docCreci, nome: nomeCreci },
+        { tipo: "contrato_social", url: docContratoSocial, nome: nomeContratoSocial, nameBase: "doc_contrato_social" },
+        { tipo: "comprovante_endereco", url: docComprovEndereco, nome: nomeComprovEndereco, nameBase: "doc_comprovante_endereco" },
+        { tipo: "creci", url: docCreci, nome: nomeCreci, nameBase: "doc_creci" },
       ],
     });
   } else if (user.role === "construtora") {
@@ -274,9 +283,10 @@ export async function saveCompanyDataAction(
     await persistDocumentos({
       userId: user.id,
       construtoraId,
+      formData,
       docs: [
-        { tipo: "contrato_social", url: docContratoSocial, nome: nomeContratoSocial },
-        { tipo: "comprovante_endereco", url: docComprovEndereco, nome: nomeComprovEndereco },
+        { tipo: "contrato_social", url: docContratoSocial, nome: nomeContratoSocial, nameBase: "doc_contrato_social" },
+        { tipo: "comprovante_endereco", url: docComprovEndereco, nome: nomeComprovEndereco, nameBase: "doc_comprovante_endereco" },
       ],
     });
   }

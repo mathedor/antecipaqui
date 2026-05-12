@@ -209,6 +209,27 @@ export function FileUploadField({
           silenciosamente em hidden required vazios. A validação do
           obrigatório é feita pelo botão (disabled) + server action. */}
       <input type="hidden" name={name} value={blob?.url ?? ""} />
+      {/* Campos de validação por IA — server actions leem com extractValidacao
+          do helper validacao-form.ts pra persistir em documentos.validacao_*. */}
+      <input
+        type="hidden"
+        name={`${name}_validacao_status`}
+        value={blob?.validacaoStatus ?? ""}
+      />
+      <input
+        type="hidden"
+        name={`${name}_validacao_confianca`}
+        value={
+          blob?.validacaoConfianca != null
+            ? String(blob.validacaoConfianca)
+            : ""
+        }
+      />
+      <input
+        type="hidden"
+        name={`${name}_validacao_motivo`}
+        value={blob?.validacaoMotivo ?? ""}
+      />
 
       {status === "idle" && (
         <label

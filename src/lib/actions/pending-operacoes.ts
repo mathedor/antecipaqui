@@ -21,6 +21,7 @@ import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { getTaxaMensal } from "@/lib/actions/settings";
 import { parseCompradoresFromForm } from "@/lib/compradores";
+import { extractValidacao } from "@/lib/validacao-form";
 
 type LinhaPayload = {
   imobiliariaId?: string | null;
@@ -669,26 +670,35 @@ export async function completarConviteAction(
       tipo: "contrato_venda" as const,
       url: docContratoVendaUrl,
       nome: String(formData.get("doc_contrato_venda_nome") || "contrato_venda.pdf"),
+      nameBase: "doc_contrato_venda",
     },
     {
       tipo: "contrato_comissao" as const,
       url: docContratoComissaoUrl,
       nome: String(formData.get("doc_contrato_comissao_nome") || "contrato_comissao.pdf"),
+      nameBase: "doc_contrato_comissao",
     },
     {
       tipo: "nota_fiscal" as const,
       url: docNotaFiscalUrl,
       nome: String(formData.get("doc_nota_fiscal_nome") || "nota_fiscal.pdf"),
+      nameBase: "doc_nota_fiscal",
     },
   ];
   await db.insert(documentos).values(
-    docNomes.map((d) => ({
-      tipo: d.tipo,
-      url: d.url,
-      nomeOriginal: d.nome,
-      userId: user.id,
-      operacaoId: op.id,
-    })),
+    docNomes.map((d) => {
+      const v = extractValidacao(formData, d.nameBase);
+      return {
+        tipo: d.tipo,
+        url: d.url,
+        nomeOriginal: d.nome,
+        userId: user.id,
+        operacaoId: op.id,
+        validacaoStatus: v.validacaoStatus,
+        validacaoConfianca: v.validacaoConfianca,
+        validacaoMotivo: v.validacaoMotivo,
+      };
+    }),
   );
 
   // Audit

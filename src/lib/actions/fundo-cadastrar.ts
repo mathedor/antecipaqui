@@ -15,6 +15,7 @@ import {
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { audit } from "@/lib/audit";
+import { extractValidacao } from "@/lib/validacao-form";
 import {
   parseCompradoresFromForm,
   parsePagadorTipo,
@@ -244,6 +245,7 @@ export async function fundoCadastrarOperacaoAction(
       | "comprovante_entrada";
     url: string;
     nome: string;
+    nameBase: string;
   };
   const docRows: DocRow[] = [];
   const addDoc = (
@@ -257,6 +259,7 @@ export async function fundoCadastrarOperacaoAction(
       tipo,
       url,
       nome: String(formData.get(`${field}_nome`) || fallbackName),
+      nameBase: field,
     });
   };
   addDoc("doc_contrato_venda", "contrato_venda", "contrato_venda.pdf");
@@ -269,13 +272,19 @@ export async function fundoCadastrarOperacaoAction(
   );
   if (docRows.length > 0) {
     await db.insert(documentos).values(
-      docRows.map((d) => ({
-        tipo: d.tipo,
-        url: d.url,
-        nomeOriginal: d.nome,
-        userId: corretorUserId,
-        operacaoId: op.id,
-      })),
+      docRows.map((d) => {
+        const v = extractValidacao(formData, d.nameBase);
+        return {
+          tipo: d.tipo,
+          url: d.url,
+          nomeOriginal: d.nome,
+          userId: corretorUserId,
+          operacaoId: op.id,
+          validacaoStatus: v.validacaoStatus,
+          validacaoConfianca: v.validacaoConfianca,
+          validacaoMotivo: v.validacaoMotivo,
+        };
+      }),
     );
   }
 

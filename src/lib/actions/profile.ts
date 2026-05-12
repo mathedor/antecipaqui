@@ -12,6 +12,7 @@ import {
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { audit } from "@/lib/audit";
+import { extractValidacao } from "@/lib/validacao-form";
 
 export type EditProfileState =
   | { ok: false; error: string }
@@ -24,6 +25,8 @@ async function upsertDocumento(args: {
   tipo: DocTipo;
   url: string;
   nome: string;
+  formData: FormData;
+  nameBase: string;
   userId?: string | null;
   imobiliariaId?: string | null;
   construtoraId?: string | null;
@@ -56,6 +59,7 @@ async function upsertDocumento(args: {
         ),
       );
   }
+  const v = extractValidacao(args.formData, args.nameBase);
   await db.insert(documentos).values({
     tipo: args.tipo,
     url: args.url,
@@ -63,6 +67,9 @@ async function upsertDocumento(args: {
     userId: args.userId ?? null,
     imobiliariaId: args.imobiliariaId ?? null,
     construtoraId: args.construtoraId ?? null,
+    validacaoStatus: v.validacaoStatus,
+    validacaoConfianca: v.validacaoConfianca,
+    validacaoMotivo: v.validacaoMotivo,
   });
 }
 
@@ -187,6 +194,8 @@ export async function editProfileAction(
       tipo: d.tipo,
       url,
       nome,
+      formData,
+      nameBase: d.field,
       userId: user.id,
       imobiliariaId,
       construtoraId,
