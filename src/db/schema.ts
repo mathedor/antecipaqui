@@ -1081,6 +1081,37 @@ export const comissoesComercial = pgTable(
 export type ComissaoComercial = typeof comissoesComercial.$inferSelect;
 
 /* =========================================
+   FUNDO BLACKLIST — construtoras bloqueadas por um fundo específico
+   Quando o fundo X bloqueia a construtora Y, novas ops Y → X são impedidas.
+   ========================================= */
+
+export const fundoBlacklist = pgTable(
+  "fundo_blacklist",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    construtoraId: uuid("construtora_id")
+      .notNull()
+      .references(() => construtoras.id, { onDelete: "cascade" }),
+    motivo: text("motivo"),
+    blockedByUserId: text("blocked_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("fundo_blacklist_unico").on(t.fundoId, t.construtoraId),
+    index("fundo_blacklist_fundo_idx").on(t.fundoId),
+  ],
+);
+
+export type FundoBlacklist = typeof fundoBlacklist.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 

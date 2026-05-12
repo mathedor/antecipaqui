@@ -18,6 +18,7 @@ import { generateContractForOperacao } from "@/lib/actions/contract";
 import { audit } from "@/lib/audit";
 import { valorPresente } from "@/lib/format";
 import { getSpreadMinimoMensal } from "@/lib/actions/settings";
+import { checkBlacklist } from "@/lib/actions/fundo-risco";
 
 type ChangeStatusInput = {
   operacaoId: string;
@@ -133,6 +134,18 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     // Vincula fundo se passado
     if (input.fundoId) {
       updates.fundoId = input.fundoId;
+    }
+
+    // Blacklist: se a construtora da op está bloqueada pelo fundo escolhido,
+    // recusa a vinculação. Trava a aprovação antes do snapshot.
+    const fundoIdParaCheck = input.fundoId ?? op.fundoId;
+    if (fundoIdParaCheck) {
+      const bl = await checkBlacklist(fundoIdParaCheck, op.construtoraId);
+      if (bl.blocked) {
+        throw new Error(
+          `Fundo bloqueou esta construtora. ${bl.motivo ? `Motivo: ${bl.motivo}.` : ""} Troque o fundo ou negocie o desbloqueio.`,
+        );
+      }
     }
 
     // Snapshot da taxa do fundo: congela no momento da aprovação pra

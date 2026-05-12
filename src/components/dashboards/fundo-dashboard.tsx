@@ -2,11 +2,15 @@ import Link from "next/link";
 import { PainelShell } from "@/components/painel-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { getFundoDashboard } from "@/lib/actions/fundos";
+import { getFundoRisco } from "@/lib/actions/fundo-risco";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
 export async function FundoDashboard({ user }: { user: User }) {
-  const data = await getFundoDashboard();
+  const [data, risco] = await Promise.all([
+    getFundoDashboard(),
+    getFundoRisco(),
+  ]);
 
   if (!data) {
     return (
@@ -26,6 +30,11 @@ export async function FundoDashboard({ user }: { user: User }) {
 
   const { fundo, operacoes, totals, construtoras, imobiliarias } = data;
   const ultimas = operacoes.slice(0, 8);
+  const alertasConcentracao = risco
+    ? [...risco.porConstrutora, ...risco.porImobiliaria].filter(
+        (c) => c.status !== "ok",
+      )
+    : [];
 
   return (
     <PainelShell role="fundo" userName={user.nome} active="/painel">
@@ -84,6 +93,39 @@ export async function FundoDashboard({ user }: { user: User }) {
           sub="distintas operadas"
         />
       </div>
+
+      {/* Alertas de concentração */}
+      {alertasConcentracao.length > 0 && (
+        <div className="rounded-2xl border border-warn/40 bg-yellow-50 p-5 mb-6 flex items-start gap-4">
+          <span className="size-9 rounded-full bg-warn/20 text-warn flex items-center justify-center text-xl shrink-0">
+            ⚠
+          </span>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-bold text-warn">
+              {alertasConcentracao.length} alerta
+              {alertasConcentracao.length === 1 ? "" : "s"} de concentração
+            </h2>
+            <p className="mt-1 text-fg-muted text-sm">
+              {alertasConcentracao
+                .slice(0, 3)
+                .map(
+                  (a) =>
+                    `${a.nome} (${(a.pct * 100).toFixed(0)}%)`,
+                )
+                .join(", ")}
+              {alertasConcentracao.length > 3 &&
+                ` e mais ${alertasConcentracao.length - 3}`}
+              .
+            </p>
+          </div>
+          <Link
+            href="/painel/risco"
+            className="btn-primary !h-10 !px-4 shrink-0 !bg-warn hover:!bg-warn/90"
+          >
+            Ver análise de risco →
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Últimas operações */}

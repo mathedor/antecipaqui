@@ -18,6 +18,7 @@ import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { getTaxaMensal } from "@/lib/actions/settings";
 import { extractValidacao } from "@/lib/validacao-form";
+import { checkBlacklist } from "@/lib/actions/fundo-risco";
 import { audit } from "@/lib/audit";
 import {
   parseCompradoresFromForm,
@@ -381,14 +382,23 @@ export async function adminCadastrarOperacaoAction(
   let fundoIdAuto: string | null = null;
   let taxaMensal = await getTaxaMensal();
   if (constru?.fundoFidelizadoId) {
-    const [f] = await db
-      .select({ id: fundos.id, taxaMensalBase: fundos.taxaMensalBase })
-      .from(fundos)
-      .where(eq(fundos.id, constru.fundoFidelizadoId))
-      .limit(1);
-    if (f) {
-      fundoIdAuto = f.id;
-      taxaMensal = parseFloat(f.taxaMensalBase);
+    // Antes de auto-vincular, conferir se a construtora não tá na blacklist
+    // do fundo fidelizado. Se estiver, deixa fundoId=null e admin escolhe
+    // outro na aprovação.
+    const bl = await checkBlacklist(
+      constru.fundoFidelizadoId,
+      construtoraId,
+    );
+    if (!bl.blocked) {
+      const [f] = await db
+        .select({ id: fundos.id, taxaMensalBase: fundos.taxaMensalBase })
+        .from(fundos)
+        .where(eq(fundos.id, constru.fundoFidelizadoId))
+        .limit(1);
+      if (f) {
+        fundoIdAuto = f.id;
+        taxaMensal = parseFloat(f.taxaMensalBase);
+      }
     }
   }
 
