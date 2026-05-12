@@ -17,6 +17,7 @@ import { notify } from "@/lib/notify";
 import { generateContractForOperacao } from "@/lib/actions/contract";
 import { audit } from "@/lib/audit";
 import { valorPresente } from "@/lib/format";
+import { getSpreadMinimoMensal } from "@/lib/actions/settings";
 
 type ChangeStatusInput = {
   operacaoId: string;
@@ -137,13 +138,35 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     // Snapshot da taxa do fundo: congela no momento da aprovação pra
     // proteger o histórico de mudanças futuras na tabela fundos.
     const fundoIdParaSnapshot = input.fundoId ?? op.fundoId;
-    if (fundoIdParaSnapshot && !op.taxaFundoSnapshot) {
+    let taxaFundoAtual: number | null = null;
+    if (fundoIdParaSnapshot) {
       const [f] = await db
         .select({ taxa: fundos.taxaMensalBase })
         .from(fundos)
         .where(eq(fundos.id, fundoIdParaSnapshot))
         .limit(1);
-      if (f) updates.taxaFundoSnapshot = f.taxa;
+      if (f) {
+        taxaFundoAtual = parseFloat(f.taxa);
+        if (!op.taxaFundoSnapshot) updates.taxaFundoSnapshot = f.taxa;
+      }
+    }
+
+    // Validação de spread mínimo: bloqueia aprovação se taxa_op − taxa_fundo
+    // for menor que o spread mínimo configurado em system_settings.
+    const taxaOp =
+      typeof input.novaTaxaMensal === "number"
+        ? input.novaTaxaMensal
+        : parseFloat(op.taxaMensal);
+    if (taxaFundoAtual !== null) {
+      const spreadMinimo = await getSpreadMinimoMensal();
+      const spreadOp = taxaOp - taxaFundoAtual;
+      if (spreadOp < spreadMinimo) {
+        const fmtPct = (n: number) =>
+          `${(n * 100).toFixed(2).replace(".", ",")}%`;
+        throw new Error(
+          `Spread insuficiente: taxa da operação ${fmtPct(taxaOp)} − taxa do fundo ${fmtPct(taxaFundoAtual)} = ${fmtPct(spreadOp)}, abaixo do mínimo de ${fmtPct(spreadMinimo)} configurado. Ajuste a taxa da operação ou troque o fundo.`,
+        );
+      }
     }
 
     // Se o admin enviou nova taxa, recalcula VP + deságio das parcelas
