@@ -9,6 +9,7 @@ import {
   getAdminStats,
   getAllOperacoes,
 } from "@/lib/actions/admin";
+import { getFinanceiroMetrics } from "@/lib/actions/financeiro-metrics";
 
 export const metadata = {
   title: "Admin · Dashboard",
@@ -16,10 +17,11 @@ export const metadata = {
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
-  const [stats, recent, monthly] = await Promise.all([
+  const [stats, recent, monthly, fin] = await Promise.all([
     getAdminStats(),
     getAllOperacoes(),
     getAdminMonthlyStats(),
+    getFinanceiroMetrics(),
   ]);
 
   const recentes = recent.slice(0, 8);
@@ -103,6 +105,101 @@ export default async function AdminPage() {
           href="/admin/relatorios/inadimplentes"
         />
       </div>
+
+      {/* Margem efetiva + Forecast */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        {/* Card Margem efetiva */}
+        <div className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-2 mb-3">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
+                margem efetiva · 90 dias
+              </div>
+              <h3 className="text-lg font-bold tracking-tight">
+                Spread como % do juros gerado
+              </h3>
+            </div>
+            <span
+              className={`font-mono tabular text-3xl font-bold ${
+                fin.margemEfetiva >= 0.5
+                  ? "text-success"
+                  : fin.margemEfetiva >= 0.25
+                    ? "text-fg"
+                    : "text-warn"
+              }`}
+            >
+              {(fin.margemEfetiva * 100).toFixed(1).replace(".", ",")}%
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <div className="text-fg-dim font-mono uppercase tracking-wider text-[9px]">
+                Juros gerado
+              </div>
+              <div className="font-mono tabular text-fg font-semibold">
+                {formatBRL(fin.jurosUltimos90d)}
+              </div>
+            </div>
+            <div>
+              <div className="text-fg-dim font-mono uppercase tracking-wider text-[9px]">
+                Virou spread
+              </div>
+              <div className="font-mono tabular text-fg font-semibold">
+                {formatBRL(fin.spreadUltimos90d)}
+              </div>
+            </div>
+          </div>
+          <p className="mt-3 text-[11px] text-fg-muted leading-relaxed">
+            Quanto da taxa cobrada vira margem real pra AQ (após custo do
+            dinheiro do fundo). Caindo = fundos cobrando mais caro.
+          </p>
+        </div>
+
+        {/* Card Forecast 6 meses */}
+        <div className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="mb-3">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
+              forecast · próximos 6 meses
+            </div>
+            <h3 className="text-lg font-bold tracking-tight">
+              Receita esperada de repasses
+            </h3>
+            <p className="text-xs text-fg-muted mt-0.5">
+              Resultado AQ × % a vencer das parcelas
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {fin.forecast.map((m) => {
+              const max = Math.max(...fin.forecast.map((x) => x.valor), 1);
+              const pct = (m.valor / max) * 100;
+              return (
+                <div key={m.ym} className="flex items-center gap-3">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim w-12 shrink-0">
+                    {m.label}
+                  </span>
+                  <div className="flex-1 h-5 bg-bg-card rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-accent rounded-full transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="font-mono tabular text-xs text-fg font-semibold w-24 text-right shrink-0">
+                    {formatBRL(m.valor)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+              Total 6m
+            </span>
+            <span className="font-mono tabular text-base font-bold text-success">
+              {formatBRL(fin.forecast.reduce((s, m) => s + m.valor, 0))}
+            </span>
+          </div>
+        </div>
+      </section>
 
       {/* Pendentes alert */}
       {pendentes.length > 0 && (
