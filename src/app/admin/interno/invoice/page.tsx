@@ -285,6 +285,12 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
           >
             ⬇ CSV
           </a>
+          <Link
+            href="/admin/faturas"
+            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg border border-success/40 bg-green-50 text-success text-xs font-semibold hover:border-success transition-colors"
+          >
+            📄 Gerar faturas →
+          </Link>
           <a
             href={`/api/invoice/pdf?${exportQs}`}
             target="_blank"

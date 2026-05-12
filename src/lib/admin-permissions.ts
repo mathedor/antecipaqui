@@ -127,6 +127,7 @@ export function pathToAdminArea(path: string): AdminArea | null {
   if (path.startsWith("/admin/usuarios")) return "usuarios";
   if (path.startsWith("/admin/relatorios")) return "relatorios";
   if (path.startsWith("/admin/interno")) return "interno";
+  if (path.startsWith("/admin/faturas")) return "interno";
   if (path.startsWith("/admin/configuracoes")) return "configuracoes";
   return null;
 }

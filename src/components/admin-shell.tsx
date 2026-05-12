@@ -89,9 +89,10 @@ const navFull: AdminNavItem[] = [
   {
     type: "submenu",
     label: "Interno",
-    matchPrefix: ["/admin/interno", "/admin/configuracoes"],
+    matchPrefix: ["/admin/interno", "/admin/configuracoes", "/admin/faturas"],
     items: [
       { href: "/admin/interno/invoice", label: "Invoice" },
+      { href: "/admin/faturas", label: "Faturas dos fundos" },
       { href: "/admin/configuracoes", label: "Configurações" },
     ],
   },

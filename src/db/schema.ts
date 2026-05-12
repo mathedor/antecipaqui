@@ -960,6 +960,61 @@ export const systemSettings = pgTable("system_settings", {
 export type SystemSetting = typeof systemSettings.$inferSelect;
 
 /* =========================================
+   FATURAS DO FUNDO — repasse mensal devido à Antecipaqui
+   Uma fatura por (fundo, mês de referência). Gerada manualmente pelo admin
+   a partir do Invoice; registra o valor devido naquele mês e o status do
+   pagamento do fundo pra AQ.
+   ========================================= */
+
+export const faturaFundoStatusEnum = pgEnum("fatura_fundo_status", [
+  "pendente",
+  "parcial",
+  "paga",
+  "vencida",
+  "cancelada",
+]);
+
+export const faturasFundo = pgTable(
+  "faturas_fundo",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "restrict" }),
+    /** Mês de referência no formato YYYY-MM (ex: "2026-05"). */
+    refMes: text("ref_mes").notNull(),
+    /** Valor total devido pelo fundo (= soma dos repasses do mês). */
+    valorDevido: numeric("valor_devido", { precision: 15, scale: 2 }).notNull(),
+    /** Valor que já foi efetivamente pago. */
+    valorPago: numeric("valor_pago", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    status: faturaFundoStatusEnum("status").notNull().default("pendente"),
+    emitidaEm: timestamp("emitida_em", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    vencimento: date("vencimento"),
+    pagaEm: timestamp("paga_em", { withTimezone: true }),
+    observacao: text("observacao"),
+    geradaPorUserId: text("gerada_por_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("faturas_fundo_unico").on(t.fundoId, t.refMes),
+    index("faturas_fundo_status_idx").on(t.status),
+  ],
+);
+
+export type FaturaFundo = typeof faturasFundo.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 
