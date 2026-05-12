@@ -27,6 +27,16 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: readGitVersion(),
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "antecipaqui.vercel.app" }],
+        destination: "https://www.antecipaqui.digital/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
