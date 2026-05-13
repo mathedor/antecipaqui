@@ -3,13 +3,15 @@ import { PainelShell } from "@/components/painel-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { getFundoDashboard } from "@/lib/actions/fundos";
 import { getFundoRisco } from "@/lib/actions/fundo-risco";
+import { getOpsAguardandoFundo } from "@/lib/actions/fundo-mesa";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
 export async function FundoDashboard({ user }: { user: User }) {
-  const [data, risco] = await Promise.all([
+  const [data, risco, pendentes] = await Promise.all([
     getFundoDashboard(),
     getFundoRisco(),
+    getOpsAguardandoFundo(),
   ]);
 
   if (!data) {
@@ -93,6 +95,32 @@ export async function FundoDashboard({ user }: { user: User }) {
           sub="distintas operadas"
         />
       </div>
+
+      {/* Ops aguardando decisão */}
+      {pendentes && pendentes.length > 0 && (
+        <div className="rounded-2xl border border-accent/40 bg-accent-soft p-5 mb-6 flex items-start gap-4">
+          <span className="size-9 rounded-full bg-accent text-white flex items-center justify-center text-xl shrink-0">
+            🎯
+          </span>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-bold text-accent">
+              {pendentes.length} operaç
+              {pendentes.length === 1 ? "ão aguardando" : "ões aguardando"}{" "}
+              sua aprovação
+            </h2>
+            <p className="mt-1 text-fg-muted text-sm">
+              Mesa de decisão com score da construtora, badges de IA e
+              detalhamento financeiro consolidado.
+            </p>
+          </div>
+          <Link
+            href="/painel/aprovar"
+            className="btn-primary !h-10 !px-4 shrink-0"
+          >
+            Decidir agora →
+          </Link>
+        </div>
+      )}
 
       {/* Alertas de concentração */}
       {alertasConcentracao.length > 0 && (

@@ -454,6 +454,16 @@ export const operacoes = pgTable(
      *  - 'compradores' → boleto sai com vários sacados (lista em
      *    operacao_compradores). */
     pagadorTipo: text("pagador_tipo").notNull().default("construtora"),
+    /** Decisão do FUNDO (camada paralela ao status admin).
+     *  - 'pendente' / 'aprovada' / 'recusada' / NULL */
+    fundoAprovacao: text("fundo_aprovacao"),
+    fundoAprovadoEm: timestamp("fundo_aprovado_em", { withTimezone: true }),
+    fundoAprovadoPorUserId: text("fundo_aprovado_por_user_id").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    fundoRecusaMotivo: text("fundo_recusa_motivo"),
+    fundoRegraAutoId: uuid("fundo_regra_auto_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1110,6 +1120,48 @@ export const fundoBlacklist = pgTable(
 );
 
 export type FundoBlacklist = typeof fundoBlacklist.$inferSelect;
+
+/* =========================================
+   FUNDO REGRAS DE AUTO-APROVAÇÃO
+   Critérios configuráveis que aprovam ops automaticamente sem fundo decidir
+   manualmente. Avaliadas em ordem de prioridade ASC.
+   ========================================= */
+
+export const fundoRegrasAutoAprovacao = pgTable(
+  "fundo_regras_auto_aprovacao",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    nome: text("nome").notNull(),
+    ativa: boolean("ativa").notNull().default(true),
+    prioridade: integer("prioridade").notNull().default(100),
+    /** Critérios encadeados com AND. NULL = não aplica esse critério. */
+    taxaMinima: numeric("taxa_minima", { precision: 6, scale: 4 }), // 0–1, ex 0.06 = 6%/m
+    prazoMaximoMeses: integer("prazo_maximo_meses"), // numero_parcelas
+    valorMaximoComissao: numeric("valor_maximo_comissao", {
+      precision: 15,
+      scale: 2,
+    }),
+    /** Lista de construtoraIds permitidas (NULL = qualquer). */
+    construtorasIds: jsonb("construtoras_ids").$type<string[] | null>(),
+    /** Quantas vezes essa regra já disparou (analytics). */
+    contadorAcionamentos: integer("contador_acionamentos").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("fundo_regras_fundo_idx").on(t.fundoId),
+    index("fundo_regras_ativa_idx").on(t.ativa),
+  ],
+);
+
+export type FundoRegraAuto = typeof fundoRegrasAutoAprovacao.$inferSelect;
 
 /* =========================================
    RELATIONS (pra queries com joins fáceis)

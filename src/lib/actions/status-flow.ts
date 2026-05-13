@@ -19,6 +19,7 @@ import { audit } from "@/lib/audit";
 import { valorPresente } from "@/lib/format";
 import { getSpreadMinimoMensal } from "@/lib/actions/settings";
 import { checkBlacklist } from "@/lib/actions/fundo-risco";
+import { avaliarRegrasAutoAprovacao } from "@/lib/actions/fundo-mesa";
 
 type ChangeStatusInput = {
   operacaoId: string;
@@ -161,6 +162,29 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
       if (f) {
         taxaFundoAtual = parseFloat(f.taxa);
         if (!op.taxaFundoSnapshot) updates.taxaFundoSnapshot = f.taxa;
+      }
+
+      // Mesa de decisão do fundo: se ainda não tem decisão, marca como
+      // 'pendente' e tenta auto-aprovar via regras.
+      if (!op.fundoAprovacao || op.fundoAprovacao === "pendente") {
+        const taxaOpAtual =
+          typeof input.novaTaxaMensal === "number"
+            ? input.novaTaxaMensal
+            : parseFloat(op.taxaMensal);
+        const avaliacao = await avaliarRegrasAutoAprovacao({
+          fundoId: fundoIdParaSnapshot,
+          construtoraId: op.construtoraId,
+          taxaMensalOp: taxaOpAtual,
+          valorComissao: parseFloat(op.valorComissao),
+          numeroParcelas: op.numeroParcelas,
+        });
+        if (avaliacao.aprovada) {
+          updates.fundoAprovacao = "aprovada";
+          updates.fundoAprovadoEm = new Date();
+          updates.fundoRegraAutoId = avaliacao.regraId ?? undefined;
+        } else {
+          updates.fundoAprovacao = "pendente";
+        }
       }
     }
 

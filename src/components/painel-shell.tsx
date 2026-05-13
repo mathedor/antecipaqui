@@ -53,6 +53,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   fundo: [
     { href: "/painel", label: "Painel" },
+    { href: "/painel/aprovar", label: "Aprovar" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/daily", label: "Daily" },
@@ -60,6 +61,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/forecast", label: "Forecast" },
     { href: "/painel/risco", label: "Risco" },
     { href: "/painel/faturas", label: "Faturas" },
+    { href: "/painel/regras", label: "Regras" },
     { href: "/painel/parceiros", label: "Parceiros" },
     { href: "/painel/suporte", label: "Chats" },
   ],
