@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   construtoras,
@@ -20,6 +20,53 @@ import {
   getCategoriasForRole,
   type ChatCategoria,
 } from "@/lib/chat-helpers";
+
+/** Anexo de mensagem: estrutura do que vai no jsonb attachments. */
+export type ChatAttachment = {
+  url: string;
+  name: string;
+  size: number;
+  type: string;
+};
+
+const MAX_ATTACHMENTS_PER_MESSAGE = 5;
+const MAX_ATTACHMENT_SIZE = 15 * 1024 * 1024; // 15 MB
+const NUDGE_COOLDOWN_MS = 30 * 60 * 1000; // 30 min
+const MIN_HOURS_BEFORE_NUDGE = 12;
+
+function parseAttachments(raw: unknown): ChatAttachment[] {
+  if (!raw) return [];
+  let arr: unknown;
+  if (typeof raw === "string") {
+    try {
+      arr = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  } else {
+    arr = raw;
+  }
+  if (!Array.isArray(arr)) return [];
+  const ok: ChatAttachment[] = [];
+  for (const item of arr.slice(0, MAX_ATTACHMENTS_PER_MESSAGE)) {
+    if (
+      item &&
+      typeof item === "object" &&
+      typeof (item as ChatAttachment).url === "string" &&
+      typeof (item as ChatAttachment).name === "string"
+    ) {
+      const a = item as ChatAttachment;
+      if (typeof a.size === "number" && a.size > MAX_ATTACHMENT_SIZE) continue;
+      ok.push({
+        url: a.url,
+        name: a.name.slice(0, 200),
+        size: typeof a.size === "number" ? a.size : 0,
+        type: typeof a.type === "string" ? a.type : "application/octet-stream",
+      });
+    }
+  }
+  return ok;
+}
 
 /* =========================================================================
    ROUTING — quem entra em cada chat baseado em categoria + operação
@@ -210,11 +257,14 @@ export async function openChatAction(
   const assunto = String(formData.get("assunto") || "").trim();
   const body = String(formData.get("body") || "").trim();
 
+  const attachments = parseAttachments(formData.get("attachments"));
+
   const allowed = getCategoriasForRole(user.role);
   if (!allowed.includes(categoria))
     return { ok: false, error: "Categoria inválida pra seu perfil" };
   if (!assunto) return { ok: false, error: "Informe o assunto" };
-  if (!body) return { ok: false, error: "Escreva a mensagem inicial" };
+  if (!body && attachments.length === 0)
+    return { ok: false, error: "Escreva a mensagem inicial ou anexe um arquivo" };
   if (categoriaPrecisaOperacao(categoria) && !operacaoId)
     return { ok: false, error: "Selecione a operação" };
 
@@ -263,7 +313,8 @@ export async function openChatAction(
     ticketId: created.id,
     fromUserId: user.id,
     fromRole: user.role,
-    body,
+    body: body || (attachments.length === 1 ? "📎 Anexo" : "📎 Anexos"),
+    attachments: attachments.length > 0 ? attachments : null,
   });
 
   // Notifica destinatários
@@ -295,8 +346,10 @@ export async function replyChatAction(
   if (!user) return { ok: false, error: "Não autenticado" };
   const ticketId = String(formData.get("ticketId") || "").trim();
   const body = String(formData.get("body") || "").trim();
+  const attachments = parseAttachments(formData.get("attachments"));
   if (!ticketId) return { ok: false, error: "ticketId obrigatório" };
-  if (!body) return { ok: false, error: "Escreva a resposta" };
+  if (!body && attachments.length === 0)
+    return { ok: false, error: "Escreva a resposta ou anexe um arquivo" };
 
   const [t] = await db
     .select()
@@ -315,7 +368,8 @@ export async function replyChatAction(
     ticketId,
     fromUserId: user.id,
     fromRole: user.role,
-    body,
+    body: body || (attachments.length === 1 ? "📎 Anexo" : "📎 Anexos"),
+    attachments: attachments.length > 0 ? attachments : null,
   });
 
   await db
@@ -388,50 +442,101 @@ export async function markAsRead(ticketId: string, userId: string) {
    QUERIES
    ========================================================================= */
 
+export type ChatListItem = {
+  id: string;
+  assunto: string;
+  status: string;
+  categoria: string;
+  operacaoId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  arquivadoEm: Date | null;
+  userId: string;
+  userNome: string | null;
+  userEmail: string | null;
+  userRole: string | null;
+  unreadCount: number;
+};
+
 /** Lista chats acessíveis pro user logado:
  *  - Tudo onde ele é participante (criador entra automaticamente)
  *  - Admin vê tudo
+ *
+ * Filtros opcionais:
+ * - q: busca no assunto (ILIKE)
+ * - categoria: filtra por chatCategoria
+ * - status: aberto | aguardando_resposta | finalizado
+ * - includeArquivados: incluir arquivados (default false, esconde)
+ * - onlyUnread: só com mensagens não lidas
  */
-export async function listMyChats() {
+export async function listMyChats(opts?: {
+  q?: string;
+  categoria?: string;
+  status?: string;
+  includeArquivados?: boolean;
+  onlyUnread?: boolean;
+}): Promise<ChatListItem[]> {
   const user = await getCurrentDbUser();
   if (!user) return [];
 
+  const conds: ReturnType<typeof eq>[] = [];
+  if (opts?.q) conds.push(sql`${tickets.assunto} ILIKE ${`%${opts.q}%`}` as never);
+  if (opts?.categoria) conds.push(eq(tickets.categoria, opts.categoria));
+  if (opts?.status) conds.push(eq(tickets.status, opts.status as never));
+  if (!opts?.includeArquivados)
+    conds.push(isNull(tickets.arquivadoEm));
+
+  // Subquery: lastReadAt do user logado para cada ticket (null se admin nunca foi adicionado)
+  const lastReadSubquery = sql<Date | null>`(
+    SELECT ${ticketParticipants.lastReadAt}
+    FROM ${ticketParticipants}
+    WHERE ${ticketParticipants.ticketId} = ${tickets.id}
+      AND ${ticketParticipants.userId} = ${user.id}
+    LIMIT 1
+  )`;
+
+  // Subquery: count de mensagens criadas após o lastReadAt do user (ou todas se nunca leu)
+  const unreadSubquery = sql<number>`(
+    SELECT COUNT(*)::int FROM ${ticketMessages}
+    WHERE ${ticketMessages.ticketId} = ${tickets.id}
+      AND ${ticketMessages.fromUserId} <> ${user.id}
+      AND (
+        ${lastReadSubquery} IS NULL
+        OR ${ticketMessages.createdAt} > ${lastReadSubquery}
+      )
+  )`;
+
+  const baseSelect = {
+    id: tickets.id,
+    assunto: tickets.assunto,
+    status: tickets.status,
+    categoria: tickets.categoria,
+    operacaoId: tickets.operacaoId,
+    createdAt: tickets.createdAt,
+    updatedAt: tickets.updatedAt,
+    arquivadoEm: tickets.arquivadoEm,
+    userId: tickets.userId,
+    userNome: users.nome,
+    userEmail: users.email,
+    userRole: users.role,
+    unreadCount: unreadSubquery,
+  };
+
   if (user.role === "admin") {
     const rows = await db
-      .select({
-        id: tickets.id,
-        assunto: tickets.assunto,
-        status: tickets.status,
-        categoria: tickets.categoria,
-        operacaoId: tickets.operacaoId,
-        createdAt: tickets.createdAt,
-        updatedAt: tickets.updatedAt,
-        userId: tickets.userId,
-        userNome: users.nome,
-        userEmail: users.email,
-        userRole: users.role,
-      })
+      .select(baseSelect)
       .from(tickets)
       .leftJoin(users, eq(users.id, tickets.userId))
+      .where(conds.length > 0 ? and(...conds) : undefined)
       .orderBy(desc(tickets.updatedAt));
-    return rows;
+    return opts?.onlyUnread
+      ? rows.filter((r) => r.unreadCount > 0)
+      : rows;
   }
 
-  // Não-admin: só vê tickets onde é participante
+  // Não-admin: só vê tickets onde é participante ativo
   const rows = await db
-    .select({
-      id: tickets.id,
-      assunto: tickets.assunto,
-      status: tickets.status,
-      categoria: tickets.categoria,
-      operacaoId: tickets.operacaoId,
-      createdAt: tickets.createdAt,
-      updatedAt: tickets.updatedAt,
-      userId: tickets.userId,
-      userNome: users.nome,
-      userEmail: users.email,
-      userRole: users.role,
-    })
+    .select(baseSelect)
     .from(tickets)
     .innerJoin(
       ticketParticipants,
@@ -442,8 +547,76 @@ export async function listMyChats() {
       ),
     )
     .leftJoin(users, eq(users.id, tickets.userId))
+    .where(conds.length > 0 ? and(...conds) : undefined)
     .orderBy(desc(tickets.updatedAt));
-  return rows;
+  return opts?.onlyUnread
+    ? rows.filter((r) => r.unreadCount > 0)
+    : rows;
+}
+
+/** Conta total de mensagens não lidas para o user logado (badge global).
+ *  Conta apenas mensagens que não são do próprio user, em chats onde ele
+ *  é participante ativo (ou admin vê tudo). */
+export async function getUnreadCount(): Promise<number> {
+  const user = await getCurrentDbUser();
+  if (!user) return 0;
+
+  const lastReadSubquery = sql<Date | null>`(
+    SELECT ${ticketParticipants.lastReadAt}
+    FROM ${ticketParticipants}
+    WHERE ${ticketParticipants.ticketId} = ${ticketMessages.ticketId}
+      AND ${ticketParticipants.userId} = ${user.id}
+    LIMIT 1
+  )`;
+
+  if (user.role === "admin") {
+    // Admin: conta mensagens em qualquer ticket NÃO arquivado, exceto suas próprias,
+    // com lastReadAt comparison (admin já tem participant row)
+    const [row] = await db
+      .select({
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(ticketMessages)
+      .innerJoin(tickets, eq(tickets.id, ticketMessages.ticketId))
+      .where(
+        and(
+          isNull(tickets.arquivadoEm),
+          ne(ticketMessages.fromUserId, user.id),
+          or(
+            sql`${lastReadSubquery} IS NULL`,
+            gt(ticketMessages.createdAt, lastReadSubquery),
+          ),
+        ),
+      );
+    return row?.n ?? 0;
+  }
+
+  // Não-admin: só conta em tickets onde é participante ativo
+  const [row] = await db
+    .select({
+      n: sql<number>`COUNT(*)::int`,
+    })
+    .from(ticketMessages)
+    .innerJoin(tickets, eq(tickets.id, ticketMessages.ticketId))
+    .innerJoin(
+      ticketParticipants,
+      and(
+        eq(ticketParticipants.ticketId, tickets.id),
+        eq(ticketParticipants.userId, user.id),
+        isNull(ticketParticipants.leftAt),
+      ),
+    )
+    .where(
+      and(
+        isNull(tickets.arquivadoEm),
+        ne(ticketMessages.fromUserId, user.id),
+        or(
+          isNull(ticketParticipants.lastReadAt),
+          gt(ticketMessages.createdAt, ticketParticipants.lastReadAt),
+        ),
+      ),
+    );
+  return row?.n ?? 0;
 }
 
 export async function getChatDetail(ticketId: string) {
@@ -465,6 +638,8 @@ export async function getChatDetail(ticketId: string) {
       fromUserId: ticketMessages.fromUserId,
       fromRole: ticketMessages.fromRole,
       body: ticketMessages.body,
+      kind: ticketMessages.kind,
+      attachments: ticketMessages.attachments,
       createdAt: ticketMessages.createdAt,
       fromNome: users.nome,
       fromEmail: users.email,
@@ -527,6 +702,8 @@ export async function getChatMessagesSince(
       fromUserId: ticketMessages.fromUserId,
       fromRole: ticketMessages.fromRole,
       body: ticketMessages.body,
+      kind: ticketMessages.kind,
+      attachments: ticketMessages.attachments,
       createdAt: ticketMessages.createdAt,
       fromNome: users.nome,
       fromEmail: users.email,
@@ -545,6 +722,194 @@ export async function getChatMessagesSince(
   if (rows.length > 0) await markAsRead(ticketId, user.id);
 
   return rows;
+}
+
+/* =========================================================================
+   ACTIONS — archive / reopen / nudge
+   ========================================================================= */
+
+async function ensureTicketAccess(ticketId: string) {
+  const user = await getCurrentDbUser();
+  if (!user) throw new Error("Não autenticado");
+  const [t] = await db
+    .select()
+    .from(tickets)
+    .where(eq(tickets.id, ticketId))
+    .limit(1);
+  if (!t) throw new Error("Chat não encontrado");
+  const allowed = await isAllowedInTicket(t, user);
+  if (!allowed) throw new Error("Sem permissão");
+  return { user, ticket: t };
+}
+
+async function insertSystemMessage(
+  ticketId: string,
+  fromUserId: string,
+  fromRole: string,
+  body: string,
+) {
+  await db.insert(ticketMessages).values({
+    ticketId,
+    fromUserId,
+    fromRole,
+    body,
+    kind: "system",
+  });
+  await db
+    .update(tickets)
+    .set({ updatedAt: new Date() })
+    .where(eq(tickets.id, ticketId));
+}
+
+/** Arquiva ou desarquiva um chat. Só esconde da listagem padrão; mensagens
+ *  permanecem acessíveis via filtro "arquivados". Pode ser feito por admin ou
+ *  pelo dono do chat. */
+export async function setChatArquivado(ticketId: string, arquivado: boolean) {
+  const { user, ticket } = await ensureTicketAccess(ticketId);
+  const isOwner = ticket.userId === user.id;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin)
+    throw new Error("Só admin ou autor pode arquivar/desarquivar");
+
+  await db
+    .update(tickets)
+    .set({
+      arquivadoEm: arquivado ? new Date() : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(tickets.id, ticketId));
+
+  await insertSystemMessage(
+    ticketId,
+    user.id,
+    user.role,
+    arquivado
+      ? `📦 Chat arquivado por ${user.nome ?? user.email}.`
+      : `📂 Chat desarquivado por ${user.nome ?? user.email}.`,
+  );
+
+  revalidatePath("/painel/suporte");
+  revalidatePath(`/painel/suporte/${ticketId}`);
+  revalidatePath("/admin/tickets");
+  revalidatePath(`/admin/tickets/${ticketId}`);
+}
+
+/** Reabre um chat finalizado. Só admin. Insere mensagem de sistema e volta
+ *  status pra "aberto". Notifica os participantes ativos. */
+export async function reopenChatAction(ticketId: string) {
+  const { user, ticket } = await ensureTicketAccess(ticketId);
+  if (user.role !== "admin")
+    throw new Error("Só admin pode reabrir chat finalizado");
+  if (ticket.status !== "finalizado")
+    throw new Error("Chat não está finalizado");
+
+  await db
+    .update(tickets)
+    .set({
+      status: "aberto",
+      finalizadoEm: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(tickets.id, ticketId));
+
+  await insertSystemMessage(
+    ticketId,
+    user.id,
+    user.role,
+    `🔄 Chat reaberto por ${user.nome ?? user.email}.`,
+  );
+
+  // Notifica participantes ativos (exceto admin que reabriu)
+  const ativos = await db
+    .select({ userId: ticketParticipants.userId })
+    .from(ticketParticipants)
+    .where(
+      and(
+        eq(ticketParticipants.ticketId, ticketId),
+        isNull(ticketParticipants.leftAt),
+      ),
+    );
+  for (const p of ativos) {
+    if (p.userId === user.id) continue;
+    await notify({
+      userId: p.userId,
+      type: "chat_reaberto",
+      title: `Chat reaberto · ${ticket.assunto}`,
+      body: `${user.nome ?? user.email} reabriu um chat finalizado.`,
+      link: `/painel/suporte/${ticketId}`,
+    }).catch(() => undefined);
+  }
+
+  revalidatePath("/painel/suporte");
+  revalidatePath(`/painel/suporte/${ticketId}`);
+  revalidatePath("/admin/tickets");
+  revalidatePath(`/admin/tickets/${ticketId}`);
+}
+
+/** Cutuca os participantes do outro lado. Rate-limited por chat (30min) e só
+ *  permitido se o chat está parado há ≥12h (sem mensagem nova). Insere msg
+ *  de sistema e notifica os outros. */
+export async function nudgeChatAction(ticketId: string) {
+  const { user, ticket } = await ensureTicketAccess(ticketId);
+  if (ticket.status === "finalizado")
+    throw new Error("Chat finalizado não pode ser cutucado");
+  if (ticket.arquivadoEm)
+    throw new Error("Chat arquivado não pode ser cutucado");
+
+  if (
+    ticket.ultimoNudgeEm &&
+    Date.now() - ticket.ultimoNudgeEm.getTime() < NUDGE_COOLDOWN_MS
+  )
+    throw new Error("Aguarde 30min entre cutucões.");
+
+  const hoursIdle =
+    (Date.now() - ticket.updatedAt.getTime()) / (1000 * 60 * 60);
+  if (hoursIdle < MIN_HOURS_BEFORE_NUDGE)
+    throw new Error(
+      `Espere pelo menos ${MIN_HOURS_BEFORE_NUDGE}h sem resposta pra cutucar (faltam ${(MIN_HOURS_BEFORE_NUDGE - hoursIdle).toFixed(1)}h).`,
+    );
+
+  const now = new Date();
+  await db
+    .update(tickets)
+    .set({ ultimoNudgeEm: now, updatedAt: now })
+    .where(eq(tickets.id, ticketId));
+
+  const diasParado = Math.max(1, Math.floor(hoursIdle / 24));
+  await insertSystemMessage(
+    ticketId,
+    user.id,
+    user.role,
+    `👋 Cutucão de ${user.nome ?? user.email}: este chat está parado há ${diasParado} ${
+      diasParado === 1 ? "dia" : "dias"
+    } sem resposta.`,
+  );
+
+  // Notifica os outros participantes ativos
+  const others = await db
+    .select({ userId: ticketParticipants.userId })
+    .from(ticketParticipants)
+    .where(
+      and(
+        eq(ticketParticipants.ticketId, ticketId),
+        isNull(ticketParticipants.leftAt),
+      ),
+    );
+  for (const o of others) {
+    if (o.userId === user.id) continue;
+    await notify({
+      userId: o.userId,
+      type: "chat_nudge",
+      title: `Cutucão · ${ticket.assunto}`,
+      body: `${user.nome ?? user.email} cutucou o chat — está há ${diasParado} ${
+        diasParado === 1 ? "dia" : "dias"
+      } sem resposta.`,
+      link: `/painel/suporte/${ticketId}`,
+    }).catch(() => undefined);
+  }
+
+  revalidatePath(`/painel/suporte/${ticketId}`);
+  revalidatePath(`/admin/tickets/${ticketId}`);
 }
 
 /* =========================================================================
@@ -628,6 +993,20 @@ export async function syncChatsOnFundoChange(
         body: "Uma operação que estava em outro fundo foi transferida pra você. Acompanhe o histórico no chat.",
         link: `/painel/suporte/${c.id}`,
       }).catch(() => undefined);
+
+      // System message no thread pra ficar visível pra todos
+      const [novoFundo] = await db
+        .select({ nome: fundos.nomeFantasia })
+        .from(fundos)
+        .where(eq(fundos.id, novoFundoId!))
+        .limit(1);
+      await db.insert(ticketMessages).values({
+        ticketId: c.id,
+        fromUserId: novoOwnerId,
+        fromRole: "fundo",
+        kind: "system",
+        body: `🔁 Operação migrada para o fundo ${novoFundo?.nome ?? "—"}. Agora é o novo destinatário deste chat.`,
+      });
     }
   }
 }

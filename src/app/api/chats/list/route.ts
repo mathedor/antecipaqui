@@ -14,11 +14,14 @@ export async function GET() {
       status: c.status,
       categoria: c.categoria,
       updatedAt: c.updatedAt,
+      unreadCount: c.unreadCount,
+      arquivadoEm: c.arquivadoEm,
     }));
-    return NextResponse.json({ chats });
+    const totalUnread = all.reduce((acc, c) => acc + c.unreadCount, 0);
+    return NextResponse.json({ chats, totalUnread });
   } catch (e) {
     return NextResponse.json(
-      { error: (e as Error).message, chats: [] },
+      { error: (e as Error).message, chats: [], totalUnread: 0 },
       { status: 500 },
     );
   }

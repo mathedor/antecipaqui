@@ -10,6 +10,8 @@ type ChatItem = {
   status: string;
   categoria: string;
   updatedAt: Date | string;
+  unreadCount?: number;
+  arquivadoEm?: Date | string | null;
 };
 
 const CATEGORIA_LABEL: Record<string, string> = {
@@ -42,6 +44,8 @@ function formatDateTime(d: Date | string) {
   });
 }
 
+const UNREAD_POLL_MS = 30_000; // 30s
+
 export function ChatFab({
   isAdmin = false,
 }: {
@@ -51,6 +55,7 @@ export function ChatFab({
   const [open, setOpen] = useState(false);
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [totalUnread, setTotalUnread] = useState(0);
   const pathname = usePathname();
 
   // Esconde em rotas internas do próprio chat (pra não duplicar)
@@ -63,6 +68,33 @@ export function ChatFab({
   ];
   const shouldHide = hideOnPaths.some((p) => pathname.startsWith(p));
 
+  // Polling do badge global (mesmo com drawer fechado)
+  useEffect(() => {
+    if (shouldHide) return;
+    let stopped = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    async function tick() {
+      if (stopped) return;
+      try {
+        const r = await fetch("/api/chats/unread-count", {
+          cache: "no-store",
+        });
+        const d = await r.json();
+        if (!stopped && typeof d.count === "number") setTotalUnread(d.count);
+      } catch {
+        /* ignora */
+      }
+      timeoutId = setTimeout(tick, UNREAD_POLL_MS);
+    }
+    tick();
+    return () => {
+      stopped = true;
+      clearTimeout(timeoutId);
+    };
+  }, [shouldHide]);
+
+  // Carrega lista quando abre o drawer
   useEffect(() => {
     if (!open) return;
     setLoading(true);
@@ -70,6 +102,7 @@ export function ChatFab({
       .then((r) => r.json())
       .then((d) => {
         if (Array.isArray(d.chats)) setChats(d.chats);
+        if (typeof d.totalUnread === "number") setTotalUnread(d.totalUnread);
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));
@@ -83,7 +116,7 @@ export function ChatFab({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Abrir chats"
+        aria-label={`Abrir chats${totalUnread > 0 ? ` (${totalUnread} não lidos)` : ""}`}
         className="fixed bottom-6 left-6 right-auto md:left-auto md:right-6 z-50 size-7 md:size-14 rounded-full bg-accent text-white shadow-2xl hover:scale-105 transition-transform flex items-center justify-center print:hidden"
       >
         <svg
@@ -98,6 +131,11 @@ export function ChatFab({
         >
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
+        {totalUnread > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center border-2 border-white shadow">
+            {totalUnread > 99 ? "99+" : totalUnread}
+          </span>
+        )}
       </button>
 
       {/* Drawer lateral */}
@@ -117,7 +155,14 @@ export function ChatFab({
                 <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim">
                   conversas
                 </div>
-                <h2 className="text-lg font-bold tracking-tight">Chats</h2>
+                <h2 className="text-lg font-bold tracking-tight">
+                  Chats
+                  {totalUnread > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-accent text-white text-xs font-bold">
+                      {totalUnread}
+                    </span>
+                  )}
+                </h2>
               </div>
               <button
                 type="button"
@@ -175,6 +220,7 @@ export function ChatFab({
                     const color =
                       CATEGORIA_COLOR[c.categoria] ??
                       CATEGORIA_COLOR.geral;
+                    const unread = c.unreadCount ?? 0;
                     return (
                       <li key={c.id}>
                         <Link
@@ -184,7 +230,9 @@ export function ChatFab({
                               : `/painel/suporte/${c.id}`
                           }
                           onClick={() => setOpen(false)}
-                          className="block px-5 py-3 hover:bg-bg-card transition-colors"
+                          className={`block px-5 py-3 hover:bg-bg-card transition-colors ${
+                            unread > 0 ? "bg-accent-soft/30" : ""
+                          }`}
                         >
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span
@@ -195,8 +243,19 @@ export function ChatFab({
                             {c.status === "aberto" && (
                               <span className="size-1.5 rounded-full bg-success" />
                             )}
+                            {unread > 0 && (
+                              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-accent text-white text-[9px] font-bold">
+                                {unread}
+                              </span>
+                            )}
                           </div>
-                          <div className="font-semibold text-sm text-fg truncate">
+                          <div
+                            className={`text-sm truncate ${
+                              unread > 0
+                                ? "font-bold text-fg"
+                                : "font-semibold text-fg"
+                            }`}
+                          >
                             {c.assunto}
                           </div>
                           <div className="text-xs text-fg-dim font-mono mt-0.5">

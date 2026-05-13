@@ -716,12 +716,18 @@ export const tickets = pgTable(
       .notNull()
       .defaultNow(),
     finalizadoEm: timestamp("finalizado_em", { withTimezone: true }),
+    /** Quando admin/dono arquivou o chat. Some das listas padrão; reaparece
+     *  com filtro "arquivados". Não bloqueia escrita (admin pode desarquivar). */
+    arquivadoEm: timestamp("arquivado_em", { withTimezone: true }),
+    /** Última vez que alguém cutucou o chat (rate-limit de nudge). */
+    ultimoNudgeEm: timestamp("ultimo_nudge_em", { withTimezone: true }),
   },
   (t) => [
     index("tickets_user_idx").on(t.userId),
     index("tickets_status_idx").on(t.status),
     index("tickets_categoria_idx").on(t.categoria),
     index("tickets_operacao_idx").on(t.operacaoId),
+    index("tickets_arquivado_idx").on(t.arquivadoEm),
   ],
 );
 
@@ -773,6 +779,14 @@ export const ticketMessages = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /** Discriminator: "user" (mensagem normal) | "system" (evento — reaberto,
+     *  cutucão, arquivado, fundo trocado). System messages renderizam diferente
+     *  (centralizadas, sem balão), e fromUserId é o ator que disparou o evento. */
+    kind: text("kind").notNull().default("user"),
+    /** Anexos da mensagem: array de { url, name, size, type }.
+     *  Arquivos ficam em Vercel Blob private. Renderização inline para imagens,
+     *  card clicável para PDF/outros. */
+    attachments: jsonb("attachments"),
   },
   (t) => [index("ticket_messages_ticket_idx").on(t.ticketId)],
 );

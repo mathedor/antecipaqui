@@ -130,6 +130,9 @@ export default async function AdminTicketDetailPage({ params }: Params) {
         ticketId={detail.ticket.id}
         ticketStatus={detail.ticket.status}
         ticketCategoria={detail.ticket.categoria}
+        ticketArquivadoEm={detail.ticket.arquivadoEm}
+        ticketUpdatedAt={detail.ticket.updatedAt}
+        ticketOwnerId={detail.ticket.userId}
         initialMessages={detail.messages}
         participantes={detail.participantes}
         viewerId={detail.viewerId}
