@@ -3,13 +3,34 @@
 import { UserButton } from "@clerk/nextjs";
 
 /**
- * UserButton do Clerk com item custom "Editar dados" no dropdown
- * (logo abaixo de Gerenciar conta).
+ * UserButton do Clerk com info de perfil + item custom "Editar dados"
+ * adicionados ao dropdown (logo abaixo de Gerenciar conta).
  */
-export function UserButtonWithPerfil() {
+export function UserButtonWithPerfil({
+  profileLabel,
+  userName,
+}: {
+  profileLabel?: string | null;
+  userName?: string | null;
+} = {}) {
+  const info = profileLabel
+    ? userName
+      ? `${profileLabel.toLowerCase()} · ${userName.split(" ")[0]}`
+      : profileLabel.toLowerCase()
+    : null;
+
   return (
     <UserButton>
       <UserButton.MenuItems>
+        {info ? (
+          <UserButton.Action
+            label={info}
+            labelIcon={<BadgeIcon />}
+            onClick={() => {}}
+          />
+        ) : (
+          <></>
+        )}
         <UserButton.Link
           label="Editar dados"
           labelIcon={<EditIcon />}
@@ -17,6 +38,24 @@ export function UserButtonWithPerfil() {
         />
       </UserButton.MenuItems>
     </UserButton>
+  );
+}
+
+function BadgeIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z" />
+    </svg>
   );
 }
 

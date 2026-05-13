@@ -192,19 +192,15 @@ export async function AdminShell({
           </Link>
           <AdminNav nav={nav} active={active} />
           <div className="flex items-center gap-2 md:gap-3">
-            <span
-              className="hidden md:inline-flex chip chip-accent"
-              title={profileLabel}
-            >
-              {profileLabel.toLowerCase()}
-              {userName ? ` · ${userName.split(" ")[0]}` : ""}
-            </span>
             <NotificationBell />
             <span className="hidden md:inline-flex">
               <SairButton />
             </span>
             <span className="hidden md:inline-flex">
-              <UserButtonWithPerfil />
+              <UserButtonWithPerfil
+                profileLabel={profileLabel}
+                userName={userName}
+              />
             </span>
           </div>
         </div>
