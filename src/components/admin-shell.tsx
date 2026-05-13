@@ -20,19 +20,23 @@ import { getCurrentDbUser } from "@/lib/auth-user";
 const navFull: AdminNavItem[] = [
   { type: "link", href: "/admin/decidir", label: "Decidir" },
   { type: "link", href: "/admin/risco-global", label: "Risco" },
+  { type: "link", href: "/admin/pendencias", label: "Pendências" },
   {
     type: "submenu",
-    label: "Cadastrar",
-    matchPrefix: ["/admin/cadastrar", "/admin/fundos/novo"],
+    label: "Gestão",
+    matchPrefix: [
+      "/admin/tickets",
+      "/admin/mural",
+      "/admin/interno",
+      "/admin/configuracoes",
+      "/admin/faturas",
+    ],
     items: [
-      {
-        href: "/admin/cadastrar/imobiliaria",
-        label: "Imobiliária / Corretor",
-      },
-      { href: "/admin/cadastrar/construtora", label: "Construtora" },
-      { href: "/admin/cadastrar/comercial", label: "Comercial" },
-      { href: "/admin/fundos/novo", label: "Fundo de investimento" },
-      { href: "/admin/cadastrar/operacao", label: "Operação" },
+      { href: "/admin/tickets", label: "Tickets" },
+      { href: "/admin/mural", label: "Mural" },
+      { href: "/admin/interno/invoice", label: "Invoice" },
+      { href: "/admin/faturas", label: "Faturas dos fundos" },
+      { href: "/admin/configuracoes", label: "Configurações" },
     ],
   },
   {
@@ -56,16 +60,6 @@ const navFull: AdminNavItem[] = [
   },
   {
     type: "submenu",
-    label: "Comunicação",
-    matchPrefix: ["/admin/tickets", "/admin/mural"],
-    items: [
-      { href: "/admin/tickets", label: "Tickets" },
-      { href: "/admin/mural", label: "Mural" },
-    ],
-  },
-  { type: "link", href: "/admin/pendencias", label: "Pendências" },
-  {
-    type: "submenu",
     label: "Relatórios",
     matchPrefix: ["/admin/relatorios"],
     items: [
@@ -85,18 +79,24 @@ const navFull: AdminNavItem[] = [
         label: "Desempenho de comerciais",
       },
       { href: "/admin/relatorios/inadimplentes", label: "Inadimplentes" },
+      { href: "/admin/relatorios/borderos", label: "Borderôs consolidados" },
       { href: "/admin/relatorios/logs", label: "Logs de auditoria" },
       { href: "/admin/relatorios/saude", label: "Saúde do sistema" },
     ],
   },
   {
     type: "submenu",
-    label: "Interno",
-    matchPrefix: ["/admin/interno", "/admin/configuracoes", "/admin/faturas"],
+    label: "Cadastrar",
+    matchPrefix: ["/admin/cadastrar", "/admin/fundos/novo"],
     items: [
-      { href: "/admin/interno/invoice", label: "Invoice" },
-      { href: "/admin/faturas", label: "Faturas dos fundos" },
-      { href: "/admin/configuracoes", label: "Configurações" },
+      {
+        href: "/admin/cadastrar/imobiliaria",
+        label: "Imobiliária / Corretor",
+      },
+      { href: "/admin/cadastrar/construtora", label: "Construtora" },
+      { href: "/admin/cadastrar/comercial", label: "Comercial" },
+      { href: "/admin/fundos/novo", label: "Fundo de investimento" },
+      { href: "/admin/cadastrar/operacao", label: "Operação" },
     ],
   },
 ];
@@ -135,8 +135,19 @@ const mobileFullMenu: { section: string; items: MobileNavItem[] }[] = [
     section: "principal",
     items: [
       { href: "/admin", label: "Dashboard", icon: "home" },
-      { href: "/admin/relatorios", label: "Relatórios", icon: "report" },
+      { href: "/admin/decidir", label: "Decidir", icon: "doc" },
+      { href: "/admin/risco-global", label: "Risco", icon: "report" },
+      { href: "/admin/pendencias", label: "Pendências", icon: "doc" },
+    ],
+  },
+  {
+    section: "gestão",
+    items: [
+      { href: "/admin/tickets", label: "Tickets", icon: "ticket" },
       { href: "/admin/mural", label: "Mural de recados", icon: "tag" },
+      { href: "/admin/interno/invoice", label: "Invoice", icon: "money" },
+      { href: "/admin/faturas", label: "Faturas dos fundos", icon: "money" },
+      { href: "/admin/configuracoes", label: "Configurações", icon: "config" },
     ],
   },
   {
@@ -149,19 +160,22 @@ const mobileFullMenu: { section: string; items: MobileNavItem[] }[] = [
         icon: "list",
       },
       { href: "/admin/construtoras", label: "Construtoras", icon: "list" },
+      { href: "/admin/fundos", label: "Fundos", icon: "list" },
+      { href: "/admin/comerciais", label: "Comerciais", icon: "list" },
     ],
   },
   {
-    section: "suporte",
+    section: "relatórios",
     items: [
-      { href: "/admin/tickets", label: "Tickets", icon: "ticket" },
+      { href: "/admin/relatorios", label: "Todos os relatórios", icon: "report" },
+      { href: "/admin/relatorios/daily", label: "Daily", icon: "report" },
+      { href: "/admin/relatorios/borderos", label: "Borderôs", icon: "doc" },
+    ],
+  },
+  {
+    section: "outros",
+    items: [
       { href: "/notificacoes", label: "Notificações", icon: "doc" },
-    ],
-  },
-  {
-    section: "configurações",
-    items: [
-      { href: "/admin/configuracoes", label: "Parâmetros do sistema", icon: "config" },
     ],
   },
 ];
