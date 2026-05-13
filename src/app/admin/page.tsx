@@ -10,6 +10,7 @@ import {
   getAllOperacoes,
 } from "@/lib/actions/admin";
 import { getFinanceiroMetrics } from "@/lib/actions/financeiro-metrics";
+import { getAdminInsights } from "@/lib/actions/admin-insights";
 
 export const metadata = {
   title: "Admin · Dashboard",
@@ -17,11 +18,12 @@ export const metadata = {
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
-  const [stats, recent, monthly, fin] = await Promise.all([
+  const [stats, recent, monthly, fin, insights] = await Promise.all([
     getAdminStats(),
     getAllOperacoes(),
     getAdminMonthlyStats(),
     getFinanceiroMetrics(),
+    getAdminInsights(),
   ]);
 
   const recentes = recent.slice(0, 8);
@@ -201,6 +203,51 @@ export default async function AdminPage() {
         </div>
       </section>
 
+      {/* Insights operacionais */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        <InsightCard
+          label="Tempo médio aprovação"
+          value={
+            insights.tempoMedioAprovacaoH != null
+              ? `${insights.tempoMedioAprovacaoH.toFixed(1)}h`
+              : "—"
+          }
+          sub="últimos 90 dias"
+        />
+        <InsightCard
+          label="% auto-aprovação fundo"
+          value={
+            insights.pctAprovacaoAutomatica != null
+              ? `${(insights.pctAprovacaoAutomatica * 100).toFixed(0)}%`
+              : "—"
+          }
+          sub="via regras dos fundos"
+        />
+        <InsightCard
+          label="Docs IA: % alta confiança"
+          value={
+            insights.pctDocsOk != null
+              ? `${(insights.pctDocsOk * 100).toFixed(0)}%`
+              : "—"
+          }
+          sub={
+            insights.qtdDocsRevisao > 0
+              ? `${insights.qtdDocsRevisao} pra revisar`
+              : "todos validados"
+          }
+          tone={insights.qtdDocsRevisao > 0 ? "warn" : "default"}
+        />
+        <InsightCard
+          label="Spread efetivo médio"
+          value={
+            insights.spreadMedio != null
+              ? `${(insights.spreadMedio * 100).toFixed(0)}%`
+              : "—"
+          }
+          sub="resultado AQ / juros"
+        />
+      </section>
+
       {/* Pendentes alert */}
       {pendentes.length > 0 && (
         <div className="rounded-2xl border border-warn/40 bg-yellow-50 p-5 mb-6 flex items-start gap-4">
@@ -330,4 +377,35 @@ function StatCard({
   );
 
   return href ? <Link href={href}>{content}</Link> : content;
+}
+
+function InsightCard({
+  label,
+  value,
+  sub,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "default" | "warn";
+}) {
+  const cls =
+    tone === "warn"
+      ? "border-warn/40 bg-yellow-50"
+      : "border-border bg-bg-elev";
+  const labelCls = tone === "warn" ? "text-warn" : "text-fg-dim";
+  return (
+    <div className={`rounded-2xl border p-4 md:p-5 ${cls}`}>
+      <div
+        className={`font-mono text-[10px] uppercase tracking-wider mb-2 ${labelCls}`}
+      >
+        {label}
+      </div>
+      <div className="font-mono tabular text-2xl font-bold tracking-tight text-fg">
+        {value}
+      </div>
+      {sub && <div className="text-[10px] text-fg-muted mt-1">{sub}</div>}
+    </div>
+  );
 }
