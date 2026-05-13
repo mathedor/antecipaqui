@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 import { execSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 function readGitVersion(): string {
   // Vercel expõe VERCEL_GIT_COMMIT_SHA; em local pega do git diretamente.
@@ -15,6 +19,9 @@ function readGitVersion(): string {
 }
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: projectRoot,
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "img.clerk.com" },
