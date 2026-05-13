@@ -72,6 +72,7 @@ export const parcelaStatusEnum = pgEnum("parcela_status", [
   "a_vencer",
   "vencida",
   "paga",
+  "cancelada",
 ]);
 
 export const contratoStatusEnum = pgEnum("contrato_status", [
@@ -393,6 +394,152 @@ export const fundos = pgTable(
 
 export type Fundo = typeof fundos.$inferSelect;
 
+/** Empreendimentos da construtora (torres/condomínios/projetos). Operações
+ *  podem ser linkadas opcionalmente a um empreendimento, permitindo relatório
+ *  agregado por projeto + filtro nas listagens. */
+export const empreendimentos = pgTable(
+  "empreendimentos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    construtoraId: uuid("construtora_id")
+      .notNull()
+      .references(() => construtoras.id, { onDelete: "cascade" }),
+    nome: text("nome").notNull(),
+    descricao: text("descricao"),
+    cidade: text("cidade"),
+    uf: text("uf"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("empreendimentos_construtora_idx").on(t.construtoraId, t.isActive),
+  ],
+);
+
+export type Empreendimento = typeof empreendimentos.$inferSelect;
+
+/** Solicitações de antecipação de pagamento da construtora. A construtora
+ *  pede pra quitar antes do vencimento aceitando um desconto (deságio
+ *  inverso). Admin/fundo aprova ou recusa. */
+export const parcelaAntecipacoes = pgTable(
+  "parcela_antecipacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    parcelaId: uuid("parcela_id")
+      .notNull()
+      .references(() => parcelasComissao.id, { onDelete: "cascade" }),
+    solicitadoPorUserId: text("solicitado_por_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    valorOriginal: numeric("valor_original", { precision: 15, scale: 2 })
+      .notNull(),
+    valorAntecipado: numeric("valor_antecipado", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+    descontoPct: numeric("desconto_pct", { precision: 6, scale: 4 }).notNull(),
+    dataPretendida: date("data_pretendida").notNull(),
+    /** pendente | aprovada | recusada | quitada */
+    status: text("status").notNull().default("pendente"),
+    motivoRecusa: text("motivo_recusa"),
+    decidoPorUserId: text("decido_por_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    decidoEm: timestamp("decido_em", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("parcela_antecipacoes_parcela_idx").on(t.parcelaId),
+    index("parcela_antecipacoes_status_idx").on(t.status),
+  ],
+);
+
+export type ParcelaAntecipacao = typeof parcelaAntecipacoes.$inferSelect;
+
+/** Solicitações de renegociação de parcela. Construtora pede prorrogação
+ *  (novo vencimento) ou parcelamento (split em N). Admin/fundo decide. */
+export const parcelaRenegociacoes = pgTable(
+  "parcela_renegociacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    parcelaId: uuid("parcela_id")
+      .notNull()
+      .references(() => parcelasComissao.id, { onDelete: "cascade" }),
+    solicitadoPorUserId: text("solicitado_por_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    motivo: text("motivo").notNull(),
+    /** "prorrogar" → muda só o vencimento. "dividir" → split em N parcelas
+     *  novas (jsonb com [{vencimento, valor}]). */
+    tipo: text("tipo").notNull(),
+    novoVencimento: date("novo_vencimento"),
+    /** Array de splits: [{ vencimento: "2026-06-15", valor: 1500.00 }] */
+    splitParcelas: jsonb("split_parcelas"),
+    /** pendente | aprovada | recusada | aplicada */
+    status: text("status").notNull().default("pendente"),
+    motivoRecusa: text("motivo_recusa"),
+    decidoPorUserId: text("decido_por_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    decidoEm: timestamp("decido_em", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("parcela_renegociacoes_parcela_idx").on(t.parcelaId),
+    index("parcela_renegociacoes_status_idx").on(t.status),
+  ],
+);
+
+export type ParcelaRenegociacao = typeof parcelaRenegociacoes.$inferSelect;
+
+/** Pedidos de documento feitos pelo admin/fundo à construtora ou cedente.
+ *  Exibido como to-do na home do destinatário. Atendido quando a outra
+ *  parte anexa o doc solicitado. */
+export const documentoSolicitacoes = pgTable(
+  "documento_solicitacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Quem deve atender — construtora ou user específico */
+    destConstrutoraId: uuid("dest_construtora_id").references(
+      () => construtoras.id,
+      { onDelete: "cascade" },
+    ),
+    destUserId: text("dest_user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    /** Op opcional pra dar contexto */
+    operacaoId: uuid("operacao_id"),
+    tipoDocumento: text("tipo_documento").notNull(),
+    mensagem: text("mensagem").notNull(),
+    solicitadoPorUserId: text("solicitado_por_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** pendente | atendida | cancelada */
+    status: text("status").notNull().default("pendente"),
+    atendidaEm: timestamp("atendida_em", { withTimezone: true }),
+    documentoIdAnexado: uuid("documento_id_anexado"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("doc_solic_dest_construtora_idx").on(t.destConstrutoraId, t.status),
+    index("doc_solic_dest_user_idx").on(t.destUserId, t.status),
+    index("doc_solic_op_idx").on(t.operacaoId),
+  ],
+);
+
+export type DocumentoSolicitacao = typeof documentoSolicitacoes.$inferSelect;
+
 /** Custos padrão cadastrados por fundo. Quando admin seleciona o fundo numa
  *  operação, esses custos são clonados pra custos_operacao (e o admin pode
  *  ajustar/adicionar). Cada linha = um custo nominal (ex: "Análise jurídica
@@ -482,6 +629,10 @@ export const operacoes = pgTable(
     construtoraId: uuid("construtora_id")
       .notNull()
       .references(() => construtoras.id, { onDelete: "restrict" }),
+    /** Empreendimento opcional pra agrupar ops por torre/projeto. Sem FK
+     *  forte pra evitar criar dependência cíclica com a definição do schema —
+     *  ID é validado em runtime. */
+    empreendimentoId: uuid("empreendimento_id"),
     /** Fundo que vai aportar a antecipação. NULL pra operações antigas
      *  (criadas antes do conceito de fundo) — admin escolhe na aprovação. */
     fundoId: uuid("fundo_id").references(() => fundos.id, {
@@ -622,6 +773,12 @@ export const parcelasComissao = pgTable(
     cobrancaUltimaTentativaEm: timestamp("cobranca_ultima_tentativa_em", {
       withTimezone: true,
     }),
+    /** URL do comprovante de pagamento que a construtora anexou. Admin/fundo
+     *  vê e confirma pra dar baixa final. */
+    comprovanteUrl: text("comprovante_url"),
+    comprovanteNome: text("comprovante_nome"),
+    /** Quando construtora notificou que pagou (mesmo sem baixa confirmada). */
+    pagoNotificacaoEm: timestamp("pago_notificacao_em", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

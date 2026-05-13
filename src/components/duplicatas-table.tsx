@@ -149,6 +149,27 @@ export function DuplicatasTable({ rows }: { rows: Row[] }) {
             );
           },
         },
+        {
+          key: "acoes",
+          header: "",
+          align: "right",
+          render: (r) =>
+            r.statusParcela !== "paga" ? (
+              <Link
+                href={`/painel/duplicatas/${r.parcelaId}`}
+                className="text-[10px] font-mono uppercase tracking-wider text-accent hover:underline whitespace-nowrap"
+              >
+                ações →
+              </Link>
+            ) : (
+              <Link
+                href={`/painel/duplicatas/${r.parcelaId}`}
+                className="text-[10px] font-mono uppercase tracking-wider text-fg-muted hover:text-fg whitespace-nowrap"
+              >
+                abrir →
+              </Link>
+            ),
+        },
       ]}
     />
   );

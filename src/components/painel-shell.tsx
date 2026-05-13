@@ -43,8 +43,11 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   construtora: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
-    { href: "/painel/operacoes/lote", label: "Cadastrar em lote" },
     { href: "/painel/duplicatas", label: "Duplicatas" },
+    { href: "/painel/extrato", label: "Extrato" },
+    { href: "/painel/empreendimentos", label: "Empreendimentos" },
+    { href: "/painel/documentos", label: "Documentos" },
+    { href: "/painel/pendencias", label: "Pendências" },
     { href: "/painel/forecast", label: "Forecast" },
     { href: "/painel/risco", label: "Risco" },
     { href: "/painel/score", label: "Score" },
@@ -176,18 +179,23 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel", label: "Painel", icon: "home" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
-        {
-          href: "/painel/operacoes/lote",
-          label: "Cadastrar em lote",
-          icon: "doc",
-        },
+        { href: "/painel/empreendimentos", label: "Empreendimentos", icon: "doc" },
       ],
     },
     {
       section: "financeiro",
       items: [
         { href: "/painel/duplicatas", label: "Duplicatas a pagar", icon: "wallet" },
+        { href: "/painel/extrato", label: "Extrato", icon: "money" },
         { href: "/painel/cashback", label: "Cashback", icon: "money" },
+        { href: "/painel/forecast", label: "Forecast", icon: "table" },
+      ],
+    },
+    {
+      section: "documentos",
+      items: [
+        { href: "/painel/documentos", label: "Central de documentos", icon: "doc" },
+        { href: "/painel/pendencias", label: "Pendências", icon: "doc" },
       ],
     },
     {
@@ -195,6 +203,7 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
+        { href: "/painel/perfil", label: "Editar perfil", icon: "doc" },
       ],
     },
   ],
