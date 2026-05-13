@@ -11,6 +11,7 @@ import { PainelShell } from "@/components/painel-shell";
 import { MuralOverlay } from "@/components/mural-overlay";
 import { getMuralForCurrentUser } from "@/lib/actions/mural";
 import { getMyConvitesCount } from "@/lib/actions/pending-operacoes";
+import { getCorretorFinanceiro } from "@/lib/actions/corretor-financeiro";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -39,12 +40,14 @@ export async function CorretorDashboard({ user }: { user: User }) {
   const status = STATUS_LABEL[user.onboardingStatus] ?? STATUS_LABEL.pendente;
   const podeOperar = user.onboardingStatus !== "pendente";
 
-  const [stats, operacoes, muralMsgs, convitesCount] = await Promise.all([
-    podeOperar ? getDashboardStats(user.id) : Promise.resolve(null),
-    podeOperar ? getOperacoesByCorretor(user.id) : Promise.resolve([]),
-    getMuralForCurrentUser(),
-    getMyConvitesCount(),
-  ]);
+  const [stats, operacoes, muralMsgs, convitesCount, financeiro] =
+    await Promise.all([
+      podeOperar ? getDashboardStats(user.id) : Promise.resolve(null),
+      podeOperar ? getOperacoesByCorretor(user.id) : Promise.resolve([]),
+      getMuralForCurrentUser(),
+      getMyConvitesCount(),
+      podeOperar ? getCorretorFinanceiro() : Promise.resolve(null),
+    ]);
 
   const operacoesRecentes = operacoes.slice(0, 5);
 
@@ -172,6 +175,62 @@ export async function CorretorDashboard({ user }: { user: User }) {
             sublabel={`${stats.pendentes} operações`}
           />
         </div>
+      )}
+
+      {/* Forecast resumido */}
+      {financeiro && financeiro.totalForecast > 0 && (
+        <Link
+          href="/painel/forecast-corretor"
+          className="block rounded-2xl border border-border bg-bg-elev hover:border-accent p-5 md:p-6 mb-6 transition-colors"
+        >
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
+                forecast pessoal · 6 meses
+              </div>
+              <h3 className="text-lg font-bold tracking-tight">
+                Você vai receber{" "}
+                <span className="text-accent">
+                  {formatBRL(financeiro.totalForecast)}
+                </span>{" "}
+                em parcelas de comissão
+              </h3>
+              <p className="text-xs text-fg-muted mt-1">
+                Total a receber:{" "}
+                <strong>{formatBRL(financeiro.totalAReceber)}</strong>. Custo
+                médio de antecipação:{" "}
+                {(financeiro.custoMedioPct * 100).toFixed(1).replace(".", ",")}
+                % da comissão.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-accent text-sm font-semibold">
+              Ver detalhe <span>→</span>
+            </div>
+          </div>
+          {/* mini-barras */}
+          <div className="mt-4 grid grid-cols-6 gap-1">
+            {financeiro.forecast.map((m) => {
+              const max = Math.max(
+                ...financeiro.forecast.map((x) => x.valorAVencer),
+                1,
+              );
+              const pct = (m.valorAVencer / max) * 100;
+              return (
+                <div key={m.ym} className="flex flex-col gap-1">
+                  <div className="h-12 bg-bg-card rounded flex items-end overflow-hidden">
+                    <div
+                      className="w-full bg-accent transition-all"
+                      style={{ height: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="font-mono text-[9px] uppercase tracking-wider text-fg-dim text-center">
+                    {m.label}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Link>
       )}
 
       <div className="grid md:grid-cols-3 gap-3 mb-8">

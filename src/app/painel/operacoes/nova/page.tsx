@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { documentos } from "@/db/schema";
+import { documentos, operacoes } from "@/db/schema";
 import { requireActiveUser } from "@/lib/auth-user";
 import { listConstrutorasForSelect } from "@/lib/actions/operacoes";
 import { getTaxaMensal } from "@/lib/actions/settings";
@@ -19,8 +19,13 @@ export const metadata = {
   title: "Nova operação",
 };
 
-export default async function NovaOperacaoPage() {
+type Search = {
+  searchParams: Promise<{ from?: string }>;
+};
+
+export default async function NovaOperacaoPage({ searchParams }: Search) {
   const user = await requireActiveUser();
+  const params = await searchParams;
 
   // Fundo: cadastra usando seu próprio fundo
   if (user.role === "fundo") {
@@ -78,6 +83,39 @@ export default async function NovaOperacaoPage() {
     getTaxaMensal(),
   ]);
 
+  // Se "from" param presente, carrega a op base pra replicar
+  let preset: {
+    construtoraId: string;
+    valorVenda: number;
+    valorComissao: number;
+    numeroParcelas: number;
+  } | null = null;
+  if (params.from) {
+    const [src] = await db
+      .select({
+        construtoraId: operacoes.construtoraId,
+        valorVenda: operacoes.valorVenda,
+        valorComissao: operacoes.valorComissao,
+        numeroParcelas: operacoes.numeroParcelas,
+      })
+      .from(operacoes)
+      .where(
+        and(
+          eq(operacoes.id, params.from),
+          eq(operacoes.corretorUserId, user.id),
+        ),
+      )
+      .limit(1);
+    if (src) {
+      preset = {
+        construtoraId: src.construtoraId,
+        valorVenda: parseFloat(src.valorVenda),
+        valorComissao: parseFloat(src.valorComissao),
+        numeroParcelas: src.numeroParcelas,
+      };
+    }
+  }
+
   const role = (user.role === "imobiliaria" ? "imobiliaria" : "corretor") as
     | "corretor"
     | "imobiliaria";
@@ -131,6 +169,7 @@ export default async function NovaOperacaoPage() {
         <NovaOperacaoForm
           construtoras={construtoras}
           taxaMensalSugerida={taxaMensalSugerida}
+          preset={preset}
         />
       )}
     </PainelShell>

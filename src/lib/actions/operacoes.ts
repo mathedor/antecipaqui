@@ -614,6 +614,8 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
       taxaMensal: operacoes.taxaMensal,
       motivoRecusa: operacoes.motivoRecusa,
       motivoPendencia: operacoes.motivoPendencia,
+      fundoAprovacao: operacoes.fundoAprovacao,
+      fundoRecusaMotivo: operacoes.fundoRecusaMotivo,
       createdAt: operacoes.createdAt,
       corretorUserId: operacoes.corretorUserId,
       construtoraId: operacoes.construtoraId,

@@ -23,6 +23,13 @@ type Props = {
   construtoras: Construtora[];
   /** Taxa mensal sugerida vinda do admin (default 0.06) */
   taxaMensalSugerida?: number;
+  /** Valores pré-preenchidos quando "duplicando" uma op existente. */
+  preset?: {
+    construtoraId: string;
+    valorVenda: number;
+    valorComissao: number;
+    numeroParcelas: number;
+  } | null;
 };
 
 type Parcela = { valor: string; vencimento: string };
@@ -75,6 +82,7 @@ function monthsBetween(from: Date, to: Date) {
 export function NovaOperacaoForm({
   construtoras,
   taxaMensalSugerida = 0.06,
+  preset = null,
 }: Props) {
   const TAXA_MENSAL = taxaMensalSugerida;
   const [state, action, pending] = useActionState<
@@ -84,16 +92,20 @@ export function NovaOperacaoForm({
   const router = useRouter();
   const { alertSuccess, alertError } = useFeedback();
 
-  const [construtoraId, setConstrutoraId] = useState("");
+  const [construtoraId, setConstrutoraId] = useState(preset?.construtoraId ?? "");
   const [showModal, setShowModal] = useState(false);
 
-  const [valorVenda, setValorVenda] = useState("");
-  const [valorComissao, setValorComissao] = useState("");
+  const [valorVenda, setValorVenda] = useState(
+    preset ? numberToMask(preset.valorVenda) : "",
+  );
+  const [valorComissao, setValorComissao] = useState(
+    preset ? numberToMask(preset.valorComissao) : "",
+  );
   const [valorEntrada, setValorEntrada] = useState("");
   const [dataVenda, setDataVenda] = useState(
     new Date().toISOString().slice(0, 10),
   );
-  const [numParcelas, setNumParcelas] = useState(3);
+  const [numParcelas, setNumParcelas] = useState(preset?.numeroParcelas ?? 3);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
 
   const [docContratoVenda, setDocContratoVenda] = useState<UploadedBlob | null>(null);

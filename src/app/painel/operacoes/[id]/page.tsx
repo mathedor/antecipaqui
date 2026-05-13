@@ -6,6 +6,7 @@ import { getContratoForOperacao } from "@/lib/actions/contract";
 import { listFundosForSelector } from "@/lib/actions/fundos";
 import { listCustosOperacao } from "@/lib/actions/custos";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { OperacaoTimeline } from "@/components/operacao-timeline";
 import { PrintButton } from "@/components/print-button";
 import { ContratoCard } from "@/components/contrato-card";
 import { PainelShell } from "@/components/painel-shell";
@@ -117,6 +118,15 @@ export default async function OperacaoDetailPage({ params }: Params) {
           >
             📄 Visualizar bordero
           </Link>
+          {!isFundoView && op.corretorUserId === user.id && (
+            <Link
+              href={`/painel/operacoes/nova?from=${op.id}`}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors print:hidden"
+              title="Cria uma nova operação com a mesma construtora, valores e parcelas"
+            >
+              ⎘ Replicar
+            </Link>
+          )}
           <PrintButton>🖨 Imprimir / salvar PDF</PrintButton>
         </div>
       </div>
@@ -148,6 +158,18 @@ export default async function OperacaoDetailPage({ params }: Params) {
               motivo da recusa
             </div>
             <p className="text-fg">{op.motivoRecusa}</p>
+          </div>
+        )}
+
+        {/* Timeline visual do status — útil pro corretor/imobiliária */}
+        {!isFundoView && (
+          <div className="mb-6 print:hidden">
+            <OperacaoTimeline
+              status={op.status}
+              motivoPendencia={op.motivoPendencia}
+              fundoAprovacao={op.fundoAprovacao}
+              fundoRecusaMotivo={op.fundoRecusaMotivo}
+            />
           </div>
         )}
 
