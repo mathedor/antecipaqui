@@ -10,6 +10,14 @@ const TAXA_MENSAL_KEY = "taxa_mensal";
 const TAXA_MENSAL_DEFAULT = 0.06;
 const SPREAD_MINIMO_KEY = "spread_minimo_mensal_pct";
 const SPREAD_MINIMO_DEFAULT = 0; // 0 = sem mínimo (não bloqueia)
+const CDI_MENSAL_KEY = "cdi_mensal_pct";
+const CDI_MENSAL_DEFAULT = 0.0085; // SELIC ≈ 11,25%a.a. → CDI ≈ 10,65%a.a. → 0,85%/m
+const SCORE_PESO_VENCIDA_KEY = "score_peso_vencida";
+const SCORE_PESO_VENCIDA_DEFAULT = 5;
+const SCORE_PESO_VENCIDA_GRAVE_KEY = "score_peso_vencida_grave";
+const SCORE_PESO_VENCIDA_GRAVE_DEFAULT = 10;
+const SCORE_DIAS_GRAVE_KEY = "score_dias_grave";
+const SCORE_DIAS_GRAVE_DEFAULT = 30;
 
 /**
  * Taxa mensal usada na calculadora pública e no cadastro de operação
@@ -75,30 +83,94 @@ export async function getSpreadMinimoMensal(): Promise<number> {
   }
 }
 
+/** CDI estimado ao mês (decimal). Usado como benchmark do fundo. */
+export async function getCdiMensal(): Promise<number> {
+  try {
+    const [row] = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, CDI_MENSAL_KEY))
+      .limit(1);
+    if (!row) return CDI_MENSAL_DEFAULT;
+    const v = parseFloat(row.value);
+    if (!Number.isFinite(v) || v <= 0 || v >= 0.1) return CDI_MENSAL_DEFAULT;
+    return v;
+  } catch (e) {
+    console.error("[settings] getCdiMensal failed:", e);
+    return CDI_MENSAL_DEFAULT;
+  }
+}
+
+export type ScoreParams = {
+  pesoVencida: number;
+  pesoVencidaGrave: number;
+  diasGrave: number;
+};
+
+/** Pesos e janela do score de construtoras/imobiliárias/corretores. */
+export async function getScoreParams(): Promise<ScoreParams> {
+  try {
+    const rows = await db
+      .select()
+      .from(systemSettings)
+      .where(
+        sql`${systemSettings.key} IN (${SCORE_PESO_VENCIDA_KEY}, ${SCORE_PESO_VENCIDA_GRAVE_KEY}, ${SCORE_DIAS_GRAVE_KEY})`,
+      );
+    const map = new Map(rows.map((r) => [r.key, parseFloat(r.value)]));
+    const pesoVencida = map.get(SCORE_PESO_VENCIDA_KEY);
+    const pesoVencidaGrave = map.get(SCORE_PESO_VENCIDA_GRAVE_KEY);
+    const diasGrave = map.get(SCORE_DIAS_GRAVE_KEY);
+    return {
+      pesoVencida:
+        Number.isFinite(pesoVencida) && pesoVencida! > 0
+          ? pesoVencida!
+          : SCORE_PESO_VENCIDA_DEFAULT,
+      pesoVencidaGrave:
+        Number.isFinite(pesoVencidaGrave) && pesoVencidaGrave! > 0
+          ? pesoVencidaGrave!
+          : SCORE_PESO_VENCIDA_GRAVE_DEFAULT,
+      diasGrave:
+        Number.isFinite(diasGrave) && diasGrave! > 0
+          ? diasGrave!
+          : SCORE_DIAS_GRAVE_DEFAULT,
+    };
+  } catch (e) {
+    console.error("[settings] getScoreParams failed:", e);
+    return {
+      pesoVencida: SCORE_PESO_VENCIDA_DEFAULT,
+      pesoVencidaGrave: SCORE_PESO_VENCIDA_GRAVE_DEFAULT,
+      diasGrave: SCORE_DIAS_GRAVE_DEFAULT,
+    };
+  }
+}
+
 export async function getSettingsSnapshot() {
   await requireAdmin();
-  const [taxaRow] = await db
-    .select()
-    .from(systemSettings)
-    .where(eq(systemSettings.key, TAXA_MENSAL_KEY))
-    .limit(1);
-  const [spreadRow] = await db
-    .select()
-    .from(systemSettings)
-    .where(eq(systemSettings.key, SPREAD_MINIMO_KEY))
-    .limit(1);
+  const rows = await db.select().from(systemSettings);
+  const map = new Map(rows.map((r) => [r.key, r]));
+
+  const read = (key: string, fallback: number) => {
+    const row = map.get(key);
+    return {
+      value: row ? parseFloat(row.value) : fallback,
+      updatedAt: row?.updatedAt ?? null,
+      updatedBy: row?.updatedBy ?? null,
+    };
+  };
 
   return {
-    taxaMensal: {
-      value: taxaRow ? parseFloat(taxaRow.value) : TAXA_MENSAL_DEFAULT,
-      updatedAt: taxaRow?.updatedAt ?? null,
-      updatedBy: taxaRow?.updatedBy ?? null,
-    },
-    spreadMinimo: {
-      value: spreadRow ? parseFloat(spreadRow.value) : SPREAD_MINIMO_DEFAULT,
-      updatedAt: spreadRow?.updatedAt ?? null,
-      updatedBy: spreadRow?.updatedBy ?? null,
-    },
+    taxaMensal: read(TAXA_MENSAL_KEY, TAXA_MENSAL_DEFAULT),
+    spreadMinimo: read(SPREAD_MINIMO_KEY, SPREAD_MINIMO_DEFAULT),
+    cdiMensal: read(CDI_MENSAL_KEY, CDI_MENSAL_DEFAULT),
+    scorePesoVencida: read(
+      SCORE_PESO_VENCIDA_KEY,
+      SCORE_PESO_VENCIDA_DEFAULT,
+    ),
+    scorePesoVencidaGrave: read(
+      SCORE_PESO_VENCIDA_GRAVE_KEY,
+      SCORE_PESO_VENCIDA_GRAVE_DEFAULT,
+    ),
+    scoreDiasGrave: read(SCORE_DIAS_GRAVE_KEY, SCORE_DIAS_GRAVE_DEFAULT),
   };
 }
 
@@ -214,4 +286,134 @@ export async function updateSpreadMinimoAction(
 
   revalidatePath("/admin/configuracoes");
   return { ok: true, novoSpread: spread };
+}
+
+export type UpdateCdiState =
+  | { ok: false; error: string }
+  | { ok: true; novoCdi: number }
+  | null;
+
+/** Atualiza o CDI mensal usado como benchmark de rentabilidade do fundo.
+ *  Aceita "0.85", "0,85", "0.85%", "0.0085". */
+export async function updateCdiAction(
+  _prev: UpdateCdiState,
+  formData: FormData,
+): Promise<UpdateCdiState> {
+  const admin = await requireAdmin();
+
+  const raw = String(formData.get("cdiMensal") || "").trim();
+  if (!raw) return { ok: false, error: "Informe o CDI mensal" };
+
+  const normalized = raw
+    .replace("%", "")
+    .replace(/\s+/g, "")
+    .replace(",", ".");
+  const n = parseFloat(normalized);
+  if (!Number.isFinite(n) || n <= 0)
+    return { ok: false, error: "Valor inválido" };
+
+  // Heurística: se >= 0.1, assume percentual (0,85 → 0.0085)
+  const cdi = n >= 0.1 ? n / 100 : n;
+
+  if (cdi <= 0 || cdi >= 0.05) {
+    return {
+      ok: false,
+      error: "CDI fora dos limites permitidos (0% a 5% ao mês)",
+    };
+  }
+
+  await db
+    .insert(systemSettings)
+    .values({
+      key: CDI_MENSAL_KEY,
+      value: String(cdi),
+      updatedBy: admin.id,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: systemSettings.key,
+      set: {
+        value: String(cdi),
+        updatedBy: admin.id,
+        updatedAt: new Date(),
+      },
+    });
+
+  revalidatePath("/admin/configuracoes");
+  revalidatePath("/painel");
+  return { ok: true, novoCdi: cdi };
+}
+
+export type UpdateScoreParamsState =
+  | { ok: false; error: string }
+  | {
+      ok: true;
+      pesoVencida: number;
+      pesoVencidaGrave: number;
+      diasGrave: number;
+    }
+  | null;
+
+/** Atualiza pesos e janela do score. Todos os campos obrigatórios. */
+export async function updateScoreParamsAction(
+  _prev: UpdateScoreParamsState,
+  formData: FormData,
+): Promise<UpdateScoreParamsState> {
+  const admin = await requireAdmin();
+
+  const parse = (k: string) => {
+    const raw = String(formData.get(k) || "").trim().replace(",", ".");
+    return parseFloat(raw);
+  };
+  const pesoVencida = parse("pesoVencida");
+  const pesoVencidaGrave = parse("pesoVencidaGrave");
+  const diasGrave = parse("diasGrave");
+
+  if (![pesoVencida, pesoVencidaGrave, diasGrave].every(Number.isFinite)) {
+    return { ok: false, error: "Preencha todos os campos com números válidos" };
+  }
+  if (pesoVencida <= 0 || pesoVencida > 50) {
+    return { ok: false, error: "Peso de vencida fora dos limites (1 a 50)" };
+  }
+  if (pesoVencidaGrave <= 0 || pesoVencidaGrave > 50) {
+    return {
+      ok: false,
+      error: "Peso de vencida grave fora dos limites (1 a 50)",
+    };
+  }
+  if (diasGrave < 1 || diasGrave > 180) {
+    return {
+      ok: false,
+      error: "Dias pra atraso grave fora dos limites (1 a 180)",
+    };
+  }
+
+  const upsert = async (key: string, value: number) => {
+    await db
+      .insert(systemSettings)
+      .values({
+        key,
+        value: String(value),
+        updatedBy: admin.id,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: systemSettings.key,
+        set: {
+          value: String(value),
+          updatedBy: admin.id,
+          updatedAt: new Date(),
+        },
+      });
+  };
+
+  await upsert(SCORE_PESO_VENCIDA_KEY, pesoVencida);
+  await upsert(SCORE_PESO_VENCIDA_GRAVE_KEY, pesoVencidaGrave);
+  await upsert(SCORE_DIAS_GRAVE_KEY, diasGrave);
+
+  revalidatePath("/admin/configuracoes");
+  revalidatePath("/admin/decidir");
+  revalidatePath("/admin/risco-global");
+  revalidatePath("/painel/risco");
+  return { ok: true, pesoVencida, pesoVencidaGrave, diasGrave };
 }

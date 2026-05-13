@@ -11,6 +11,8 @@ import {
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { audit } from "@/lib/audit";
 import { getCurrentFundo } from "@/lib/actions/fundos";
+import { computeScore } from "@/lib/scoring";
+import { getScoreParams } from "@/lib/actions/settings";
 
 export type OpPendente = {
   operacaoId: string;
@@ -40,28 +42,16 @@ export type OpPendente = {
   docsStatus: { ok: number; revisao: number; semValidacao: number };
 };
 
-/** Calcula um score simples (0-100) de construtora baseado em histórico no fundo:
- *  - 100% das parcelas em dia → 100
- *  - Cada parcela vencida puxa -5 (cap em -50)
- *  - Cada parcela com atraso > 30d puxa -10
- *  Se construtora nunca operou com o fundo, score = 50 (neutro). */
-function computeScore(args: {
-  totalParcelas: number;
-  vencidas: number;
-  vencidasGraves: number;
-}): number {
-  if (args.totalParcelas === 0) return 50;
-  let score = 100;
-  score -= Math.min(50, args.vencidas * 5);
-  score -= Math.min(40, args.vencidasGraves * 10);
-  return Math.max(0, Math.min(100, score));
-}
+// computeScore + janela de "atraso grave" centralizados em scoring.ts e
+// configuráveis em system_settings (admin/configuracoes).
 
 /** Lista ops aguardando decisão do fundo (fundo_aprovacao = 'pendente'),
  *  ou ops com fundo vinculado em status pre/analise/assinatura sem decisão. */
 export async function getOpsAguardandoFundo(): Promise<OpPendente[] | null> {
   const fundo = await getCurrentFundo();
   if (!fundo) return null;
+
+  const scoreParams = await getScoreParams();
 
   const result = await db.execute(sql`
     SELECT
@@ -107,7 +97,7 @@ export async function getOpsAguardandoFundo(): Promise<OpPendente[] | null> {
         WHERE oo.fundo_id = ${fundo.id}::uuid
           AND oo.construtora_id = o.construtora_id
           AND pp.status = 'vencida'
-          AND (CURRENT_DATE - pp.vencimento) > 30
+          AND (CURRENT_DATE - pp.vencimento) > ${scoreParams.diasGrave}
       )::int AS vencidas_graves,
       -- Docs validados
       (
@@ -168,11 +158,14 @@ export async function getOpsAguardandoFundo(): Promise<OpPendente[] | null> {
     const custoDinheiro = r.juros * razao;
     const spread = Math.max(0, r.juros - custoDinheiro);
     const parteFundo = custoDinheiro + spread / 2;
-    const scoreConstrutora = computeScore({
-      totalParcelas: r.total_parcelas_construtora,
-      vencidas: r.vencidas_construtora,
-      vencidasGraves: r.vencidas_graves,
-    });
+    const scoreConstrutora = computeScore(
+      {
+        totalParcelas: r.total_parcelas_construtora,
+        vencidas: r.vencidas_construtora,
+        vencidasGraves: r.vencidas_graves,
+      },
+      scoreParams,
+    );
     return {
       operacaoId: r.operacao_id,
       numero: r.numero,

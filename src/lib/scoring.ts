@@ -2,34 +2,43 @@
  *
  *  Reaproveitável em: mesa de decisão admin, dashboard de fundo, relatórios.
  *  Mesma fórmula da mesa do fundo (consistência): mais peso em atrasos
- *  graves (>30d) que em atrasos leves.
+ *  graves (>30d por padrão) que em atrasos leves.
  *
- *  Pra escopos diferentes (fundo-específico vs global), a query usa filtros
- *  diferentes mas a fórmula é idêntica.
+ *  Pesos e janela são configuráveis via system_settings (admin/configuracoes).
  */
 
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { getScoreParams, type ScoreParams } from "@/lib/actions/settings";
 
 export type EscopoScore = "global" | { fundoId: string };
 
 export type ScoreItem = {
   totalParcelas: number;
   vencidas: number;
-  vencidasGraves: number; // atraso > 30d
+  vencidasGraves: number;
   score: number; // 0-100
 };
 
+const SCORE_DEFAULT_PARAMS: ScoreParams = {
+  pesoVencida: 5,
+  pesoVencidaGrave: 10,
+  diasGrave: 30,
+};
+
 /** Aplica a fórmula canônica de score. */
-export function computeScore(args: {
-  totalParcelas: number;
-  vencidas: number;
-  vencidasGraves: number;
-}): number {
+export function computeScore(
+  args: {
+    totalParcelas: number;
+    vencidas: number;
+    vencidasGraves: number;
+  },
+  params: ScoreParams = SCORE_DEFAULT_PARAMS,
+): number {
   if (args.totalParcelas === 0) return 50; // neutro pra novos
   let score = 100;
-  score -= Math.min(50, args.vencidas * 5);
-  score -= Math.min(40, args.vencidasGraves * 10);
+  score -= Math.min(50, args.vencidas * params.pesoVencida);
+  score -= Math.min(40, args.vencidasGraves * params.pesoVencidaGrave);
   return Math.max(0, Math.min(100, score));
 }
 
@@ -45,13 +54,14 @@ export async function getScoreConstrutora(
   construtoraId: string,
   escopo: EscopoScore = "global",
 ): Promise<ScoreItem> {
+  const params = await getScoreParams();
   const result = await db.execute(sql`
     SELECT
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE p.status = 'vencida')::int AS vencidas,
       COUNT(*) FILTER (
         WHERE p.status = 'vencida'
-          AND (CURRENT_DATE - p.vencimento) > 30
+          AND (CURRENT_DATE - p.vencimento) > ${params.diasGrave}
       )::int AS vencidas_graves
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
@@ -67,11 +77,14 @@ export async function getScoreConstrutora(
     totalParcelas: r.total,
     vencidas: r.vencidas,
     vencidasGraves: r.vencidas_graves,
-    score: computeScore({
-      totalParcelas: r.total,
-      vencidas: r.vencidas,
-      vencidasGraves: r.vencidas_graves,
-    }),
+    score: computeScore(
+      {
+        totalParcelas: r.total,
+        vencidas: r.vencidas,
+        vencidasGraves: r.vencidas_graves,
+      },
+      params,
+    ),
   };
 }
 
@@ -80,13 +93,14 @@ export async function getScoreImobiliaria(
   imobiliariaId: string,
   escopo: EscopoScore = "global",
 ): Promise<ScoreItem> {
+  const params = await getScoreParams();
   const result = await db.execute(sql`
     SELECT
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE p.status = 'vencida')::int AS vencidas,
       COUNT(*) FILTER (
         WHERE p.status = 'vencida'
-          AND (CURRENT_DATE - p.vencimento) > 30
+          AND (CURRENT_DATE - p.vencimento) > ${params.diasGrave}
       )::int AS vencidas_graves
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
@@ -102,11 +116,14 @@ export async function getScoreImobiliaria(
     totalParcelas: r.total,
     vencidas: r.vencidas,
     vencidasGraves: r.vencidas_graves,
-    score: computeScore({
-      totalParcelas: r.total,
-      vencidas: r.vencidas,
-      vencidasGraves: r.vencidas_graves,
-    }),
+    score: computeScore(
+      {
+        totalParcelas: r.total,
+        vencidas: r.vencidas,
+        vencidasGraves: r.vencidas_graves,
+      },
+      params,
+    ),
   };
 }
 
@@ -115,13 +132,14 @@ export async function getScoreCorretor(
   corretorUserId: string,
   escopo: EscopoScore = "global",
 ): Promise<ScoreItem> {
+  const params = await getScoreParams();
   const result = await db.execute(sql`
     SELECT
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE p.status = 'vencida')::int AS vencidas,
       COUNT(*) FILTER (
         WHERE p.status = 'vencida'
-          AND (CURRENT_DATE - p.vencimento) > 30
+          AND (CURRENT_DATE - p.vencimento) > ${params.diasGrave}
       )::int AS vencidas_graves
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
@@ -137,11 +155,14 @@ export async function getScoreCorretor(
     totalParcelas: r.total,
     vencidas: r.vencidas,
     vencidasGraves: r.vencidas_graves,
-    score: computeScore({
-      totalParcelas: r.total,
-      vencidas: r.vencidas,
-      vencidasGraves: r.vencidas_graves,
-    }),
+    score: computeScore(
+      {
+        totalParcelas: r.total,
+        vencidas: r.vencidas,
+        vencidasGraves: r.vencidas_graves,
+      },
+      params,
+    ),
   };
 }
 
@@ -152,6 +173,7 @@ export async function getScoresBatchConstrutoras(
   escopo: EscopoScore = "global",
 ): Promise<Map<string, ScoreItem>> {
   if (construtoraIds.length === 0) return new Map();
+  const params = await getScoreParams();
   // Drizzle não serializa array JS como ANY($1) — vira tuple. Monta lista
   // com sql.join + casts pra uuid pra ficar válido.
   const idsList = sql.join(
@@ -165,7 +187,7 @@ export async function getScoresBatchConstrutoras(
       COUNT(*) FILTER (WHERE p.status = 'vencida')::int AS vencidas,
       COUNT(*) FILTER (
         WHERE p.status = 'vencida'
-          AND (CURRENT_DATE - p.vencimento) > 30
+          AND (CURRENT_DATE - p.vencimento) > ${params.diasGrave}
       )::int AS vencidas_graves
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
@@ -190,11 +212,14 @@ export async function getScoresBatchConstrutoras(
       totalParcelas: r.total,
       vencidas: r.vencidas,
       vencidasGraves: r.vencidas_graves,
-      score: computeScore({
-        totalParcelas: r.total,
-        vencidas: r.vencidas,
-        vencidasGraves: r.vencidas_graves,
-      }),
+      score: computeScore(
+        {
+          totalParcelas: r.total,
+          vencidas: r.vencidas,
+          vencidasGraves: r.vencidas_graves,
+        },
+        params,
+      ),
     });
   }
   // Quem não tem parcelas no escopo recebe ScoreItem zerado (score=50)

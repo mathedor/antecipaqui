@@ -1172,6 +1172,47 @@ export const fundoRegrasAutoAprovacao = pgTable(
 export type FundoRegraAuto = typeof fundoRegrasAutoAprovacao.$inferSelect;
 
 /* =========================================
+   FUNDO API KEYS — autenticação de integrações externas
+   Token plaintext só aparece uma vez (no momento da criação). Apenas o
+   hash SHA-256 fica no banco.
+   ========================================= */
+
+export const fundoApiKeyEscopoEnum = pgEnum("fundo_api_key_escopo", [
+  "read_only",
+  "read_write",
+]);
+
+export const fundoApiKeys = pgTable(
+  "fundo_api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    nome: text("nome").notNull(),
+    /** SHA-256 hex do token completo (sem prefixo `aq_`). */
+    tokenHash: text("token_hash").notNull(),
+    /** Primeiros 8 chars do token plaintext — só pra identificação visual. */
+    prefix: text("prefix").notNull(),
+    escopo: fundoApiKeyEscopoEnum("escopo").notNull().default("read_only"),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("fundo_api_keys_hash_idx").on(t.tokenHash),
+    index("fundo_api_keys_fundo_idx").on(t.fundoId),
+  ],
+);
+
+export type FundoApiKey = typeof fundoApiKeys.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 

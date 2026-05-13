@@ -2,6 +2,8 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminTaxaForm } from "@/components/admin-taxa-form";
 import { AdminSpreadMinimoForm } from "@/components/admin-spread-minimo-form";
+import { AdminCdiForm } from "@/components/admin-cdi-form";
+import { AdminScoreForm } from "@/components/admin-score-form";
 import { getSettingsSnapshot } from "@/lib/actions/settings";
 
 export const metadata = {
@@ -70,6 +72,53 @@ export default async function AdminConfiguracoesPage() {
         <AdminSpreadMinimoForm
           spreadAtual={settings.spreadMinimo.value}
           updatedAt={settings.spreadMinimo.updatedAt}
+        />
+      </section>
+
+      <section className="rounded-2xl border border-border bg-bg-elev p-6 md:p-8 max-w-3xl mt-6">
+        <div className="flex items-baseline justify-between mb-5 gap-3 flex-wrap">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">
+              CDI mensal (benchmark do fundo)
+            </h2>
+            <p className="text-sm text-fg-muted mt-1">
+              Taxa usada como referência na tela de Daily do fundo pra
+              comparar rentabilidade da carteira vs CDI.
+            </p>
+          </div>
+          <span className="font-mono tabular text-3xl font-bold text-accent">
+            {(settings.cdiMensal.value * 100).toFixed(2).replace(".", ",")}%
+            <span className="text-xs text-fg-muted font-normal ml-1">a.m.</span>
+          </span>
+        </div>
+        <AdminCdiForm
+          cdiAtual={settings.cdiMensal.value}
+          updatedAt={settings.cdiMensal.updatedAt}
+        />
+      </section>
+
+      <section className="rounded-2xl border border-border bg-bg-elev p-6 md:p-8 max-w-3xl mt-6">
+        <div className="flex items-baseline justify-between mb-5 gap-3 flex-wrap">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">
+              Score de inadimplência
+            </h2>
+            <p className="text-sm text-fg-muted mt-1">
+              Pesos do score 0–100 aplicado em construtoras, imobiliárias e
+              corretores. Afeta a fila de decisão admin/fundo e o painel de
+              risco.
+            </p>
+          </div>
+        </div>
+        <AdminScoreForm
+          pesoVencidaAtual={settings.scorePesoVencida.value}
+          pesoVencidaGraveAtual={settings.scorePesoVencidaGrave.value}
+          diasGraveAtual={settings.scoreDiasGrave.value}
+          updatedAt={
+            settings.scoreDiasGrave.updatedAt ??
+            settings.scorePesoVencida.updatedAt ??
+            settings.scorePesoVencidaGrave.updatedAt
+          }
         />
       </section>
     </AdminShell>

@@ -3,11 +3,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { getCurrentFundo } from "@/lib/actions/fundos";
-
-/** CDI estimado ao mês — hardcoded por enquanto. Em produção, viraria
- *  configuração via system_settings ou fetch de API externa (BCB).
- *  Aproximação: SELIC 11.25% a.a. → CDI ~10.65% a.a. → ~0.85%/m */
-const CDI_AO_MES = 0.0085;
+import { getCdiMensal } from "@/lib/actions/settings";
 
 export type BenchmarkPayload = {
   /** Rentabilidade média ponderada do fundo no período (decimal /mês).
@@ -31,6 +27,8 @@ export type BenchmarkPayload = {
 export async function getFundoBenchmark(): Promise<BenchmarkPayload | null> {
   const fundo = await getCurrentFundo();
   if (!fundo) return null;
+
+  const cdiAoMes = await getCdiMensal();
 
   const result = await db.execute(sql`
     SELECT
@@ -84,8 +82,8 @@ export async function getFundoBenchmark(): Promise<BenchmarkPayload | null> {
 
   return {
     rentabilidadeAoMes,
-    cdiAoMes: CDI_AO_MES,
-    spreadPp: rentabilidadeAoMes - CDI_AO_MES,
+    cdiAoMes,
+    spreadPp: rentabilidadeAoMes - cdiAoMes,
     parcelasPagas: r.parcelas_pagas,
     capitalRecebido: r.capital_recebido,
     parteFundoRecebida: r.parte_fundo,
