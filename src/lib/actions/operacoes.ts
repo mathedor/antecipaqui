@@ -721,6 +721,7 @@ export async function getOperacoesByConstrutora(construtoraId: string) {
       desagio: operacoes.desagio,
       dataVenda: operacoes.dataVenda,
       createdAt: operacoes.createdAt,
+      empreendimentoId: operacoes.empreendimentoId,
       corretorNome: users.nome,
     })
     .from(operacoes)

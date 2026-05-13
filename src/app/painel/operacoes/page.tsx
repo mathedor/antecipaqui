@@ -32,7 +32,11 @@ const ATIVOS_STATUSES = [
 ];
 
 type Search = {
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    empreendimentoId?: string;
+  }>;
 };
 
 export default async function OperacoesPage({ searchParams }: Search) {
@@ -41,7 +45,7 @@ export default async function OperacoesPage({ searchParams }: Search) {
 
   const isConstrutora = user.role === "construtora";
   const isFundo = user.role === "fundo";
-  const { from, to } = await searchParams;
+  const { from, to, empreendimentoId } = await searchParams;
 
   let allOps: Array<{
     id: string;
@@ -51,7 +55,9 @@ export default async function OperacoesPage({ searchParams }: Search) {
     valorPresente: string;
     counterpartyLabel: string | null;
     createdAt: Date | string;
+    empreendimentoId?: string | null;
   }> = [];
+  let empreendimentos: Array<{ id: string; nome: string }> = [];
 
   if (isFundo) {
     const { getFundoDashboard } = await import("@/lib/actions/fundos");
@@ -80,7 +86,16 @@ export default async function OperacoesPage({ searchParams }: Search) {
         valorPresente: r.valorPresente,
         counterpartyLabel: r.corretorNome,
         createdAt: r.createdAt,
+        empreendimentoId: r.empreendimentoId,
       }));
+      // Lista empreendimentos pra dropdown
+      const { listEmpreendimentosDaConstrutora } = await import(
+        "@/lib/actions/construtora-operacional"
+      );
+      const es = await listEmpreendimentosDaConstrutora();
+      empreendimentos = es
+        .filter((e) => e.isActive)
+        .map((e) => ({ id: e.id, nome: e.nome }));
     }
   } else {
     const rows = await getOperacoesByCorretor(user.id);
@@ -114,13 +129,15 @@ export default async function OperacoesPage({ searchParams }: Search) {
     ).length,
   };
 
-  // Aplica filtro de data localmente (a query já trouxe tudo)
+  // Aplica filtro de data + empreendimento localmente (a query já trouxe tudo)
   const fromDate = from ? new Date(from + "T00:00:00") : null;
   const toDate = to ? new Date(to + "T23:59:59") : null;
   const operacoes = allOps.filter((o) => {
     const d = new Date(o.createdAt);
     if (fromDate && d < fromDate) return false;
     if (toDate && d > toDate) return false;
+    if (empreendimentoId && o.empreendimentoId !== empreendimentoId)
+      return false;
     return true;
   });
 
@@ -170,6 +187,46 @@ export default async function OperacoesPage({ searchParams }: Search) {
 
       <OperacoesStatBoxes stats={stats} />
       <DateRangeFilter />
+
+      {isConstrutora && empreendimentos.length > 0 && (
+        <form
+          method="get"
+          action="/painel/operacoes"
+          className="mb-4 flex flex-wrap gap-2 items-center"
+        >
+          {from && <input type="hidden" name="from" value={from} />}
+          {to && <input type="hidden" name="to" value={to} />}
+          <label className="text-xs text-fg-muted font-mono uppercase tracking-wider">
+            Empreendimento:
+          </label>
+          <select
+            name="empreendimentoId"
+            defaultValue={empreendimentoId ?? ""}
+            className="h-9 px-3 rounded-lg border border-border bg-bg text-sm"
+          >
+            <option value="">Todos</option>
+            {empreendimentos.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nome}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="h-9 px-3 rounded-lg bg-accent text-white text-xs font-semibold"
+          >
+            Aplicar
+          </button>
+          {empreendimentoId && (
+            <Link
+              href="/painel/operacoes"
+              className="text-xs text-accent hover:underline"
+            >
+              Limpar
+            </Link>
+          )}
+        </form>
+      )}
 
       {allOps.length === 0 ? (
         <EmptyState isConstrutora={isConstrutora} />

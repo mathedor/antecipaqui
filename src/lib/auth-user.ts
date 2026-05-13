@@ -89,10 +89,20 @@ export async function getCurrentDbUser(): Promise<User | null> {
 
   const isAdmin = isAdminEmail(email);
 
-  // Detecta convite de fundo via Clerk publicMetadata (vem da invitation)
+  // Detecta convite via Clerk publicMetadata (vem da invitation)
   const meta = clerkUser.publicMetadata as Record<string, unknown> | null;
   const fundoIdFromInvite =
     meta && typeof meta.fundoId === "string" ? meta.fundoId : null;
+  const construtoraIdFromInvite =
+    meta && typeof meta.construtoraId === "string"
+      ? meta.construtoraId
+      : null;
+  const construtoraMembroRole =
+    meta && typeof meta.construtoraMembroRole === "string"
+      ? meta.construtoraMembroRole
+      : null;
+  const convidadoPorUserId =
+    meta && typeof meta.convidadoPor === "string" ? meta.convidadoPor : null;
   const roleFromInvite =
     meta && typeof meta.role === "string" ? meta.role : null;
 
@@ -100,11 +110,13 @@ export async function getCurrentDbUser(): Promise<User | null> {
     ? "admin"
     : roleFromInvite === "fundo" && fundoIdFromInvite
       ? "fundo"
-      : roleFromInvite === "comercial"
-        ? "comercial"
-        : roleFromInvite === "corretor" || roleFromInvite === "imobiliaria"
-          ? roleFromInvite
-          : "corretor";
+      : roleFromInvite === "construtora" && construtoraIdFromInvite
+        ? "construtora"
+        : roleFromInvite === "comercial"
+          ? "comercial"
+          : roleFromInvite === "corretor" || roleFromInvite === "imobiliaria"
+            ? roleFromInvite
+            : "corretor";
 
   const inserted = await db
     .insert(users)
@@ -129,6 +141,28 @@ export async function getCurrentDbUser(): Promise<User | null> {
       .set({ ownerUserId: userId, updatedAt: new Date() })
       .where(eq(fundos.id, fundoIdFromInvite))
       .catch((e) => console.error("[auth] erro vinculando fundo", e));
+  }
+
+  // Se for membro convidado de construtora, registra em construtora_membros
+  if (
+    inserted[0] &&
+    role === "construtora" &&
+    construtoraIdFromInvite
+  ) {
+    const { construtoraMembros } = await import("@/db/schema");
+    await db
+      .insert(construtoraMembros)
+      .values({
+        construtoraId: construtoraIdFromInvite,
+        userId,
+        roleInterna: construtoraMembroRole ?? "outro",
+        convidadoPorUserId: convidadoPorUserId,
+        aceitoEm: new Date(),
+      })
+      .onConflictDoNothing()
+      .catch((e) =>
+        console.error("[auth] erro vinculando membro construtora", e),
+      );
   }
 
   // Se for comercial via convite, vincula pelo email (já existe row criada

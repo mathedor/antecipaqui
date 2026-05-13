@@ -6,6 +6,7 @@ import {
 } from "@/lib/actions/operacoes";
 import { PainelShell } from "@/components/painel-shell";
 import { DuplicatasTable } from "@/components/duplicatas-table";
+import { BulkPayPanel } from "@/components/bulk-pay-panel";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = {
@@ -85,7 +86,19 @@ export default async function DuplicatasPage() {
           </p>
         </div>
       ) : (
-        <DuplicatasTable rows={duplicatas} />
+        <>
+          <BulkPayPanel
+            rows={duplicatas.map((d) => ({
+              parcelaId: d.parcelaId,
+              numero: d.numero,
+              vencimento: d.vencimento,
+              valor: d.valor,
+              statusParcela: d.statusParcela,
+              operacaoNumero: d.operacaoNumero,
+            }))}
+          />
+          <DuplicatasTable rows={duplicatas} />
+        </>
       )}
     </PainelShell>
   );

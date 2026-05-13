@@ -394,6 +394,41 @@ export const fundos = pgTable(
 
 export type Fundo = typeof fundos.$inferSelect;
 
+/** Membros da equipe de uma construtora. Cada construtora tem 1 owner
+ *  principal (construtoras.ownerUserId) e pode convidar colegas como
+ *  membros adicionais com roles internas (financeiro/comercial/juridico/
+ *  outro). Permissões finas por role serão aplicadas nas actions/queries
+ *  conforme a feature for usada — hoje todos veem tudo da construtora. */
+export const construtoraMembros = pgTable(
+  "construtora_membros",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    construtoraId: uuid("construtora_id")
+      .notNull()
+      .references(() => construtoras.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** 'owner' | 'financeiro' | 'comercial' | 'juridico' | 'outro' */
+    roleInterna: text("role_interna").notNull().default("outro"),
+    convidadoPorUserId: text("convidado_por_user_id").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    addedAt: timestamp("added_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Marcado quando o convite foi aceito (user fez login). */
+    aceitoEm: timestamp("aceito_em", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("construtora_membros_unique").on(t.construtoraId, t.userId),
+    index("construtora_membros_user_idx").on(t.userId),
+  ],
+);
+
+export type ConstrutoraMembro = typeof construtoraMembros.$inferSelect;
+
 /** Empreendimentos da construtora (torres/condomínios/projetos). Operações
  *  podem ser linkadas opcionalmente a um empreendimento, permitindo relatório
  *  agregado por projeto + filtro nas listagens. */

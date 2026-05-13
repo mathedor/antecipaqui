@@ -63,6 +63,7 @@ const navFull: AdminNavItem[] = [
       { href: "/admin/mural", label: "Mural" },
     ],
   },
+  { type: "link", href: "/admin/pendencias", label: "Pendências" },
   {
     type: "submenu",
     label: "Relatórios",

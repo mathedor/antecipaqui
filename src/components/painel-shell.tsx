@@ -52,6 +52,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/risco", label: "Risco" },
     { href: "/painel/score", label: "Score" },
     { href: "/painel/cashback", label: "Cashback" },
+    { href: "/painel/equipe", label: "Equipe" },
     { href: "/painel/suporte", label: "Chats" },
   ],
   admin: [
@@ -66,6 +67,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   fundo: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/aprovar", label: "Aprovar" },
+    { href: "/painel/pendencias-decisao", label: "Pendências" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/daily", label: "Daily" },
@@ -201,6 +203,7 @@ const MOBILE_FULLMENU: Record<
     {
       section: "suporte",
       items: [
+        { href: "/painel/equipe", label: "Equipe", icon: "tag" },
         { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
         { href: "/painel/perfil", label: "Editar perfil", icon: "doc" },

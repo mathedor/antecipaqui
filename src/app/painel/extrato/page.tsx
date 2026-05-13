@@ -91,9 +91,17 @@ export default async function ExtratoPage({ searchParams }: Search) {
         </button>
         <a
           href={`/api/construtora/extrato/csv${qsSuffix}`}
-          className="col-span-12 md:col-span-2 h-10 inline-flex items-center justify-center gap-2 rounded-lg border border-border text-sm font-semibold text-fg hover:border-accent hover:text-accent"
+          className="col-span-6 md:col-span-1 h-10 inline-flex items-center justify-center gap-1 rounded-lg border border-border text-sm font-semibold text-fg hover:border-accent hover:text-accent"
         >
           📊 CSV
+        </a>
+        <a
+          href={`/api/construtora/extrato/pdf${qsSuffix}`}
+          target="_blank"
+          rel="noopener"
+          className="col-span-6 md:col-span-1 h-10 inline-flex items-center justify-center gap-1 rounded-lg border border-border text-sm font-semibold text-fg hover:border-accent hover:text-accent"
+        >
+          📄 PDF
         </a>
       </form>
 
