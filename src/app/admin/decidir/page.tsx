@@ -40,27 +40,10 @@ export default async function AdminDecidirPage({ searchParams }: Search) {
   else if (filtro === "fundo_pendente")
     statusFiltro = ["pre_aprovada", "analise_final", "enviada_para_assinatura"];
 
-  let ops: Awaited<ReturnType<typeof getOpsAguardandoAdmin>> = [];
-  let stats: Awaited<ReturnType<typeof getAdminMesaStats>> = {
-    qtdAguardandoAprovacao: 0,
-    qtdDocsIncompletos: 0,
-    qtdFundoPendente: 0,
-    qtdFundoRecusou: 0,
-  };
-  let debugError: { msg: string; stack: string } | null = null;
-  try {
-    [ops, stats] = await Promise.all([
-      getOpsAguardandoAdmin(
-        statusFiltro ? { status: statusFiltro } : undefined,
-      ),
-      getAdminMesaStats(),
-    ]);
-  } catch (e) {
-    debugError = {
-      msg: (e as Error).message,
-      stack: (e as Error).stack ?? "",
-    };
-  }
+  const [ops, stats] = await Promise.all([
+    getOpsAguardandoAdmin(statusFiltro ? { status: statusFiltro } : undefined),
+    getAdminMesaStats(),
+  ]);
 
   // Aplica filtro adicional pra fundo_pendente
   const opsFiltradas =
@@ -83,25 +66,6 @@ export default async function AdminDecidirPage({ searchParams }: Search) {
           em 30 segundos sem precisar entrar em cada op.
         </p>
       </div>
-
-      {debugError && (
-        <div className="mb-6 rounded-2xl border border-danger/40 bg-red-50 p-5">
-          <h2 className="text-lg font-bold text-danger mb-2">
-            🔍 Erro server-side capturado
-          </h2>
-          <pre className="text-xs text-fg bg-white p-3 rounded whitespace-pre-wrap break-words">
-            {debugError.msg}
-          </pre>
-          <details className="mt-3">
-            <summary className="cursor-pointer text-xs font-semibold">
-              stack trace
-            </summary>
-            <pre className="text-[10px] text-fg-muted bg-white p-3 rounded mt-2 overflow-auto whitespace-pre-wrap break-all">
-              {debugError.stack}
-            </pre>
-          </details>
-        </div>
-      )}
 
       {/* Filtros */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">

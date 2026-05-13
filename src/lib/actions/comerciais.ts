@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, desc, sql, or } from "drizzle-orm";
+import { eq, desc, sql, or, inArray } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import {
@@ -382,17 +382,21 @@ export async function getComercialDashboard(comercialId: string) {
     ? await db
         .select()
         .from(parcelasComissao)
-        .where(sql`${parcelasComissao.operacaoId} = ANY(${opIds})`)
+        .where(inArray(parcelasComissao.operacaoId, opIds))
     : [];
 
   // Custos não entram na comissão do comercial (base = spread/2), mas
   // mantidos no map caso seja útil em outros KPIs.
   const custosByOp = new Map<string, number>();
   if (opIds.length) {
+    const idsList = sql.join(
+      opIds.map((id) => sql`${id}::uuid`),
+      sql`, `,
+    );
     const custosResult = await db.execute(sql`
       SELECT operacao_id::text AS op_id, SUM(valor)::float AS total
       FROM custos_operacao
-      WHERE operacao_id = ANY(${opIds})
+      WHERE operacao_id IN (${idsList})
       GROUP BY operacao_id
     `);
     const rows =

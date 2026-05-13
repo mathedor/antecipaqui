@@ -152,6 +152,12 @@ export async function getScoresBatchConstrutoras(
   escopo: EscopoScore = "global",
 ): Promise<Map<string, ScoreItem>> {
   if (construtoraIds.length === 0) return new Map();
+  // Drizzle não serializa array JS como ANY($1) — vira tuple. Monta lista
+  // com sql.join + casts pra uuid pra ficar válido.
+  const idsList = sql.join(
+    construtoraIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
   const result = await db.execute(sql`
     SELECT
       o.construtora_id::text AS construtora_id,
@@ -163,7 +169,7 @@ export async function getScoresBatchConstrutoras(
       )::int AS vencidas_graves
     FROM parcelas_comissao p
     INNER JOIN operacoes o ON o.id = p.operacao_id
-    WHERE o.construtora_id = ANY(${construtoraIds}::uuid[])
+    WHERE o.construtora_id IN (${idsList})
       ${fundoFilterSql(escopo)}
     GROUP BY o.construtora_id
   `);

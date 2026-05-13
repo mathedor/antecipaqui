@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, sql, and, desc } from "drizzle-orm";
+import { eq, sql, and, desc, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   users,
@@ -748,8 +748,7 @@ export async function getDashboardStatsForConstrutora(construtoraId: string) {
         .where(
           and(
             eq(parcelasComissao.status, "a_vencer"),
-            // include all parcelas of these ops
-            sql`${parcelasComissao.operacaoId} = ANY(${ativasIds})`,
+            inArray(parcelasComissao.operacaoId, ativasIds),
           ),
         )
     : [];
@@ -763,7 +762,7 @@ export async function getDashboardStatsForConstrutora(construtoraId: string) {
           pagoValor: parcelasComissao.pagoValor,
         })
         .from(parcelasComissao)
-        .where(sql`${parcelasComissao.operacaoId} = ANY(${ativasIds})`)
+        .where(inArray(parcelasComissao.operacaoId, ativasIds))
     : [];
 
   const now = new Date();

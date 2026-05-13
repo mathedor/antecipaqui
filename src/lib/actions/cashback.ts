@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   construtoras,
@@ -265,7 +265,7 @@ export async function confirmarSaqueAction(
       })
       .where(
         and(
-          sql`${operacoes.id} = ANY(${opsIds})`,
+          inArray(operacoes.id, opsIds),
           isNull(operacoes.cashbackSacadoEm),
         ),
       );

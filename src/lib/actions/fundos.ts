@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, desc, sql, count } from "drizzle-orm";
+import { eq, desc, sql, count, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   fundos,
@@ -420,16 +420,20 @@ export async function getFundoDashboard() {
     ? await db
         .select()
         .from(parcelasComissao)
-        .where(sql`${parcelasComissao.operacaoId} = ANY(${opIds})`)
+        .where(inArray(parcelasComissao.operacaoId, opIds))
     : [];
 
   // Soma de custos por operação — pro cálculo de resultado (juros − custos)
   const custosByOp = new Map<string, number>();
   if (opIds.length) {
+    const idsList = sql.join(
+      opIds.map((id) => sql`${id}::uuid`),
+      sql`, `,
+    );
     const custosResult = await db.execute(sql`
       SELECT operacao_id::text AS op_id, SUM(valor)::float AS total
       FROM custos_operacao
-      WHERE operacao_id = ANY(${opIds})
+      WHERE operacao_id IN (${idsList})
       GROUP BY operacao_id
     `);
     const rows =

@@ -755,10 +755,14 @@ export async function getUserDetail(userId: string) {
   const opIds = userOpsRaw.map((o) => o.id);
   const custosByOp = new Map<string, number>();
   if (opIds.length) {
+    const idsList = sql.join(
+      opIds.map((id) => sql`${id}::uuid`),
+      sql`, `,
+    );
     const custosResult = await db.execute(sql`
       SELECT operacao_id::text AS op_id, SUM(valor)::float AS total
       FROM custos_operacao
-      WHERE operacao_id = ANY(${opIds})
+      WHERE operacao_id IN (${idsList})
       GROUP BY operacao_id
     `);
     const rows =
