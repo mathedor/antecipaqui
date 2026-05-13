@@ -426,6 +426,46 @@ export function AdminFundoForm({ fundo }: Props) {
         </div>
       </Card>
 
+      <Card
+        title="Encargos de atraso"
+        subtitle="Cobrados automaticamente quando parcela vence. Padrão de mercado: multa 2% + juros 1%/mês."
+      >
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Multa por atraso (%)">
+            <input
+              name="multaAtrasoPct"
+              defaultValue={
+                fundo
+                  ? (parseFloat(fundo.multaAtrasoPct) * 100)
+                      .toFixed(2)
+                      .replace(".", ",")
+                  : "2"
+              }
+              placeholder="2"
+              className="form-input"
+            />
+            <p className="text-xs text-fg-dim mt-1">Aplicada uma vez sobre o valor da parcela.</p>
+          </Field>
+          <Field label="Juros de mora mensais (%)">
+            <input
+              name="jurosMoraMensalPct"
+              defaultValue={
+                fundo
+                  ? (parseFloat(fundo.jurosMoraMensalPct) * 100)
+                      .toFixed(2)
+                      .replace(".", ",")
+                  : "1"
+              }
+              placeholder="1"
+              className="form-input"
+            />
+            <p className="text-xs text-fg-dim mt-1">Pro rata die a partir do vencimento.</p>
+          </Field>
+        </div>
+      </Card>
+
+      <CobrancaCard fundo={fundo} />
+
       <button type="submit" disabled={pending} className="btn-primary !h-12 !px-6">
         {pending
           ? "Salvando..."
@@ -434,6 +474,162 @@ export function AdminFundoForm({ fundo }: Props) {
             : "Cadastrar fundo"}
       </button>
     </form>
+  );
+}
+
+function CobrancaCard({ fundo }: { fundo?: Fundo }) {
+  const [modo, setModo] = useState<string>(fundo?.boletosModo ?? "manual");
+
+  return (
+    <Card
+      title="Cobrança / emissão de boleto"
+      subtitle="Como esse fundo emite e baixa boletos. Escolha o modo abaixo."
+    >
+      <Field label="Modo de cobrança">
+        <select
+          name="boletosModo"
+          value={modo}
+          onChange={(e) => setModo(e.target.value)}
+          className="form-input"
+        >
+          <option value="manual">
+            Manual — admin gera e baixa direto no banco
+          </option>
+          <option value="api">
+            API — fundo expõe API REST pra geração + webhook pra baixa
+          </option>
+          <option value="cnab">
+            CNAB — gera arquivo de remessa, importa retorno em lote
+          </option>
+        </select>
+      </Field>
+
+      {modo === "api" && (
+        <div className="space-y-3 mt-4 p-4 rounded-xl bg-bg border border-border">
+          <h4 className="font-mono text-[11px] uppercase tracking-wider text-fg-dim">
+            configuração API
+          </h4>
+          <Field label="URL da API de geração">
+            <input
+              name="cobrancaApiUrl"
+              defaultValue={fundo?.cobrancaApiUrl ?? ""}
+              placeholder="https://api.banco.com/boletos"
+              className="form-input font-mono text-xs"
+            />
+          </Field>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Tipo de autenticação">
+              <select
+                name="cobrancaApiAuthTipo"
+                defaultValue={fundo?.cobrancaApiAuthTipo ?? ""}
+                className="form-input"
+              >
+                <option value="">— escolha —</option>
+                <option value="api_key">API Key</option>
+                <option value="basic">HTTP Basic Auth</option>
+                <option value="oauth">OAuth 2.0 (Client Credentials)</option>
+              </select>
+            </Field>
+            <Field label="Segredo do webhook (HMAC)">
+              <input
+                name="cobrancaWebhookSecret"
+                defaultValue={fundo?.cobrancaWebhookSecret ?? ""}
+                placeholder="aleatório, ≥32 chars"
+                className="form-input font-mono text-xs"
+              />
+            </Field>
+          </div>
+          <Field label="Credenciais (JSON)">
+            <textarea
+              name="cobrancaApiCredenciais"
+              defaultValue={
+                fundo?.cobrancaApiCredenciais
+                  ? JSON.stringify(fundo.cobrancaApiCredenciais, null, 2)
+                  : ""
+              }
+              rows={4}
+              placeholder={`Ex: { "apiKey": "..." }  ou  { "clientId": "...", "clientSecret": "..." }`}
+              className="form-input font-mono text-xs"
+            />
+            <p className="text-xs text-fg-dim mt-1">
+              Estrutura varia conforme tipo de auth. Mantenha em JSON válido.
+            </p>
+          </Field>
+          <div className="rounded-lg border border-warn/40 bg-yellow-50 p-3 text-xs text-warn">
+            ⚠ Integração específica por banco precisa ser implementada no
+            código quando definir o provedor. O webhook receiver está em{" "}
+            <code className="font-mono">/api/cobranca/webhook/[fundoId]</code>.
+          </div>
+        </div>
+      )}
+
+      {modo === "cnab" && (
+        <div className="space-y-3 mt-4 p-4 rounded-xl bg-bg border border-border">
+          <h4 className="font-mono text-[11px] uppercase tracking-wider text-fg-dim">
+            configuração CNAB
+          </h4>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Layout">
+              <select
+                name="cnabLayout"
+                defaultValue={fundo?.cnabLayout ?? "240"}
+                className="form-input"
+              >
+                <option value="240">CNAB 240 (FEBRABAN)</option>
+                <option value="400">CNAB 400 (legado)</option>
+              </select>
+            </Field>
+            <Field label="Código do banco (3 dígitos)">
+              <input
+                name="cnabBancoCodigo"
+                defaultValue={
+                  fundo?.cnabBancoCodigo ?? fundo?.bancoCodigo ?? ""
+                }
+                placeholder="001 / 341 / 237..."
+                className="form-input font-mono"
+                maxLength={3}
+              />
+            </Field>
+            <Field label="Carteira">
+              <input
+                name="cnabCarteira"
+                defaultValue={fundo?.cnabCarteira ?? ""}
+                placeholder="ex: 17"
+                className="form-input font-mono"
+              />
+            </Field>
+            <Field label="Convênio">
+              <input
+                name="cnabConvenio"
+                defaultValue={fundo?.cnabConvenio ?? ""}
+                placeholder="código convênio"
+                className="form-input font-mono"
+              />
+            </Field>
+            <Field label="Código do cedente">
+              <input
+                name="cnabCedenteCodigo"
+                defaultValue={fundo?.cnabCedenteCodigo ?? ""}
+                placeholder="código cedente"
+                className="form-input font-mono"
+              />
+            </Field>
+          </div>
+          <div className="rounded-lg border border-success/40 bg-green-50 p-3 text-xs text-success">
+            ✓ Layout 240 FEBRABAN suportado pra geração de remessa. Bancos
+            específicos podem precisar ajustes em campos reservados — testar
+            com arquivo real do banco antes de produção.
+          </div>
+        </div>
+      )}
+
+      {modo === "manual" && (
+        <div className="rounded-lg border border-border bg-bg-card p-3 text-xs text-fg-muted">
+          Modo manual: admin emite o boleto direto no banco do fundo e marca
+          a parcela como paga quando o pagamento entrar.
+        </div>
+      )}
+    </Card>
   );
 }
 

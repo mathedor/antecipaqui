@@ -223,6 +223,37 @@ export async function editFundoAction(
         String(formData.get("sistemaGestaoNome") || "").trim() || null,
       sistemaGestaoDocsUrl:
         String(formData.get("sistemaGestaoDocsUrl") || "").trim() || null,
+      /* Encargos de atraso */
+      multaAtrasoPct: parseEncargo(
+        String(formData.get("multaAtrasoPct") || ""),
+        "0.02",
+      ),
+      jurosMoraMensalPct: parseEncargo(
+        String(formData.get("jurosMoraMensalPct") || ""),
+        "0.01",
+      ),
+      /* Modo de cobrança */
+      boletosModo: normalizeModo(
+        String(formData.get("boletosModo") || "manual"),
+      ),
+      cobrancaApiUrl:
+        String(formData.get("cobrancaApiUrl") || "").trim() || null,
+      cobrancaApiAuthTipo:
+        String(formData.get("cobrancaApiAuthTipo") || "").trim() || null,
+      cobrancaApiCredenciais: parseJsonOpcional(
+        String(formData.get("cobrancaApiCredenciais") || ""),
+      ),
+      cobrancaWebhookSecret:
+        String(formData.get("cobrancaWebhookSecret") || "").trim() || null,
+      cnabLayout: String(formData.get("cnabLayout") || "").trim() || null,
+      cnabBancoCodigo:
+        String(formData.get("cnabBancoCodigo") || "").trim() || null,
+      cnabCarteira:
+        String(formData.get("cnabCarteira") || "").trim() || null,
+      cnabConvenio:
+        String(formData.get("cnabConvenio") || "").trim() || null,
+      cnabCedenteCodigo:
+        String(formData.get("cnabCedenteCodigo") || "").trim() || null,
       updatedAt: new Date(),
     })
     .where(eq(fundos.id, fundoId));
@@ -236,6 +267,31 @@ export async function editFundoAction(
   revalidatePath("/admin/fundos");
   revalidatePath(`/admin/fundos/${fundoId}`);
   return { ok: true, fundoId };
+}
+
+function parseEncargo(raw: string, fallback: string): string {
+  const cleaned = raw.replace(",", ".").replace("%", "").trim();
+  const v = parseFloat(cleaned);
+  if (!Number.isFinite(v) || v < 0) return fallback;
+  // Aceita "2" como 2% (=0.02) ou "0.02" como 2%
+  const pct = v >= 1 ? v / 100 : v;
+  if (pct > 1) return fallback;
+  return pct.toFixed(4);
+}
+
+function normalizeModo(raw: string): "api" | "cnab" | "manual" {
+  if (raw === "api" || raw === "cnab" || raw === "manual") return raw;
+  return "manual";
+}
+
+function parseJsonOpcional(raw: string): unknown {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
 }
 
 export async function deleteFundoAction(fundoId: string) {

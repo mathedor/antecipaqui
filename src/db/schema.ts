@@ -317,8 +317,50 @@ export const fundos = pgTable(
     bancoPix: text("banco_pix"),
     /* === Banco emissor de boletos (pode ser diferente do banco principal) === */
     boletosBancoNome: text("boletos_banco_nome"),
-    /** URL da API que gera os boletos. */
+    /** URL da API que gera os boletos. (legado — usar cobrancaApiUrl) */
     boletosApiUrl: text("boletos_api_url"),
+    /* === Encargos de atraso === */
+    /** Multa por atraso aplicada UMA vez quando a parcela vence (decimal 0–1).
+     *  Default 2% (mercado). */
+    multaAtrasoPct: numeric("multa_atraso_pct", { precision: 6, scale: 4 })
+      .notNull()
+      .default("0.02"),
+    /** Juros de mora mensais (decimal 0–1). Cobrados pro rata die a partir do
+     *  vencimento. Default 1%/mês (mercado). */
+    jurosMoraMensalPct: numeric("juros_mora_mensal_pct", {
+      precision: 6,
+      scale: 4,
+    })
+      .notNull()
+      .default("0.01"),
+    /* === Modo de cobrança === */
+    /** Como esse fundo emite e baixa boletos:
+     *  - 'manual': admin marca pago no banco (default — fundo ainda não configurado)
+     *  - 'api':    sistema chama API do banco pra emitir e recebe webhook pra baixar
+     *  - 'cnab':   sistema gera arquivo de remessa; admin importa retorno em lote
+     */
+    boletosModo: text("boletos_modo").notNull().default("manual"),
+    /* --- API mode --- */
+    cobrancaApiUrl: text("cobranca_api_url"),
+    /** Tipo de auth: 'api_key' | 'oauth' | 'basic' */
+    cobrancaApiAuthTipo: text("cobranca_api_auth_tipo"),
+    /** Credenciais em jsonb. Idealmente cifradas — pra MVP guardamos plain
+     *  e o admin é quem cadastra. Estrutura depende do auth_tipo. */
+    cobrancaApiCredenciais: jsonb("cobranca_api_credenciais"),
+    /** Segredo compartilhado pra HMAC do webhook de retorno. */
+    cobrancaWebhookSecret: text("cobranca_webhook_secret"),
+    /* --- CNAB mode --- */
+    /** '240' | '400' (FEBRABAN). MVP suporta só 240. */
+    cnabLayout: text("cnab_layout"),
+    /** Código do banco emissor (3 dígitos). Pode reaproveitar bancoCodigo. */
+    cnabBancoCodigo: text("cnab_banco_codigo"),
+    cnabCarteira: text("cnab_carteira"),
+    cnabConvenio: text("cnab_convenio"),
+    cnabCedenteCodigo: text("cnab_cedente_codigo"),
+    /** Próximo "nosso número" disponível pra emitir boletos. Auto-incrementa. */
+    cnabProximoNossoNumero: integer("cnab_proximo_nosso_numero")
+      .notNull()
+      .default(1),
     /* === Sistema de gestão (CRM/ERP) — pra integração de operações === */
     sistemaGestaoNome: text("sistema_gestao_nome"),
     /** URL da documentação da API do sistema de gestão. */
@@ -338,6 +380,32 @@ export const fundos = pgTable(
 );
 
 export type Fundo = typeof fundos.$inferSelect;
+
+/** Custos padrão cadastrados por fundo. Quando admin seleciona o fundo numa
+ *  operação, esses custos são clonados pra custos_operacao (e o admin pode
+ *  ajustar/adicionar). Cada linha = um custo nominal (ex: "Análise jurídica
+ *  R$ 150,00"). */
+export const fundoCustosPadrao = pgTable(
+  "fundo_custos_padrao",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    titulo: text("titulo").notNull(),
+    valor: numeric("valor", { precision: 15, scale: 2 }).notNull(),
+    ordem: integer("ordem").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("fundo_custos_padrao_fundo_idx").on(t.fundoId, t.ordem)],
+);
+
+export type FundoCustoPadrao = typeof fundoCustosPadrao.$inferSelect;
 
 /* =========================================
    DOCUMENTOS GERAIS — KYC + operação
@@ -523,6 +591,25 @@ export const parcelasComissao = pgTable(
     cobrancaAtrasoEm: timestamp("cobranca_atraso_em", {
       withTimezone: true,
     }),
+    /* === Boleto / cobrança === */
+    /** Valor atualizado com multa + juros (cache; recalculado sob demanda).
+     *  Se NULL ou desatualizado, recalcular via lib/cobranca-calculo.ts. */
+    valorAtualizado: numeric("valor_atualizado", { precision: 15, scale: 2 }),
+    valorAtualizadoEm: timestamp("valor_atualizado_em", { withTimezone: true }),
+    /** Linha digitável do boleto emitido. */
+    linhaDigitavel: text("linha_digitavel"),
+    /** URL do PDF do boleto (Vercel Blob ou link do banco). */
+    boletoUrl: text("boleto_url"),
+    /** Identificador único da cobrança no sistema do banco (API retornou,
+     *  CNAB usa nosso_numero). */
+    nossoNumero: text("nosso_numero"),
+    cobrancaIntegracaoId: text("cobranca_integracao_id"),
+    /** 'pendente' | 'emitida' | 'paga' | 'cancelada' | 'erro' */
+    cobrancaStatus: text("cobranca_status").default("pendente"),
+    cobrancaErroUltimo: text("cobranca_erro_ultimo"),
+    cobrancaUltimaTentativaEm: timestamp("cobranca_ultima_tentativa_em", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -530,6 +617,7 @@ export const parcelasComissao = pgTable(
   (t) => [
     index("parcelas_operacao_idx").on(t.operacaoId),
     index("parcelas_vencimento_idx").on(t.vencimento),
+    index("parcelas_nosso_numero_idx").on(t.nossoNumero),
   ],
 );
 

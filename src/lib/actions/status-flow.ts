@@ -311,6 +311,23 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     );
   }
 
+  // Auto-clone dos custos padrão do fundo. Só roda se:
+  // 1. O fundo foi vinculado (ou trocado) nesta chamada
+  // 2. O admin NÃO enviou custos manuais explícitos (input.custos undefined)
+  // O helper é idempotente: skip se a operação já tem custos cadastrados.
+  if (typeof updates.fundoId === "string" && !Array.isArray(input.custos)) {
+    const { cloneCustosPadraoForOperacao } = await import(
+      "@/lib/actions/fundo-custos-padrao"
+    );
+    await cloneCustosPadraoForOperacao(
+      updates.fundoId,
+      input.operacaoId,
+      actor.id,
+    ).catch((e) =>
+      console.error("[custos-padrao] auto-clone failed:", e),
+    );
+  }
+
   // Custos de operação: substitui o conjunto atual pelo enviado.
   // Trava: se já existe parcela paga (= já gerou repasse no Invoice),
   // não permite editar — protege o histórico de cobrança do fundo.
