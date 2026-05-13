@@ -254,6 +254,16 @@ export async function editFundoAction(
         String(formData.get("cnabConvenio") || "").trim() || null,
       cnabCedenteCodigo:
         String(formData.get("cnabCedenteCodigo") || "").trim() || null,
+      /* Assinatura digital */
+      assinaturaUsaPadrao:
+        String(formData.get("assinaturaUsaPadrao") || "true") === "true",
+      assinaturaSistema:
+        String(formData.get("assinaturaSistema") || "").trim() || null,
+      assinaturaApiUrl:
+        String(formData.get("assinaturaApiUrl") || "").trim() || null,
+      assinaturaApiCredenciais: parseJsonOpcional(
+        String(formData.get("assinaturaApiCredenciais") || ""),
+      ),
       updatedAt: new Date(),
     })
     .where(eq(fundos.id, fundoId));
@@ -292,6 +302,80 @@ function parseJsonOpcional(raw: string): unknown {
   } catch {
     return null;
   }
+}
+
+/** Edição feita pelo próprio dono do fundo (role=fundo). Limitada aos
+ *  campos que fazem sentido o fundo gerenciar: contato, endereço, banco,
+ *  contrato modelo e configuração de assinatura digital. NÃO permite mexer
+ *  em razão social, CNPJ, taxa-base, custo financeiro, impostos, encargos
+ *  ou config de cobrança — esses ficam restritos ao admin. */
+export async function editFundoSelfAction(
+  _prev: FundoState,
+  formData: FormData,
+): Promise<FundoState> {
+  const user = await getCurrentDbUser();
+  if (!user) return { ok: false, error: "Não autenticado" };
+  if (user.role !== "fundo")
+    return { ok: false, error: "Apenas dono do fundo pode editar" };
+
+  const [meuFundo] = await db
+    .select()
+    .from(fundos)
+    .where(eq(fundos.ownerUserId, user.id))
+    .limit(1);
+  if (!meuFundo) return { ok: false, error: "Fundo não encontrado" };
+
+  await db
+    .update(fundos)
+    .set({
+      nomeFantasia:
+        String(formData.get("nomeFantasia") || "").trim() || null,
+      cep: String(formData.get("cep") || "").trim() || null,
+      endereco: String(formData.get("endereco") || "").trim() || null,
+      cidade: String(formData.get("cidade") || "").trim() || null,
+      uf:
+        String(formData.get("uf") || "").trim().toUpperCase() || null,
+      contatoResponsavel:
+        String(formData.get("contatoResponsavel") || "").trim() || null,
+      telefone:
+        String(formData.get("telefone") || "").replace(/\D/g, "") || null,
+      emailComercial:
+        String(formData.get("emailComercial") || "").trim() || null,
+      emailAssinatura:
+        String(formData.get("emailAssinatura") || "").trim() || null,
+      contratoUrl:
+        String(formData.get("contratoUrl") || "").trim() || null,
+      contratoNome:
+        String(formData.get("contratoNome") || "").trim() || null,
+      bancoNome: String(formData.get("bancoNome") || "").trim() || null,
+      bancoCodigo:
+        String(formData.get("bancoCodigo") || "").trim() || null,
+      bancoAgencia:
+        String(formData.get("bancoAgencia") || "").trim() || null,
+      bancoConta: String(formData.get("bancoConta") || "").trim() || null,
+      bancoPix: String(formData.get("bancoPix") || "").trim() || null,
+      /* Assinatura digital — fundo escolhe usar padrão (ZapSign) ou o seu */
+      assinaturaUsaPadrao:
+        String(formData.get("assinaturaUsaPadrao") || "true") === "true",
+      assinaturaSistema:
+        String(formData.get("assinaturaSistema") || "").trim() || null,
+      assinaturaApiUrl:
+        String(formData.get("assinaturaApiUrl") || "").trim() || null,
+      assinaturaApiCredenciais: parseJsonOpcional(
+        String(formData.get("assinaturaApiCredenciais") || ""),
+      ),
+      updatedAt: new Date(),
+    })
+    .where(eq(fundos.id, meuFundo.id));
+
+  audit({
+    action: "update_fundo_self",
+    targetType: "fundo",
+    targetId: meuFundo.id,
+  }).catch(() => undefined);
+
+  revalidatePath("/painel/perfil");
+  return { ok: true, fundoId: meuFundo.id };
 }
 
 export async function deleteFundoAction(fundoId: string) {

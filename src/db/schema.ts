@@ -291,6 +291,18 @@ export const fundos = pgTable(
     /** URL do contrato modelo (Vercel Blob). Cada operação usa o contrato do fundo. */
     contratoUrl: text("contrato_url"),
     contratoNome: text("contrato_nome"),
+    /** Sistema de assinatura digital usado pelo fundo. Quando null/true em
+     *  assinaturaUsaPadrao, AQ usa ZapSign (padrão da plataforma). Quando
+     *  o fundo tem o próprio (D4Sign, Clicksign, AutentiQue, etc), informa
+     *  abaixo e o sistema chama essa API em vez do ZapSign na hora de
+     *  enviar contrato pra assinatura. */
+    assinaturaUsaPadrao: boolean("assinatura_usa_padrao")
+      .notNull()
+      .default(true),
+    assinaturaSistema: text("assinatura_sistema"),
+    assinaturaApiUrl: text("assinatura_api_url"),
+    /** Credenciais em jsonb (api_key, client_id+secret, etc). */
+    assinaturaApiCredenciais: jsonb("assinatura_api_credenciais"),
     /** Taxa de juros base do fundo (mensal, decimal — 0.06 = 6%). Pode ser
      *  sobrescrita por operação na aprovação admin. */
     taxaMensalBase: numeric("taxa_mensal_base", { precision: 6, scale: 4 })

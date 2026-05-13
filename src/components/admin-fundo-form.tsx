@@ -466,6 +466,8 @@ export function AdminFundoForm({ fundo }: Props) {
 
       <CobrancaCard fundo={fundo} />
 
+      <AssinaturaDigitalCard fundo={fundo} />
+
       <button type="submit" disabled={pending} className="btn-primary !h-12 !px-6">
         {pending
           ? "Salvando..."
@@ -627,6 +629,78 @@ function CobrancaCard({ fundo }: { fundo?: Fundo }) {
         <div className="rounded-lg border border-border bg-bg-card p-3 text-xs text-fg-muted">
           Modo manual: admin emite o boleto direto no banco do fundo e marca
           a parcela como paga quando o pagamento entrar.
+        </div>
+      )}
+    </Card>
+  );
+}
+
+export function AssinaturaDigitalCard({ fundo }: { fundo?: Fundo }) {
+  const [usaPadrao, setUsaPadrao] = useState<boolean>(
+    fundo?.assinaturaUsaPadrao ?? true,
+  );
+
+  return (
+    <Card
+      title="Assinatura digital do contrato"
+      subtitle="Como esse fundo coleta assinaturas no contrato gerado por operação."
+    >
+      <Field label="Sistema de assinatura">
+        <select
+          name="assinaturaUsaPadrao"
+          value={usaPadrao ? "true" : "false"}
+          onChange={(e) => setUsaPadrao(e.target.value === "true")}
+          className="form-input"
+        >
+          <option value="true">Usar o padrão Antecipaqui (ZapSign)</option>
+          <option value="false">Usar sistema próprio do fundo</option>
+        </select>
+      </Field>
+
+      {!usaPadrao && (
+        <div className="space-y-3 mt-4 p-4 rounded-xl bg-bg border border-border">
+          <h4 className="font-mono text-[11px] uppercase tracking-wider text-fg-dim">
+            sistema próprio do fundo
+          </h4>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Nome do sistema">
+              <input
+                name="assinaturaSistema"
+                defaultValue={fundo?.assinaturaSistema ?? ""}
+                placeholder="D4Sign / Clicksign / AutentiQue / próprio..."
+                className="form-input"
+              />
+            </Field>
+            <Field label="URL da API">
+              <input
+                name="assinaturaApiUrl"
+                type="url"
+                defaultValue={fundo?.assinaturaApiUrl ?? ""}
+                placeholder="https://api.sistema.com/v1/documents"
+                className="form-input font-mono text-xs"
+              />
+            </Field>
+          </div>
+          <Field label="Credenciais (JSON)">
+            <textarea
+              name="assinaturaApiCredenciais"
+              defaultValue={
+                fundo?.assinaturaApiCredenciais
+                  ? JSON.stringify(fundo.assinaturaApiCredenciais, null, 2)
+                  : ""
+              }
+              rows={4}
+              placeholder={`Ex: { "apiKey": "..." }  ou  { "token": "..." }  ou  { "clientId": "...", "clientSecret": "..." }`}
+              className="form-input font-mono text-xs"
+            />
+            <p className="text-xs text-fg-dim mt-1">
+              Estrutura depende do sistema. Mantenha JSON válido.
+            </p>
+          </Field>
+          <div className="rounded-lg border border-warn/40 bg-yellow-50 p-3 text-xs text-warn">
+            ⚠ Integração específica de cada provedor precisa ser implementada
+            no código quando o fundo definir. Hoje envio padrão usa ZapSign.
+          </div>
         </div>
       )}
     </Card>

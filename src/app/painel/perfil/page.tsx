@@ -5,6 +5,7 @@ import { imobiliarias, construtoras, documentos, fundos } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { PerfilForm } from "@/components/perfil-form";
+import { FundoSelfEditForm } from "@/components/fundo-self-edit-form";
 
 export const metadata = { title: "Editar dados" };
 
@@ -65,17 +66,21 @@ export default async function PerfilPage() {
         </p>
       </div>
 
-      <PerfilForm
-        user={user}
-        imobiliaria={imob}
-        construtora={construtora}
-        fundo={fundo}
-        initialDocs={{
-          contratoSocial: pickDoc(docs, "contrato_social"),
-          comprovanteEndereco: pickDoc(docs, "comprovante_endereco"),
-          creci: pickDoc(docs, "creci"),
-        }}
-      />
+      {user.role === "fundo" && fundo ? (
+        <FundoSelfEditForm fundo={fundo} />
+      ) : (
+        <PerfilForm
+          user={user}
+          imobiliaria={imob}
+          construtora={construtora}
+          fundo={fundo}
+          initialDocs={{
+            contratoSocial: pickDoc(docs, "contrato_social"),
+            comprovanteEndereco: pickDoc(docs, "comprovante_endereco"),
+            creci: pickDoc(docs, "creci"),
+          }}
+        />
+      )}
     </PainelShell>
   );
 }
