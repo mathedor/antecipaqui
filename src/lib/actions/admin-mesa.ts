@@ -51,6 +51,13 @@ export async function getOpsAguardandoAdmin(opts?: {
     "enviada_para_assinatura",
   ];
 
+  // Monta lista IN (...) com bindings posicionais — drizzle não serializa
+  // array como ANY($1) sozinho, precisa explodir os params.
+  const statusList = sql.join(
+    statusFiltro.map((s) => sql`${s}`),
+    sql`, `,
+  );
+
   const result = await db.execute(sql`
     SELECT
       o.id::text AS operacao_id,
@@ -98,7 +105,7 @@ export async function getOpsAguardandoAdmin(opts?: {
       SELECT operacao_id, SUM(valor) AS total
       FROM custos_operacao GROUP BY operacao_id
     ) custos ON custos.operacao_id = o.id
-    WHERE o.status = ANY(${statusFiltro})
+    WHERE o.status IN (${statusList})
     ORDER BY o.created_at ASC
   `);
 

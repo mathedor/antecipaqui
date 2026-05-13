@@ -168,7 +168,7 @@ export async function getCorretorRankingConstrutoras(): Promise<
       COUNT(p.id) FILTER (WHERE p.status = 'paga')::int AS parcelas_pagas,
       COUNT(p.id) FILTER (WHERE p.status = 'vencida')::int AS parcelas_vencidas,
       COALESCE(
-        AVG(EXTRACT(DAY FROM p.pago_em - p.vencimento)) FILTER (
+        AVG((p.pago_em - p.vencimento)::int) FILTER (
           WHERE p.status = 'paga' AND p.pago_em IS NOT NULL
         )::float,
         0

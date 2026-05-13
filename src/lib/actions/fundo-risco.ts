@@ -161,7 +161,7 @@ export async function getFundoRisco(): Promise<FundoRiscoPayload | null> {
       COALESCE(c.nome_fantasia, c.razao_social) AS construtora_nome,
       COUNT(p.id)::int AS parcelas_vencidas,
       COALESCE(SUM(p.valor)::float, 0) AS valor_vencido,
-      COALESCE(AVG(EXTRACT(DAY FROM CURRENT_DATE - p.vencimento))::float, 0)
+      COALESCE(AVG((CURRENT_DATE - p.vencimento)::int)::float, 0)
         AS dias_medio_atraso,
       (
         SELECT MAX(pp.pago_em)::text

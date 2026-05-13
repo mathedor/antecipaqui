@@ -106,7 +106,7 @@ export async function getRiscoGlobal(): Promise<RiscoGlobalPayload> {
       c.cnpj AS cnpj,
       COUNT(p.id)::int AS parcelas_vencidas,
       COALESCE(SUM(p.valor)::float, 0) AS valor_vencido,
-      COALESCE(AVG(EXTRACT(DAY FROM CURRENT_DATE - p.vencimento))::float, 0)
+      COALESCE(AVG((CURRENT_DATE - p.vencimento)::int)::float, 0)
         AS dias_medio_atraso,
       COUNT(DISTINCT o.fundo_id)::int AS qtd_fundos_impactados,
       (
