@@ -130,12 +130,22 @@ export function DuplicatasTable({ rows }: { rows: Row[] }) {
             const s =
               STATUS[effective as keyof typeof STATUS] ?? STATUS.a_vencer;
             return (
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] uppercase tracking-wider font-mono font-semibold ${s.className}`}
-              >
-                <span className="size-1.5 rounded-full bg-current" />
-                {s.label}
-              </span>
+              <div className="flex items-center justify-end gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] uppercase tracking-wider font-mono font-semibold ${s.className}`}
+                >
+                  <span className="size-1.5 rounded-full bg-current" />
+                  {s.label}
+                </span>
+                {r.statusParcela === "paga" && (
+                  <Link
+                    href={`/painel/duplicatas/${r.parcelaId}/recibo`}
+                    className="text-[10px] font-mono uppercase tracking-wider text-accent hover:underline whitespace-nowrap"
+                  >
+                    recibo ↗
+                  </Link>
+                )}
+              </div>
             );
           },
         },

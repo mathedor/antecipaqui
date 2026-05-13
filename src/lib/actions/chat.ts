@@ -29,6 +29,7 @@ import {
 async function resolveDestinatarios(
   categoria: ChatCategoria,
   operacaoId: string | null,
+  senderRole?: string,
 ): Promise<{ userIds: string[]; warnings: string[] }> {
   const warnings: string[] = [];
 
@@ -69,8 +70,23 @@ async function resolveDestinatarios(
     return { userIds: [], warnings };
   }
 
-  // confirmacao → owner da construtora
+  // confirmacao → conversa fundo ↔ construtora (destino = outro lado)
   if (categoria === "confirmacao") {
+    if (senderRole === "construtora") {
+      if (!op.fundoId) {
+        warnings.push("Operação ainda não tem fundo vinculado.");
+        return { userIds: [], warnings };
+      }
+      const [f] = await db
+        .select({ ownerUserId: fundos.ownerUserId })
+        .from(fundos)
+        .where(eq(fundos.id, op.fundoId))
+        .limit(1);
+      if (f?.ownerUserId) return { userIds: [f.ownerUserId], warnings };
+      warnings.push("Fundo ainda sem usuário vinculado.");
+      return { userIds: [], warnings };
+    }
+    // Default (fundo/admin) → construtora
     const [c] = await db
       .select({ ownerUserId: construtoras.ownerUserId })
       .from(construtoras)
@@ -81,8 +97,22 @@ async function resolveDestinatarios(
     return { userIds: [], warnings };
   }
 
-  // documentos → corretor da operação (cedente)
+  // documentos → fundo pede pro corretor cedente OU construtora envia pro fundo
   if (categoria === "documentos") {
+    if (senderRole === "construtora") {
+      if (!op.fundoId) {
+        warnings.push("Operação ainda não tem fundo vinculado.");
+        return { userIds: [], warnings };
+      }
+      const [f] = await db
+        .select({ ownerUserId: fundos.ownerUserId })
+        .from(fundos)
+        .where(eq(fundos.id, op.fundoId))
+        .limit(1);
+      if (f?.ownerUserId) return { userIds: [f.ownerUserId], warnings };
+      warnings.push("Fundo ainda sem usuário vinculado.");
+      return { userIds: [], warnings };
+    }
     return { userIds: [op.corretorUserId], warnings };
   }
 
@@ -190,7 +220,7 @@ export async function openChatAction(
 
   let resolved: { userIds: string[]; warnings: string[] };
   try {
-    resolved = await resolveDestinatarios(categoria, operacaoId);
+    resolved = await resolveDestinatarios(categoria, operacaoId, user.role);
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }

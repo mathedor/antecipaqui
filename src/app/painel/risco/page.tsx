@@ -1,12 +1,15 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { sql } from "drizzle-orm";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { getFundoRisco } from "@/lib/actions/fundo-risco";
+import { getConstrutoraByOwnerId } from "@/lib/actions/operacoes";
+import { db } from "@/db";
 import { formatBRL } from "@/lib/format";
 import { BlacklistToggleButton } from "@/components/blacklist-toggle-button";
 
-export const metadata = { title: "Risco · Painel do fundo" };
+export const metadata = { title: "Risco" };
 export const dynamic = "force-dynamic";
 
 function pct(n: number) {
@@ -21,6 +24,7 @@ function fmtDate(d: string | null) {
 export default async function PainelRiscoPage() {
   const user = await getCurrentDbUser();
   if (!user) redirect("/entrar");
+  if (user.role === "construtora") return <ConstrutoraRisco user={user} />;
   if (user.role !== "fundo") redirect("/painel");
 
   const data = await getFundoRisco();
@@ -345,6 +349,204 @@ function KpiCard({
       : tone === "danger"
         ? "text-danger"
         : "text-fg-dim";
+  return (
+    <div className={`rounded-2xl border p-4 md:p-5 ${cls}`}>
+      <div
+        className={`font-mono text-[10px] uppercase tracking-wider mb-2 ${labelCls}`}
+      >
+        {label}
+      </div>
+      <div className="font-mono tabular text-xl md:text-2xl font-bold tracking-tight text-fg">
+        {value}
+      </div>
+      {sub && <div className="text-[10px] text-fg-muted mt-1">{sub}</div>}
+    </div>
+  );
+}
+
+/* ============================================================
+   RISCO DA CONSTRUTORA — concentração própria + fundos parceiros
+   ============================================================ */
+
+async function ConstrutoraRisco({
+  user,
+}: {
+  user: { id: string; nome: string | null };
+}) {
+  const construtora = await getConstrutoraByOwnerId(user.id);
+  if (!construtora) redirect("/painel/onboarding");
+
+  const fundosRes = await db.execute(sql`
+    SELECT
+      f.id::text AS fundo_id,
+      COALESCE(f.nome_fantasia, f.razao_social, '— sem fundo —') AS nome,
+      COUNT(o.id)::int AS qtd_ops,
+      COALESCE(SUM(o.valor_comissao)::float, 0) AS volume,
+      COALESCE(
+        SUM(p.valor) FILTER (WHERE p.status = 'a_vencer')::float, 0
+      ) AS a_pagar,
+      COALESCE(
+        SUM(p.valor) FILTER (WHERE p.status = 'vencida')::float, 0
+      ) AS vencidas,
+      COALESCE(
+        SUM(COALESCE(p.pago_valor, p.valor)) FILTER (WHERE p.status = 'paga')::float, 0
+      ) AS pagas
+    FROM operacoes o
+    LEFT JOIN fundos f ON f.id = o.fundo_id
+    LEFT JOIN parcelas_comissao p ON p.operacao_id = o.id
+    WHERE o.construtora_id = ${construtora.id}::uuid
+      AND o.status NOT IN ('rascunho', 'recusada', 'cancelada')
+    GROUP BY f.id, f.nome_fantasia, f.razao_social
+    ORDER BY volume DESC
+  `);
+  const rows = (fundosRes as unknown as {
+    rows: {
+      fundo_id: string | null;
+      nome: string;
+      qtd_ops: number;
+      volume: number;
+      a_pagar: number;
+      vencidas: number;
+      pagas: number;
+    }[];
+  }).rows ?? [];
+
+  const totalVolume = rows.reduce((s, r) => s + r.volume, 0);
+  const totalAPagar = rows.reduce((s, r) => s + r.a_pagar, 0);
+  const totalVencidas = rows.reduce((s, r) => s + r.vencidas, 0);
+  const totalPagas = rows.reduce((s, r) => s + r.pagas, 0);
+
+  return (
+    <PainelShell role="construtora" userName={user.nome} active="/painel/risco">
+      <div className="mb-8">
+        <div className="eyebrow mb-2">painel · construtora</div>
+        <h1 className="text-display-md">
+          Risco e <span className="text-gradient-blue">concentração</span>
+        </h1>
+        <p className="mt-2 text-fg-muted max-w-2xl">
+          Como o seu fluxo de pagamento se distribui entre os fundos
+          investidores. Concentrar 100% num só fundo aumenta risco operacional
+          — se ele recusar futuras ops, você perde a fonte.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-4 gap-3 mb-8">
+        <Stat label="Volume total" value={formatBRL(totalVolume)} sub="comissões ativas" />
+        <Stat label="A pagar" value={formatBRL(totalAPagar)} sub="parcelas a vencer" />
+        <Stat
+          label="Vencidas"
+          value={formatBRL(totalVencidas)}
+          sub="quitar urgente"
+          tone={totalVencidas > 0 ? "danger" : "default"}
+        />
+        <Stat label="Já pago" value={formatBRL(totalPagas)} sub="histórico" />
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border-strong bg-bg-card p-10 text-center">
+          <div className="text-5xl mb-3">🤝</div>
+          <h2 className="text-xl font-bold">Sem operações ativas</h2>
+          <p className="mt-2 text-fg-muted">
+            Quando você tiver ops aprovadas, os fundos investidores aparecem
+            aqui com a distribuição.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-bold">Distribuição por fundo</h2>
+          </div>
+          <ul className="divide-y divide-border">
+            {rows.map((r) => {
+              const conc = totalVolume > 0 ? r.volume / totalVolume : 0;
+              const concClass =
+                conc >= 0.6
+                  ? "border-danger/40 bg-red-50"
+                  : conc >= 0.4
+                    ? "border-warn/40 bg-yellow-50"
+                    : "border-border bg-bg";
+              return (
+                <li key={r.fundo_id ?? "_sem"} className="p-4 md:p-5">
+                  <div className="grid md:grid-cols-12 gap-3 items-center">
+                    <div className="md:col-span-4 min-w-0">
+                      <div className="font-bold truncate">{r.nome}</div>
+                      <div className="text-xs text-fg-muted font-mono mt-0.5">
+                        {r.qtd_ops} operaç{r.qtd_ops === 1 ? "ão" : "ões"} · {pct(conc)} do volume
+                      </div>
+                    </div>
+                    <div className="md:col-span-5">
+                      <div className="h-2 rounded-full bg-bg-card overflow-hidden">
+                        <div
+                          className={`h-full ${
+                            conc >= 0.6
+                              ? "bg-danger"
+                              : conc >= 0.4
+                                ? "bg-warn"
+                                : "bg-accent"
+                          }`}
+                          style={{ width: `${conc * 100}%` }}
+                        />
+                      </div>
+                      <div className={`mt-2 text-[11px] font-mono rounded px-2 py-1 inline-block border ${concClass}`}>
+                        {conc >= 0.6
+                          ? "⚠ concentração crítica — diversifique"
+                          : conc >= 0.4
+                            ? "atenção — diversifique se possível"
+                            : "OK"}
+                      </div>
+                    </div>
+                    <div className="md:col-span-3 text-right space-y-0.5">
+                      <div className="text-xs">
+                        <span className="text-fg-dim">a pagar </span>
+                        <span className="font-mono text-fg font-semibold">{formatBRL(r.a_pagar)}</span>
+                      </div>
+                      {r.vencidas > 0 && (
+                        <div className="text-xs">
+                          <span className="text-fg-dim">vencidas </span>
+                          <span className="font-mono text-danger font-semibold">{formatBRL(r.vencidas)}</span>
+                        </div>
+                      )}
+                      <div className="text-xs">
+                        <span className="text-fg-dim">pago </span>
+                        <span className="font-mono text-success">{formatBRL(r.pagas)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-6 rounded-2xl border border-border bg-bg-card p-5 text-sm text-fg-muted">
+        <strong className="text-fg">Por que isso importa:</strong> os fundos
+        avaliam você pelo histórico de pagamento (
+        <Link href="/painel/score" className="text-accent hover:underline">veja seu score</Link>
+        ). Se um fundo recusa sua próxima op e ele responde por 70%+ das suas
+        antecipações, sua liquidez fica comprometida. Buscar mais de um fundo
+        reduz esse risco operacional.
+      </div>
+    </PainelShell>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  sub,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "default" | "danger";
+}) {
+  const cls =
+    tone === "danger"
+      ? "border-danger/40 bg-red-50"
+      : "border-border bg-bg-elev";
+  const labelCls = tone === "danger" ? "text-danger" : "text-fg-dim";
   return (
     <div className={`rounded-2xl border p-4 md:p-5 ${cls}`}>
       <div

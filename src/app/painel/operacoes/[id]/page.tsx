@@ -11,6 +11,8 @@ import { PrintButton } from "@/components/print-button";
 import { ContratoCard } from "@/components/contrato-card";
 import { PainelShell } from "@/components/painel-shell";
 import { AdminStatusFlow } from "@/components/admin-status-flow";
+import { ConstrutoraAssinaturaCard } from "@/components/construtora-assinatura-card";
+import { ConstrutoraUploadDocForm } from "@/components/construtora-upload-doc-form";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { toBlobProxyHref } from "@/lib/blob-url";
 
@@ -173,6 +175,37 @@ export default async function OperacaoDetailPage({ params }: Params) {
           </div>
         )}
 
+        {/* Assinatura da construtora (só pra view de construtora) */}
+        {op.viewerRole === "construtora" && (
+          <ConstrutoraAssinaturaCard
+            operacaoId={op.id}
+            numero={op.numero}
+            valorComissao={op.valorComissao}
+            numeroParcelas={op.numeroParcelas}
+            jaAssinada={
+              op.construtoraAssinadaEm
+                ? {
+                    em: op.construtoraAssinadaEm,
+                    ip: op.construtoraAssinaturaIp,
+                  }
+                : undefined
+            }
+            jaRecusada={
+              op.construtoraRecusouAssinaturaEm
+                ? {
+                    em: op.construtoraRecusouAssinaturaEm,
+                    motivo: op.construtoraRecusaAssinaturaMotivo,
+                  }
+                : undefined
+            }
+            podeAssinar={[
+              "pre_aprovada",
+              "analise_final",
+              "enviada_para_assinatura",
+            ].includes(op.status)}
+          />
+        )}
+
         {isFundoView && (
           <div className="mb-6 print:hidden">
             <AdminStatusFlow
@@ -243,9 +276,17 @@ export default async function OperacaoDetailPage({ params }: Params) {
             <div className="text-sm text-fg-muted mb-1">
               Quem antecipou a comissão
             </div>
-            <div className="text-fg font-mono text-sm">
-              user · {op.corretorUserId.slice(0, 16)}…
+            <div className="text-base font-bold tracking-tight">
+              {op.corretorNome ?? "—"}
             </div>
+            {op.corretorEmail && (
+              <a
+                href={`mailto:${op.corretorEmail}`}
+                className="mt-1 inline-block font-mono text-xs text-fg-muted hover:text-accent"
+              >
+                {op.corretorEmail}
+              </a>
+            )}
           </Card>
           <Card label="Devedora · construtora">
             <div className="text-base font-bold tracking-tight">
@@ -263,6 +304,62 @@ export default async function OperacaoDetailPage({ params }: Params) {
             </div>
           </Card>
         </div>
+
+        {/* Card do fundo investidor — mostra pra construtora e corretor */}
+        {op.viewerRole !== "fundo" && op.fundoNome && (
+          <Card label="Fundo investidor · quem antecipou o capital" className="mb-8">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <div className="text-base font-bold tracking-tight">
+                  {op.fundoNomeFantasia ?? op.fundoNome}
+                </div>
+                {op.fundoContatoResponsavel && (
+                  <div className="mt-1 text-sm text-fg-muted">
+                    contato: <strong>{op.fundoContatoResponsavel}</strong>
+                  </div>
+                )}
+                <div className="mt-2 space-y-0.5 text-xs font-mono text-fg-muted">
+                  {op.fundoEmailComercial && (
+                    <a
+                      href={`mailto:${op.fundoEmailComercial}`}
+                      className="block hover:text-accent"
+                    >
+                      ✉ {op.fundoEmailComercial}
+                    </a>
+                  )}
+                  {op.fundoTelefone && (
+                    <a
+                      href={`tel:${op.fundoTelefone}`}
+                      className="block hover:text-accent"
+                    >
+                      ☎ {op.fundoTelefone}
+                    </a>
+                  )}
+                </div>
+              </div>
+              {op.viewerRole === "construtora" && (op.fundoBancoNome || op.fundoBancoPix) && (
+                <div className="rounded-xl bg-bg-card border border-border p-3">
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-2">
+                    dados pra pagamento
+                  </div>
+                  {op.fundoBancoNome && (
+                    <div className="text-xs text-fg-muted">
+                      <strong className="text-fg">{op.fundoBancoNome}</strong>
+                      {op.fundoBancoAgencia && ` · ag ${op.fundoBancoAgencia}`}
+                      {op.fundoBancoConta && ` · cc ${op.fundoBancoConta}`}
+                    </div>
+                  )}
+                  {op.fundoBancoPix && (
+                    <div className="mt-1 text-xs text-fg-muted">
+                      <strong className="text-fg">PIX:</strong>{" "}
+                      <span className="font-mono">{op.fundoBancoPix}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
 
         {op.pagadorTipo === "compradores" && op.compradores.length > 0 && (
           <Card
@@ -391,6 +488,12 @@ export default async function OperacaoDetailPage({ params }: Params) {
             </table>
           </div>
         </Card>
+
+        {op.viewerRole === "construtora" && (
+          <div className="mb-8 print:hidden">
+            <ConstrutoraUploadDocForm operacaoId={op.id} />
+          </div>
+        )}
 
         {op.documentos.length > 0 && (
           <Card label="Documentos anexados" className="mb-8 print:break-before-page">

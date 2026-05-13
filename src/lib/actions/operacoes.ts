@@ -599,6 +599,7 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
       .limit(1)
   )[0];
 
+  const { fundos: fundosTable } = await import("@/db/schema");
   const conditions = [eq(operacoes.id, operacaoId)];
   const [op] = await db
     .select({
@@ -624,9 +625,27 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
       pagadorTipo: operacoes.pagadorTipo,
       construtoraNome: construtoras.razaoSocial,
       construtoraCnpj: construtoras.cnpj,
+      construtoraAssinadaEm: operacoes.construtoraAssinadaEm,
+      construtoraAssinaturaIp: operacoes.construtoraAssinaturaIp,
+      construtoraRecusouAssinaturaEm: operacoes.construtoraRecusouAssinaturaEm,
+      construtoraRecusaAssinaturaMotivo:
+        operacoes.construtoraRecusaAssinaturaMotivo,
+      corretorNome: users.nome,
+      corretorEmail: users.email,
+      fundoNome: fundosTable.razaoSocial,
+      fundoNomeFantasia: fundosTable.nomeFantasia,
+      fundoEmailComercial: fundosTable.emailComercial,
+      fundoContatoResponsavel: fundosTable.contatoResponsavel,
+      fundoTelefone: fundosTable.telefone,
+      fundoBancoNome: fundosTable.bancoNome,
+      fundoBancoAgencia: fundosTable.bancoAgencia,
+      fundoBancoConta: fundosTable.bancoConta,
+      fundoBancoPix: fundosTable.bancoPix,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
+    .leftJoin(users, eq(operacoes.corretorUserId, users.id))
+    .leftJoin(fundosTable, eq(operacoes.fundoId, fundosTable.id))
     .where(and(...conditions))
     .limit(1);
 

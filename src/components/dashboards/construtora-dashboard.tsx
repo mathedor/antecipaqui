@@ -5,6 +5,7 @@ import {
   getDashboardStatsForConstrutora,
   getOperacoesByConstrutora,
 } from "@/lib/actions/operacoes";
+import { listOpsAssinarConstrutora } from "@/lib/actions/construtora-assinatura";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { PainelShell } from "@/components/painel-shell";
 import { ConstrutoraCharts } from "@/components/dashboard-charts";
@@ -25,7 +26,7 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
   const podeOperar = user.onboardingStatus !== "pendente";
   const status = STATUS_LABEL[user.onboardingStatus] ?? STATUS_LABEL.pendente;
 
-  const [stats, operacoes, monthly, muralMsgs] = await Promise.all([
+  const [stats, operacoes, monthly, muralMsgs, opsPraAssinar] = await Promise.all([
     construtora
       ? getDashboardStatsForConstrutora(construtora.id)
       : Promise.resolve(null),
@@ -36,6 +37,9 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
       ? getConstrutoraMonthlyStats(construtora.id)
       : Promise.resolve([]),
     getMuralForCurrentUser(),
+    construtora
+      ? listOpsAssinarConstrutora(construtora.id)
+      : Promise.resolve([]),
   ]);
 
   const operacoesRecentes = operacoes.slice(0, 5);
@@ -195,19 +199,45 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
             →
           </span>
         </Link>
-        <Link
-          href="#"
-          className="rounded-2xl border border-border bg-bg-elev p-6 hover:border-accent transition-colors flex items-center justify-between group"
-        >
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-1">
-              em breve
+        {opsPraAssinar.length > 0 ? (
+          <Link
+            href={`/painel/operacoes/${opsPraAssinar[0].id}#assinatura`}
+            className="rounded-2xl border border-warn bg-yellow-50 p-6 hover:bg-yellow-100 transition-colors flex items-center justify-between group"
+          >
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-wider text-warn mb-1">
+                aguardando você
+              </div>
+              <div className="text-xl font-bold">
+                {opsPraAssinar.length} operaç{opsPraAssinar.length === 1 ? "ão" : "ões"} pra assinar
+              </div>
+              <div className="text-sm text-fg-muted mt-0.5">
+                confirme o reconhecimento da comissão
+              </div>
             </div>
-            <div className="text-xl font-bold">Contratos a assinar</div>
-            <div className="text-sm text-fg-muted mt-0.5">Phase 6 (ZapSign)</div>
-          </div>
-          <span className="text-fg-dim text-2xl">·</span>
-        </Link>
+            <span className="text-2xl group-hover:translate-x-1 transition-transform">
+              ✍️
+            </span>
+          </Link>
+        ) : (
+          <Link
+            href="/painel/score"
+            className="rounded-2xl border border-border bg-bg-elev p-6 hover:border-accent transition-colors flex items-center justify-between group"
+          >
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-1">
+                seu score
+              </div>
+              <div className="text-xl font-bold">Como o mercado te vê</div>
+              <div className="text-sm text-fg-muted mt-0.5">
+                histórico de pagamento + dicas
+              </div>
+            </div>
+            <span className="text-fg-dim text-2xl group-hover:translate-x-1 group-hover:text-accent transition-all">
+              →
+            </span>
+          </Link>
+        )}
       </div>
 
       {/* Operações recentes */}

@@ -25,7 +25,14 @@ export function getCategoriasForRole(role: string): ChatCategoria[] {
   if (role === "fundo") return ["confirmacao", "documentos", "suporte"];
   if (role === "corretor" || role === "imobiliaria")
     return ["suporte", "operacoes", "negociacoes"];
-  if (role === "construtora") return ["suporte", "operacoes", "negociacoes"];
+  if (role === "construtora")
+    return [
+      "suporte",
+      "operacoes",
+      "negociacoes",
+      "confirmacao",
+      "documentos",
+    ];
   if (role === "comercial") return ["suporte", "operacoes", "negociacoes"];
   return [];
 }

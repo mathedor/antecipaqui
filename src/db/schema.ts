@@ -464,6 +464,24 @@ export const operacoes = pgTable(
     ),
     fundoRecusaMotivo: text("fundo_recusa_motivo"),
     fundoRegraAutoId: uuid("fundo_regra_auto_id"),
+    /** Assinatura interna da construtora (responsável pelas comissões).
+     *  Independente do ZapSign (que é assinatura do cedente no contrato).
+     *  Construtora confirma que reconhece o débito e se compromete a pagar
+     *  as parcelas. Bloqueia op de avançar pra realizada se não assinada. */
+    construtoraAssinadaEm: timestamp("construtora_assinada_em", {
+      withTimezone: true,
+    }),
+    construtoraAssinadaPorUserId: text("construtora_assinada_por_user_id").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    /** IP capturado no momento da assinatura — registro legal best-effort. */
+    construtoraAssinaturaIp: text("construtora_assinatura_ip"),
+    construtoraRecusouAssinaturaEm: timestamp(
+      "construtora_recusou_assinatura_em",
+      { withTimezone: true },
+    ),
+    construtoraRecusaAssinaturaMotivo: text("construtora_recusa_assinatura_motivo"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
