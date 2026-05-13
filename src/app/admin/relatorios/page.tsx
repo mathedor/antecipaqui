@@ -57,6 +57,13 @@ const RELATORIOS = [
     section: "Operacional",
   },
   {
+    href: "/admin/relatorios/borderos",
+    title: "Borderôs consolidados",
+    desc: "Lista de operações com totais agregados (bruto, deságio, líquido, custos). Filtra por período/fundo/construtora/cedente. Exporta CSV e PDF consolidado.",
+    icon: "📄",
+    section: "Operacional",
+  },
+  {
     href: "/admin/relatorios/inadimplentes",
     title: "Inadimplentes",
     desc: "Lista de operações com parcelas vencidas. Filtros por período e fundo.",
