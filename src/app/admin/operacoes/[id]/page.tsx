@@ -513,7 +513,6 @@ export default async function AdminOperacaoDetail({ params }: Params) {
               const taxaFundo = parseFloat(
                 op.taxaFundoSnapshot ?? op.taxaMensalFundo ?? "0",
               );
-              const prazo = op.numeroParcelas;
               const razao = taxaOp > 0 ? Math.min(1, taxaFundo / taxaOp) : 0;
               const custoDinheiro = juros * razao;
               const spread = Math.max(0, juros - custoDinheiro);

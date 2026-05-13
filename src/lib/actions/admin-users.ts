@@ -154,30 +154,20 @@ export async function updateAdminProfileAction(
     resolveAdminProfile(existing.adminProfile) === "super" &&
     profileRaw !== "super"
   ) {
-    const supers = await db
-      .select({ id: users.id })
+    const adminsAtivos = await db
+      .select()
       .from(users)
       .where(and(eq(users.role, "admin"), eq(users.isActive, true)));
-    const supersAtivos = supers.filter(
-      async (u) => true, // simplificação — mantemos checagem leve
+    const outrosSupers = adminsAtivos.filter(
+      (u) =>
+        u.id !== userId && resolveAdminProfile(u.adminProfile) === "super",
     );
-    if (supersAtivos.length <= 1) {
-      // Conferência mais cuidadosa: ao menos 1 outro super
-      const allAdmins = await db
-        .select()
-        .from(users)
-        .where(and(eq(users.role, "admin"), eq(users.isActive, true)));
-      const outrosSupers = allAdmins.filter(
-        (u) =>
-          u.id !== userId && resolveAdminProfile(u.adminProfile) === "super",
-      );
-      if (outrosSupers.length === 0) {
-        return {
-          ok: false,
-          error:
-            "Não dá pra rebaixar o último super-admin. Promova outro pra super primeiro.",
-        };
-      }
+    if (outrosSupers.length === 0) {
+      return {
+        ok: false,
+        error:
+          "Não dá pra rebaixar o último super-admin. Promova outro pra super primeiro.",
+      };
     }
   }
 

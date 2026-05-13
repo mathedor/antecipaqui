@@ -314,7 +314,7 @@ async function main() {
   cenariosBlocoA.sort(() => Math.random() - 0.5);
 
   console.log("📊 Bloco A — 100 operações realizadas...");
-  let countBlocoA = { inadimp: 0, misto: 0, hist: 0 };
+  const countBlocoA = { inadimp: 0, misto: 0, hist: 0 };
   for (const cenario of cenariosBlocoA) {
     const numero = `${TAG_NUMERO}-${String(nextNum).padStart(5, "0")}`;
     const { operacao, parcelas } = inserirOperacao(ctx, numero, cenario);
