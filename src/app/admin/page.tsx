@@ -223,10 +223,10 @@ export default async function AdminPage() {
             </p>
           </div>
           <Link
-            href="/admin/operacoes?status=aguardando_aprovacao"
+            href="/admin/decidir?filtro=aguardando"
             className="btn-primary !h-10 !px-4 shrink-0"
           >
-            Analisar agora <span className="arrow">→</span>
+            Decidir agora <span className="arrow">→</span>
           </Link>
         </div>
       )}

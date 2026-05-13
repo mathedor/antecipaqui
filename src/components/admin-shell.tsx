@@ -18,6 +18,7 @@ import {
 import { getCurrentDbUser } from "@/lib/auth-user";
 
 const navFull: AdminNavItem[] = [
+  { type: "link", href: "/admin/decidir", label: "Decidir" },
   {
     type: "submenu",
     label: "Cadastrar",

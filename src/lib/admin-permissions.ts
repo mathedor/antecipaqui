@@ -114,6 +114,7 @@ export function getAdminAllowedAreas(
  *  filtrar menus e em guards de página. */
 export function pathToAdminArea(path: string): AdminArea | null {
   if (path === "/admin" || path === "/admin/") return "dashboard";
+  if (path.startsWith("/admin/decidir")) return "operacoes";
   if (path.startsWith("/admin/operacoes")) return "operacoes";
   if (path.startsWith("/admin/construtoras")) return "construtoras";
   if (path.startsWith("/admin/cadastrar")) return "cadastrar";
