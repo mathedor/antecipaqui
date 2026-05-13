@@ -497,6 +497,14 @@ export const parcelasComissao = pgTable(
     status: parcelaStatusEnum("status").notNull().default("a_vencer"),
     pagoEm: date("pago_em"),
     pagoValor: numeric("pago_valor", { precision: 15, scale: 2 }),
+    /** Quando o lembrete de pré-vencimento foi enviado (NULL = não enviado). */
+    cobrancaPreVencimentoEm: timestamp("cobranca_pre_vencimento_em", {
+      withTimezone: true,
+    }),
+    /** Quando o lembrete de atraso foi enviado (NULL = não enviado). */
+    cobrancaAtrasoEm: timestamp("cobranca_atraso_em", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

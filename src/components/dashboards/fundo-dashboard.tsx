@@ -4,14 +4,16 @@ import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { getFundoDashboard } from "@/lib/actions/fundos";
 import { getFundoRisco } from "@/lib/actions/fundo-risco";
 import { getOpsAguardandoFundo } from "@/lib/actions/fundo-mesa";
+import { getFundoBenchmark } from "@/lib/actions/fundo-benchmark";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
 export async function FundoDashboard({ user }: { user: User }) {
-  const [data, risco, pendentes] = await Promise.all([
+  const [data, risco, pendentes, benchmark] = await Promise.all([
     getFundoDashboard(),
     getFundoRisco(),
     getOpsAguardandoFundo(),
+    getFundoBenchmark(),
   ]);
 
   if (!data) {
@@ -154,6 +156,92 @@ export async function FundoDashboard({ user }: { user: User }) {
           </Link>
         </div>
       )}
+
+      {/* Benchmark vs CDI */}
+      {benchmark && benchmark.parcelasPagas > 0 && (
+        <div
+          className={`rounded-2xl border p-5 md:p-6 mb-6 ${
+            benchmark.spreadPp >= 0
+              ? "border-success/40 bg-green-50"
+              : "border-warn/40 bg-yellow-50"
+          }`}
+        >
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
+                rentabilidade · últimos 90 dias
+              </div>
+              <h2 className="text-lg font-bold tracking-tight">
+                {benchmark.spreadPp >= 0
+                  ? "Você está batendo o CDI"
+                  : "Você está abaixo do CDI"}
+              </h2>
+              <p className="text-xs text-fg-muted mt-0.5">
+                {benchmark.parcelasPagas} parcela
+                {benchmark.parcelasPagas === 1 ? "" : "s"} paga
+                {benchmark.parcelasPagas === 1 ? "" : "s"} · prazo médio{" "}
+                {benchmark.prazoMedio.toFixed(1)}m
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="flex items-baseline gap-4">
+                <div>
+                  <div className="font-mono text-[10px] text-fg-dim">
+                    Sua taxa
+                  </div>
+                  <div
+                    className={`font-mono tabular text-2xl font-bold ${
+                      benchmark.spreadPp >= 0 ? "text-success" : "text-warn"
+                    }`}
+                  >
+                    {(benchmark.rentabilidadeAoMes * 100)
+                      .toFixed(2)
+                      .replace(".", ",")}
+                    %
+                    <span className="text-xs text-fg-muted font-normal ml-0.5">
+                      a.m.
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] text-fg-dim">CDI</div>
+                  <div className="font-mono tabular text-2xl font-bold text-fg-muted">
+                    {(benchmark.cdiAoMes * 100).toFixed(2).replace(".", ",")}%
+                    <span className="text-xs text-fg-muted font-normal ml-0.5">
+                      a.m.
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] text-fg-dim">
+                    Spread
+                  </div>
+                  <div
+                    className={`font-mono tabular text-2xl font-bold ${
+                      benchmark.spreadPp >= 0 ? "text-success" : "text-warn"
+                    }`}
+                  >
+                    {benchmark.spreadPp >= 0 ? "+" : ""}
+                    {(benchmark.spreadPp * 100).toFixed(2).replace(".", ",")}
+                    pp
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Botão extrato contábil */}
+      <div className="mb-6 flex justify-end">
+        <a
+          href={`/api/painel/extrato-contabil?ano=${new Date().getFullYear()}&mes=${String(new Date().getMonth() + 1).padStart(2, "0")}`}
+          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg border border-border bg-bg-elev text-fg text-sm font-semibold hover:border-accent hover:text-accent transition-colors"
+          title="Baixa CSV com decomposição contábil das parcelas pagas no mês atual"
+        >
+          📊 Extrato contábil (mês atual)
+        </a>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Últimas operações */}
