@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { ImpostosCalculator } from "@/components/impostos-calculator";
 import {
   getCorretorFinanceiro,
   getCorretorRankingConstrutoras,
@@ -213,7 +214,11 @@ export default async function CorretorRelatorioPage() {
         )}
       </section>
 
-      <p className="text-xs text-fg-muted">
+      <div className="mt-8">
+        <ImpostosCalculator />
+      </div>
+
+      <p className="text-xs text-fg-muted mt-8">
         <Link href="/painel" className="text-accent hover:underline">
           ← voltar ao painel
         </Link>

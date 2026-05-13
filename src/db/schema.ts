@@ -394,6 +394,74 @@ export const fundos = pgTable(
 
 export type Fundo = typeof fundos.$inferSelect;
 
+/** Templates de operação cadastrados pelo corretor pra agilizar o cadastro.
+ *  Salva configuração padrão (nº parcelas, % comissão padrão, tipo pagador)
+ *  por construtora — quando ele seleciona a mesma construtora de novo,
+ *  oferece "Aplicar template" no form. Linkado ao user (corretor) E à
+ *  construtora — cada par tem seus próprios templates. */
+export const corretorOperacaoTemplates = pgTable(
+  "corretor_operacao_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    corretorUserId: text("corretor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    construtoraId: uuid("construtora_id")
+      .notNull()
+      .references(() => construtoras.id, { onDelete: "cascade" }),
+    nome: text("nome").notNull(),
+    /** Config jsonb: { numeroParcelas, percentualComissao, pagadorTipo, ... } */
+    config: jsonb("config").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("corretor_templates_user_idx").on(t.corretorUserId, t.construtoraId),
+  ],
+);
+
+export type CorretorOperacaoTemplate =
+  typeof corretorOperacaoTemplates.$inferSelect;
+
+/** Tokens públicos pra coleta de dados do comprador. Corretor gera um
+ *  token + link/QR e envia pro comprador, que abre uma página pública,
+ *  preenche os dados dele e submete. Os dados ficam pendentes até o corretor
+ *  aceitar e incorporar à operação. Token tem expiração curta (24h). */
+export const compradorColetaTokens = pgTable(
+  "comprador_coleta_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    token: text("token").notNull(),
+    corretorUserId: text("corretor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Operação opcional — pode ser pré-cadastro */
+    operacaoId: uuid("operacao_id"),
+    construtoraId: uuid("construtora_id").references(() => construtoras.id, {
+      onDelete: "set null",
+    }),
+    /** Quando o comprador submeteu os dados (NULL = ainda não preencheu). */
+    preenchidoEm: timestamp("preenchido_em", { withTimezone: true }),
+    /** Payload do comprador (mesmos campos de operacao_compradores). */
+    dadosColetados: jsonb("dados_coletados"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("comprador_coleta_token_unique").on(t.token),
+    index("comprador_coleta_corretor_idx").on(t.corretorUserId, t.preenchidoEm),
+  ],
+);
+
+export type CompradorColetaToken =
+  typeof compradorColetaTokens.$inferSelect;
+
 /** Membros da equipe de uma construtora. Cada construtora tem 1 owner
  *  principal (construtoras.ownerUserId) e pode convidar colegas como
  *  membros adicionais com roles internas (financeiro/comercial/juridico/

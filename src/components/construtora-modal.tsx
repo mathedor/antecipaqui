@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { forwardRef, useActionState, useEffect, useRef, useState } from "react";
 import {
   createConstrutoraAction,
   type CreateConstrutoraState,
 } from "@/lib/actions/operacoes";
+import { lookupCnpj } from "@/lib/actions/corretor-velocidade";
 import { CepAddressFields } from "@/components/cep-address-fields";
 import { maskCNPJ, maskPhone } from "@/lib/cnpj";
 
@@ -21,6 +22,47 @@ export function ConstrutoraModal({ open, onClose, onCreated }: Props) {
   >(createConstrutoraAction, null);
   const [cnpj, setCnpj] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [autoFilling, setAutoFilling] = useState(false);
+  const [autoFillMsg, setAutoFillMsg] = useState<string | null>(null);
+  const razaoRef = useRef<HTMLInputElement | null>(null);
+  const fantasiaRef = useRef<HTMLInputElement | null>(null);
+  const cepRef = useRef<HTMLInputElement | null>(null);
+  const enderecoRef = useRef<HTMLInputElement | null>(null);
+  const cidadeRef = useRef<HTMLInputElement | null>(null);
+  const ufRef = useRef<HTMLInputElement | null>(null);
+
+  async function onCnpjChange(v: string) {
+    const masked = maskCNPJ(v);
+    setCnpj(masked);
+    const digits = masked.replace(/\D/g, "");
+    if (digits.length === 14) {
+      setAutoFilling(true);
+      setAutoFillMsg(null);
+      try {
+        const r = await lookupCnpj(digits);
+        if (r.ok) {
+          if (razaoRef.current && !razaoRef.current.value)
+            razaoRef.current.value = r.data.razao_social ?? "";
+          if (fantasiaRef.current && r.data.nome_fantasia)
+            fantasiaRef.current.value = r.data.nome_fantasia;
+          if (cepRef.current && r.data.cep)
+            cepRef.current.value = r.data.cep;
+          if (enderecoRef.current && r.data.logradouro)
+            enderecoRef.current.value = r.data.logradouro;
+          if (cidadeRef.current && r.data.municipio)
+            cidadeRef.current.value = r.data.municipio;
+          if (ufRef.current && r.data.uf) ufRef.current.value = r.data.uf;
+          setAutoFillMsg("Preenchido pela Receita Federal");
+        } else {
+          setAutoFillMsg(null);
+        }
+      } catch {
+        setAutoFillMsg(null);
+      } finally {
+        setAutoFilling(false);
+      }
+    }
+  }
 
   useEffect(() => {
     if (state?.ok) {
@@ -92,16 +134,33 @@ export function ConstrutoraModal({ open, onClose, onCreated }: Props) {
                 {state.error}
               </div>
             )}
-            <Input name="razaoSocial" label="Razão social" required />
-            <Input name="nomeFantasia" label="Nome fantasia (opcional)" />
             <Input
               name="cnpj"
               label="CNPJ"
               required
               value={cnpj}
-              onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+              onChange={(e) => onCnpjChange(e.target.value)}
               placeholder="00.000.000/0000-00"
               inputMode="numeric"
+            />
+            {autoFilling && (
+              <p className="text-xs text-fg-dim">
+                Consultando Receita Federal...
+              </p>
+            )}
+            {autoFillMsg && (
+              <p className="text-xs text-success">✓ {autoFillMsg}</p>
+            )}
+            <Input
+              ref={razaoRef}
+              name="razaoSocial"
+              label="Razão social"
+              required
+            />
+            <Input
+              ref={fantasiaRef}
+              name="nomeFantasia"
+              label="Nome fantasia (opcional)"
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
@@ -144,25 +203,31 @@ export function ConstrutoraModal({ open, onClose, onCreated }: Props) {
   );
 }
 
-function Input({
-  label,
-  name,
-  type = "text",
-  required,
-  placeholder,
-  value,
-  onChange,
-  inputMode,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  required?: boolean;
-  placeholder?: string;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  inputMode?: "numeric" | "text" | "tel" | "email";
-}) {
+const Input = forwardRef<
+  HTMLInputElement,
+  {
+    label: string;
+    name: string;
+    type?: string;
+    required?: boolean;
+    placeholder?: string;
+    value?: string;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    inputMode?: "numeric" | "text" | "tel" | "email";
+  }
+>(function Input(
+  {
+    label,
+    name,
+    type = "text",
+    required,
+    placeholder,
+    value,
+    onChange,
+    inputMode,
+  },
+  ref,
+) {
   const controlled = value !== undefined;
   return (
     <div>
@@ -171,6 +236,7 @@ function Input({
         {required && <span className="ml-1 text-accent">*</span>}
       </label>
       <input
+        ref={ref}
         name={name}
         type={type}
         required={required}
@@ -182,4 +248,4 @@ function Input({
       />
     </div>
   );
-}
+});

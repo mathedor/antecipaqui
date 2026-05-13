@@ -18,9 +18,12 @@ type Row = {
 export function PainelOperacoesTable({
   rows,
   counterpartyHeader,
+  canClone = false,
 }: {
   rows: Row[];
   counterpartyHeader: string;
+  /** Quando true, mostra coluna "Clonar" linkando pra /painel/operacoes/nova?from=ID */
+  canClone?: boolean;
 }) {
   return (
     <DataTable<Row>
@@ -103,6 +106,24 @@ export function PainelOperacoesTable({
             </span>
           ),
         },
+        ...(canClone
+          ? [
+              {
+                key: "clone" as const,
+                header: "",
+                align: "right" as const,
+                render: (r: Row) => (
+                  <Link
+                    href={`/painel/operacoes/nova?from=${r.id}`}
+                    className="text-[10px] font-mono uppercase tracking-wider text-accent hover:underline whitespace-nowrap"
+                    title="Criar nova operação a partir desta (mesma construtora, valores, parcelas)"
+                  >
+                    🔁 clonar
+                  </Link>
+                ),
+              },
+            ]
+          : []),
       ]}
     />
   );

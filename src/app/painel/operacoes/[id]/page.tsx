@@ -13,6 +13,7 @@ import { PainelShell } from "@/components/painel-shell";
 import { AdminStatusFlow } from "@/components/admin-status-flow";
 import { ConstrutoraAssinaturaCard } from "@/components/construtora-assinatura-card";
 import { ConstrutoraUploadDocForm } from "@/components/construtora-upload-doc-form";
+import { WhatsappShareButton } from "@/components/whatsapp-share-button";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { toBlobProxyHref } from "@/lib/blob-url";
 
@@ -129,6 +130,11 @@ export default async function OperacaoDetailPage({ params }: Params) {
               ⎘ Replicar
             </Link>
           )}
+          <WhatsappShareButton
+            operacaoNumero={op.numero}
+            valorComissao={parseFloat(op.valorComissao)}
+            status={op.status}
+          />
           <PrintButton>🖨 Imprimir / salvar PDF</PrintButton>
         </div>
       </div>

@@ -92,20 +92,57 @@ export function NovaOperacaoForm({
   const router = useRouter();
   const { alertSuccess, alertError } = useFeedback();
 
-  const [construtoraId, setConstrutoraId] = useState(preset?.construtoraId ?? "");
+  // Tenta restaurar draft do localStorage quando não há preset
+  const draftKey = "nova-operacao-draft-v1";
+  const draftRestore = useMemo(() => {
+    if (typeof window === "undefined" || preset) return null;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return null;
+      const d = JSON.parse(raw) as {
+        construtoraId?: string;
+        valorVenda?: string;
+        valorComissao?: string;
+        valorEntrada?: string;
+        dataVenda?: string;
+        numParcelas?: number;
+        savedAt?: number;
+      };
+      // expira em 24h
+      if (d.savedAt && Date.now() - d.savedAt > 24 * 3600 * 1000) {
+        localStorage.removeItem(draftKey);
+        return null;
+      }
+      return d;
+    } catch {
+      return null;
+    }
+  }, [preset]);
+
+  const [construtoraId, setConstrutoraId] = useState(
+    preset?.construtoraId ?? draftRestore?.construtoraId ?? "",
+  );
   const [showModal, setShowModal] = useState(false);
 
   const [valorVenda, setValorVenda] = useState(
-    preset ? numberToMask(preset.valorVenda) : "",
+    preset
+      ? numberToMask(preset.valorVenda)
+      : (draftRestore?.valorVenda ?? ""),
   );
   const [valorComissao, setValorComissao] = useState(
-    preset ? numberToMask(preset.valorComissao) : "",
+    preset
+      ? numberToMask(preset.valorComissao)
+      : (draftRestore?.valorComissao ?? ""),
   );
-  const [valorEntrada, setValorEntrada] = useState("");
+  const [valorEntrada, setValorEntrada] = useState(
+    draftRestore?.valorEntrada ?? "",
+  );
   const [dataVenda, setDataVenda] = useState(
-    new Date().toISOString().slice(0, 10),
+    draftRestore?.dataVenda ?? new Date().toISOString().slice(0, 10),
   );
-  const [numParcelas, setNumParcelas] = useState(preset?.numeroParcelas ?? 3);
+  const [numParcelas, setNumParcelas] = useState(
+    preset?.numeroParcelas ?? draftRestore?.numParcelas ?? 3,
+  );
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
 
   const [docContratoVenda, setDocContratoVenda] = useState<UploadedBlob | null>(null);
@@ -127,12 +164,50 @@ export function NovaOperacaoForm({
 
   useEffect(() => {
     if (state?.ok) {
+      // Limpa draft após sucesso
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {
+        /* ignora */
+      }
       alertSuccess(`Operação ${state.numero} criada com sucesso.`, "Operação registrada")
         .then(() => router.push(`/painel/operacoes/${state.operacaoId}`));
     } else if (state && !state.ok) {
       alertError(state.error, "Erro ao registrar operação");
     }
   }, [state, router, alertSuccess, alertError]);
+
+  // Autosave draft a cada mudança de campo principal (debounced)
+  useEffect(() => {
+    if (state?.ok) return; // não salva após submeter com sucesso
+    const handle = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            construtoraId,
+            valorVenda,
+            valorComissao,
+            valorEntrada,
+            dataVenda,
+            numParcelas,
+            savedAt: Date.now(),
+          }),
+        );
+      } catch {
+        /* ignora */
+      }
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [
+    construtoraId,
+    valorVenda,
+    valorComissao,
+    valorEntrada,
+    dataVenda,
+    numParcelas,
+    state,
+  ]);
 
   // Estimativa de VP em tempo real (taxa não exposta ao corretor — só no borderô)
   const vp = useMemo(() => {

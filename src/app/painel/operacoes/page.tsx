@@ -234,6 +234,7 @@ export default async function OperacoesPage({ searchParams }: Search) {
         <PainelOperacoesTable
           rows={operacoes}
           counterpartyHeader={counterpartyHeader}
+          canClone={!isFundo && !isConstrutora}
         />
       )}
     </PainelShell>
