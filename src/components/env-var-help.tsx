@@ -9,7 +9,9 @@ type EnvKey =
   | "resendApiKey"
   | "twilioSid"
   | "zapsignToken"
-  | "siteUrl";
+  | "siteUrl"
+  | "cronSecret"
+  | "anthropicApiKey";
 
 type Tutorial = {
   envName: string;
@@ -222,6 +224,51 @@ const TUTORIALS: Record<EnvKey, Tutorial> = {
     ],
     vercel: "Vercel → Settings → Environment Variables → Add NEXT_PUBLIC_SITE_URL",
   },
+  cronSecret: {
+    envName: "CRON_SECRET",
+    service: "Crons agendados (Vercel Cron)",
+    why: "Sem isso, os endpoints /api/cron/* aceitam qualquer chamada — risco de abuso. Os crons do Vercel enviam Bearer ${CRON_SECRET} automaticamente.",
+    steps: [
+      {
+        title: "Gerar um token aleatório",
+        body: "Use openssl rand -hex 32 ou qualquer gerador de string segura.",
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add. Nome: CRON_SECRET. Valor: o token gerado. Production + Preview.",
+      },
+      {
+        title: "Redeploy",
+        body: "Após adicionar, faça um redeploy pros crons existentes (cobranca-parcelas, recaps-diarios, processar-webhooks, backup-diario, auto-nudge-chats) começarem a validar a auth.",
+      },
+    ],
+    vercel: "Vercel → Settings → Environment Variables → Add CRON_SECRET",
+  },
+  anthropicApiKey: {
+    envName: "ANTHROPIC_API_KEY",
+    service: "Claude (OCR de documentos + extração)",
+    why: "Sem isso, validação automática de documentos (RG, CPF, comprovante) e extração de contratos do corretor não funciona — admin precisa validar manualmente.",
+    steps: [
+      {
+        title: "Criar conta Anthropic",
+        body: "Acesse https://console.anthropic.com e crie conta. Configure billing (cartão).",
+        link: {
+          href: "https://console.anthropic.com/settings/keys",
+          label: "Anthropic Console",
+        },
+      },
+      {
+        title: "Gerar API key",
+        body: "Settings → API Keys → Create Key. Copie o token (começa com sk-ant-).",
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add. Nome: ANTHROPIC_API_KEY. Valor: a chave. Production + Preview + Development.",
+      },
+    ],
+    vercel: "Vercel → Settings → Environment Variables → Add ANTHROPIC_API_KEY",
+    related: ["ANTHROPIC_MODEL (opcional, default claude-haiku-4-5)"],
+  },
 };
 
 const SERVICE_LABEL: Record<EnvKey, string> = {
@@ -232,6 +279,8 @@ const SERVICE_LABEL: Record<EnvKey, string> = {
   twilioSid: "Twilio SMS (TWILIO_ACCOUNT_SID)",
   zapsignToken: "ZapSign (ZAPSIGN_API_TOKEN)",
   siteUrl: "Site URL (NEXT_PUBLIC_SITE_URL)",
+  cronSecret: "Crons (CRON_SECRET)",
+  anthropicApiKey: "Claude OCR (ANTHROPIC_API_KEY)",
 };
 
 export function EnvVarsList({

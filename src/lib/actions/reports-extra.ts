@@ -593,6 +593,8 @@ export async function getSystemHealth() {
     twilioSid: !!process.env.TWILIO_ACCOUNT_SID,
     zapsignToken: !!process.env.ZAPSIGN_API_TOKEN,
     siteUrl: !!process.env.NEXT_PUBLIC_SITE_URL,
+    cronSecret: !!process.env.CRON_SECRET,
+    anthropicApiKey: !!process.env.ANTHROPIC_API_KEY,
   };
 
   // Volume de logs por ação nas últimas 24h
@@ -646,20 +648,20 @@ export async function getSystemHealth() {
 
   // Tabela: tamanho atual por linhas
   const tablesRes = await db.execute(sql`
-    SELECT
-      'users' AS nome, COUNT(*)::int AS qtd FROM users
-    UNION ALL
-    SELECT 'construtoras', COUNT(*)::int FROM construtoras
-    UNION ALL
-    SELECT 'operacoes', COUNT(*)::int FROM operacoes
-    UNION ALL
-    SELECT 'documentos', COUNT(*)::int FROM documentos
-    UNION ALL
-    SELECT 'tickets', COUNT(*)::int FROM tickets
-    UNION ALL
-    SELECT 'notificacoes', COUNT(*)::int FROM notificacoes
-    UNION ALL
-    SELECT 'audit_logs', COUNT(*)::int FROM audit_logs
+    SELECT 'users' AS nome, COUNT(*)::int AS qtd FROM users
+    UNION ALL SELECT 'construtoras', COUNT(*)::int FROM construtoras
+    UNION ALL SELECT 'fundos', COUNT(*)::int FROM fundos
+    UNION ALL SELECT 'operacoes', COUNT(*)::int FROM operacoes
+    UNION ALL SELECT 'parcelas_comissao', COUNT(*)::int FROM parcelas_comissao
+    UNION ALL SELECT 'documentos', COUNT(*)::int FROM documentos
+    UNION ALL SELECT 'tickets', COUNT(*)::int FROM tickets
+    UNION ALL SELECT 'notificacoes', COUNT(*)::int FROM notificacoes
+    UNION ALL SELECT 'audit_logs', COUNT(*)::int FROM audit_logs
+    UNION ALL SELECT 'webhooks_subscriptions', COUNT(*)::int FROM webhooks_subscriptions
+    UNION ALL SELECT 'webhooks_eventos', COUNT(*)::int FROM webhooks_eventos
+    UNION ALL SELECT 'construtora_score_historico', COUNT(*)::int FROM construtora_score_historico
+    UNION ALL SELECT 'recaps_relatorio', COUNT(*)::int FROM recaps_relatorio
+    UNION ALL SELECT 'parcela_antecipacoes', COUNT(*)::int FROM parcela_antecipacoes
     ORDER BY qtd DESC
   `);
   const tables = extractRows<{ nome: string; qtd: number }>(tablesRes);
@@ -673,6 +675,187 @@ export async function getSystemHealth() {
   `);
   const sessoes24h = extractRows<{ qtd: number }>(sessoesRes)[0]?.qtd ?? 0;
 
+  /* ===== CRONS: inferimos última execução pelo último efeito de cada job ===== */
+  type CronProbe = {
+    id: string;
+    label: string;
+    schedule: string;
+    intervaloMaxHoras: number;
+    descricao: string;
+    lastAt: string | null;
+  };
+
+  const cobrancaProbe = await db.execute(sql`
+    SELECT MAX(cobranca_atraso_em) AS at
+    FROM parcelas_comissao
+    WHERE cobranca_atraso_em IS NOT NULL
+  `);
+  const recapsProbe = await db.execute(sql`
+    SELECT MAX(gerado_em) AS at FROM recaps_relatorio
+  `);
+  const webhooksProbe = await db.execute(sql`
+    SELECT MAX(GREATEST(delivered_at, COALESCE(updated_at, created_at))) AS at
+    FROM webhooks_eventos
+    WHERE status IN ('entregue','falhou','desistido')
+  `);
+  const autoNudgeProbe = await db.execute(sql`
+    SELECT MAX(tm.created_at) AS at
+    FROM ticket_messages tm
+    WHERE tm.from_role = 'fundo'
+      AND tm.body ILIKE '%automaticamente pelo sistema%'
+  `);
+  const backupProbe = await db.execute(sql`
+    SELECT MAX(created_at) AS at
+    FROM audit_logs
+    WHERE action ILIKE '%backup%'
+  `);
+
+  function pickAt(r: unknown): string | null {
+    const rows = extractRows<{ at: string | null }>(r);
+    return rows[0]?.at ?? null;
+  }
+
+  const cronProbes: CronProbe[] = [
+    {
+      id: "cobranca-parcelas",
+      label: "Cobrança de parcelas",
+      schedule: "0 12 * * *",
+      intervaloMaxHoras: 30,
+      descricao: "Lembretes pré-venc e atraso · tickets",
+      lastAt: pickAt(cobrancaProbe),
+    },
+    {
+      id: "auto-nudge-chats",
+      label: "Auto-nudge chats",
+      schedule: "30 12 * * *",
+      intervaloMaxHoras: 30,
+      descricao: "Mensagens automáticas em tickets sem resposta",
+      lastAt: pickAt(autoNudgeProbe),
+    },
+    {
+      id: "processar-webhooks",
+      label: "Processar webhooks",
+      schedule: "*/5 * * * *",
+      intervaloMaxHoras: 1,
+      descricao: "Entrega da fila de webhooks externos",
+      lastAt: pickAt(webhooksProbe),
+    },
+    {
+      id: "backup-diario",
+      label: "Backup diário",
+      schedule: "0 3 * * *",
+      intervaloMaxHoras: 30,
+      descricao: "Dump SQL via /api/cron/backup-diario",
+      lastAt: pickAt(backupProbe),
+    },
+    {
+      id: "recaps-diarios",
+      label: "Recaps diários",
+      schedule: "30 3 * * *",
+      intervaloMaxHoras: 30,
+      descricao: "Gera recap admin + por fundo (diário/semanal/mensal)",
+      lastAt: pickAt(recapsProbe),
+    },
+  ];
+
+  const crons = cronProbes.map((c) => {
+    let status: "ok" | "late" | "never" = "never";
+    if (c.lastAt) {
+      const horas = (Date.now() - new Date(c.lastAt).getTime()) / 3_600_000;
+      status = horas <= c.intervaloMaxHoras ? "ok" : "late";
+    }
+    return { ...c, status };
+  });
+
+  /* ===== WEBHOOKS — fila + taxa de entrega ===== */
+  const whRes = await db.execute(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE status = 'pendente')::int AS pendentes,
+      COUNT(*) FILTER (WHERE status = 'falhou')::int AS falhou,
+      COUNT(*) FILTER (WHERE status = 'desistido')::int AS desistido,
+      COUNT(*) FILTER (WHERE status = 'entregue' AND delivered_at >= NOW() - INTERVAL '24 hours')::int AS entregues24h,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int AS criados24h
+    FROM webhooks_eventos
+  `);
+  const whRow = extractRows<{
+    pendentes: number;
+    falhou: number;
+    desistido: number;
+    entregues24h: number;
+    criados24h: number;
+  }>(whRes)[0] ?? {
+    pendentes: 0,
+    falhou: 0,
+    desistido: 0,
+    entregues24h: 0,
+    criados24h: 0,
+  };
+
+  const whSubsRes = await db.execute(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE is_active = true)::int AS ativas,
+      COUNT(*) FILTER (WHERE is_active = false)::int AS inativas,
+      COUNT(*)::int AS total
+    FROM webhooks_subscriptions
+  `);
+  const whSubs = extractRows<{
+    ativas: number;
+    inativas: number;
+    total: number;
+  }>(whSubsRes)[0] ?? { ativas: 0, inativas: 0, total: 0 };
+
+  const webhooks = {
+    ...whRow,
+    subscriptions: whSubs,
+    taxa24h:
+      whRow.criados24h > 0
+        ? Math.round((whRow.entregues24h / whRow.criados24h) * 100)
+        : null,
+  };
+
+  /* ===== RECAPS — últimos por (período, escopo) ===== */
+  const recapsRes = await db.execute(sql`
+    SELECT periodo, escopo, MAX(gerado_em) AS ultimo, COUNT(*)::int AS qtd
+    FROM recaps_relatorio
+    GROUP BY periodo, escopo
+    ORDER BY periodo, escopo
+  `);
+  const recapsList = extractRows<{
+    periodo: string;
+    escopo: string;
+    ultimo: string;
+    qtd: number;
+  }>(recapsRes);
+  const recapsHojeRes = await db.execute(sql`
+    SELECT COUNT(*)::int AS qtd
+    FROM recaps_relatorio
+    WHERE gerado_em >= date_trunc('day', NOW())
+  `);
+  const recapsHoje =
+    extractRows<{ qtd: number }>(recapsHojeRes)[0]?.qtd ?? 0;
+
+  /* ===== SNAPSHOTS DE SCORE (últimas 24h) ===== */
+  const snapRes = await db.execute(sql`
+    SELECT COUNT(*)::int AS qtd
+    FROM construtora_score_historico
+    WHERE snapshot_at >= NOW() - INTERVAL '24 hours'
+  `);
+  const snapshots24h = extractRows<{ qtd: number }>(snapRes)[0]?.qtd ?? 0;
+
+  /* ===== NOTIFICAÇÕES (email/sms enviados vs falhados 24h) ===== */
+  const notifRes = await db.execute(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE email_sent = true AND created_at >= NOW() - INTERVAL '24 hours')::int AS email_ok,
+      COUNT(*) FILTER (WHERE sms_sent = true AND created_at >= NOW() - INTERVAL '24 hours')::int AS sms_ok,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int AS total24h
+    FROM notificacoes
+  `);
+  const notif = extractRows<{
+    email_ok: number;
+    sms_ok: number;
+    total24h: number;
+  }>(notifRes)[0] ?? { email_ok: 0, sms_ok: 0, total24h: 0 };
+
   return {
     env,
     last24h,
@@ -681,5 +864,10 @@ export async function getSystemHealth() {
     avg7d,
     tables,
     sessoes24h,
+    crons,
+    webhooks,
+    recaps: { list: recapsList, hoje: recapsHoje },
+    snapshots24h,
+    notif,
   };
 }
