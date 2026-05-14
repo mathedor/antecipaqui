@@ -84,6 +84,7 @@ const navFull: AdminNavItem[] = [
       },
       { href: "/admin/relatorios/inadimplentes", label: "Inadimplentes" },
       { href: "/admin/relatorios/borderos", label: "Borderôs consolidados" },
+      { href: "/admin/relatorios/recaps", label: "Recaps Diários" },
       { href: "/admin/relatorios/logs", label: "Logs de auditoria" },
       { href: "/admin/relatorios/saude", label: "Saúde do sistema" },
     ],
