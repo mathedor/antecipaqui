@@ -1,0 +1,29 @@
+{
+  "name": "antecipaqui-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Apresentação Antecipaqui em vídeo (Remotion) — reel 35s pra imobiliárias e corretores",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "bash scripts/render.sh",
+    "narration": "tsx scripts/gen-narration.ts",
+    "build": "npm run narration && npm run render",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.232",
+    "@remotion/bundler": "^4.0.232",
+    "@remotion/renderer": "^4.0.232",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "^4.0.232"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
