@@ -8,7 +8,7 @@
  *    cd video && ELEVENLABS_API_KEY=xxx npm run narration
  */
 
-import { writeFileSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -84,7 +84,9 @@ async function main() {
   }
 
   const buf = Buffer.from(await res.arrayBuffer());
-  const outPath = join(__dirname, "..", "public", "narration.mp3");
+  const outDir = join(__dirname, "..", "public");
+  mkdirSync(outDir, { recursive: true });
+  const outPath = join(outDir, "narration.mp3");
   writeFileSync(outPath, buf);
   console.log(`✓ Salvo: ${outPath} (${(buf.length / 1024).toFixed(0)}kb)`);
 }
