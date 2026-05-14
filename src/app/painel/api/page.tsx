@@ -40,6 +40,38 @@ export default async function PainelApiPage() {
         </p>
       </div>
 
+      <section className="rounded-2xl border border-accent/30 bg-accent-soft p-5 md:p-6 mb-6 max-w-4xl">
+        <div className="flex items-start gap-4 flex-wrap">
+          <div className="text-3xl shrink-0">📖</div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold">Documentação completa (Swagger UI)</h2>
+            <p className="text-xs text-fg-muted mt-1">
+              Todos os endpoints, parâmetros, respostas e botão{" "}
+              <strong>Try it out</strong> pra testar direto no navegador (precisa
+              colar sua API key no botão Authorize).
+            </p>
+            <div className="mt-3 flex gap-2 flex-wrap">
+              <a
+                href="/docs/api"
+                target="_blank"
+                rel="noreferrer"
+                className="h-9 px-4 inline-flex items-center rounded-lg bg-accent text-white font-semibold text-xs hover:bg-accent-dark"
+              >
+                Abrir docs →
+              </a>
+              <a
+                href="/api/openapi"
+                target="_blank"
+                rel="noreferrer"
+                className="h-9 px-4 inline-flex items-center rounded-lg border border-border bg-white text-xs hover:border-accent font-mono"
+              >
+                Baixar OpenAPI JSON
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-border bg-bg-elev p-6 md:p-8 mb-6 max-w-4xl">
         <h2 className="text-xl font-bold tracking-tight mb-1">
           Gerar nova API key

@@ -22,6 +22,13 @@ const RELATORIOS = [
     section: "Visão geral",
   },
   {
+    href: "/admin/api-docs",
+    title: "API Docs · fundos integradores",
+    desc: "Swagger UI da API externa do fundo (/api/external/fundo/*). Operações, parcelas, decisão. Útil pra fundos parceiros integrarem com seus próprios sistemas.",
+    icon: "🔌",
+    section: "Visão geral",
+  },
+  {
     href: "/admin/relatorios/saude",
     title: "Saúde da plataforma",
     desc: "Status do sistema: Resend, Clerk, blob, integrações externas e configurações críticas.",
