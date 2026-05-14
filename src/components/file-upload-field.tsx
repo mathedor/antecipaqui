@@ -70,6 +70,7 @@ export function FileUploadField({
   >(initial ? "done" : "idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [rejectionMotivo, setRejectionMotivo] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   function reset() {
     setBlob(null);
@@ -234,7 +235,22 @@ export function FileUploadField({
       {status === "idle" && (
         <label
           htmlFor={inputId}
-          className="flex items-center justify-between gap-3 px-4 h-12 rounded-xl border border-dashed border-border-strong bg-bg hover:border-accent hover:bg-accent-soft transition-colors cursor-pointer text-sm text-fg-muted"
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) handleFile(f);
+          }}
+          className={`flex items-center justify-between gap-3 px-4 h-12 rounded-xl border border-dashed transition-colors cursor-pointer text-sm ${
+            dragOver
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-border-strong bg-bg hover:border-accent hover:bg-accent-soft text-fg-muted"
+          }`}
         >
           <span className="flex items-center gap-2">
             <svg
@@ -252,7 +268,7 @@ export function FileUploadField({
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            Selecionar arquivo
+            {dragOver ? "Solte o arquivo aqui" : "Selecionar ou arrastar arquivo"}
           </span>
           <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
             PDF · JPG · PNG · até {maxMB}MB

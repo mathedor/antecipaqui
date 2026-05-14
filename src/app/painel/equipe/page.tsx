@@ -1,14 +1,16 @@
 import { redirect } from "next/navigation";
-import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { EquipeManager } from "@/components/equipe-manager";
 import { listMembrosConstrutora } from "@/lib/actions/construtora-membros";
+import {
+  requireConstrutoraPermission,
+  getConstrutoraAllowedNav,
+} from "@/lib/construtora-permissions";
 
 export const metadata = { title: "Equipe" };
 
 export default async function EquipePage() {
-  const user = await requireActiveUser();
-  if (user.role !== "construtora") redirect("/painel");
+  const { user, role } = await requireConstrutoraPermission("equipe");
 
   let data: Awaited<ReturnType<typeof listMembrosConstrutora>> | null = null;
   try {
@@ -22,7 +24,12 @@ export default async function EquipePage() {
   const isOwner = data.owner?.id === user.id;
 
   return (
-    <PainelShell role="construtora" userName={user.nome} active="/painel/equipe">
+    <PainelShell
+      role="construtora"
+      userName={user.nome}
+      active="/painel/equipe"
+      allowedHrefs={getConstrutoraAllowedNav(role)}
+    >
       <div className="mb-6">
         <div className="eyebrow mb-2">equipe</div>
         <h1 className="text-display-md">
@@ -30,8 +37,9 @@ export default async function EquipePage() {
         </h1>
         <p className="mt-2 text-fg-muted max-w-2xl">
           Convide colegas (financeiro, comercial, jurídico) pra acessarem o
-          painel da sua construtora. Permissões finas por role chegam em breve
-          — por ora todos veem o conteúdo da construtora.
+          painel da sua construtora. Cada role vê apenas a área pertinente:
+          financeiro tem duplicatas/extrato/forecast; comercial tem operações/
+          empreendimentos; jurídico tem documentos/pendências.
         </p>
       </div>
 

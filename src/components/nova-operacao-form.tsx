@@ -9,6 +9,8 @@ import {
 import { ConstrutoraModal } from "./construtora-modal";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
 import { PagadorSelector } from "./pagador-selector";
+import { TemplatesOperacaoPanel } from "./templates-operacao-panel";
+import type { OperacaoTemplateConfig } from "@/lib/actions/corretor-velocidade";
 import { useFeedback } from "@/components/feedback-provider";
 import { formatBRL, parseBRLNumber, valorPresente } from "@/lib/format";
 
@@ -228,6 +230,35 @@ export function NovaOperacaoForm({
     });
   }
 
+  function aplicarTemplate(cfg: OperacaoTemplateConfig) {
+    if (typeof cfg.numeroParcelas === "number" && cfg.numeroParcelas > 0) {
+      setNumParcelas(cfg.numeroParcelas);
+    }
+    if (
+      typeof cfg.percentualComissao === "number" &&
+      cfg.percentualComissao > 0 &&
+      cfg.percentualComissao <= 1
+    ) {
+      const vendaNum = parseBRLNumber(valorVenda);
+      if (vendaNum > 0) {
+        const novaComissao = vendaNum * cfg.percentualComissao;
+        setValorComissao(numberToMask(novaComissao));
+      }
+    }
+    // pagadorTipo é controlado pelo PagadorSelector — não setamos diretamente,
+    // mas o user pode ajustar manualmente após aplicar
+  }
+
+  const configAtual: OperacaoTemplateConfig = {
+    numeroParcelas: numParcelas,
+    percentualComissao: (() => {
+      const v = parseBRLNumber(valorVenda);
+      const c = parseBRLNumber(valorComissao);
+      if (v > 0 && c > 0) return Math.min(c / v, 1);
+      return undefined;
+    })(),
+  };
+
   return (
     <>
       <form action={action} className="grid lg:grid-cols-12 gap-6">
@@ -276,6 +307,15 @@ export function NovaOperacaoForm({
                 + Nova
               </button>
             </div>
+            {construtoraId && (
+              <div className="mt-4">
+                <TemplatesOperacaoPanel
+                  construtoraId={construtoraId}
+                  configAtual={configAtual}
+                  onAplicar={aplicarTemplate}
+                />
+              </div>
+            )}
           </Section>
 
           {/* Dados da venda */}
@@ -552,21 +592,31 @@ function Section({
   title,
   subtitle,
   children,
+  defaultOpen = true,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-bg-elev p-6 md:p-7">
-      <div className="mb-5">
-        <h3 className="text-lg font-bold tracking-tight">{title}</h3>
-        {subtitle && (
-          <p className="text-xs text-fg-muted mt-1">{subtitle}</p>
-        )}
-      </div>
+    <details
+      open={defaultOpen}
+      className="rounded-2xl border border-border bg-bg-elev md:open:p-7 group [&[open]]:p-7 p-4"
+    >
+      <summary className="cursor-pointer md:cursor-default list-none flex items-start justify-between gap-3 md:mb-5 [&[open]]:mb-5 group-[&[open]]:mb-5">
+        <div>
+          <h3 className="text-lg font-bold tracking-tight">{title}</h3>
+          {subtitle && (
+            <p className="text-xs text-fg-muted mt-1">{subtitle}</p>
+          )}
+        </div>
+        <span className="md:hidden text-fg-muted text-xl transition-transform group-open:rotate-180">
+          ▾
+        </span>
+      </summary>
       <div className="space-y-4">{children}</div>
-    </div>
+    </details>
   );
 }
 

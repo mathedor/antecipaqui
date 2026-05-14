@@ -10,6 +10,7 @@ import {
   unmaskCPF,
 } from "@/lib/cnpj";
 import { buscarCep } from "@/lib/cep";
+import { lookupCompradorPorDocumento } from "@/lib/actions/corretor-velocidade";
 
 export type CompradorInput = {
   tipoPessoa: "fisica" | "juridica";
@@ -117,6 +118,39 @@ function CompradorRow({
   canRemove: boolean;
 }) {
   const [cepBuscando, setCepBuscando] = useState(false);
+  const [docBuscando, setDocBuscando] = useState(false);
+  const [docPreenchido, setDocPreenchido] = useState(false);
+
+  async function lookupDocumento() {
+    const docDigits = c.documento.replace(/\D/g, "");
+    const minLen = c.tipoPessoa === "fisica" ? 11 : 14;
+    if (docDigits.length !== minLen) return;
+    // Se já preencheu nome, não sobrescreve (evita perder edits)
+    if (c.nome.trim().length > 0) return;
+    setDocBuscando(true);
+    try {
+      const found = await lookupCompradorPorDocumento(docDigits);
+      if (found) {
+        update({
+          nome: found.nome,
+          telefone: found.telefone
+            ? maskPhone(found.telefone)
+            : c.telefone,
+          email: found.email ?? c.email,
+          endereco: found.endereco ?? c.endereco,
+          cidade: found.cidade ?? c.cidade,
+          uf: found.uf ?? c.uf,
+          cep: found.cep ? maskCEP(found.cep) : c.cep,
+        });
+        setDocPreenchido(true);
+        setTimeout(() => setDocPreenchido(false), 3000);
+      }
+    } catch {
+      /* ignora */
+    } finally {
+      setDocBuscando(false);
+    }
+  }
 
   useEffect(() => {
     const cepDigits = c.cep.replace(/\D/g, "");
@@ -211,8 +245,20 @@ function CompradorRow({
                 const d = unmaskCNPJ(e.target.value);
                 if (d.length === 14) update({ documento: maskCNPJ(d) });
               }
+              // Auto-fill se o comprador já apareceu em op anterior do corretor
+              lookupDocumento();
             }}
           />
+          {docBuscando && (
+            <span className="text-[10px] text-fg-dim font-mono">
+              buscando histórico...
+            </span>
+          )}
+          {docPreenchido && (
+            <span className="text-[10px] text-success font-mono">
+              ✓ preenchido do histórico
+            </span>
+          )}
         </Field>
         <Field label="Telefone (WhatsApp) *">
           <input

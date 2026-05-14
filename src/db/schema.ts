@@ -497,6 +497,46 @@ export const construtoraMembros = pgTable(
 
 export type ConstrutoraMembro = typeof construtoraMembros.$inferSelect;
 
+/** Cache de consultas de análise de crédito.
+ *  Provedor externo (Serasa, Boa Vista, etc) retorna score + restrições.
+ *  Cacheamos por documento (CPF ou CNPJ) com TTL de 30 dias pra evitar
+ *  re-consulta cara. */
+export const consultasCredito = pgTable(
+  "consultas_credito",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Documento consultado (só dígitos, CPF 11 ou CNPJ 14). */
+    documento: text("documento").notNull(),
+    tipoPessoa: text("tipo_pessoa").notNull(), // 'pf' | 'pj'
+    /** Provedor consultado ('serasa', 'boavista', 'stub'). */
+    provedor: text("provedor").notNull(),
+    /** Score 0-1000 retornado pelo provedor. */
+    score: integer("score").notNull(),
+    /** 'baixo' | 'medio' | 'alto' | 'critico' — derivado do score. */
+    risco: text("risco").notNull(),
+    /** Restrições/apontamentos (SCPC, protestos, ações). Total. */
+    restricoes: integer("restricoes").notNull().default(0),
+    /** Payload bruto retornado pelo provedor (debug/auditoria). */
+    payload: jsonb("payload"),
+    /** Quem solicitou a consulta (admin/fundo). */
+    solicitadoPorUserId: text("solicitado_por_user_id").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    /** Operação vinculada (opcional, pra contexto). */
+    operacaoId: uuid("operacao_id"),
+    consultadoEm: timestamp("consultado_em", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("consultas_credito_doc_idx").on(t.documento, t.consultadoEm),
+    index("consultas_credito_op_idx").on(t.operacaoId),
+  ],
+);
+
+export type ConsultaCredito = typeof consultasCredito.$inferSelect;
+
 /** Empreendimentos da construtora (torres/condomínios/projetos). Operações
  *  podem ser linkadas opcionalmente a um empreendimento, permitindo relatório
  *  agregado por projeto + filtro nas listagens. */

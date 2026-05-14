@@ -87,6 +87,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   comercial: [
     { href: "/painel", label: "Painel" },
     { href: "/painel/daily", label: "Daily" },
+    { href: "/painel/comissoes", label: "Comissões" },
     { href: "/painel/perfil", label: "Meus dados" },
     { href: "/painel/suporte", label: "Chats" },
   ],
@@ -294,13 +295,21 @@ export function PainelShell({
   role,
   userName,
   active,
+  allowedHrefs,
 }: {
   children: React.ReactNode;
   role: Role;
   userName?: string | null;
   active?: string;
+  /** Quando passado, filtra os links do nav pra mostrar só os permitidos.
+   *  Usado pra construtora com role interna (financeiro/comercial/jurídico
+   *  veem só a área dele). Se ausente, mostra tudo (default). */
+  allowedHrefs?: Set<string>;
 }) {
-  const nav = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
+  const navAll = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
+  const nav = allowedHrefs
+    ? navAll.filter((item) => allowedHrefs.has(item.href))
+    : navAll;
   const homeHref = role === "admin" ? "/admin" : "/painel";
   const userLabel = userName ?? ROLE_LABEL[role];
   const roleLabel = ROLE_LABEL[role];

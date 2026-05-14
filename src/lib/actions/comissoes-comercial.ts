@@ -6,9 +6,11 @@ import { db } from "@/db";
 import {
   comerciais,
   comissoesComercial,
+  construtoras,
   operacoes,
+  users,
 } from "@/db/schema";
-import { requireAdmin } from "@/lib/auth-user";
+import { getCurrentDbUser, requireAdmin } from "@/lib/auth-user";
 import { audit } from "@/lib/audit";
 
 export type ComissaoItem = {
@@ -66,6 +68,72 @@ export async function listComissoesComercial(filters?: {
     status: r.status,
     geradaEm: r.geradaEm,
     pagaEm: r.pagaEm,
+  }));
+}
+
+export type MinhaComissaoItem = {
+  id: string;
+  operacaoId: string;
+  operacaoNumero: string;
+  construtoraNome: string | null;
+  corretorNome: string | null;
+  valorComissaoOp: number;
+  valorDevido: number;
+  valorPago: number;
+  status: "pendente" | "paga" | "cancelada";
+  geradaEm: Date;
+  pagaEm: Date | null;
+  operacaoStatus: string;
+};
+
+/** Lista de comissões DO COMERCIAL LOGADO (sem requireAdmin).
+ *  Retorna ledger detalhado pra dashboard do comercial. */
+export async function listMinhasComissoes(): Promise<MinhaComissaoItem[]> {
+  const user = await getCurrentDbUser();
+  if (!user || user.role !== "comercial") return [];
+
+  const [com] = await db
+    .select({ id: comerciais.id })
+    .from(comerciais)
+    .where(eq(comerciais.ownerUserId, user.id))
+    .limit(1);
+  if (!com) return [];
+
+  const rows = await db
+    .select({
+      id: comissoesComercial.id,
+      operacaoId: comissoesComercial.operacaoId,
+      operacaoNumero: operacoes.numero,
+      operacaoStatus: operacoes.status,
+      valorComissaoOp: operacoes.valorComissao,
+      valorDevido: comissoesComercial.valorDevido,
+      valorPago: comissoesComercial.valorPago,
+      status: comissoesComercial.status,
+      geradaEm: comissoesComercial.geradaEm,
+      pagaEm: comissoesComercial.pagaEm,
+      construtoraNome: construtoras.razaoSocial,
+      corretorNome: users.nome,
+    })
+    .from(comissoesComercial)
+    .innerJoin(operacoes, eq(comissoesComercial.operacaoId, operacoes.id))
+    .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
+    .leftJoin(users, eq(users.id, operacoes.corretorUserId))
+    .where(eq(comissoesComercial.comercialId, com.id))
+    .orderBy(desc(comissoesComercial.geradaEm));
+
+  return rows.map((r) => ({
+    id: r.id,
+    operacaoId: r.operacaoId,
+    operacaoNumero: r.operacaoNumero,
+    construtoraNome: r.construtoraNome,
+    corretorNome: r.corretorNome,
+    valorComissaoOp: parseFloat(r.valorComissaoOp),
+    valorDevido: parseFloat(r.valorDevido),
+    valorPago: parseFloat(r.valorPago),
+    status: r.status,
+    geradaEm: r.geradaEm,
+    pagaEm: r.pagaEm,
+    operacaoStatus: r.operacaoStatus,
   }));
 }
 

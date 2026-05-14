@@ -480,7 +480,20 @@ export async function listMyChats(opts?: {
   if (!user) return [];
 
   const conds: ReturnType<typeof eq>[] = [];
-  if (opts?.q) conds.push(sql`${tickets.assunto} ILIKE ${`%${opts.q}%`}` as never);
+  if (opts?.q) {
+    // Busca no assunto OU dentro do conteúdo das mensagens do ticket
+    const q = `%${opts.q}%`;
+    conds.push(
+      sql`(
+        ${tickets.assunto} ILIKE ${q}
+        OR EXISTS (
+          SELECT 1 FROM ${ticketMessages}
+          WHERE ${ticketMessages.ticketId} = ${tickets.id}
+            AND ${ticketMessages.body} ILIKE ${q}
+        )
+      )` as never,
+    );
+  }
   if (opts?.categoria) conds.push(eq(tickets.categoria, opts.categoria));
   if (opts?.status) conds.push(eq(tickets.status, opts.status as never));
   if (!opts?.includeArquivados)
