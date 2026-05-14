@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1c6dd0" />
+  <title>Sem conexão · Antecipaqui</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    main {
+      max-width: 420px;
+      text-align: center;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 40px 28px;
+      box-shadow: 0 10px 40px -10px rgba(28, 109, 208, 0.15);
+    }
+    .icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      background: rgba(28, 109, 208, 0.10);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 18px;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+    p {
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 22px;
+    }
+    button {
+      appearance: none;
+      border: none;
+      background: #1c6dd0;
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #0d4e9e; }
+    small {
+      display: block;
+      margin-top: 14px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="icon">📡</div>
+    <h1>Sem conexão</h1>
+    <p>
+      Não conseguimos alcançar o servidor agora. Verifique sua internet
+      e tente novamente — seus dados estão seguros.
+    </p>
+    <button onclick="location.reload()">Tentar de novo</button>
+    <small>Antecipaqui · modo offline</small>
+  </main>
+</body>
+</html>

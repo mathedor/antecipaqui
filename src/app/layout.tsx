@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
@@ -9,6 +9,7 @@ import {
 } from "@/components/route-aware-chrome";
 import { FeedbackProvider } from "@/components/feedback-provider";
 import { ChatFabWrapper } from "@/components/chat-fab-wrapper";
+import { PwaInstaller } from "@/components/pwa-installer";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 
 const sans = Geist({
@@ -48,6 +49,24 @@ export const metadata: Metadata = {
     type: "website",
   },
   robots: { index: true, follow: true },
+  appleWebApp: {
+    capable: true,
+    title: "Antecipaqui",
+    statusBarStyle: "default",
+  },
+  applicationName: "Antecipaqui",
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#1c6dd0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d4e9e" },
+  ],
+  colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -65,6 +84,7 @@ export default function RootLayout({
             <main className="flex-1 relative z-10">{children}</main>
             <MarketingFooter />
             <ChatFabWrapper />
+            <PwaInstaller />
           </FeedbackProvider>
         </body>
       </html>
