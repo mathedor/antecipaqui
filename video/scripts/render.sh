@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Render do vídeo. Detecta automaticamente se public/narration.mp3 existe
-# e passa withAudio=true pra incluir áudio no MP4 final.
+# Render do vídeo. Detecta automaticamente se public/music.mp3 existe e
+# passa withMusic=true pra incluir trilha de fundo no MP4 final.
 
 set -euo pipefail
 
@@ -9,13 +9,14 @@ cd "$(dirname "$0")/.."
 OUTPUT="${1:-out/apresentacao-imobiliaria.mp4}"
 mkdir -p "$(dirname "$OUTPUT")"
 
-if [ -f "public/narration.mp3" ]; then
-  echo "✓ narration.mp3 detectado — renderizando com áudio"
-  PROPS='{"withAudio":true}'
+if [ -f "public/music.mp3" ]; then
+  echo "✓ music.mp3 detectado — renderizando com trilha de fundo"
+  PROPS='{"withMusic":true}'
 else
-  echo "⚠ public/narration.mp3 ausente — vídeo sai sem narração"
-  echo "  rode 'npm run narration' antes pra incluir voz"
-  PROPS='{"withAudio":false}'
+  echo "⚠ public/music.mp3 ausente — vídeo sai sem trilha"
+  echo "  Baixe uma música royalty-free e salve como video/public/music.mp3"
+  echo "  Sugestões: https://mixkit.co/free-stock-music ou https://pixabay.com/music"
+  PROPS='{"withMusic":false}'
 fi
 
 exec npx remotion render src/index.ts apresentacao-imobiliaria "$OUTPUT" \

@@ -3,115 +3,125 @@ import { COLORS } from "../constants";
 import { fadeIn, popIn, slideY } from "../anim";
 import { Noise } from "../components/Noise";
 import { Blob } from "../components/Blob";
+import { Sticker } from "../components/Sticker";
 
 const PASSOS = [
-  { n: "01", title: "CADASTRA", desc: "5 min · pelo celular" },
-  { n: "02", title: "APROVAMOS", desc: "em 24 horas" },
-  { n: "03", title: "PIX NA CONTA", desc: "1 dia útil" },
+  { n: "01", title: "Cadastra", desc: "5 minutos pelo celular" },
+  { n: "02", title: "Aprovamos", desc: "em 24 horas" },
+  { n: "03", title: "PIX na conta", desc: "1 dia útil" },
 ];
 
 export function SceneSolucao() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const chegaScale = popIn(frame, 0, fps, { damping: 10, stiffness: 280 });
-  const subOp = fadeIn(frame, 22, 12);
+  const headerOp = fadeIn(frame, 0, 14);
+  const hojeScale = popIn(frame, 14, fps, { damping: 10, stiffness: 220 });
 
   return (
-    <AbsoluteFill style={{ background: COLORS.neonYellow, overflow: "hidden" }}>
-      <Blob color={COLORS.neonMagenta} x={80} y={20} size={50} opacity={0.5} />
-      <Blob color={COLORS.bg} x={20} y={85} size={45} opacity={0.4} />
-      <Noise opacity={0.08} />
+    <AbsoluteFill
+      style={{
+        background: `linear-gradient(180deg, ${COLORS.accentDark} 0%, ${COLORS.accent} 100%)`,
+        overflow: "hidden",
+      }}
+    >
+      <Blob color={COLORS.white} x={80} y={20} size={45} opacity={0.15} />
+      <Blob color={COLORS.white} x={15} y={85} size={40} opacity={0.1} />
+      <Noise opacity={0.04} />
 
       <AbsoluteFill
         style={{
-          padding: 60,
-          paddingTop: 100,
-          justifyContent: "flex-start",
-          alignItems: "center",
+          padding: 80,
+          paddingTop: 110,
+          alignItems: "flex-start",
         }}
       >
-        {/* CHEGA — gigante, choque visual */}
+        {/* Header */}
         <div
           style={{
-            transform: `scale(${chegaScale})`,
-            fontSize: 280,
-            fontWeight: 900,
-            lineHeight: 0.85,
-            letterSpacing: "-0.06em",
-            color: COLORS.bg,
-            textAlign: "center",
-            marginBottom: 30,
-          }}
-        >
-          CHEGA.
-        </div>
-
-        {/* Sub */}
-        <div
-          style={{
-            opacity: subOp,
-            fontSize: 50,
-            fontWeight: 800,
-            color: COLORS.bg,
-            textAlign: "center",
-            letterSpacing: "-0.02em",
-            lineHeight: 1.05,
+            opacity: headerOp,
             marginBottom: 60,
-            maxWidth: 850,
+            color: COLORS.white,
           }}
         >
-          Aqui, você recebe{" "}
-          <span
+          <div
             style={{
-              background: COLORS.bg,
-              color: COLORS.neonYellow,
-              padding: "0 16px",
-              borderRadius: 8,
+              fontFamily: "ui-monospace, monospace",
+              fontSize: 20,
+              letterSpacing: "0.3em",
+              fontWeight: 700,
+              marginBottom: 20,
+              textTransform: "uppercase",
+              opacity: 0.8,
             }}
           >
-            HOJE
-          </span>
-          .
+            a antecipaqui paga
+          </div>
+          <div
+            style={{
+              fontSize: 100,
+              fontWeight: 800,
+              lineHeight: 0.95,
+              letterSpacing: "-0.04em",
+            }}
+          >
+            Sua comissão
+            <br />à vista,{" "}
+            <span
+              style={{
+                transform: `scale(${hojeScale})`,
+                display: "inline-block",
+                color: COLORS.fgOnDark,
+                background: COLORS.accent,
+                padding: "4px 24px",
+                borderRadius: 16,
+                border: `4px solid ${COLORS.white}`,
+              }}
+            >
+              hoje
+            </span>
+            .
+          </div>
         </div>
 
-        {/* 3 passos com flip-in */}
+        {/* Passos */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 20,
+            gap: 18,
             width: "100%",
-            maxWidth: 850,
           }}
         >
           {PASSOS.map((p, i) => {
-            const start = 35 + i * 18;
+            const start = 30 + i * 18;
             const y = slideY(frame, start, 16, 60, 0);
-            const op = fadeIn(frame, start, 12);
+            const op = fadeIn(frame, start, 14);
             return (
               <div
                 key={p.n}
                 style={{
                   opacity: op,
                   transform: `translateY(${y}px)`,
-                  background: COLORS.bg,
-                  borderRadius: 28,
-                  padding: "36px 40px",
+                  background: "rgba(255,255,255,0.08)",
+                  backdropFilter: "blur(20px)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  borderRadius: 24,
+                  padding: "28px 36px",
                   display: "flex",
                   alignItems: "center",
-                  gap: 32,
-                  boxShadow: "0 30px 60px rgba(0,0,0,0.4)",
+                  gap: 30,
                 }}
               >
                 <div
                   style={{
-                    fontSize: 120,
+                    fontSize: 88,
                     fontWeight: 900,
-                    color: COLORS.neonYellow,
+                    color: COLORS.white,
                     lineHeight: 1,
-                    letterSpacing: "-0.05em",
-                    minWidth: 160,
+                    letterSpacing: "-0.04em",
+                    minWidth: 130,
+                    opacity: 0.85,
                   }}
                 >
                   {p.n}
@@ -119,9 +129,9 @@ export function SceneSolucao() {
                 <div style={{ flex: 1 }}>
                   <div
                     style={{
-                      fontSize: 56,
-                      fontWeight: 900,
-                      color: COLORS.fg,
+                      fontSize: 52,
+                      fontWeight: 800,
+                      color: COLORS.white,
                       letterSpacing: "-0.02em",
                       lineHeight: 1,
                     }}
@@ -131,11 +141,9 @@ export function SceneSolucao() {
                   <div
                     style={{
                       fontSize: 26,
-                      fontWeight: 600,
-                      color: COLORS.fgMuted,
-                      marginTop: 8,
-                      fontFamily: "ui-monospace, monospace",
-                      letterSpacing: "0.05em",
+                      fontWeight: 500,
+                      color: "rgba(255,255,255,0.8)",
+                      marginTop: 6,
                     }}
                   >
                     {p.desc}
@@ -146,6 +154,27 @@ export function SceneSolucao() {
           })}
         </div>
       </AbsoluteFill>
+
+      <Sticker
+        text="Sem garantia"
+        emoji="✓"
+        appearAt={30}
+        position="top-right"
+        variant="yellow"
+        size="sm"
+        rotate={6}
+        inset={100}
+      />
+      <Sticker
+        text="Sem avalista"
+        emoji="✓"
+        appearAt={50}
+        position="bottom-right"
+        variant="white"
+        size="sm"
+        rotate={-4}
+        inset={130}
+      />
     </AbsoluteFill>
   );
 }

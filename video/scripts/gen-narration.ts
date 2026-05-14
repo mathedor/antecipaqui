@@ -16,34 +16,51 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Roteiro narrado — 35 segundos a ~155 palavras/minuto = ~90 palavras total.
- * Tom: direto, sem enrolação, hook forte no início, CTA fechado.
+ * Roteiro de venda — 35 segundos, tom conversacional brasileiro.
+ * Estrutura AIDA: Atenção → Interesse (dor) → Desejo (solução) → Ação.
  *
- * Cada bloco corresponde a uma cena do Remotion. Pausas naturais por
- * pontuação (ponto final = pausa maior, vírgula = pausa pequena).
+ * NÃO é descrição de feature, é argumento de venda. Como um amigo experiente
+ * conversando com o corretor.
+ *
+ * Cada bloco = uma cena do Remotion. Sinais de pausa:
+ *  - reticências "..." → pausa maior (suspense)
+ *  - vírgulas → pausa curta
+ *  - ponto → pausa média
+ *
+ * IMPORTANTE: pra soar BR (e não PT-PT), exporte ELEVENLABS_VOICE_ID com
+ * uma voz brasileira nativa. Rode `npm run voices` pra listar as
+ * disponíveis na sua conta.
  */
 const ROTEIRO = [
-  // 0-4s · Hero — hook agressivo
-  "Vendeu? A comissão é sua. Mas o dinheiro... demora.",
-  // 4-9s · Problema
-  "Cento e vinte dias esperando. Banco recusando. Avalista que ninguém quer dar.",
-  // 9-14s · Solução
-  "Chega. Na Antecipaqui, você recebe hoje. Em três passos, sem garantia, sem burocracia.",
-  // 14-20s · Mobile
-  "Cadastra pelo celular em cinco minutos. Foto do contrato e a inteligência artificial preenche pra você.",
-  // 20-25s · Calculadora
-  "Veja agora quanto entra na sua conta. Cálculo em tempo real. Sem letra miúda.",
-  // 25-30s · Desktop
-  "Painel completo no computador. Operações, recebimentos, sua comissão antecipada.",
-  // 30-35s · CTA
-  "Antecipaqui ponto digital. Cadastre-se grátis e receba sua próxima venda hoje.",
+  // 0-4s · Hero — captura atenção
+  "Você vende. Tá no flow. Mas o dinheiro?",
+  // 4-9s · Problema — agita a dor
+  "Parcelado em 4 vezes. 120 dias correndo atrás. Banco que recusa. Cansou?",
+  // 9-14s · Solução — promessa clara
+  "Tem um jeito melhor. A Antecipaqui paga sua comissão à vista. Hoje.",
+  // 14-20s · Mobile — facilidade
+  "Foto do contrato pelo celular. A inteligência artificial preenche. A gente aprova em 24 horas.",
+  // 20-25s · Calculadora — transparência
+  "Você vê quanto entra na conta antes de fechar. Sem letra miúda. Sem surpresa.",
+  // 25-30s · Desktop — controle
+  "Painel completo. Agenda, ranking, recebimentos. Tudo na palma da sua mão.",
+  // 30-35s · CTA — chamada urgente
+  "Próxima venda já vira PIX. Cadastra grátis. Antecipaqui ponto digital.",
 ].join(" ");
 
-// Default agora: Sarah multilingual (feminina, próxima, soa bem em PT-BR).
-// User troca via: export ELEVENLABS_VOICE_ID=xxx (rode `npm run voices` pra listar)
 const VOICE_ID =
   process.env.ELEVENLABS_VOICE_ID ?? "EXAVITQu4vr4xnSDxMaL";
 const MODEL = "eleven_multilingual_v2";
+
+// Aviso se está usando voz default (multilingual genérica — soa portuguesa de PT)
+if (!process.env.ELEVENLABS_VOICE_ID) {
+  console.warn(
+    "\n⚠ Usando voice_id default (Bella/Sarah multilingual).\n" +
+      "  Isso soa como Português de Portugal, não Brasil.\n" +
+      "  Rode 'npm run voices -- feminina' pra listar vozes PT-BR autênticas\n" +
+      "  e exporte com 'export ELEVENLABS_VOICE_ID=xxx' antes do build.\n",
+  );
+}
 
 async function main() {
   const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -69,17 +86,17 @@ async function main() {
       body: JSON.stringify({
         text: ROTEIRO,
         model_id: MODEL,
-        // Settings calibrados pra som natural em PT-BR (não robotizado):
-        //  stability ~0.4 → varia mais, soa mais humano
-        //  similarity_boost ~0.85 → mantém característica da voz original
-        //  style ~0.2 → pouco exagero dramático
-        //  speed 0.95 → levemente mais devagar pra dicção clara
+        // Settings pra voz PT-BR autêntica soar humana e natural:
+        //  stability 0.5 → equilíbrio entre consistência e variação humana
+        //  similarity_boost 0.9 → mantém timbre original (fundamental pra voz BR não desviar pra PT)
+        //  style 0.3 → leve expressividade (ênfase em pontos-chave)
+        //  speed 1.0 → ritmo natural de conversa
         voice_settings: {
-          stability: 0.4,
-          similarity_boost: 0.85,
-          style: 0.2,
+          stability: 0.5,
+          similarity_boost: 0.9,
+          style: 0.3,
           use_speaker_boost: true,
-          speed: 0.95,
+          speed: 1.0,
         },
       }),
     },

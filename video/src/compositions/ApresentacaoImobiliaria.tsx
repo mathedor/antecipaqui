@@ -15,15 +15,24 @@ import { SceneDesktop } from "../scenes/SceneDesktop";
 import { SceneCTA } from "../scenes/SceneCTA";
 
 export function ApresentacaoImobiliaria({
-  withAudio = false,
+  withMusic = false,
 }: {
-  withAudio?: boolean;
+  /** Inclui trilha de fundo (music.mp3 em public/). */
+  withMusic?: boolean;
 }) {
   const frame = useCurrentFrame();
 
   return (
     <AbsoluteFill style={{ background: COLORS.bg, fontFamily: "Inter, system-ui, sans-serif" }}>
-      {withAudio && <Audio src={staticFile("narration.mp3")} />}
+      {/* Trilha musical de fundo — loop, volume baixo pra não ofuscar.
+       *  Coloque o arquivo em video/public/music.mp3 (royalty-free). */}
+      {withMusic && (
+        <Audio
+          src={staticFile("music.mp3")}
+          volume={0.35}
+          loop
+        />
+      )}
 
       <Sequence from={SCENES.hero.start} durationInFrames={SCENES.hero.duration}>
         <SceneHero />
@@ -93,7 +102,7 @@ function ProgressBar() {
         style={{
           height: "100%",
           width: `${pct}%`,
-          background: `linear-gradient(90deg, ${COLORS.accent}, ${COLORS.emerald})`,
+          background: `linear-gradient(90deg, ${COLORS.accentLight}, ${COLORS.accent})`,
           transition: "none",
         }}
       />

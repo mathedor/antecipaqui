@@ -10,26 +10,46 @@ export const DURATION_FRAMES = FPS * SEGUNDOS;
 export const WIDTH = 1080;
 export const HEIGHT = 1920;
 
-/** Paleta bold disruptiva — alto contraste, pra parar o scroll.
- *  Preto profundo + branco puro + 2 cores neon agressivas. */
+/** Paleta da marca Antecipaqui — branco, preto, azul. Cinematográfica e
+ *  sofisticada, sem cores chamativas. Accent emerald sutil só pra valor
+ *  positivo ("recebe hoje"). */
 export const COLORS = {
-  // Base
-  bg: "#050505", // preto quase puro
-  bgAlt: "#0f0f0f",
-  fg: "#ffffff",
-  fgMuted: "rgba(255,255,255,0.65)",
-  fgDim: "rgba(255,255,255,0.4)",
-  border: "rgba(255,255,255,0.12)",
-  // Neon accents
-  neonYellow: "#eaff00", // amarelo elétrico tipo TikTok
-  neonMagenta: "#ff0080", // pink choque
-  neonCyan: "#00fff0", // ciano elétrico (raro, usar com cuidado)
-  // Tom da marca preservado mas intensificado
-  accent: "#3b82f6", // azul vibrante
-  accentDark: "#1e40af",
-  // Status
-  emerald: "#00ff88",
-  danger: "#ff3355",
+  // Base — alternância entre cenas claras e escuras
+  white: "#ffffff",
+  whiteBg: "#fafafc",
+  dark: "#0a0e1a", // preto profundo (não puro)
+  darkAlt: "#141925",
+
+  // Textos
+  fgOnDark: "#ffffff",
+  fgOnLight: "#0a0e1a",
+  fgMutedOnDark: "rgba(255,255,255,0.7)",
+  fgMutedOnLight: "rgba(10,14,26,0.65)",
+  fgDimOnDark: "rgba(255,255,255,0.45)",
+  fgDimOnLight: "rgba(10,14,26,0.4)",
+
+  // Brand
+  accent: "#1c6dd0", // azul Antecipaqui
+  accentDark: "#0d4e9e",
+  accentLight: "#3b82f6",
+
+  // Highlight sutil de "valor positivo" (recebe / aprovado)
+  emerald: "#10b981",
+
+  // Sinal de problema (uso restrito, só na cena 'problema')
+  danger: "#dc2626",
+
+  // Borders
+  borderOnDark: "rgba(255,255,255,0.1)",
+  borderOnLight: "rgba(10,14,26,0.08)",
+
+  // Aliases compat (cenas legadas)
+  bg: "#ffffff",
+  bgAlt: "#fafafc",
+  fg: "#0a0e1a",
+  fgMuted: "rgba(10,14,26,0.65)",
+  fgDim: "rgba(10,14,26,0.4)",
+  border: "rgba(10,14,26,0.08)",
 };
 
 /** Timing de cada cena (em frames, 30 fps).

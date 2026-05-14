@@ -2,120 +2,126 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS } from "../constants";
 import { fadeIn, popIn, slideY } from "../anim";
 import { Noise } from "../components/Noise";
+import { Blob } from "../components/Blob";
+import { Sticker } from "../components/Sticker";
 
 export function SceneCTA() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const lineOpacity = fadeIn(frame, 0, 12);
-  const lineY = slideY(frame, 0, 12, 60, 0);
-  const ctaScale = popIn(frame, 30, fps, { damping: 12, stiffness: 200 });
-  const subOp = fadeIn(frame, 55, 12);
-  const hashOp = fadeIn(frame, 80, 12);
-
-  // Marquee horizontal de tags em loop
-  const marqueeX = (frame * 8) % 1080;
+  const logoScale = popIn(frame, 0, fps, { damping: 14 });
+  const titleOpacity = fadeIn(frame, 12, 16);
+  const titleY = slideY(frame, 12, 16, 40, 0);
+  const subOp = fadeIn(frame, 38, 14);
+  const ctaScale = popIn(frame, 55, fps, { damping: 12, stiffness: 200 });
 
   return (
-    <AbsoluteFill style={{ background: COLORS.neonYellow, overflow: "hidden" }}>
-      <Noise opacity={0.06} />
+    <AbsoluteFill style={{ background: COLORS.dark, overflow: "hidden" }}>
+      <Blob color={COLORS.accent} x={50} y={50} size={90} opacity={0.5} />
+      <Blob color={COLORS.accentDark} x={20} y={20} size={50} opacity={0.4} />
+      <Noise opacity={0.04} />
 
       <AbsoluteFill
         style={{
-          padding: 60,
-          paddingTop: 120,
+          padding: 80,
+          justifyContent: "center",
           alignItems: "center",
-          justifyContent: "flex-start",
+          textAlign: "center",
         }}
       >
-        {/* Headline gigante */}
+        {/* Logo */}
         <div
           style={{
-            opacity: lineOpacity,
-            transform: `translateY(${lineY}px)`,
-            fontSize: 200,
-            fontWeight: 900,
-            lineHeight: 0.85,
-            letterSpacing: "-0.06em",
-            color: COLORS.bg,
-            textAlign: "center",
-            marginBottom: 30,
-            textTransform: "uppercase",
+            transform: `scale(${logoScale})`,
+            marginBottom: 50,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 16,
           }}
         >
-          RECEBE
-          <br />
-          HOJE.
+          <div
+            style={{
+              width: 92,
+              height: 92,
+              borderRadius: 24,
+              background: COLORS.white,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 50,
+              fontWeight: 900,
+              color: COLORS.accent,
+              boxShadow: "0 30px 80px rgba(0,0,0,0.3)",
+            }}
+          >
+            A
+          </div>
         </div>
 
-        {/* CTA button gigante */}
+        {/* Headline final */}
         <div
           style={{
-            transform: `scale(${ctaScale})`,
-            background: COLORS.bg,
-            color: COLORS.neonYellow,
-            padding: "36px 60px",
-            borderRadius: 24,
-            fontSize: 56,
-            fontWeight: 900,
-            letterSpacing: "-0.02em",
-            boxShadow: "0 30px 60px rgba(0,0,0,0.4)",
-            marginBottom: 40,
-            textAlign: "center",
+            opacity: titleOpacity,
+            transform: `translateY(${titleY}px)`,
+            fontSize: 96,
+            fontWeight: 800,
+            lineHeight: 1,
+            letterSpacing: "-0.04em",
+            color: COLORS.white,
+            marginBottom: 28,
+            maxWidth: 900,
           }}
         >
-          antecipaqui.digital
+          Próxima venda?
+          <br />
+          <span style={{ color: COLORS.accentLight }}>Vira PIX hoje.</span>
         </div>
 
         {/* Sub */}
         <div
           style={{
             opacity: subOp,
-            fontSize: 38,
-            fontWeight: 800,
-            color: COLORS.bg,
-            textAlign: "center",
-            letterSpacing: "-0.02em",
+            fontSize: 32,
+            fontWeight: 500,
+            color: COLORS.fgMutedOnDark,
             marginBottom: 50,
-            maxWidth: 900,
-            lineHeight: 1.05,
+            maxWidth: 800,
+            lineHeight: 1.3,
           }}
         >
-          Cadastre-se em 5 minutos.
+          Cadastro em 5 minutos. Grátis.
           <br />
-          Grátis. Sem garantia.
+          Sem garantia, sem letra miúda.
         </div>
 
-        {/* Marquee de hashtags na base */}
+        {/* CTA */}
         <div
           style={{
-            opacity: hashOp,
-            position: "absolute",
-            bottom: 100,
-            left: 0,
-            right: 0,
-            overflow: "hidden",
-            whiteSpace: "nowrap",
-            fontFamily: "ui-monospace, monospace",
-            fontSize: 32,
-            fontWeight: 800,
-            color: COLORS.bg,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            transform: `scale(${ctaScale})`,
+            background: COLORS.white,
+            color: COLORS.accent,
+            padding: "32px 60px",
+            borderRadius: 22,
+            fontSize: 44,
+            fontWeight: 900,
+            letterSpacing: "-0.02em",
+            boxShadow: "0 40px 80px rgba(28,109,208,0.4)",
           }}
         >
-          <div
-            style={{
-              display: "inline-block",
-              transform: `translateX(-${marqueeX}px)`,
-            }}
-          >
-            {"#corretordeImóveis · #comissão · #imobiliária · #antecipação · #PIXhoje · ".repeat(
-              4,
-            )}
-          </div>
+          antecipaqui.digital
         </div>
       </AbsoluteFill>
+
+      <Sticker
+        text="Cadastro grátis"
+        emoji="🎁"
+        appearAt={75}
+        position="top-right"
+        variant="yellow"
+        size="md"
+        rotate={6}
+        inset={90}
+      />
     </AbsoluteFill>
   );
 }

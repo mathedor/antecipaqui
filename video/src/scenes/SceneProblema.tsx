@@ -2,77 +2,72 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS } from "../constants";
 import { fadeIn, slideX, popIn } from "../anim";
 import { Noise } from "../components/Noise";
-import { Blob } from "../components/Blob";
+import { Sticker } from "../components/Sticker";
 
 const ITENS = [
-  { num: "120", unit: "DIAS", label: "ESPERANDO" },
-  { num: "❌", unit: "", label: "BANCO RECUSA" },
-  { num: "🚫", unit: "", label: "PEDE AVALISTA" },
+  { num: "120", label: "dias parado" },
+  { num: "❌", label: "banco recusa" },
+  { num: "🚫", label: "pede avalista" },
 ];
 
 export function SceneProblema() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const headerOp = fadeIn(frame, 0, 10);
+  const headerOp = fadeIn(frame, 0, 12);
 
   return (
-    <AbsoluteFill style={{ background: COLORS.bg, overflow: "hidden" }}>
-      <Blob color={COLORS.danger} x={50} y={50} size={80} opacity={0.35} />
-      <Noise opacity={0.05} />
+    <AbsoluteFill style={{ background: COLORS.whiteBg, overflow: "hidden" }}>
+      <Noise opacity={0.03} />
 
       <AbsoluteFill
         style={{
-          padding: "120px 60px",
+          padding: "100px 60px",
           justifyContent: "center",
-          alignItems: "stretch",
         }}
       >
         {/* Header */}
         <div
           style={{
             opacity: headerOp,
-            color: COLORS.fg,
-            textAlign: "center",
-            marginBottom: 60,
+            color: COLORS.fgOnLight,
+            marginBottom: 70,
           }}
         >
           <div
             style={{
               fontFamily: "ui-monospace, monospace",
-              fontSize: 22,
+              fontSize: 20,
               letterSpacing: "0.3em",
               color: COLORS.danger,
               fontWeight: 700,
-              marginBottom: 16,
+              marginBottom: 20,
+              textTransform: "uppercase",
             }}
           >
-            ⚠ O QUE TRAVA
+            o que trava você
           </div>
           <div
             style={{
-              fontSize: 90,
-              fontWeight: 900,
-              lineHeight: 0.9,
+              fontSize: 96,
+              fontWeight: 800,
+              lineHeight: 1.02,
               letterSpacing: "-0.04em",
+              maxWidth: 900,
             }}
           >
-            HOJE É <span style={{ color: COLORS.danger }}>ASSIM:</span>
+            Quanta venda já passou
+            <br />
+            <span style={{ color: COLORS.danger }}>esperando o dinheiro?</span>
           </div>
         </div>
 
-        {/* Cards empilhados — entram de lados alternados */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {/* Cards — entram alternados */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           {ITENS.map((it, i) => {
-            const start = 20 + i * 22;
+            const start = 22 + i * 22;
             const fromLeft = i % 2 === 0;
-            const x = slideX(
-              frame,
-              start,
-              18,
-              fromLeft ? -150 : 150,
-              0,
-            );
+            const x = slideX(frame, start, 18, fromLeft ? -120 : 120, 0);
             const op = fadeIn(frame, start, 14);
 
             return (
@@ -81,59 +76,54 @@ export function SceneProblema() {
                 style={{
                   opacity: op,
                   transform: `translateX(${x}px)`,
-                  background: COLORS.bgAlt,
-                  border: `3px solid ${COLORS.danger}`,
-                  borderRadius: 24,
-                  padding: "32px 40px",
+                  background: COLORS.white,
+                  border: `1px solid ${COLORS.borderOnLight}`,
+                  borderLeft: `6px solid ${COLORS.danger}`,
+                  borderRadius: 18,
+                  padding: "30px 36px",
                   display: "flex",
                   alignItems: "center",
                   gap: 32,
-                  boxShadow: `0 0 60px ${COLORS.danger}33`,
+                  boxShadow: "0 12px 40px rgba(10,14,26,0.05)",
                 }}
               >
                 <div
                   style={{
-                    fontSize: 120,
+                    fontSize: 100,
                     fontWeight: 900,
-                    lineHeight: 1,
                     color: COLORS.danger,
-                    letterSpacing: "-0.05em",
-                    minWidth: 220,
+                    lineHeight: 1,
+                    letterSpacing: "-0.04em",
+                    minWidth: 200,
                   }}
                 >
                   {it.num}
                 </div>
-                <div style={{ flex: 1 }}>
-                  {it.unit && (
-                    <div
-                      style={{
-                        fontFamily: "ui-monospace, monospace",
-                        fontSize: 20,
-                        color: COLORS.fgDim,
-                        letterSpacing: "0.2em",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {it.unit}
-                    </div>
-                  )}
-                  <div
-                    style={{
-                      fontSize: 56,
-                      fontWeight: 900,
-                      color: COLORS.fg,
-                      letterSpacing: "-0.03em",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {it.label}
-                  </div>
+                <div
+                  style={{
+                    fontSize: 48,
+                    fontWeight: 700,
+                    color: COLORS.fgOnLight,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {it.label}
                 </div>
               </div>
             );
           })}
         </div>
       </AbsoluteFill>
+
+      <Sticker
+        text="Cansou?"
+        emoji="😩"
+        appearAt={95}
+        position="bottom-right"
+        variant="dark"
+        size="md"
+        inset={100}
+      />
     </AbsoluteFill>
   );
 }

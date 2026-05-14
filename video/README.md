@@ -1,80 +1,77 @@
 # Antecipaqui · vídeo de apresentação
 
-Projeto **Remotion** standalone para gerar o reel de 35 segundos da Antecipaqui
-voltado a imobiliárias e corretores.
+Projeto **Remotion** standalone para gerar um reel de 35 segundos da
+Antecipaqui voltado a imobiliárias e corretores.
 
 - Resolução: **1080×1920** (vertical · Instagram/TikTok/Reels/Shorts)
 - Duração: **35s** a 30fps (= 1050 frames)
-- Narração: **ElevenLabs** (voz IA em PT-BR)
+- Sem narração — texto na tela + **stickers** chamativos por cena
+- Música ambiente (royalty-free, você escolhe e adiciona)
 - 7 cenas: Hero → Problema → Solução → Mobile → Calculadora → Desktop → CTA
+- Paleta da marca: **branco, preto e azul Antecipaqui** (sem carnaval)
 
-## Como rodar (uma vez)
+## Setup (uma vez)
 
 ```bash
 cd video
-npm install        # instala Remotion + tsx (não afeta o app principal)
+npm install
 ```
 
 ## Como gerar o vídeo final
 
+### 1. Baixe uma música royalty-free e salve como `public/music.mp3`
+
+Sugestões (todas grátis, sem créditos obrigatórios):
+
+- **[Mixkit Free Stock Music](https://mixkit.co/free-stock-music)** — busque "corporate", "uplifting" ou "motivational"
+- **[Pixabay Music](https://pixabay.com/music)** — filtre por "upbeat" ou "background"
+- **[YouTube Audio Library](https://studio.youtube.com/channel/UC/music)** — biblioteca oficial
+
+Recomendo algo tipo **"corporate uplifting"** — clima de elevador animado,
+sem letra, BPM moderado. Salve o arquivo como `video/public/music.mp3`.
+
+### 2. Renderize
+
 ```bash
-# 1. Exporte sua key do ElevenLabs (pega em https://elevenlabs.io)
-export ELEVENLABS_API_KEY="sk_..."
-
-# Opcional: escolher voz (default = Bella multilingual)
-export ELEVENLABS_VOICE_ID="EXAVITQu4vr4xnSDxMaL"
-
-# 2. Gera narração + renderiza MP4 (gravando em ./out/)
-npm run build
+npm run render
 ```
 
-Saída: `out/apresentacao-imobiliaria.mp4`
+Saída: `out/apresentacao-imobiliaria.mp4` (~5-6 MB)
 
-## Comandos úteis
+O script `render.sh` detecta automaticamente o `music.mp3` e injeta a
+trilha de fundo no MP4 final (volume 35%, loop). Sem o arquivo, o vídeo
+sai sem áudio.
 
-| Comando             | O que faz                                                    |
-| ------------------- | ------------------------------------------------------------ |
-| `npm run studio`    | Abre o studio interativo (preview com timeline)              |
-| `npm run narration` | Gera só o `public/narration.mp3` via ElevenLabs              |
-| `npm run render`    | Renderiza só o MP4 (usa narration.mp3 se existir)            |
-| `npm run build`     | Narração + render num passo só                               |
+## Comandos
 
-## Editar o roteiro
+| Comando             | O que faz                                                      |
+| ------------------- | -------------------------------------------------------------- |
+| `npm run studio`    | Abre o studio interativo (preview com timeline + scrubbing)    |
+| `npm run render`    | Gera o MP4 final (detecta `music.mp3` automaticamente)         |
+| `npm run build`     | Alias pra `render`                                             |
 
-[`scripts/gen-narration.ts`](scripts/gen-narration.ts) — array `ROTEIRO`, 1 string por cena.
-Cada bloco corresponde a uma cena do Remotion. Mude o texto, rode `npm run narration` de novo.
+### Comandos opcionais (não usados nesse fluxo)
 
-## Editar cenas / mockups
+| Comando             | O que faz                                                      |
+| ------------------- | -------------------------------------------------------------- |
+| `npm run narration` | Gera narração TTS via ElevenLabs (descontinuado nesse projeto) |
+| `npm run voices`    | Lista vozes ElevenLabs da sua conta (descontinuado)            |
 
-- Tempo de cada cena: [`src/constants.ts`](src/constants.ts) → `SCENES`
-- Componentes de cena: [`src/scenes/`](src/scenes/)
-- Mockups de tela (mobile/desktop): [`src/components/`](src/components/)
-- Animações helpers: [`src/anim.ts`](src/anim.ts)
+## Editar conteúdo
 
-## Voz alternativa (ElevenLabs)
+- **Tempo de cada cena**: [`src/constants.ts`](src/constants.ts) → `SCENES`
+- **Cores da marca**: [`src/constants.ts`](src/constants.ts) → `COLORS`
+- **Cenas individuais**: [`src/scenes/`](src/scenes/)
+- **Stickers (chamadas de texto)**: cada cena tem `<Sticker text="..." />`
+  no final — edite texto, emoji, posição e variante (`yellow`, `white`,
+  `accent`, `dark`, `success`)
+- **Mockups das telas**: [`src/components/PhoneScreen*.tsx`](src/components/)
 
-Algumas voice_ids populares em PT-BR / multilingual:
+## Pasta de saída
 
-| Nome    | voice_id                  | Característica          |
-| ------- | ------------------------- | ----------------------- |
-| Bella   | `EXAVITQu4vr4xnSDxMaL`    | Feminina, calorosa      |
-| Adam    | `pNInz6obpgDQGcFmaJgB`    | Masculina, séria        |
-| Antoni  | `ErXwobaYiN019PkySvjV`    | Masculina, jovem        |
-| Domi    | `AZnzlk1XvdvUeBnXmlld`    | Feminina, neutra        |
-
-## Sem ElevenLabs?
-
-O vídeo renderiza sem áudio caso `public/narration.mp3` não exista — Remotion
-gera o MP4 só com motion graphics. Adicione narração depois externamente, ou
-troque o componente `<NarrationTrack/>` em `compositions/ApresentacaoImobiliaria.tsx`
-por outra fonte de áudio.
-
-## Como compartilhar
-
-Saída fica em `out/apresentacao-imobiliaria.mp4` (~5-10MB). Pronto pra subir em:
+`out/` (gitignored) — contém o MP4 renderizado. Pronto pra:
 
 - Instagram Reels (1080×1920 ✓)
-- TikTok (1080×1920 ✓)
+- TikTok / YouTube Shorts (1080×1920 ✓)
 - WhatsApp (cabe em mídia direta)
-- LinkedIn (em vídeo nativo)
-- YouTube Shorts (vertical ✓)
+- LinkedIn vídeo nativo

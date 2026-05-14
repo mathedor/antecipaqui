@@ -12,7 +12,7 @@ export function RemotionRoot() {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{ withAudio: false }}
+        defaultProps={{ withMusic: false }}
       />
     </>
   );

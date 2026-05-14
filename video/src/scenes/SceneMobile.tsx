@@ -1,5 +1,6 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS } from "../constants";
+import { Sticker } from "../components/Sticker";
 import { fadeIn, slideY, popIn } from "../anim";
 import { PhoneFrame } from "../components/PhoneFrame";
 import { PhoneScreenNovaOp } from "../components/PhoneScreenNovaOp";
@@ -16,13 +17,12 @@ export function SceneMobile() {
 
   const showOcrAt = 110;
   const crossfade = fadeIn(frame, showOcrAt, 18);
-  const captionOp = fadeIn(frame, showOcrAt + 10, 12);
+  const captionOp = fadeIn(frame, showOcrAt + 12, 12);
 
   return (
-    <AbsoluteFill style={{ background: COLORS.bg, overflow: "hidden" }}>
-      <Blob color={COLORS.accent} x={50} y={50} size={90} opacity={0.35} />
-      <Blob color={COLORS.neonMagenta} x={15} y={85} size={30} opacity={0.3} />
-      <Noise opacity={0.05} />
+    <AbsoluteFill style={{ background: COLORS.whiteBg, overflow: "hidden" }}>
+      <Blob color={COLORS.accent} x={50} y={50} size={70} opacity={0.18} />
+      <Noise opacity={0.03} />
 
       <AbsoluteFill
         style={{
@@ -35,7 +35,7 @@ export function SceneMobile() {
         <div
           style={{
             opacity: titleOp,
-            color: COLORS.fg,
+            color: COLORS.fgOnLight,
             textAlign: "center",
             marginBottom: 30,
           }}
@@ -43,26 +43,27 @@ export function SceneMobile() {
           <div
             style={{
               fontFamily: "ui-monospace, monospace",
-              fontSize: 22,
+              fontSize: 20,
               letterSpacing: "0.3em",
-              color: COLORS.neonYellow,
+              color: COLORS.accent,
               fontWeight: 700,
               marginBottom: 14,
+              textTransform: "uppercase",
             }}
           >
-            ⚡ DO CELULAR
+            do celular
           </div>
           <div
             style={{
-              fontSize: 88,
-              fontWeight: 900,
-              lineHeight: 0.92,
-              letterSpacing: "-0.04em",
+              fontSize: 86,
+              fontWeight: 800,
+              lineHeight: 0.95,
+              letterSpacing: "-0.03em",
             }}
           >
-            5 MIN E
+            Foto do contrato.
             <br />
-            <span style={{ color: COLORS.neonYellow }}>TÁ FEITO.</span>
+            <span style={{ color: COLORS.accent }}>IA preenche.</span>
           </div>
         </div>
 
@@ -92,23 +93,42 @@ export function SceneMobile() {
           </div>
         </div>
 
-        {/* Caption final */}
+        {/* Caption */}
         <div
           style={{
             opacity: captionOp,
             marginTop: 30,
-            fontSize: 36,
-            fontWeight: 800,
-            color: COLORS.fg,
+            fontSize: 32,
+            fontWeight: 600,
+            color: COLORS.fgMutedOnLight,
             textAlign: "center",
-            letterSpacing: "-0.02em",
-            maxWidth: 800,
+            letterSpacing: "-0.01em",
           }}
         >
-          📷 Foto do contrato.{" "}
-          <span style={{ color: COLORS.neonYellow }}>IA preenche.</span>
+          Aprovação em <strong style={{ color: COLORS.accent }}>24 horas</strong>.
         </div>
       </AbsoluteFill>
+
+      <Sticker
+        text="5 min"
+        emoji="⚡"
+        appearAt={28}
+        position="top-right"
+        variant="yellow"
+        size="md"
+        rotate={5}
+        inset={90}
+      />
+      <Sticker
+        text="IA lê o contrato"
+        emoji="📄"
+        appearAt={120}
+        position="bottom-left"
+        variant="accent"
+        size="sm"
+        rotate={-3}
+        inset={110}
+      />
     </AbsoluteFill>
   );
 }
