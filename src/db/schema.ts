@@ -497,6 +497,124 @@ export const construtoraMembros = pgTable(
 
 export type ConstrutoraMembro = typeof construtoraMembros.$inferSelect;
 
+/** Notas internas sobre uma operação. Visíveis APENAS pra admin e comercial
+ *  (NUNCA pra corretor/imobiliária, construtora ou fundo). Usado pra
+ *  observações operacionais ("cliente difícil", "ja recusou no fundo X",
+ *  "atrasou parcela na op Y do mês passado"). */
+export const operacaoNotasInternas = pgTable(
+  "operacao_notas_internas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    operacaoId: uuid("operacao_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "set null" }),
+    autorRole: text("autor_role").notNull(),
+    body: text("body").notNull(),
+    flag: text("flag"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("op_notas_op_idx").on(t.operacaoId, t.createdAt)],
+);
+
+export type OperacaoNotaInterna = typeof operacaoNotasInternas.$inferSelect;
+
+/** Histórico de score da construtora ao longo do tempo. Cada mudança gera
+ *  uma row pra permitir gráfico de evolução. */
+export const construtoraScoreHistorico = pgTable(
+  "construtora_score_historico",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    construtoraId: uuid("construtora_id")
+      .notNull()
+      .references(() => construtoras.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    restricoes: integer("restricoes").notNull().default(0),
+    alteracaoTipo: text("alteracao_tipo").notNull().default("sistema"),
+    alteracaoMotivo: text("alteracao_motivo"),
+    snapshotAt: timestamp("snapshot_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("score_hist_construtora_idx").on(t.construtoraId, t.snapshotAt),
+  ],
+);
+
+export type ConstrutoraScoreHistoricoRow =
+  typeof construtoraScoreHistorico.$inferSelect;
+
+/** Webhooks de notificação pra sistemas externos. Owner pode ser admin ou
+ *  fundo. Eventos: op_status_change, parcela_paga, fundo_decisao,
+ *  antecipacao_decisao, renegociacao_decisao. */
+export const webhooksSubscriptions = pgTable(
+  "webhooks_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    nome: text("nome").notNull(),
+    targetUrl: text("target_url").notNull(),
+    secret: text("secret").notNull(),
+    eventos: jsonb("eventos").notNull(),
+    ownerUserId: text("owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    ownerRole: text("owner_role").notNull(),
+    fundoId: uuid("fundo_id").references(() => fundos.id, {
+      onDelete: "cascade",
+    }),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastDeliveryAt: timestamp("last_delivery_at", { withTimezone: true }),
+    lastDeliveryStatus: text("last_delivery_status"),
+  },
+  (t) => [
+    index("webhooks_owner_idx").on(t.ownerUserId),
+    index("webhooks_fundo_idx").on(t.fundoId, t.isActive),
+  ],
+);
+
+export type WebhookSubscription =
+  typeof webhooksSubscriptions.$inferSelect;
+
+/** Fila de eventos a entregar. Idempotente — uma row por evento×subscription. */
+export const webhooksEventos = pgTable(
+  "webhooks_eventos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => webhooksSubscriptions.id, { onDelete: "cascade" }),
+    evento: text("evento").notNull(),
+    payload: jsonb("payload").notNull(),
+    status: text("status").notNull().default("pendente"),
+    tentativas: integer("tentativas").notNull().default(0),
+    ultimoErro: text("ultimo_erro"),
+    proximaTentativaEm: timestamp("proxima_tentativa_em", {
+      withTimezone: true,
+    }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("webhooks_eventos_status_idx").on(
+      t.status,
+      t.proximaTentativaEm,
+    ),
+    index("webhooks_eventos_sub_idx").on(t.subscriptionId),
+  ],
+);
+
+export type WebhookEvento = typeof webhooksEventos.$inferSelect;
+
 /** Cache de consultas de análise de crédito.
  *  Provedor externo (Serasa, Boa Vista, etc) retorna score + restrições.
  *  Cacheamos por documento (CPF ou CNPJ) com TTL de 30 dias pra evitar

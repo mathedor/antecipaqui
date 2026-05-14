@@ -38,6 +38,8 @@ const navFull: AdminNavItem[] = [
       { href: "/admin/interno/invoice", label: "Invoice" },
       { href: "/admin/faturas", label: "Faturas dos fundos" },
       { href: "/admin/credito", label: "Análise de crédito" },
+      { href: "/admin/webhooks", label: "Webhooks" },
+      { href: "/admin/backups", label: "Backups & exports" },
       { href: "/admin/configuracoes", label: "Configurações" },
     ],
   },

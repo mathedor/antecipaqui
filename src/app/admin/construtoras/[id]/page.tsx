@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { ScoreHistoricoChart } from "@/components/score-historico-chart";
+import { getScoreHistoricoConstrutora } from "@/lib/actions/score-historico";
+import { getScoreConstrutora } from "@/lib/scoring";
 import {
   approveConstrutoraOnboardingAction,
   getConstrutoraDetail,
@@ -95,6 +98,11 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
     await unblockConstrutoraAction(id);
   }
 
+  const [scoreHist, scoreAtual] = await Promise.all([
+    getScoreHistoricoConstrutora(id),
+    getScoreConstrutora(id, "global"),
+  ]);
+
   return (
     <AdminShell active="/admin/construtoras" userName={admin.nome}>
       <Link
@@ -103,6 +111,12 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
       >
         ← construtoras
       </Link>
+
+      <ScoreHistoricoChart
+        construtoraId={id}
+        historico={scoreHist}
+        scoreAtual={scoreAtual.score}
+      />
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-8">
         <div>

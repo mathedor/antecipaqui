@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
+import { NotasInternasPanel } from "@/components/notas-internas-panel";
+import { listNotasOperacao } from "@/lib/actions/notas-internas";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { AdminStatusFlow } from "@/components/admin-status-flow";
 import { ContratoCard } from "@/components/contrato-card";
@@ -98,6 +100,8 @@ export default async function AdminOperacaoDetail({ params }: Params) {
         .join(" · ")
     : "";
 
+  const notas = await listNotasOperacao(op.id);
+
   return (
     <AdminShell active="/admin/operacoes" userName={admin.nome}>
       <Link
@@ -106,6 +110,22 @@ export default async function AdminOperacaoDetail({ params }: Params) {
       >
         ← operações
       </Link>
+
+      <NotasInternasPanel
+        operacaoId={op.id}
+        notas={notas.map((n) => ({
+          id: n.id,
+          body: n.body,
+          flag: n.flag,
+          autorRole: n.autorRole,
+          autorId: n.autorId,
+          autorNome: n.autorNome,
+          autorEmail: n.autorEmail,
+          createdAt: n.createdAt,
+        }))}
+        currentUserId={admin.id}
+        currentUserRole={admin.role}
+      />
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-8">
         <div>

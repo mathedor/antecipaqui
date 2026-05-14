@@ -81,6 +81,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/faturas", label: "Faturas" },
     { href: "/painel/regras", label: "Regras" },
     { href: "/painel/api", label: "API" },
+    { href: "/painel/webhooks", label: "Webhooks" },
     { href: "/painel/parceiros", label: "Parceiros" },
     { href: "/painel/suporte", label: "Chats" },
   ],
