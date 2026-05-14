@@ -21,25 +21,21 @@ type NavItem = { href: string; label: string };
 
 const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   corretor: [
-    { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/operacoes/importar", label: "Importar contrato" },
     { href: "/painel/coleta-comprador", label: "Coleta comprador" },
-    { href: "/painel/simular", label: "Simulador" },
-    { href: "/painel/forecast-corretor", label: "Forecast" },
+    { href: "/painel/forecast-corretor", label: "Projeção" },
     { href: "/painel/relatorio", label: "Relatório" },
     { href: "/painel/convites", label: "Convites" },
     { href: "/painel/suporte", label: "Chats" },
   ],
   imobiliaria: [
-    { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/operacoes/importar", label: "Importar contrato" },
     { href: "/painel/coleta-comprador", label: "Coleta comprador" },
-    { href: "/painel/simular", label: "Simulador" },
-    { href: "/painel/forecast-corretor", label: "Forecast" },
+    { href: "/painel/forecast-corretor", label: "Projeção" },
     { href: "/painel/relatorio", label: "Relatório" },
     { href: "/painel/convites", label: "Convites" },
     { href: "/painel/suporte", label: "Chats" },
@@ -349,16 +345,15 @@ export function PainelShell({
             })}
           </nav>
           <div className="flex items-center gap-2 md:gap-3">
-            <span className="hidden md:inline-flex chip">
-              {ROLE_LABEL[role]}
-              {userName ? ` · ${userName.split(" ")[0]}` : ""}
-            </span>
             <NotificationBell />
             <span className="hidden md:inline-flex">
               <SairButton />
             </span>
             <span className="hidden md:inline-flex">
-              <UserButtonWithPerfil />
+              <UserButtonWithPerfil
+                profileLabel={ROLE_LABEL[role]}
+                userName={userName}
+              />
             </span>
           </div>
         </div>

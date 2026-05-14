@@ -5,7 +5,7 @@ import { PainelShell } from "@/components/painel-shell";
 import { getCorretorFinanceiro } from "@/lib/actions/corretor-financeiro";
 import { formatBRL } from "@/lib/format";
 
-export const metadata = { title: "Forecast pessoal · Painel" };
+export const metadata = { title: "Projeção pessoal · Painel" };
 export const dynamic = "force-dynamic";
 
 export default async function CorretorForecastPage() {
@@ -32,7 +32,7 @@ export default async function CorretorForecastPage() {
   return (
     <PainelShell role={user.role === "imobiliaria" ? "imobiliaria" : "corretor"} userName={user.nome} active="/painel/forecast-corretor">
       <div className="mb-6">
-        <div className="eyebrow mb-2">painel · forecast pessoal</div>
+        <div className="eyebrow mb-2">painel · projeção pessoal</div>
         <h1 className="text-display-md">
           Sua <span className="text-gradient-blue">grana</span> nos próximos meses
         </h1>

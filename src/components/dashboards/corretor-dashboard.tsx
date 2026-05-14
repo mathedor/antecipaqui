@@ -12,6 +12,9 @@ import { MuralOverlay } from "@/components/mural-overlay";
 import { getMuralForCurrentUser } from "@/lib/actions/mural";
 import { getMyConvitesCount } from "@/lib/actions/pending-operacoes";
 import { getCorretorFinanceiro } from "@/lib/actions/corretor-financeiro";
+import { listFundosForSelector } from "@/lib/actions/fundos";
+import { getTaxaMensal } from "@/lib/actions/settings";
+import { SimuladorAntecipacao } from "@/components/simulador-antecipacao";
 import { formatBRL } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -40,14 +43,31 @@ export async function CorretorDashboard({ user }: { user: User }) {
   const status = STATUS_LABEL[user.onboardingStatus] ?? STATUS_LABEL.pendente;
   const podeOperar = user.onboardingStatus !== "pendente";
 
-  const [stats, operacoes, muralMsgs, convitesCount, financeiro] =
-    await Promise.all([
-      podeOperar ? getDashboardStats(user.id) : Promise.resolve(null),
-      podeOperar ? getOperacoesByCorretor(user.id) : Promise.resolve([]),
-      getMuralForCurrentUser(),
-      getMyConvitesCount(),
-      podeOperar ? getCorretorFinanceiro() : Promise.resolve(null),
-    ]);
+  const [
+    stats,
+    operacoes,
+    muralMsgs,
+    convitesCount,
+    financeiro,
+    fundos,
+    taxaPadrao,
+  ] = await Promise.all([
+    podeOperar ? getDashboardStats(user.id) : Promise.resolve(null),
+    podeOperar ? getOperacoesByCorretor(user.id) : Promise.resolve([]),
+    getMuralForCurrentUser(),
+    getMyConvitesCount(),
+    podeOperar ? getCorretorFinanceiro() : Promise.resolve(null),
+    listFundosForSelector(),
+    getTaxaMensal(),
+  ]);
+
+  const fundosComTaxa = fundos
+    .filter((f) => f.taxaMensalBase != null)
+    .map((f) => ({
+      id: f.id,
+      nome: f.nomeFantasia ?? f.razaoSocial,
+      taxaMensal: parseFloat(f.taxaMensalBase ?? "0"),
+    }));
 
   const operacoesRecentes = operacoes.slice(0, 5);
 
@@ -334,6 +354,26 @@ export async function CorretorDashboard({ user }: { user: User }) {
             </ul>
           )}
         </div>
+      )}
+
+      {podeOperar && (
+        <section className="mt-12">
+          <div className="mb-5">
+            <div className="eyebrow mb-2">ferramenta · embutida</div>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Simule uma{" "}
+              <span className="text-gradient-blue">antecipação</span> agora
+            </h2>
+            <p className="mt-2 text-sm text-fg-muted max-w-2xl">
+              Veja na hora quanto você recebe à vista vs esperar parcelado.
+              Compare entre fundos antes de cadastrar a operação.
+            </p>
+          </div>
+          <SimuladorAntecipacao
+            fundos={fundosComTaxa}
+            taxaPadrao={taxaPadrao}
+          />
+        </section>
       )}
 
       <div className="mt-8 flex justify-end items-center">

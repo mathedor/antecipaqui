@@ -13,11 +13,10 @@ export function UserButtonWithPerfil({
   profileLabel?: string | null;
   userName?: string | null;
 } = {}) {
-  const info = profileLabel
-    ? userName
-      ? `${profileLabel.toLowerCase()} · ${userName.split(" ")[0]}`
-      : profileLabel.toLowerCase()
-    : null;
+  // Mostra o tipo de conta logo abaixo do nome completo do Clerk no dropdown.
+  // O Clerk já exibe nome+email no header padrão; aqui complementamos com role.
+  void userName;
+  const info = profileLabel ? profileLabel.toLowerCase() : null;
 
   return (
     <UserButton>
