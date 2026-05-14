@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/backup-diario",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/recaps-diarios",
+      "schedule": "30 3 * * *"
     }
   ]
 }

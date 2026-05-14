@@ -1541,6 +1541,41 @@ export const systemSettings = pgTable("system_settings", {
 export type SystemSetting = typeof systemSettings.$inferSelect;
 
 /* =========================================
+   RECAPS — Resumo periódico (diário/semanal/mensal) de movimento.
+   Cron gera 1x/dia. Cada row é um snapshot agregado de um período.
+   Salva no DB pra acesso futuro pelo painel de relatórios.
+   ========================================= */
+
+export const recapsRelatorio = pgTable(
+  "recaps_relatorio",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 'diario' | 'semanal' | 'mensal' */
+    periodo: text("periodo").notNull(),
+    /** Início do período (inclusive). Sempre data sem hora. */
+    inicio: date("inicio").notNull(),
+    /** Fim do período (inclusive). */
+    fim: date("fim").notNull(),
+    /** Escopo: 'admin' (global) ou 'fundo'+fundoId. */
+    escopo: text("escopo").notNull(), // 'admin' | 'fundo'
+    fundoId: uuid("fundo_id").references(() => fundos.id, {
+      onDelete: "cascade",
+    }),
+    /** Payload do recap (JSON estruturado — ver makeRecap). */
+    dados: jsonb("dados").notNull(),
+    geradoEm: timestamp("gerado_em", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("recaps_unico_idx").on(t.periodo, t.inicio, t.escopo, t.fundoId),
+    index("recaps_busca_idx").on(t.escopo, t.fundoId, t.periodo, t.inicio),
+  ],
+);
+
+export type RecapRelatorio = typeof recapsRelatorio.$inferSelect;
+
+/* =========================================
    FATURAS DO FUNDO — repasse mensal devido à Antecipaqui
    Uma fatura por (fundo, mês de referência). Gerada manualmente pelo admin
    a partir do Invoice; registra o valor devido naquele mês e o status do

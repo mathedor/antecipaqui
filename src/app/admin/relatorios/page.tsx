@@ -15,6 +15,13 @@ const RELATORIOS = [
     section: "Visão geral",
   },
   {
+    href: "/admin/relatorios/recaps",
+    title: "Recaps · diário / semanal / mensal",
+    desc: "Resumos automáticos do movimento: ops, aprovações, inadimplência, novos corretores e prazo médio. Salvos diariamente — busca por data.",
+    icon: "🗞️",
+    section: "Visão geral",
+  },
+  {
     href: "/admin/relatorios/saude",
     title: "Saúde da plataforma",
     desc: "Status do sistema: Resend, Clerk, blob, integrações externas e configurações críticas.",

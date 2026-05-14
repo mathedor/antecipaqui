@@ -443,6 +443,46 @@ export async function decidirAntecipacaoAction(
     link: "/painel/duplicatas",
   }).catch(() => undefined);
 
+  // Webhook externo
+  {
+    const [pRow] = await db
+      .select({
+        parcelaId: parcelasComissao.id,
+        parcelaNumero: parcelasComissao.numero,
+        operacaoId: operacoes.id,
+        operacaoNumero: operacoes.numero,
+        fundoId: operacoes.fundoId,
+        construtoraId: operacoes.construtoraId,
+      })
+      .from(parcelasComissao)
+      .innerJoin(operacoes, eq(operacoes.id, parcelasComissao.operacaoId))
+      .where(eq(parcelasComissao.id, a.parcelaId))
+      .limit(1);
+    if (pRow) {
+      const { enqueueWebhookEvento } = await import("@/lib/actions/webhooks");
+      enqueueWebhookEvento({
+        evento: "antecipacao_decisao",
+        fundoId: pRow.fundoId,
+        payload: {
+          antecipacaoId,
+          parcelaId: pRow.parcelaId,
+          parcelaNumero: pRow.parcelaNumero,
+          operacaoId: pRow.operacaoId,
+          operacaoNumero: pRow.operacaoNumero,
+          decisao: aprovar ? "aprovada" : "recusada",
+          motivoRecusa: aprovar ? null : motivoRecusa ?? null,
+          valorOriginal: parseFloat(a.valorOriginal),
+          valorAntecipado: parseFloat(a.valorAntecipado),
+          dataPretendida: a.dataPretendida,
+          fundoId: pRow.fundoId,
+          construtoraId: pRow.construtoraId,
+        },
+      }).catch((e) =>
+        console.error("[webhook] decidirAntecipacao:", e),
+      );
+    }
+  }
+
   revalidatePath("/painel/duplicatas");
   revalidatePath("/admin/operacoes");
 }
@@ -633,6 +673,45 @@ export async function decidirRenegociacaoAction(
       : `Motivo: ${motivoRecusa}`,
     link: "/painel/duplicatas",
   }).catch(() => undefined);
+
+  // Webhook externo
+  {
+    const [pRow] = await db
+      .select({
+        parcelaId: parcelasComissao.id,
+        parcelaNumero: parcelasComissao.numero,
+        operacaoId: operacoes.id,
+        operacaoNumero: operacoes.numero,
+        fundoId: operacoes.fundoId,
+        construtoraId: operacoes.construtoraId,
+      })
+      .from(parcelasComissao)
+      .innerJoin(operacoes, eq(operacoes.id, parcelasComissao.operacaoId))
+      .where(eq(parcelasComissao.id, r.parcelaId))
+      .limit(1);
+    if (pRow) {
+      const { enqueueWebhookEvento } = await import("@/lib/actions/webhooks");
+      enqueueWebhookEvento({
+        evento: "renegociacao_decisao",
+        fundoId: pRow.fundoId,
+        payload: {
+          renegociacaoId,
+          parcelaId: pRow.parcelaId,
+          parcelaNumero: pRow.parcelaNumero,
+          operacaoId: pRow.operacaoId,
+          operacaoNumero: pRow.operacaoNumero,
+          decisao: aprovar ? "aprovada" : "recusada",
+          tipo: r.tipo,
+          novoVencimento: r.novoVencimento ?? null,
+          motivoRecusa: aprovar ? null : motivoRecusa ?? null,
+          fundoId: pRow.fundoId,
+          construtoraId: pRow.construtoraId,
+        },
+      }).catch((e) =>
+        console.error("[webhook] decidirRenegociacao:", e),
+      );
+    }
+  }
 
   revalidatePath("/painel/duplicatas");
   revalidatePath("/admin/operacoes");

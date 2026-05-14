@@ -76,6 +76,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/daily", label: "Daily" },
     { href: "/painel/recebimentos", label: "Recebimentos" },
+    { href: "/painel/recaps", label: "Recaps" },
     { href: "/painel/forecast", label: "Forecast" },
     { href: "/painel/risco", label: "Risco" },
     { href: "/painel/faturas", label: "Faturas" },
@@ -262,6 +263,7 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel/recebimentos", label: "Parcelas a receber", icon: "wallet" },
         { href: "/painel/parceiros", label: "Parceiros", icon: "list" },
+        { href: "/painel/recaps", label: "Recaps", icon: "report" },
       ],
     },
     {

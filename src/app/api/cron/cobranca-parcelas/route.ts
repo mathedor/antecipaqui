@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
   let preVencCriados = 0;
   let atrasoCriados = 0;
   const erros: string[] = [];
+  const construtorasComAtrasoNovo = new Set<string>();
 
   // 1. PRÉ-VENCIMENTO: parcelas a_vencer com vencimento em 5-9 dias
   const preVencRes = await db.execute(sql`
@@ -197,9 +198,10 @@ export async function GET(req: NextRequest) {
 
       await db
         .update(parcelasComissao)
-        .set({ cobrancaAtrasoEm: new Date() })
+        .set({ cobrancaAtrasoEm: new Date(), status: "vencida" })
         .where(eq(parcelasComissao.id, row.parcela_id));
 
+      construtorasComAtrasoNovo.add(row.construtora_id);
       atrasoCriados++;
     } catch (e) {
       erros.push(
@@ -208,10 +210,24 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Snapshot de score pra construtoras que ganharam atraso novo hoje
+  if (construtorasComAtrasoNovo.size > 0) {
+    const { snapshotScoreConstrutora } = await import("@/lib/score-snapshot");
+    for (const cid of construtorasComAtrasoNovo) {
+      await snapshotScoreConstrutora(cid, {
+        tipo: "parcela_vencida",
+        motivo: `Nova(s) parcela(s) detectada(s) em atraso pelo cron`,
+      }).catch((e) =>
+        console.error("[score-snapshot] cron cobranca:", e),
+      );
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     preVencCriados,
     atrasoCriados,
+    construtorasSnapshotted: construtorasComAtrasoNovo.size,
     erros,
     timestamp: new Date().toISOString(),
   });

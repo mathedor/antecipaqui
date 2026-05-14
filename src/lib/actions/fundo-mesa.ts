@@ -256,6 +256,39 @@ export async function decidirOperacaoAction(
     metadata: { fundoId: fundo.id, motivo: motivo || null },
   });
 
+  // Webhook externo (fundo_decisao)
+  {
+    const [opFull] = await db
+      .select({
+        id: operacoes.id,
+        numero: operacoes.numero,
+        construtoraId: operacoes.construtoraId,
+        valorComissao: operacoes.valorComissao,
+      })
+      .from(operacoes)
+      .where(eq(operacoes.id, operacaoId))
+      .limit(1);
+    if (opFull) {
+      const { enqueueWebhookEvento } = await import("@/lib/actions/webhooks");
+      enqueueWebhookEvento({
+        evento: "fundo_decisao",
+        fundoId: fundo.id,
+        payload: {
+          operacaoId: opFull.id,
+          operacaoNumero: opFull.numero,
+          construtoraId: opFull.construtoraId,
+          fundoId: fundo.id,
+          decisao,
+          motivo: motivo || null,
+          valorComissao: parseFloat(opFull.valorComissao),
+          decididoEm: new Date().toISOString(),
+        },
+      }).catch((e) =>
+        console.error("[webhook] fundo_decisao:", e),
+      );
+    }
+  }
+
   revalidatePath("/painel/aprovar");
   revalidatePath("/painel");
   return { ok: true, action: decisao };

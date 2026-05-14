@@ -137,6 +137,13 @@ export async function marcarParcelaPaga(
 ) {
   await requireAdmin();
 
+  const [row] = await db
+    .select({ parcela: parcelasComissao, operacao: operacoes })
+    .from(parcelasComissao)
+    .innerJoin(operacoes, eq(operacoes.id, parcelasComissao.operacaoId))
+    .where(eq(parcelasComissao.id, parcelaId))
+    .limit(1);
+
   await db
     .update(parcelasComissao)
     .set({
@@ -146,6 +153,34 @@ export async function marcarParcelaPaga(
       cobrancaStatus: "paga",
     })
     .where(eq(parcelasComissao.id, parcelaId));
+
+  if (row) {
+    const { snapshotScoreConstrutora } = await import("@/lib/score-snapshot");
+    snapshotScoreConstrutora(row.operacao.construtoraId, {
+      tipo: "parcela_paga",
+      motivo: `Parcela ${row.parcela.numero} da op ${row.operacao.numero} paga`,
+    }).catch((e) =>
+      console.error("[score-snapshot] marcarParcelaPaga:", e),
+    );
+
+    const { enqueueWebhookEvento } = await import("@/lib/actions/webhooks");
+    enqueueWebhookEvento({
+      evento: "parcela_paga",
+      fundoId: row.operacao.fundoId,
+      payload: {
+        operacaoId: row.operacao.id,
+        operacaoNumero: row.operacao.numero,
+        parcelaId: row.parcela.id,
+        parcelaNumero: row.parcela.numero,
+        valorPago,
+        dataPagamento,
+        fundoId: row.operacao.fundoId,
+        construtoraId: row.operacao.construtoraId,
+      },
+    }).catch((e) =>
+      console.error("[webhook] marcarParcelaPaga:", e),
+    );
+  }
 
   revalidatePath("/admin/relatorios/daily");
   revalidatePath("/admin/operacoes");
@@ -296,9 +331,13 @@ export async function importarRetornoCnab(
   const naoEncontradas: string[] = [];
   let baixadas = 0;
 
+  const { snapshotScoreConstrutora } = await import("@/lib/score-snapshot");
+  const { enqueueWebhookEvento } = await import("@/lib/actions/webhooks");
+  const construtorasTocadas = new Set<string>();
+
   for (const l of liquidacoes) {
     const [match] = await db
-      .select({ parcela: parcelasComissao })
+      .select({ parcela: parcelasComissao, operacao: operacoes })
       .from(parcelasComissao)
       .innerJoin(operacoes, eq(operacoes.id, parcelasComissao.operacaoId))
       .where(
@@ -315,17 +354,47 @@ export async function importarRetornoCnab(
     }
     if (match.parcela.status === "paga") continue;
 
+    const dataPag =
+      l.dataOcorrencia || new Date().toISOString().slice(0, 10);
     await db
       .update(parcelasComissao)
       .set({
         status: "paga",
-        pagoEm:
-          l.dataOcorrencia || new Date().toISOString().slice(0, 10),
+        pagoEm: dataPag,
         pagoValor: l.valorPago.toFixed(2),
         cobrancaStatus: "paga",
       })
       .where(eq(parcelasComissao.id, match.parcela.id));
     baixadas++;
+    construtorasTocadas.add(match.operacao.construtoraId);
+
+    enqueueWebhookEvento({
+      evento: "parcela_paga",
+      fundoId,
+      payload: {
+        operacaoId: match.operacao.id,
+        operacaoNumero: match.operacao.numero,
+        parcelaId: match.parcela.id,
+        parcelaNumero: match.parcela.numero,
+        valorPago: l.valorPago,
+        dataPagamento: dataPag,
+        fundoId,
+        construtoraId: match.operacao.construtoraId,
+        origem: "cnab_retorno",
+      },
+    }).catch((e) =>
+      console.error("[webhook] importarRetornoCnab:", e),
+    );
+  }
+
+  // Snapshot deduplicado por construtora (1 por lote — score recalcula tudo)
+  for (const cid of construtorasTocadas) {
+    snapshotScoreConstrutora(cid, {
+      tipo: "parcela_paga",
+      motivo: `Lote CNAB do fundo (${baixadas} baixada${baixadas === 1 ? "" : "s"})`,
+    }).catch((e) =>
+      console.error("[score-snapshot] importarRetornoCnab:", e),
+    );
   }
 
   revalidatePath("/admin/relatorios/daily");

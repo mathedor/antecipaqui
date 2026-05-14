@@ -413,6 +413,82 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
     },
   }).catch(() => undefined);
 
+  // Snapshot de score (construtora). Idempotente — só insere se score
+  // mudou. Roda em momentos chave do ciclo de vida.
+  const STATUS_SNAPSHOT: Record<string, { tipo: "op_aprovada" | "op_recusada" | "sistema"; motivo: string }> = {
+    pre_aprovada: {
+      tipo: "op_aprovada",
+      motivo: `Op ${op.numero} pré-aprovada`,
+    },
+    enviada_para_assinatura: {
+      tipo: "op_aprovada",
+      motivo: `Op ${op.numero} enviada pra assinatura`,
+    },
+    enviada_para_pagamento: {
+      tipo: "op_aprovada",
+      motivo: `Op ${op.numero} aprovada pra pagamento`,
+    },
+    realizada: {
+      tipo: "sistema",
+      motivo: `Op ${op.numero} liquidada`,
+    },
+    recusada: {
+      tipo: "op_recusada",
+      motivo: `Op ${op.numero} recusada: ${input.motivo ?? "—"}`,
+    },
+  };
+  const snapshotConfig = STATUS_SNAPSHOT[input.newStatus];
+  if (snapshotConfig) {
+    const { snapshotScoreConstrutora } = await import(
+      "@/lib/score-snapshot"
+    );
+    snapshotScoreConstrutora(op.construtoraId, snapshotConfig).catch((e) =>
+      console.error("[score-snapshot] status-flow failed:", e),
+    );
+  }
+
+  // Webhooks externos
+  {
+    const { enqueueWebhookEvento } = await import("@/lib/actions/webhooks");
+    const fundoIdFinal =
+      (updates.fundoId as string | undefined) ?? op.fundoId ?? null;
+    const basePayload = {
+      operacaoId: op.id,
+      numero: op.numero,
+      statusAnterior: op.status,
+      statusNovo: input.newStatus,
+      fundoId: fundoIdFinal,
+      construtoraId: op.construtoraId,
+      valorComissao: parseFloat(op.valorComissao),
+      motivo: input.motivo ?? null,
+    };
+    enqueueWebhookEvento({
+      evento: "op_status_change",
+      fundoId: fundoIdFinal,
+      payload: basePayload,
+    }).catch((e) =>
+      console.error("[webhooks] op_status_change enqueue failed:", e),
+    );
+    if (
+      input.newStatus === "pre_aprovada" ||
+      input.newStatus === "enviada_para_assinatura" ||
+      input.newStatus === "enviada_para_pagamento"
+    ) {
+      enqueueWebhookEvento({
+        evento: "op_aprovada",
+        fundoId: fundoIdFinal,
+        payload: basePayload,
+      }).catch(() => undefined);
+    }
+    if (input.newStatus === "recusada") {
+      enqueueWebhookEvento({
+        evento: "op_recusada",
+        fundoId: fundoIdFinal,
+        payload: basePayload,
+      }).catch(() => undefined);
+    }
+  }
+
   // Carrega usuários envolvidos pra notificações
   const [cedente] = await db
     .select()
