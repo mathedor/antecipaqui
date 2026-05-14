@@ -7,8 +7,8 @@ import { Sticker } from "../components/Sticker";
 
 const PASSOS = [
   { n: "01", title: "Cadastra", desc: "5 minutos pelo celular" },
-  { n: "02", title: "Aprovamos", desc: "em 24 horas" },
-  { n: "03", title: "PIX na conta", desc: "1 dia útil" },
+  { n: "02", title: "Construtora confirma", desc: "100% digital, em 24h" },
+  { n: "03", title: "PIX na conta", desc: "em 1 dia útil" },
 ];
 
 export function SceneSolucao() {
@@ -32,7 +32,7 @@ export function SceneSolucao() {
       <AbsoluteFill
         style={{
           padding: 80,
-          paddingTop: 110,
+          justifyContent: "center",
           alignItems: "flex-start",
         }}
       >
@@ -156,7 +156,7 @@ export function SceneSolucao() {
       </AbsoluteFill>
 
       <Sticker
-        text="Sem garantia"
+        text="Sem burocracia"
         emoji="✓"
         appearAt={30}
         position="top-right"
@@ -166,8 +166,8 @@ export function SceneSolucao() {
         inset={100}
       />
       <Sticker
-        text="Sem avalista"
-        emoji="✓"
+        text="100% digital"
+        emoji="📱"
         appearAt={50}
         position="bottom-right"
         variant="white"

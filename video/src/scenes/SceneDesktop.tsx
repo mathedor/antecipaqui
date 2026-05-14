@@ -28,7 +28,7 @@ export function SceneDesktop() {
       <AbsoluteFill
         style={{
           padding: 60,
-          paddingTop: 110,
+          justifyContent: "center",
           alignItems: "center",
         }}
       >
@@ -263,8 +263,8 @@ export function SceneDesktop() {
       </AbsoluteFill>
 
       <Sticker
-        text="Tudo num lugar só"
-        emoji="🎯"
+        text="Processo natural"
+        emoji="✨"
         appearAt={28}
         position="top-right"
         variant="yellow"

@@ -27,7 +27,7 @@ export function SceneMobile() {
       <AbsoluteFill
         style={{
           padding: 60,
-          paddingTop: 110,
+          justifyContent: "center",
           alignItems: "center",
         }}
       >
@@ -51,7 +51,7 @@ export function SceneMobile() {
               textTransform: "uppercase",
             }}
           >
-            do celular
+            preenchimento automático
           </div>
           <div
             style={{
@@ -61,9 +61,9 @@ export function SceneMobile() {
               letterSpacing: "-0.03em",
             }}
           >
-            Foto do contrato.
+            Importa o contrato.
             <br />
-            <span style={{ color: COLORS.accent }}>IA preenche.</span>
+            <span style={{ color: COLORS.accent }}>IA preenche tudo.</span>
           </div>
         </div>
 
@@ -105,7 +105,7 @@ export function SceneMobile() {
             letterSpacing: "-0.01em",
           }}
         >
-          Aprovação em <strong style={{ color: COLORS.accent }}>24 horas</strong>.
+          Sem digitar nada. <strong style={{ color: COLORS.accent }}>Em segundos.</strong>
         </div>
       </AbsoluteFill>
 
@@ -120,7 +120,7 @@ export function SceneMobile() {
         inset={90}
       />
       <Sticker
-        text="IA lê o contrato"
+        text="Importa contrato"
         emoji="📄"
         appearAt={120}
         position="bottom-left"

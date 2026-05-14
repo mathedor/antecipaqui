@@ -56,7 +56,7 @@ export function SceneCalculadora() {
       <AbsoluteFill
         style={{
           padding: 60,
-          paddingTop: 110,
+          justifyContent: "center",
           alignItems: "center",
         }}
       >

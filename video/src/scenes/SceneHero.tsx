@@ -27,7 +27,7 @@ export function SceneHero() {
       <AbsoluteFill
         style={{
           padding: 80,
-          paddingTop: 130,
+          justifyContent: "center",
           alignItems: "flex-start",
         }}
       >
