@@ -694,7 +694,7 @@ export async function getSystemHealth() {
     SELECT MAX(gerado_em) AS at FROM recaps_relatorio
   `);
   const webhooksProbe = await db.execute(sql`
-    SELECT MAX(GREATEST(delivered_at, COALESCE(updated_at, created_at))) AS at
+    SELECT MAX(COALESCE(delivered_at, proxima_tentativa_em, created_at)) AS at
     FROM webhooks_eventos
     WHERE status IN ('entregue','falhou','desistido')
   `);
