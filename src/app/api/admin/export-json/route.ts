@@ -4,7 +4,7 @@
  *    { exportedAt, count, operacoes: [...] }
  */
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   comerciais,
@@ -79,21 +79,21 @@ export async function GET(req: NextRequest) {
           pagoValor: parcelasComissao.pagoValor,
         })
         .from(parcelasComissao)
-        .where(sql`${parcelasComissao.operacaoId} = ANY(${opsIds}::uuid[])`)
+        .where(inArray(parcelasComissao.operacaoId, opsIds))
     : [];
 
   const allCustos = opsIds.length
     ? await db
         .select()
         .from(custosOperacao)
-        .where(sql`${custosOperacao.operacaoId} = ANY(${opsIds}::uuid[])`)
+        .where(inArray(custosOperacao.operacaoId, opsIds))
     : [];
 
   const allCompradores = opsIds.length
     ? await db
         .select()
         .from(operacaoCompradores)
-        .where(sql`${operacaoCompradores.operacaoId} = ANY(${opsIds}::uuid[])`)
+        .where(inArray(operacaoCompradores.operacaoId, opsIds))
     : [];
 
   const parcelasPorOp = new Map<string, typeof allParcelas>();

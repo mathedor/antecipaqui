@@ -16,8 +16,8 @@ const RELATORIOS = [
   },
   {
     href: "/admin/relatorios/recaps",
-    title: "Recaps · diário / semanal / mensal",
-    desc: "Resumos automáticos do movimento: ops, aprovações, inadimplência, novos corretores e prazo médio. Salvos diariamente — busca por data.",
+    title: "Recaps Enviados",
+    desc: "Resumos diários, semanais e mensais enviados por email pra admins e fundos. Histórico completo com filtro por data e gerador on-demand.",
     icon: "🗞️",
     section: "Visão geral",
   },

@@ -6,7 +6,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { put } from "@vercel/blob";
-import { sql, eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   comerciais,
@@ -77,21 +77,19 @@ export async function GET(req: NextRequest) {
       ? db
           .select()
           .from(parcelasComissao)
-          .where(sql`${parcelasComissao.operacaoId} = ANY(${opsIds}::uuid[])`)
+          .where(inArray(parcelasComissao.operacaoId, opsIds))
       : [],
     opsIds.length
       ? db
           .select()
           .from(custosOperacao)
-          .where(sql`${custosOperacao.operacaoId} = ANY(${opsIds}::uuid[])`)
+          .where(inArray(custosOperacao.operacaoId, opsIds))
       : [],
     opsIds.length
       ? db
           .select()
           .from(operacaoCompradores)
-          .where(
-            sql`${operacaoCompradores.operacaoId} = ANY(${opsIds}::uuid[])`,
-          )
+          .where(inArray(operacaoCompradores.operacaoId, opsIds))
       : [],
   ]);
 

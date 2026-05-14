@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   comerciais,
@@ -122,7 +122,7 @@ export async function getBorderosBatch(
             vencimento: parcelasComissao.vencimento,
           })
           .from(parcelasComissao)
-          .where(sql`${parcelasComissao.operacaoId} = ANY(${opsIds}::uuid[])`)
+          .where(inArray(parcelasComissao.operacaoId, opsIds))
           .orderBy(parcelasComissao.numero)
       : [];
   const parcelasPorOp = new Map<
@@ -143,7 +143,7 @@ export async function getBorderosBatch(
             valor: custosOperacao.valor,
           })
           .from(custosOperacao)
-          .where(sql`${custosOperacao.operacaoId} = ANY(${opsIds}::uuid[])`)
+          .where(inArray(custosOperacao.operacaoId, opsIds))
       : [];
   const custosPorOp = new Map<string, number>();
   for (const c of allCustos) {
