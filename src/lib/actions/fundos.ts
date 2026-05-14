@@ -136,6 +136,28 @@ export async function createFundoAction(
         String(formData.get("sistemaGestaoNome") || "").trim() || null,
       sistemaGestaoDocsUrl:
         String(formData.get("sistemaGestaoDocsUrl") || "").trim() || null,
+      /* Encargos + cobrança opcionais (wizard preenche) */
+      multaAtrasoPct: parseEncargo(
+        String(formData.get("multaAtrasoPct") || ""),
+        "0.02",
+      ),
+      jurosMoraMensalPct: parseEncargo(
+        String(formData.get("jurosMoraMensalPct") || ""),
+        "0.01",
+      ),
+      boletosModo: normalizeModo(
+        String(formData.get("boletosModo") || "manual"),
+      ),
+      cobrancaApiUrl:
+        String(formData.get("cobrancaApiUrl") || "").trim() || null,
+      cnabBancoCodigo:
+        String(formData.get("cnabBancoCodigo") || "").trim() || null,
+      cnabCarteira:
+        String(formData.get("cnabCarteira") || "").trim() || null,
+      cnabConvenio:
+        String(formData.get("cnabConvenio") || "").trim() || null,
+      cnabCedenteCodigo:
+        String(formData.get("cnabCedenteCodigo") || "").trim() || null,
     })
     .returning({ id: fundos.id });
 
