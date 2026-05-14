@@ -16,31 +16,33 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Roteiro narrado — 35 segundos a ~145 palavras/minuto = ~85 palavras
- * total. Cada bloco corresponde a uma cena.
+ * Roteiro narrado — 35 segundos a ~155 palavras/minuto = ~90 palavras total.
+ * Tom: direto, sem enrolação, hook forte no início, CTA fechado.
  *
- * O ElevenLabs concatena em um único MP3 sincronizado pelas cenas do
- * Remotion (sem timestamps explícitos — só ritmo natural de leitura).
+ * Cada bloco corresponde a uma cena do Remotion. Pausas naturais por
+ * pontuação (ponto final = pausa maior, vírgula = pausa pequena).
  */
 const ROTEIRO = [
-  // 0-4s · Hero
-  "Vendeu um imóvel? A comissão pode cair na sua conta hoje.",
+  // 0-4s · Hero — hook agressivo
+  "Vendeu? A comissão é sua. Mas o dinheiro... demora.",
   // 4-9s · Problema
-  "Esperar 120 dias. Banco que recusa. Avalista que ninguém quer dar.",
+  "Cento e vinte dias esperando. Banco recusando. Avalista que ninguém quer dar.",
   // 9-14s · Solução
-  "A Antecipaqui resolve isso. Em 3 passos: cadastra, aprovamos em 24 horas, e o PIX cai em 1 dia útil.",
+  "Chega. Na Antecipaqui, você recebe hoje. Em três passos, sem garantia, sem burocracia.",
   // 14-20s · Mobile
-  "Tudo pelo celular. Fotografa o contrato — a inteligência artificial preenche os dados pra você.",
+  "Cadastra pelo celular em cinco minutos. Foto do contrato e a inteligência artificial preenche pra você.",
   // 20-25s · Calculadora
-  "Veja em tempo real quanto vai receber. Sem letra miúda, sem surpresa.",
+  "Veja agora quanto entra na sua conta. Cálculo em tempo real. Sem letra miúda.",
   // 25-30s · Desktop
-  "No computador, painel completo. Operações, recebimentos, ranking de construtoras.",
+  "Painel completo no computador. Operações, recebimentos, sua comissão antecipada.",
   // 30-35s · CTA
-  "Sua próxima venda pode virar dinheiro hoje. Acesse antecipaqui.digital e cadastre-se grátis.",
-].join(" "); // junta com 1 espaço — pausa natural
+  "Antecipaqui ponto digital. Cadastre-se grátis e receba sua próxima venda hoje.",
+].join(" ");
 
+// Default agora: Sarah multilingual (feminina, próxima, soa bem em PT-BR).
+// User troca via: export ELEVENLABS_VOICE_ID=xxx (rode `npm run voices` pra listar)
 const VOICE_ID =
-  process.env.ELEVENLABS_VOICE_ID ?? "EXAVITQu4vr4xnSDxMaL"; // Bella (multilingual)
+  process.env.ELEVENLABS_VOICE_ID ?? "EXAVITQu4vr4xnSDxMaL";
 const MODEL = "eleven_multilingual_v2";
 
 async function main() {
@@ -67,11 +69,17 @@ async function main() {
       body: JSON.stringify({
         text: ROTEIRO,
         model_id: MODEL,
+        // Settings calibrados pra som natural em PT-BR (não robotizado):
+        //  stability ~0.4 → varia mais, soa mais humano
+        //  similarity_boost ~0.85 → mantém característica da voz original
+        //  style ~0.2 → pouco exagero dramático
+        //  speed 0.95 → levemente mais devagar pra dicção clara
         voice_settings: {
-          stability: 0.55,
-          similarity_boost: 0.75,
-          style: 0.45,
+          stability: 0.4,
+          similarity_boost: 0.85,
+          style: 0.2,
           use_speaker_boost: true,
+          speed: 0.95,
         },
       }),
     },

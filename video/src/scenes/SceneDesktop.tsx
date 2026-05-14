@@ -1,243 +1,263 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS } from "../constants";
 import { fadeIn, slideY, popIn } from "../anim";
+import { Noise } from "../components/Noise";
+import { Blob } from "../components/Blob";
 
 export function SceneDesktop() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const titleOpacity = fadeIn(frame, 0, 15);
-  const titleY = slideY(frame, 0, 15, 30, 0);
-  const browserScale = popIn(frame, 12, fps, { damping: 14, stiffness: 100 });
+  const titleOp = fadeIn(frame, 0, 12);
+  const browserScale = popIn(frame, 10, fps, { damping: 14, stiffness: 90 });
 
-  // KPIs anim
   const kpis = [
-    { l: "Hoje", v: "R$ 80k", c: COLORS.accent, delay: 35 },
-    { l: "Em análise", v: "2", c: "#a16207", delay: 45 },
-    { l: "Aprovadas", v: "8", c: COLORS.emerald, delay: 55 },
-    { l: "A receber", v: "R$ 32k", c: COLORS.fg, delay: 65 },
+    { l: "HOJE", v: "R$ 80k", c: COLORS.neonYellow, delay: 35 },
+    { l: "ANÁLISE", v: "2", c: COLORS.fg, delay: 45 },
+    { l: "APROV", v: "8", c: COLORS.emerald, delay: 55 },
+    { l: "RECEBER", v: "R$ 32k", c: COLORS.fg, delay: 65 },
   ];
 
   return (
-    <AbsoluteFill
-      style={{
-        background: COLORS.fg,
-        color: "white",
-        padding: 70,
-        paddingTop: 120,
-        textAlign: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "ui-monospace, monospace",
-          fontSize: 18,
-          letterSpacing: "0.3em",
-          textTransform: "uppercase",
-          color: COLORS.accentLight,
-          marginBottom: 16,
-          opacity: titleOpacity,
-        }}
-      >
-        do escritório também
-      </div>
+    <AbsoluteFill style={{ background: COLORS.bg, overflow: "hidden" }}>
+      <Blob color={COLORS.accent} x={50} y={50} size={70} opacity={0.4} />
+      <Blob color={COLORS.neonMagenta} x={85} y={15} size={35} opacity={0.3} />
+      <Noise opacity={0.05} />
 
-      <div
+      <AbsoluteFill
         style={{
-          fontSize: 72,
-          fontWeight: 800,
-          lineHeight: 1.05,
-          letterSpacing: "-0.03em",
-          marginBottom: 50,
-          opacity: titleOpacity,
-          transform: `translateY(${titleY}px)`,
+          padding: 60,
+          paddingTop: 110,
+          alignItems: "center",
         }}
       >
-        Painel completo
-        <br />
-        <span style={{ color: COLORS.accentLight }}>no desktop</span>.
-      </div>
-
-      {/* Browser frame */}
-      <div
-        style={{
-          transform: `scale(${browserScale})`,
-          width: 900,
-          borderRadius: 22,
-          overflow: "hidden",
-          boxShadow: "0 60px 120px rgba(0,0,0,0.6)",
-          background: "#1e293b",
-          border: "1px solid #334155",
-        }}
-      >
-        {/* Title bar */}
         <div
           style={{
-            height: 50,
-            background: "#1e293b",
-            display: "flex",
-            alignItems: "center",
-            padding: "0 20px",
-            gap: 8,
-            borderBottom: "1px solid #0f172a",
-          }}
-        >
-          <div style={{ display: "flex", gap: 8 }}>
-            <div style={{ width: 14, height: 14, borderRadius: 7, background: "#ff5f57" }} />
-            <div style={{ width: 14, height: 14, borderRadius: 7, background: "#febc2e" }} />
-            <div style={{ width: 14, height: 14, borderRadius: 7, background: "#28c840" }} />
-          </div>
-          <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <div
-              style={{
-                background: "#334155",
-                borderRadius: 8,
-                padding: "8px 20px",
-                fontSize: 16,
-                color: "#cbd5e1",
-                fontFamily: "ui-monospace, monospace",
-              }}
-            >
-              🔒 antecipaqui.digital/painel
-            </div>
-          </div>
-        </div>
-
-        {/* Window content (light theme) */}
-        <div
-          style={{
-            background: COLORS.bg,
-            padding: 36,
+            opacity: titleOp,
             color: COLORS.fg,
-            minHeight: 480,
-            textAlign: "left",
+            textAlign: "center",
+            marginBottom: 30,
           }}
         >
           <div
             style={{
-              fontSize: 16,
               fontFamily: "ui-monospace, monospace",
-              textTransform: "uppercase",
-              letterSpacing: "0.2em",
-              color: COLORS.fgDim,
-              marginBottom: 6,
+              fontSize: 22,
+              letterSpacing: "0.3em",
+              color: COLORS.accent,
+              fontWeight: 700,
+              marginBottom: 14,
             }}
           >
-            painel · corretor
+            🖥 TUDO NO PAINEL
           </div>
           <div
             style={{
-              fontSize: 36,
-              fontWeight: 800,
-              marginBottom: 28,
-              letterSpacing: "-0.02em",
+              fontSize: 88,
+              fontWeight: 900,
+              lineHeight: 0.92,
+              letterSpacing: "-0.04em",
             }}
           >
-            Olá, Carlos!
+            VOCÊ NO
+            <br />
+            <span style={{ color: COLORS.accent }}>COMANDO.</span>
           </div>
+        </div>
 
-          {/* KPIs */}
+        {/* Browser frame */}
+        <div
+          style={{
+            transform: `scale(${browserScale})`,
+            width: 880,
+            borderRadius: 18,
+            overflow: "hidden",
+            boxShadow: "0 60px 120px rgba(0,0,0,0.6)",
+            background: COLORS.bgAlt,
+            border: `2px solid ${COLORS.border}`,
+          }}
+        >
+          {/* Title bar */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: 16,
-              marginBottom: 28,
+              height: 44,
+              background: COLORS.bgAlt,
+              display: "flex",
+              alignItems: "center",
+              padding: "0 18px",
+              gap: 8,
+              borderBottom: `1px solid ${COLORS.border}`,
             }}
           >
-            {kpis.map((k) => {
-              const scale = popIn(frame, k.delay, fps, { damping: 14 });
-              const opacity = fadeIn(frame, k.delay, 12);
-              return (
+            <div style={{ display: "flex", gap: 7 }}>
+              {[COLORS.danger, COLORS.neonYellow, COLORS.emerald].map((c, i) => (
                 <div
-                  key={k.l}
+                  key={i}
                   style={{
-                    transform: `scale(${scale})`,
-                    opacity,
-                    background: "white",
-                    border: `1px solid ${COLORS.border}`,
-                    borderRadius: 14,
-                    padding: 18,
+                    width: 12,
+                    height: 12,
+                    borderRadius: 6,
+                    background: c,
                   }}
-                >
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: COLORS.fgDim,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.15em",
-                      fontFamily: "ui-monospace, monospace",
-                      marginBottom: 6,
-                    }}
-                  >
-                    {k.l}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 36,
-                      fontWeight: 800,
-                      color: k.c,
-                      letterSpacing: "-0.02em",
-                    }}
-                  >
-                    {k.v}
-                  </div>
-                </div>
-              );
-            })}
+                />
+              ))}
+            </div>
+            <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+              <div
+                style={{
+                  background: COLORS.bg,
+                  borderRadius: 8,
+                  padding: "7px 16px",
+                  fontSize: 14,
+                  color: COLORS.fgMuted,
+                  fontFamily: "ui-monospace, monospace",
+                }}
+              >
+                🔒 antecipaqui.digital/painel
+              </div>
+            </div>
           </div>
 
-          {/* Fake chart */}
+          {/* Content (escuro também — bold theme) */}
           <div
             style={{
-              background: "white",
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: 18,
-              padding: 22,
+              background: COLORS.bg,
+              padding: 32,
+              minHeight: 500,
             }}
           >
             <div
               style={{
-                fontSize: 18,
-                fontWeight: 700,
-                marginBottom: 12,
+                fontSize: 14,
+                fontFamily: "ui-monospace, monospace",
+                letterSpacing: "0.25em",
+                color: COLORS.fgDim,
+                marginBottom: 8,
+                textTransform: "uppercase",
               }}
             >
-              Operações nos últimos 90 dias{" "}
-              <span style={{ color: COLORS.emerald, fontWeight: 600, fontSize: 14 }}>
-                ↑ +23%
-              </span>
+              corretor
             </div>
             <div
               style={{
-                display: "flex",
-                alignItems: "flex-end",
-                gap: 4,
-                height: 80,
+                fontSize: 44,
+                fontWeight: 900,
+                color: COLORS.fg,
+                letterSpacing: "-0.02em",
+                marginBottom: 26,
               }}
             >
-              {[30, 45, 38, 52, 48, 55, 62, 58, 70, 65, 78, 72, 85, 80, 88, 92].map(
-                (h, i) => {
-                  const barIn = fadeIn(frame, 75 + i * 1.5, 10);
-                  return (
+              CARLOS, BORA?
+            </div>
+
+            {/* KPIs */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 14,
+                marginBottom: 26,
+              }}
+            >
+              {kpis.map((k) => {
+                const scale = popIn(frame, k.delay, fps, { damping: 14 });
+                const opacity = fadeIn(frame, k.delay, 12);
+                return (
+                  <div
+                    key={k.l}
+                    style={{
+                      transform: `scale(${scale})`,
+                      opacity,
+                      background: COLORS.bgAlt,
+                      border: `2px solid ${COLORS.border}`,
+                      borderRadius: 14,
+                      padding: 16,
+                    }}
+                  >
                     <div
-                      key={i}
                       style={{
-                        flex: 1,
-                        height: `${h * barIn}%`,
-                        borderRadius: 4,
-                        background: `linear-gradient(180deg, ${COLORS.accentLight}, ${COLORS.accent})`,
-                        opacity: barIn,
+                        fontSize: 11,
+                        color: COLORS.fgDim,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.2em",
+                        fontFamily: "ui-monospace, monospace",
+                        fontWeight: 700,
+                        marginBottom: 6,
                       }}
-                    />
-                  );
-                },
-              )}
+                    >
+                      {k.l}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 36,
+                        fontWeight: 900,
+                        color: k.c,
+                        letterSpacing: "-0.02em",
+                      }}
+                    >
+                      {k.v}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Chart */}
+            <div
+              style={{
+                background: COLORS.bgAlt,
+                border: `2px solid ${COLORS.border}`,
+                borderRadius: 16,
+                padding: 20,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: COLORS.fg,
+                  marginBottom: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.15em",
+                  fontFamily: "ui-monospace, monospace",
+                }}
+              >
+                90 DIAS{" "}
+                <span style={{ color: COLORS.emerald, fontSize: 12 }}>
+                  ↑ +23%
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: 3,
+                  height: 80,
+                }}
+              >
+                {[30, 45, 38, 52, 48, 55, 62, 58, 70, 65, 78, 72, 85, 80, 88, 92].map(
+                  (h, i) => {
+                    const barIn = fadeIn(frame, 75 + i * 1.5, 10);
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          flex: 1,
+                          height: `${h * barIn}%`,
+                          borderRadius: 3,
+                          background: `linear-gradient(180deg, ${COLORS.neonYellow}, ${COLORS.emerald})`,
+                          opacity: barIn,
+                          boxShadow: `0 0 12px ${COLORS.emerald}88`,
+                        }}
+                      />
+                    );
+                  },
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }

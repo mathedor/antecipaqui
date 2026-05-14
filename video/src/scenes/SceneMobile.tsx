@@ -4,113 +4,116 @@ import { fadeIn, slideY, popIn } from "../anim";
 import { PhoneFrame } from "../components/PhoneFrame";
 import { PhoneScreenNovaOp } from "../components/PhoneScreenNovaOp";
 import { PhoneScreenOcr } from "../components/PhoneScreenOcr";
+import { Noise } from "../components/Noise";
+import { Blob } from "../components/Blob";
 
 export function SceneMobile() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const titleY = slideY(frame, 0, 15, 30, 0);
-  const titleOpacity = fadeIn(frame, 0, 15);
+  const titleOp = fadeIn(frame, 0, 14);
+  const phoneScale = popIn(frame, 10, fps, { damping: 14, stiffness: 110 });
 
-  // Phone entra escalando
-  const phone1Scale = popIn(frame, 12, fps, { damping: 16, stiffness: 120 });
-  const phone1Tilt = -4 + (1 - phone1Scale) * 8;
-
-  // Trocamos a tela do telefone aos 100 frames (3.3s na cena → começa a "rolar")
-  const showOcrAt = 100;
-  const phoneCrossfade = fadeIn(frame, showOcrAt, 14);
+  const showOcrAt = 110;
+  const crossfade = fadeIn(frame, showOcrAt, 18);
+  const captionOp = fadeIn(frame, showOcrAt + 10, 12);
 
   return (
-    <AbsoluteFill
-      style={{
-        background: COLORS.bg,
-        padding: 60,
-        justifyContent: "flex-start",
-        alignItems: "center",
-        textAlign: "center",
-        paddingTop: 120,
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "ui-monospace, monospace",
-          fontSize: 18,
-          letterSpacing: "0.3em",
-          textTransform: "uppercase",
-          color: COLORS.accent,
-          marginBottom: 18,
-          opacity: titleOpacity,
-        }}
-      >
-        do celular
-      </div>
+    <AbsoluteFill style={{ background: COLORS.bg, overflow: "hidden" }}>
+      <Blob color={COLORS.accent} x={50} y={50} size={90} opacity={0.35} />
+      <Blob color={COLORS.neonMagenta} x={15} y={85} size={30} opacity={0.3} />
+      <Noise opacity={0.05} />
 
-      <div
+      <AbsoluteFill
         style={{
-          fontSize: 72,
-          fontWeight: 800,
-          lineHeight: 1.05,
-          letterSpacing: "-0.03em",
-          color: COLORS.fg,
-          marginBottom: 50,
-          opacity: titleOpacity,
-          transform: `translateY(${titleY}px)`,
-          maxWidth: 800,
+          padding: 60,
+          paddingTop: 110,
+          alignItems: "center",
         }}
       >
-        Cadastra a operação.
-        <br />
-        <span style={{ color: COLORS.accent }}>Em 5 minutos.</span>
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          transform: `scale(${Math.min(phone1Scale, 1)}) rotate(${phoneTilt(frame, fps)}deg)`,
-          marginTop: 30,
-        }}
-      >
-        {/* Tela A: Nova Op */}
-        <div style={{ opacity: 1 - phoneCrossfade }}>
-          <PhoneFrame>
-            <PhoneScreenNovaOp />
-          </PhoneFrame>
-        </div>
-        {/* Tela B: OCR (sobreposta com fade) */}
+        {/* Header */}
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            opacity: phoneCrossfade,
+            opacity: titleOp,
+            color: COLORS.fg,
+            textAlign: "center",
+            marginBottom: 30,
           }}
         >
-          <PhoneFrame>
-            <PhoneScreenOcr />
-          </PhoneFrame>
+          <div
+            style={{
+              fontFamily: "ui-monospace, monospace",
+              fontSize: 22,
+              letterSpacing: "0.3em",
+              color: COLORS.neonYellow,
+              fontWeight: 700,
+              marginBottom: 14,
+            }}
+          >
+            ⚡ DO CELULAR
+          </div>
+          <div
+            style={{
+              fontSize: 88,
+              fontWeight: 900,
+              lineHeight: 0.92,
+              letterSpacing: "-0.04em",
+            }}
+          >
+            5 MIN E
+            <br />
+            <span style={{ color: COLORS.neonYellow }}>TÁ FEITO.</span>
+          </div>
         </div>
-      </div>
 
-      {/* Caption final */}
-      <div
-        style={{
-          marginTop: 40,
-          fontSize: 30,
-          fontWeight: 600,
-          color: COLORS.fgMuted,
-          opacity: phoneCrossfade,
-          textAlign: "center",
-          maxWidth: 800,
-        }}
-      >
-        📷 Fotografa o contrato.{" "}
-        <strong style={{ color: COLORS.accent }}>A IA preenche.</strong>
-      </div>
+        {/* Phone */}
+        <div
+          style={{
+            position: "relative",
+            transform: `scale(${Math.min(phoneScale, 1)}) rotate(${phoneTilt(frame, fps)}deg)`,
+            marginTop: 30,
+          }}
+        >
+          <div style={{ opacity: 1 - crossfade }}>
+            <PhoneFrame>
+              <PhoneScreenNovaOp />
+            </PhoneFrame>
+          </div>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              opacity: crossfade,
+            }}
+          >
+            <PhoneFrame>
+              <PhoneScreenOcr />
+            </PhoneFrame>
+          </div>
+        </div>
+
+        {/* Caption final */}
+        <div
+          style={{
+            opacity: captionOp,
+            marginTop: 30,
+            fontSize: 36,
+            fontWeight: 800,
+            color: COLORS.fg,
+            textAlign: "center",
+            letterSpacing: "-0.02em",
+            maxWidth: 800,
+          }}
+        >
+          📷 Foto do contrato.{" "}
+          <span style={{ color: COLORS.neonYellow }}>IA preenche.</span>
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }
 
 function phoneTilt(frame: number, fps: number): number {
-  // Oscilação sutil (parado mas vivo)
   const t = frame / fps;
   return Math.sin(t * 1.3) * 1.2;
 }

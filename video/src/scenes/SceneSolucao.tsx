@@ -1,131 +1,151 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS } from "../constants";
-import { fadeIn, popIn } from "../anim";
+import { fadeIn, popIn, slideY } from "../anim";
+import { Noise } from "../components/Noise";
+import { Blob } from "../components/Blob";
 
 const PASSOS = [
-  { n: "1", title: "Cadastra", desc: "5 minutos no celular" },
-  { n: "2", title: "Aprovamos", desc: "em 24 horas" },
-  { n: "3", title: "Cai na conta", desc: "PIX em 1 dia útil" },
+  { n: "01", title: "CADASTRA", desc: "5 min · pelo celular" },
+  { n: "02", title: "APROVAMOS", desc: "em 24 horas" },
+  { n: "03", title: "PIX NA CONTA", desc: "1 dia útil" },
 ];
 
 export function SceneSolucao() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const titleOpacity = fadeIn(frame, 0, 15);
+  const chegaScale = popIn(frame, 0, fps, { damping: 10, stiffness: 280 });
+  const subOp = fadeIn(frame, 22, 12);
 
   return (
-    <AbsoluteFill
-      style={{
-        background: `linear-gradient(180deg, ${COLORS.accent} 0%, ${COLORS.accentDark} 100%)`,
-        color: "white",
-        padding: 80,
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "ui-monospace, monospace",
-          fontSize: 18,
-          letterSpacing: "0.3em",
-          textTransform: "uppercase",
-          opacity: titleOpacity * 0.8,
-          marginBottom: 24,
-        }}
-      >
-        a solução
-      </div>
+    <AbsoluteFill style={{ background: COLORS.neonYellow, overflow: "hidden" }}>
+      <Blob color={COLORS.neonMagenta} x={80} y={20} size={50} opacity={0.5} />
+      <Blob color={COLORS.bg} x={20} y={85} size={45} opacity={0.4} />
+      <Noise opacity={0.08} />
 
-      <div
+      <AbsoluteFill
         style={{
-          opacity: titleOpacity,
-          fontSize: 96,
-          fontWeight: 800,
-          lineHeight: 1.05,
-          letterSpacing: "-0.04em",
-          marginBottom: 80,
-          maxWidth: 900,
+          padding: 60,
+          paddingTop: 100,
+          justifyContent: "flex-start",
+          alignItems: "center",
         }}
       >
-        A gente paga.
-        <br />
-        Em <span style={{ color: COLORS.yellow }}>3 passos</span>.
-      </div>
+        {/* CHEGA — gigante, choque visual */}
+        <div
+          style={{
+            transform: `scale(${chegaScale})`,
+            fontSize: 280,
+            fontWeight: 900,
+            lineHeight: 0.85,
+            letterSpacing: "-0.06em",
+            color: COLORS.bg,
+            textAlign: "center",
+            marginBottom: 30,
+          }}
+        >
+          CHEGA.
+        </div>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 30,
-          width: "100%",
-          maxWidth: 700,
-        }}
-      >
-        {PASSOS.map((p, i) => {
-          const start = 25 + i * 25;
-          const scale = popIn(frame, start, fps, { damping: 12 });
-          const opacity = fadeIn(frame, start, 12);
-          return (
-            <div
-              key={p.n}
-              style={{
-                transform: `scale(${scale})`,
-                opacity,
-                background: "rgba(255,255,255,0.12)",
-                backdropFilter: "blur(10px)",
-                border: "2px solid rgba(255,255,255,0.25)",
-                borderRadius: 28,
-                padding: "32px 36px",
-                display: "flex",
-                alignItems: "center",
-                gap: 28,
-              }}
-            >
+        {/* Sub */}
+        <div
+          style={{
+            opacity: subOp,
+            fontSize: 50,
+            fontWeight: 800,
+            color: COLORS.bg,
+            textAlign: "center",
+            letterSpacing: "-0.02em",
+            lineHeight: 1.05,
+            marginBottom: 60,
+            maxWidth: 850,
+          }}
+        >
+          Aqui, você recebe{" "}
+          <span
+            style={{
+              background: COLORS.bg,
+              color: COLORS.neonYellow,
+              padding: "0 16px",
+              borderRadius: 8,
+            }}
+          >
+            HOJE
+          </span>
+          .
+        </div>
+
+        {/* 3 passos com flip-in */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+            width: "100%",
+            maxWidth: 850,
+          }}
+        >
+          {PASSOS.map((p, i) => {
+            const start = 35 + i * 18;
+            const y = slideY(frame, start, 16, 60, 0);
+            const op = fadeIn(frame, start, 12);
+            return (
               <div
+                key={p.n}
                 style={{
-                  width: 88,
-                  height: 88,
-                  borderRadius: "50%",
-                  background: COLORS.yellow,
-                  color: COLORS.fg,
+                  opacity: op,
+                  transform: `translateY(${y}px)`,
+                  background: COLORS.bg,
+                  borderRadius: 28,
+                  padding: "36px 40px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 48,
-                  fontWeight: 800,
-                  flexShrink: 0,
+                  gap: 32,
+                  boxShadow: "0 30px 60px rgba(0,0,0,0.4)",
                 }}
               >
-                {p.n}
-              </div>
-              <div style={{ textAlign: "left" }}>
                 <div
                   style={{
-                    fontSize: 44,
-                    fontWeight: 800,
-                    letterSpacing: "-0.02em",
+                    fontSize: 120,
+                    fontWeight: 900,
+                    color: COLORS.neonYellow,
                     lineHeight: 1,
+                    letterSpacing: "-0.05em",
+                    minWidth: 160,
                   }}
                 >
-                  {p.title}
+                  {p.n}
                 </div>
-                <div
-                  style={{
-                    fontSize: 26,
-                    fontWeight: 500,
-                    opacity: 0.85,
-                    marginTop: 6,
-                  }}
-                >
-                  {p.desc}
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 56,
+                      fontWeight: 900,
+                      color: COLORS.fg,
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {p.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 600,
+                      color: COLORS.fgMuted,
+                      marginTop: 8,
+                      fontFamily: "ui-monospace, monospace",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {p.desc}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }
