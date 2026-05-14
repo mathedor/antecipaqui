@@ -160,6 +160,18 @@ export function RecapsManager({
             {gerando ? "Gerando..." : "Gerar recap"}
           </button>
         </div>
+        {escopo === "admin" && (
+          <div className="mt-3 text-xs">
+            <a
+              href={`/admin/relatorios/recaps/preview?periodo=${genPeriodo}&data=${genData}&escopo=admin`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent hover:underline font-mono"
+            >
+              👁 Preview do email enviado neste recap →
+            </a>
+          </div>
+        )}
       </section>
 
       {/* Filtros */}

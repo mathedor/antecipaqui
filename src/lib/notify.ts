@@ -15,7 +15,7 @@ import { notificacoes } from "@/db/schema";
 import { sendEmail } from "@/lib/email";
 import { sendSms } from "@/lib/sms";
 
-type EmailPayload = { subject: string; body: string };
+type EmailPayload = { subject: string; body: string; html?: string };
 type SmsPayload = { message: string };
 
 type NotifyArgs = {
@@ -42,6 +42,7 @@ export async function notify(args: NotifyArgs) {
         to: args.email.to,
         subject: args.email.subject,
         body: args.email.body,
+        html: args.email.html,
       });
       emailSent = r.ok;
     } catch (e) {
