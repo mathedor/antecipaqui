@@ -3,7 +3,10 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { AdminCharts } from "@/components/dashboard-charts";
-import { formatBRL } from "@/lib/format";
+import { ActionCenter } from "@/components/dashboards/action-center";
+import { PipelineFunnel } from "@/components/dashboards/pipeline";
+import { SourcingBoard } from "@/components/dashboards/sourcing-board";
+import { formatBRL, formatBRLcompact } from "@/lib/format";
 import {
   getAdminMonthlyStats,
   getAdminStats,
@@ -11,6 +14,11 @@ import {
 } from "@/lib/actions/admin";
 import { getFinanceiroMetrics } from "@/lib/actions/financeiro-metrics";
 import { getAdminInsights } from "@/lib/actions/admin-insights";
+import {
+  getAdminActionCenter,
+  getAdminPipeline,
+  getAdminSourcing,
+} from "@/lib/actions/dashboards";
 
 export const metadata = {
   title: "Admin · Dashboard",
@@ -18,99 +26,131 @@ export const metadata = {
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
-  const [stats, recent, monthly, fin, insights] = await Promise.all([
+  const [
+    stats,
+    recent,
+    monthly,
+    fin,
+    insights,
+    actionCenter,
+    pipeline,
+    sourcing,
+  ] = await Promise.all([
     getAdminStats(),
     getAllOperacoes(),
     getAdminMonthlyStats(),
     getFinanceiroMetrics(),
     getAdminInsights(),
+    getAdminActionCenter(),
+    getAdminPipeline(),
+    getAdminSourcing(8),
   ]);
 
-  const recentes = recent.slice(0, 8);
-  const pendentes = recent.filter((o) =>
-    ["aguardando_aprovacao", "documentos_incompletos"].includes(o.status),
-  );
+  const recentes = recent.slice(0, 6);
 
   return (
     <AdminShell active="/admin" userName={admin.nome}>
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="eyebrow mb-2">painel administrativo</div>
         <h1 className="text-display-md">
           Operação <span className="text-gradient-blue">geral</span>
         </h1>
         <p className="mt-2 text-fg-muted">
-          Visão consolidada de todas as operações do sistema.
+          O que precisa de você agora, status do pipeline e direcionamento de
+          operações pra fundos.
         </p>
       </div>
 
-      {/* Gráficos — 12 meses */}
-      <div className="mb-10">
-        <AdminCharts data={monthly} />
-      </div>
+      {/* 1. ACTION CENTER — o que resolver agora */}
+      <ActionCenter
+        items={actionCenter}
+        title="Pendências urgentes"
+        subtitle="Ordenado por severidade. Clique pra abrir cada lista."
+      />
 
-      {/* Stats top — 5 cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
-        <StatCard
-          label="Pendentes aprovação"
-          value={String(stats.pendentesAprovacao)}
-          tone={stats.pendentesAprovacao > 0 ? "warn" : "default"}
-          href="/admin/operacoes?status=aguardando_aprovacao"
-        />
-        <StatCard
-          label="Aprovadas / ativas"
-          value={String(stats.aprovadas)}
-          href="/admin/operacoes?status=enviada_para_pagamento"
-        />
-        <StatCard
-          label="Liquidadas"
-          value={String(stats.liquidadas)}
-          href="/admin/operacoes?status=realizada"
-        />
-        <StatCard
-          label="Recusadas"
-          value={String(stats.recusadas)}
-          href="/admin/operacoes?status=recusada"
-        />
-        <StatCard
-          label="Total operações"
-          value={String(stats.totalOperacoes)}
-          href="/admin/operacoes"
-        />
-      </div>
+      {/* 2. PIPELINE — onde estão as ops */}
+      <PipelineFunnel stages={pipeline} />
 
-      {/* Stats financeiros */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+      {/* 3. SOURCING — direcionamento de ops pra fundos */}
+      <SourcingBoard ops={sourcing} />
+
+      {/* 4. KPIs financeiros core */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <StatCard
-          label="Comissão total"
-          value={formatBRL(stats.valorComissaoTotal)}
+          label="VP comprado"
+          value={formatBRLcompact(stats.valorComissaoTotal)}
           sublabel="todas as operações"
-          href="/admin/operacoes"
+          href="/admin/relatorios/indices"
         />
         <StatCard
           label="Já antecipado"
-          value={formatBRL(stats.valorAntecipado)}
+          value={formatBRLcompact(stats.valorAntecipado)}
           sublabel="creditado a corretores"
           highlight
           href="/admin/relatorios/indices"
         />
         <StatCard
           label="A vencer"
-          value={formatBRL(stats.aVencer)}
+          value={formatBRLcompact(stats.aVencer)}
           sublabel="parcelas pendentes"
           href="/admin/relatorios/daily"
         />
         <StatCard
           label="Vencidas"
-          value={formatBRL(stats.vencidas)}
-          sublabel="atenção necessária"
+          value={formatBRLcompact(stats.vencidas)}
+          sublabel="inadimplência"
           tone={stats.vencidas > 0 ? "danger" : "default"}
           href="/admin/relatorios/inadimplentes"
         />
       </div>
 
-      {/* Margem efetiva + Forecast */}
+      {/* 5. Saúde do funil (insights) */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        <InsightCard
+          label="Tempo médio aprovação"
+          value={
+            insights.tempoMedioAprovacaoH != null
+              ? `${insights.tempoMedioAprovacaoH.toFixed(1)}h`
+              : "—"
+          }
+          sub="últimos 90 dias"
+        />
+        <InsightCard
+          label="Auto-aprovação fundo"
+          value={
+            insights.pctAprovacaoAutomatica != null
+              ? `${(insights.pctAprovacaoAutomatica * 100).toFixed(0)}%`
+              : "—"
+          }
+          sub="via regras dos fundos"
+        />
+        <InsightCard
+          label="Docs IA: alta confiança"
+          value={
+            insights.pctDocsOk != null
+              ? `${(insights.pctDocsOk * 100).toFixed(0)}%`
+              : "—"
+          }
+          sub={
+            insights.qtdDocsRevisao > 0
+              ? `${insights.qtdDocsRevisao} pra revisar`
+              : "todos validados"
+          }
+          tone={insights.qtdDocsRevisao > 0 ? "warn" : "default"}
+        />
+        <InsightCard
+          label="Spread efetivo médio"
+          value={
+            insights.spreadMedio != null
+              ? `${(insights.spreadMedio * 100).toFixed(0)}%`
+              : "—"
+          }
+          sub="resultado AQ / juros"
+        />
+      </section>
+
+      {/* 6. Margem efetiva + Forecast (faz parte da "saúde financeira") */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-        {/* Card Margem efetiva */}
         <div className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
           <div className="flex items-baseline justify-between gap-2 mb-3">
             <div>
@@ -157,7 +197,6 @@ export default async function AdminPage() {
           </p>
         </div>
 
-        {/* Card Forecast 6 meses */}
         <div className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
           <div className="mb-3">
             <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
@@ -203,82 +242,17 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      {/* Insights operacionais */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-        <InsightCard
-          label="Tempo médio aprovação"
-          value={
-            insights.tempoMedioAprovacaoH != null
-              ? `${insights.tempoMedioAprovacaoH.toFixed(1)}h`
-              : "—"
-          }
-          sub="últimos 90 dias"
-        />
-        <InsightCard
-          label="% auto-aprovação fundo"
-          value={
-            insights.pctAprovacaoAutomatica != null
-              ? `${(insights.pctAprovacaoAutomatica * 100).toFixed(0)}%`
-              : "—"
-          }
-          sub="via regras dos fundos"
-        />
-        <InsightCard
-          label="Docs IA: % alta confiança"
-          value={
-            insights.pctDocsOk != null
-              ? `${(insights.pctDocsOk * 100).toFixed(0)}%`
-              : "—"
-          }
-          sub={
-            insights.qtdDocsRevisao > 0
-              ? `${insights.qtdDocsRevisao} pra revisar`
-              : "todos validados"
-          }
-          tone={insights.qtdDocsRevisao > 0 ? "warn" : "default"}
-        />
-        <InsightCard
-          label="Spread efetivo médio"
-          value={
-            insights.spreadMedio != null
-              ? `${(insights.spreadMedio * 100).toFixed(0)}%`
-              : "—"
-          }
-          sub="resultado AQ / juros"
-        />
+      {/* 7. Histórico — gráfico 12m */}
+      <section className="mb-8">
+        <div className="mb-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
+            série histórica · 12 meses
+          </div>
+        </div>
+        <AdminCharts data={monthly} />
       </section>
 
-      {/* Pendentes alert */}
-      {pendentes.length > 0 && (
-        <div className="rounded-2xl border border-warn/40 bg-yellow-50 p-5 mb-6 flex items-start gap-4">
-          <span className="size-9 rounded-full bg-warn/20 text-warn flex items-center justify-center text-xl shrink-0">
-            ⏳
-          </span>
-          <div className="flex-1">
-            <h2 className="font-bold">
-              {pendentes.length}{" "}
-              {pendentes.length === 1 ? "operação" : "operações"} aguardando análise
-            </h2>
-            <p className="mt-1 text-fg-muted text-sm">
-              Total comissão pendente:{" "}
-              {formatBRL(
-                pendentes.reduce(
-                  (s, o) => s + parseFloat(o.valorComissao),
-                  0,
-                ),
-              )}
-            </p>
-          </div>
-          <Link
-            href="/admin/decidir?filtro=aguardando"
-            className="btn-primary !h-10 !px-4 shrink-0"
-          >
-            Decidir agora <span className="arrow">→</span>
-          </Link>
-        </div>
-      )}
-
-      {/* Operações recentes */}
+      {/* 8. Operações recentes */}
       <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="font-bold tracking-tight">Operações recentes</h2>
@@ -363,7 +337,9 @@ function StatCard({
         : "text-fg-dim";
 
   const content = (
-    <div className={`rounded-2xl border p-4 md:p-5 ${baseClass} h-full transition-colors ${href ? "hover:border-accent cursor-pointer" : ""}`}>
+    <div
+      className={`rounded-2xl border p-4 md:p-5 ${baseClass} h-full transition-colors ${href ? "hover:border-accent cursor-pointer" : ""}`}
+    >
       <div
         className={`font-mono text-[10px] uppercase tracking-[0.18em] mb-2 ${labelColor}`}
       >
@@ -372,7 +348,11 @@ function StatCard({
       <div className="font-mono tabular text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold tracking-tight text-fg leading-tight break-words">
         {value}
       </div>
-      {sublabel && <div className="text-[10px] md:text-xs text-fg-muted mt-1">{sublabel}</div>}
+      {sublabel && (
+        <div className="text-[10px] md:text-xs text-fg-muted mt-1">
+          {sublabel}
+        </div>
+      )}
     </div>
   );
 
@@ -391,9 +371,7 @@ function InsightCard({
   tone?: "default" | "warn";
 }) {
   const cls =
-    tone === "warn"
-      ? "border-warn/40 bg-yellow-50"
-      : "border-border bg-bg-elev";
+    tone === "warn" ? "border-warn/40 bg-yellow-50" : "border-border bg-bg-elev";
   const labelCls = tone === "warn" ? "text-warn" : "text-fg-dim";
   return (
     <div className={`rounded-2xl border p-4 md:p-5 ${cls}`}>

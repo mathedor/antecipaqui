@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { PainelShell } from "@/components/painel-shell";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
+import { CalendarList } from "@/components/dashboards/calendar-list";
 import { getFundoDashboard } from "@/lib/actions/fundos";
 import { getFundoRisco } from "@/lib/actions/fundo-risco";
 import { getOpsAguardandoFundo } from "@/lib/actions/fundo-mesa";
 import { getFundoBenchmark } from "@/lib/actions/fundo-benchmark";
-import { formatBRL } from "@/lib/format";
+import {
+  getFundoCalendario,
+  getFundoCapacidade,
+  getFundoMesaMetrics,
+} from "@/lib/actions/dashboards";
+import { formatBRL, formatBRLcompact } from "@/lib/format";
 import type { User } from "@/db/schema";
 
 export async function FundoDashboard({ user }: { user: User }) {
@@ -33,7 +39,14 @@ export async function FundoDashboard({ user }: { user: User }) {
   }
 
   const { fundo, operacoes, totals, construtoras, imobiliarias } = data;
-  const ultimas = operacoes.slice(0, 8);
+
+  const [capacidade, mesa, calendario] = await Promise.all([
+    getFundoCapacidade(fundo.id),
+    getFundoMesaMetrics(fundo.id),
+    getFundoCalendario(fundo.id, 30),
+  ]);
+
+  const ultimas = operacoes.slice(0, 6);
   const alertasConcentracao = risco
     ? [...risco.porConstrutora, ...risco.porImobiliaria].filter(
         (c) => c.status !== "ok",
@@ -45,86 +58,126 @@ export async function FundoDashboard({ user }: { user: User }) {
       <div className="mb-6">
         <div className="eyebrow mb-2">painel do fundo</div>
         <h1 className="text-display-md">
-          Olá, <span className="text-gradient-blue">{fundo.nomeFantasia ?? fundo.razaoSocial}</span>
+          Olá,{" "}
+          <span className="text-gradient-blue">
+            {fundo.nomeFantasia ?? fundo.razaoSocial}
+          </span>
         </h1>
         <p className="mt-2 text-fg-muted">
-          Suas operações, construtoras parceiras e fluxo financeiro.
+          Mesa de decisão, capacidade alocada e calendário de recebíveis.
         </p>
       </div>
 
-      {/* KPIs financeiros */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      {/* === 1. MESA DE DECISÃO — sempre prioridade #1 do fundo === */}
+      {mesa.pendentesQtd > 0 ? (
+        <section className="rounded-2xl border-2 border-accent bg-accent-soft p-5 md:p-6 mb-6">
+          <div className="flex items-start gap-4 flex-wrap">
+            <span className="size-12 rounded-full bg-accent text-white flex items-center justify-center text-2xl shrink-0">
+              🎯
+            </span>
+            <div className="flex-1 min-w-[16rem]">
+              <h2 className="font-bold text-accent text-xl">
+                {mesa.pendentesQtd} operação(ões) aguardando sua aprovação
+              </h2>
+              <p className="text-sm text-fg mt-1">
+                {formatBRLcompact(mesa.pendentesValor)} em volume.{" "}
+                {mesa.pendentesMais3d > 0 && (
+                  <span className="text-warn font-semibold">
+                    {mesa.pendentesMais3d} esperando há mais de 3 dias.
+                  </span>
+                )}
+              </p>
+              {(mesa.tmdHoras != null || mesa.pctAprovacao90d != null) && (
+                <p className="text-xs text-fg-muted mt-1">
+                  TMD 90d:{" "}
+                  {mesa.tmdHoras != null
+                    ? `${mesa.tmdHoras.toFixed(1)}h`
+                    : "—"}{" "}
+                  · aprovação 90d:{" "}
+                  {mesa.pctAprovacao90d != null
+                    ? `${(mesa.pctAprovacao90d * 100).toFixed(0)}%`
+                    : "—"}
+                </p>
+              )}
+            </div>
+            <Link
+              href="/painel/aprovar"
+              className="btn-primary !h-11 !px-5 shrink-0"
+            >
+              Decidir agora →
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-success/30 bg-green-50 p-5 mb-6 flex items-center gap-3">
+          <span className="text-2xl">✓</span>
+          <div>
+            <h2 className="font-bold text-success">Mesa vazia</h2>
+            <p className="text-sm text-fg-muted">
+              Sem operações pendentes da sua decisão.{" "}
+              {mesa.tmdHoras != null && mesa.pctAprovacao90d != null && (
+                <>
+                  TMD 90d: {mesa.tmdHoras.toFixed(1)}h · aprovação:{" "}
+                  {(mesa.pctAprovacao90d * 100).toFixed(0)}%
+                </>
+              )}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* === 2. CAPACIDADE & CARTEIRA === */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <Stat
-          label="A vencer"
-          value={formatBRL(totals.valorAVencer)}
-          sub="parcelas pendentes"
+          label="Comprometido (ativo)"
+          value={formatBRLcompact(capacidade.comprometido)}
+          sub={`taxa média ${(capacidade.taxaMediaAtiva * 100).toFixed(2).replace(".", ",")}% am`}
           highlight
+        />
+        <Stat
+          label="A receber 30d"
+          value={formatBRLcompact(capacidade.recebivel30d)}
+          sub={`60d: ${formatBRLcompact(capacidade.recebivel60d)} · 90d: ${formatBRLcompact(capacidade.recebivel90d)}`}
+        />
+        <Stat
+          label="Faturado este mês"
+          value={formatBRLcompact(capacidade.faturadoMes)}
+          sub="parcelas pagas"
+          tone="success"
         />
         <Stat
           label="Vencidas"
           value={formatBRL(totals.valorVencido)}
-          sub="atenção necessária"
-          tone="warn"
-        />
-        <Stat
-          label="Faturado no mês"
-          value={formatBRL(totals.faturadoNoMes)}
-          sub="parcelas pagas neste mês"
-          tone="success"
-        />
-        <Stat
-          label="Lucro do fundo"
-          value={formatBRL(totals.lucroAcumulado)}
-          sub="custo do dinheiro + 50% do spread"
+          sub="inadimplência aberta"
+          tone={totals.valorVencido > 0 ? "warn" : "default"}
         />
       </div>
 
-      {/* KPIs gerais */}
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      {/* === 3. PORTFOLIO STATS === */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <Stat
-          label="Operações"
+          label="Lucro acumulado"
+          value={formatBRLcompact(totals.lucroAcumulado)}
+          sub="custo do dinheiro + 50% spread"
+        />
+        <Stat
+          label="Ops ativas"
           value={String(totals.qtdOperacoes)}
-          sub={`${operacoes.length} no total`}
+          sub={`ticket médio ${formatBRLcompact(capacidade.ticketMedio)}`}
         />
         <Stat
           label="Construtoras"
           value={String(construtoras.length)}
-          sub="distintas operadas"
+          sub={`${imobiliarias.length} imobiliárias`}
         />
         <Stat
-          label="Imobiliárias"
-          value={String(imobiliarias.length)}
-          sub="distintas operadas"
+          label="Recebíveis totais"
+          value={formatBRLcompact(capacidade.recebivelTotal)}
+          sub="todas as parcelas em aberto"
         />
       </div>
 
-      {/* Ops aguardando decisão */}
-      {pendentes && pendentes.length > 0 && (
-        <div className="rounded-2xl border border-accent/40 bg-accent-soft p-5 mb-6 flex items-start gap-4">
-          <span className="size-9 rounded-full bg-accent text-white flex items-center justify-center text-xl shrink-0">
-            🎯
-          </span>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-accent">
-              {pendentes.length} operaç
-              {pendentes.length === 1 ? "ão aguardando" : "ões aguardando"}{" "}
-              sua aprovação
-            </h2>
-            <p className="mt-1 text-fg-muted text-sm">
-              Mesa de decisão com score da construtora, badges de IA e
-              detalhamento financeiro consolidado.
-            </p>
-          </div>
-          <Link
-            href="/painel/aprovar"
-            className="btn-primary !h-10 !px-4 shrink-0"
-          >
-            Decidir agora →
-          </Link>
-        </div>
-      )}
-
-      {/* Alertas de concentração */}
+      {/* === 4. ALERTAS DE RISCO === */}
       {alertasConcentracao.length > 0 && (
         <div className="rounded-2xl border border-warn/40 bg-yellow-50 p-5 mb-6 flex items-start gap-4">
           <span className="size-9 rounded-full bg-warn/20 text-warn flex items-center justify-center text-xl shrink-0">
@@ -138,10 +191,7 @@ export async function FundoDashboard({ user }: { user: User }) {
             <p className="mt-1 text-fg-muted text-sm">
               {alertasConcentracao
                 .slice(0, 3)
-                .map(
-                  (a) =>
-                    `${a.nome} (${(a.pct * 100).toFixed(0)}%)`,
-                )
+                .map((a) => `${a.nome} (${(a.pct * 100).toFixed(0)}%)`)
                 .join(", ")}
               {alertasConcentracao.length > 3 &&
                 ` e mais ${alertasConcentracao.length - 3}`}
@@ -152,12 +202,12 @@ export async function FundoDashboard({ user }: { user: User }) {
             href="/painel/risco"
             className="btn-primary !h-10 !px-4 shrink-0 !bg-warn hover:!bg-warn/90"
           >
-            Ver análise de risco →
+            Ver risco →
           </Link>
         </div>
       )}
 
-      {/* Benchmark vs CDI */}
+      {/* === 5. BENCHMARK vs CDI === */}
       {benchmark && benchmark.parcelasPagas > 0 && (
         <div
           className={`rounded-2xl border p-5 md:p-6 mb-6 ${
@@ -232,27 +282,24 @@ export async function FundoDashboard({ user }: { user: User }) {
         </div>
       )}
 
-      {/* Botão extrato contábil */}
-      <div className="mb-6 flex justify-end">
-        <a
-          href={`/api/painel/extrato-contabil?ano=${new Date().getFullYear()}&mes=${String(new Date().getMonth() + 1).padStart(2, "0")}`}
-          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg border border-border bg-bg-elev text-fg text-sm font-semibold hover:border-accent hover:text-accent transition-colors"
-          title="Baixa CSV com decomposição contábil das parcelas pagas no mês atual"
-        >
-          📊 Extrato contábil (mês atual)
-        </a>
-      </div>
+      {/* === 6. CALENDÁRIO + RECENTES === */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+        <CalendarList
+          items={calendario}
+          title="próximos recebíveis · 30 dias"
+          emptyText="Sem parcelas a receber nos próximos 30 dias."
+          href="/painel/recebimentos"
+          hrefLabel="ver calendário completo"
+        />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Últimas operações */}
-        <section className="lg:col-span-2 rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
           <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
             <h2 className="font-bold tracking-tight">Operações recentes</h2>
             <Link
               href="/painel/operacoes"
               className="text-accent text-xs font-semibold hover:underline"
             >
-              Ver todas →
+              ver todas →
             </Link>
           </div>
           {ultimas.length === 0 ? (
@@ -288,11 +335,13 @@ export async function FundoDashboard({ user }: { user: User }) {
             </ul>
           )}
         </section>
+      </div>
 
-        {/* Top construtoras */}
-        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+      {/* === 7. Top construtoras + atalho extrato === */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <section className="lg:col-span-2 rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-4">
-            top construtoras
+            top construtoras na sua carteira
           </div>
           {construtoras.length === 0 ? (
             <p className="text-sm text-fg-muted text-center py-4">
@@ -321,6 +370,33 @@ export async function FundoDashboard({ user }: { user: User }) {
             </ul>
           )}
         </section>
+
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6 flex flex-col gap-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim">
+            atalhos · contábil & relatórios
+          </div>
+          <a
+            href={`/api/painel/extrato-contabil?ano=${new Date().getFullYear()}&mes=${String(new Date().getMonth() + 1).padStart(2, "0")}`}
+            className="inline-flex items-center justify-between gap-2 h-11 px-4 rounded-lg border border-border bg-bg text-fg text-sm font-semibold hover:border-accent hover:text-accent transition-colors"
+          >
+            <span>Extrato contábil (mês atual)</span>
+            <span>📊</span>
+          </a>
+          <Link
+            href="/painel/forecast"
+            className="inline-flex items-center justify-between gap-2 h-11 px-4 rounded-lg border border-border bg-bg text-fg text-sm font-semibold hover:border-accent hover:text-accent transition-colors"
+          >
+            <span>Forecast detalhado</span>
+            <span>→</span>
+          </Link>
+          <Link
+            href="/painel/relatorio"
+            className="inline-flex items-center justify-between gap-2 h-11 px-4 rounded-lg border border-border bg-bg text-fg text-sm font-semibold hover:border-accent hover:text-accent transition-colors"
+          >
+            <span>Relatório da carteira</span>
+            <span>→</span>
+          </Link>
+        </section>
       </div>
     </PainelShell>
   );
@@ -345,14 +421,18 @@ function Stat({
       ? "border-warn/40 bg-yellow-50"
       : tone === "success"
         ? "border-success/40 bg-green-50"
-        : "border-border bg-bg-elev";
+        : tone === "danger"
+          ? "border-danger/40 bg-red-50"
+          : "border-border bg-bg-elev";
   const labelColor = highlight
     ? "text-accent"
     : tone === "warn"
       ? "text-warn"
       : tone === "success"
         ? "text-success"
-        : "text-fg-dim";
+        : tone === "danger"
+          ? "text-danger"
+          : "text-fg-dim";
   return (
     <div className={`rounded-2xl border p-4 md:p-5 ${baseClass}`}>
       <div
@@ -363,7 +443,9 @@ function Stat({
       <div className="font-mono tabular text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold tracking-tight text-fg leading-tight break-words">
         {value}
       </div>
-      {sub && <div className="text-[10px] md:text-xs text-fg-muted mt-1">{sub}</div>}
+      {sub && (
+        <div className="text-[10px] md:text-xs text-fg-muted mt-1">{sub}</div>
+      )}
     </div>
   );
 }
