@@ -7,11 +7,18 @@ type EnvKey =
   | "databaseUrl"
   | "clerkSecretKey"
   | "resendApiKey"
+  | "resendFrom"
   | "twilioSid"
+  | "twilioAuthToken"
+  | "twilioFromNumber"
   | "zapsignToken"
   | "siteUrl"
   | "cronSecret"
-  | "anthropicApiKey";
+  | "anthropicApiKey"
+  | "antecipaquiCnpj"
+  | "antecipaquiSignerName"
+  | "antecipaquiSignerEmail"
+  | "adminEmails";
 
 type Tutorial = {
   envName: string;
@@ -269,6 +276,143 @@ const TUTORIALS: Record<EnvKey, Tutorial> = {
     vercel: "Vercel → Settings → Environment Variables → Add ANTHROPIC_API_KEY",
     related: ["ANTHROPIC_MODEL (opcional, default claude-haiku-4-5)"],
   },
+  resendFrom: {
+    envName: "RESEND_FROM",
+    service: "Remetente dos emails (Resend)",
+    why: "Sem isso, os emails saem de um remetente default (placeholder). Configura o nome amigável e o endereço que aparece em todos os emails transacionais (cobrança, recap, convite, boas-vindas).",
+    steps: [
+      {
+        title: "Verificar o domínio no Resend",
+        body: "Antes de definir RESEND_FROM, certifique-se de que antecipaqui.digital está com DNS verificado no Resend (DKIM/SPF). Se não, configure primeiro.",
+        link: {
+          href: "https://resend.com/docs/dashboard/domains/introduction",
+          label: "Docs domínio Resend",
+        },
+      },
+      {
+        title: "Definir o valor",
+        body: 'Use formato RFC: "Antecipaqui <contato@antecipaqui.digital>". O endereço precisa ser do domínio verificado.',
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add. Nome: RESEND_FROM. Marque Production + Preview + Development.",
+      },
+    ],
+    vercel: "Vercel → Settings → Environment Variables → Add RESEND_FROM",
+    related: ["RESEND_API_KEY"],
+  },
+  twilioAuthToken: {
+    envName: "TWILIO_AUTH_TOKEN",
+    service: "Twilio (par com TWILIO_ACCOUNT_SID)",
+    why: "Opcional, mas obrigatório se você usa Twilio pra SMS. Sem isso, mesmo com SID configurado, as chamadas falham com 401.",
+    steps: [
+      {
+        title: "Pegar no Twilio Console",
+        body: "Console Dashboard mostra ACCOUNT_SID e AUTH_TOKEN lado a lado. Clique em 'View' pra revelar o token.",
+        link: {
+          href: "https://console.twilio.com",
+          label: "Twilio Console",
+        },
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add TWILIO_AUTH_TOKEN. Production + Preview + Development.",
+      },
+    ],
+    vercel: "Vercel → Settings → Environment Variables → Add TWILIO_AUTH_TOKEN",
+    related: ["TWILIO_ACCOUNT_SID", "TWILIO_FROM_NUMBER"],
+  },
+  twilioFromNumber: {
+    envName: "TWILIO_FROM_NUMBER",
+    service: "Twilio (número remetente do SMS)",
+    why: "Opcional. Sem isso, mesmo com SID/AUTH_TOKEN, o envio falha porque Twilio não sabe de qual número emitir o SMS.",
+    steps: [
+      {
+        title: "Comprar/escolher número",
+        body: "Twilio Console → Phone Numbers → Active. Copie no formato +5511999999999 (com código do país, sem espaços).",
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add TWILIO_FROM_NUMBER. Production + Preview + Development.",
+      },
+    ],
+    vercel:
+      "Vercel → Settings → Environment Variables → Add TWILIO_FROM_NUMBER",
+    related: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"],
+  },
+  antecipaquiCnpj: {
+    envName: "ANTECIPAQUI_CNPJ",
+    service: "Identificação da Antecipaqui em contratos",
+    why: "Aparece no PDF do contrato de cessão de comissão como CNPJ da cessionária. Sem isso, o contrato fica com placeholder.",
+    steps: [
+      {
+        title: "Definir o CNPJ",
+        body: "Use o CNPJ da empresa que vai constar como cessionária (só dígitos ou com pontuação). Ex: 12.345.678/0001-90.",
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add ANTECIPAQUI_CNPJ. Production + Preview + Development.",
+      },
+    ],
+    vercel: "Vercel → Settings → Environment Variables → Add ANTECIPAQUI_CNPJ",
+    related: ["ANTECIPAQUI_SIGNER_NAME", "ANTECIPAQUI_SIGNER_EMAIL"],
+  },
+  antecipaquiSignerName: {
+    envName: "ANTECIPAQUI_SIGNER_NAME",
+    service: "Assinante da Antecipaqui em contratos (ZapSign)",
+    why: "Nome do representante legal da Antecipaqui que vai aparecer e assinar o contrato pela cessionária. Sem isso, o ZapSign envia pro placeholder.",
+    steps: [
+      {
+        title: "Definir o nome",
+        body: "Nome completo do representante legal autorizado a assinar contratos de cessão.",
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add ANTECIPAQUI_SIGNER_NAME. Production + Preview + Development.",
+      },
+    ],
+    vercel:
+      "Vercel → Settings → Environment Variables → Add ANTECIPAQUI_SIGNER_NAME",
+    related: ["ANTECIPAQUI_SIGNER_EMAIL", "ANTECIPAQUI_CNPJ"],
+  },
+  antecipaquiSignerEmail: {
+    envName: "ANTECIPAQUI_SIGNER_EMAIL",
+    service: "Email do assinante Antecipaqui (ZapSign)",
+    why: "Email pro qual o ZapSign envia o link de assinatura pela cessionária. Sem isso, o contrato é gerado mas o signatário da Antecipaqui não recebe.",
+    steps: [
+      {
+        title: "Definir o email",
+        body: "Email do representante legal que assina os contratos. Usar um inbox monitorado (não um endereço que ninguém abre).",
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add ANTECIPAQUI_SIGNER_EMAIL. Production + Preview + Development.",
+      },
+    ],
+    vercel:
+      "Vercel → Settings → Environment Variables → Add ANTECIPAQUI_SIGNER_EMAIL",
+    related: ["ANTECIPAQUI_SIGNER_NAME", "ZAPSIGN_API_TOKEN"],
+  },
+  adminEmails: {
+    envName: "ADMIN_EMAILS",
+    service: "Lista de admins autorizados (bootstrap)",
+    why: "Lista de emails (separados por vírgula) que ganham role=admin automaticamente no primeiro login. Sem isso, ninguém consegue acessar o painel admin sem promoção manual via SQL.",
+    steps: [
+      {
+        title: "Listar os emails",
+        body: 'Use vírgula como separador, sem espaços. Ex: "mathe@diretoriow.com.br,joao@antecipaqui.com.br".',
+      },
+      {
+        title: "Adicionar no Vercel",
+        body: "Vercel → Settings → Environment Variables → Add ADMIN_EMAILS. Production + Preview + Development.",
+      },
+      {
+        title: "Validar",
+        body: "Faça logout e login com um dos emails listados. O role já vem como admin.",
+      },
+    ],
+    vercel: "Vercel → Settings → Environment Variables → Add ADMIN_EMAILS",
+  },
 };
 
 const SERVICE_LABEL: Record<EnvKey, string> = {
@@ -276,11 +420,18 @@ const SERVICE_LABEL: Record<EnvKey, string> = {
   databaseUrl: "Postgres (DATABASE_URL)",
   clerkSecretKey: "Clerk auth (CLERK_SECRET_KEY)",
   resendApiKey: "Resend email (RESEND_API_KEY)",
+  resendFrom: "Remetente emails (RESEND_FROM)",
   twilioSid: "Twilio SMS (TWILIO_ACCOUNT_SID)",
+  twilioAuthToken: "Twilio token (TWILIO_AUTH_TOKEN)",
+  twilioFromNumber: "Twilio número (TWILIO_FROM_NUMBER)",
   zapsignToken: "ZapSign (ZAPSIGN_API_TOKEN)",
   siteUrl: "Site URL (NEXT_PUBLIC_SITE_URL)",
   cronSecret: "Crons (CRON_SECRET)",
   anthropicApiKey: "Claude OCR (ANTHROPIC_API_KEY)",
+  antecipaquiCnpj: "CNPJ da cessionária (ANTECIPAQUI_CNPJ)",
+  antecipaquiSignerName: "Assinante AQ — nome (ANTECIPAQUI_SIGNER_NAME)",
+  antecipaquiSignerEmail: "Assinante AQ — email (ANTECIPAQUI_SIGNER_EMAIL)",
+  adminEmails: "Admins bootstrap (ADMIN_EMAILS)",
 };
 
 export function EnvVarsList({

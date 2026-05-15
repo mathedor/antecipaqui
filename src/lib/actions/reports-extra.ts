@@ -590,11 +590,18 @@ export async function getSystemHealth() {
     databaseUrl: !!process.env.DATABASE_URL,
     clerkSecretKey: !!process.env.CLERK_SECRET_KEY,
     resendApiKey: !!process.env.RESEND_API_KEY,
+    resendFrom: !!process.env.RESEND_FROM,
     twilioSid: !!process.env.TWILIO_ACCOUNT_SID,
+    twilioAuthToken: !!process.env.TWILIO_AUTH_TOKEN,
+    twilioFromNumber: !!process.env.TWILIO_FROM_NUMBER,
     zapsignToken: !!process.env.ZAPSIGN_API_TOKEN,
     siteUrl: !!process.env.NEXT_PUBLIC_SITE_URL,
     cronSecret: !!process.env.CRON_SECRET,
     anthropicApiKey: !!process.env.ANTHROPIC_API_KEY,
+    antecipaquiCnpj: !!process.env.ANTECIPAQUI_CNPJ,
+    antecipaquiSignerName: !!process.env.ANTECIPAQUI_SIGNER_NAME,
+    antecipaquiSignerEmail: !!process.env.ANTECIPAQUI_SIGNER_EMAIL,
+    adminEmails: !!process.env.ADMIN_EMAILS,
   };
 
   // Volume de logs por ação nas últimas 24h
@@ -649,19 +656,37 @@ export async function getSystemHealth() {
   // Tabela: tamanho atual por linhas
   const tablesRes = await db.execute(sql`
     SELECT 'users' AS nome, COUNT(*)::int AS qtd FROM users
+    UNION ALL SELECT 'imobiliarias', COUNT(*)::int FROM imobiliarias
     UNION ALL SELECT 'construtoras', COUNT(*)::int FROM construtoras
+    UNION ALL SELECT 'construtora_membros', COUNT(*)::int FROM construtora_membros
+    UNION ALL SELECT 'comerciais', COUNT(*)::int FROM comerciais
     UNION ALL SELECT 'fundos', COUNT(*)::int FROM fundos
+    UNION ALL SELECT 'empreendimentos', COUNT(*)::int FROM empreendimentos
     UNION ALL SELECT 'operacoes', COUNT(*)::int FROM operacoes
+    UNION ALL SELECT 'pending_operacoes', COUNT(*)::int FROM pending_operacoes
     UNION ALL SELECT 'parcelas_comissao', COUNT(*)::int FROM parcelas_comissao
+    UNION ALL SELECT 'parcela_antecipacoes', COUNT(*)::int FROM parcela_antecipacoes
+    UNION ALL SELECT 'parcela_renegociacoes', COUNT(*)::int FROM parcela_renegociacoes
     UNION ALL SELECT 'documentos', COUNT(*)::int FROM documentos
+    UNION ALL SELECT 'documento_solicitacoes', COUNT(*)::int FROM documento_solicitacoes
+    UNION ALL SELECT 'contratos', COUNT(*)::int FROM contratos
     UNION ALL SELECT 'tickets', COUNT(*)::int FROM tickets
+    UNION ALL SELECT 'ticket_messages', COUNT(*)::int FROM ticket_messages
+    UNION ALL SELECT 'mural_messages', COUNT(*)::int FROM mural_messages
+    UNION ALL SELECT 'repositorio_files', COUNT(*)::int FROM repositorio_files
+    UNION ALL SELECT 'comprador_coleta_tokens', COUNT(*)::int FROM comprador_coleta_tokens
+    UNION ALL SELECT 'consultas_credito', COUNT(*)::int FROM consultas_credito
+    UNION ALL SELECT 'faturas_fundo', COUNT(*)::int FROM faturas_fundo
+    UNION ALL SELECT 'comissoes_comercial', COUNT(*)::int FROM comissoes_comercial
+    UNION ALL SELECT 'fundo_api_keys', COUNT(*)::int FROM fundo_api_keys
+    UNION ALL SELECT 'fundo_blacklist', COUNT(*)::int FROM fundo_blacklist
+    UNION ALL SELECT 'fundo_regras_auto_aprovacao', COUNT(*)::int FROM fundo_regras_auto_aprovacao
     UNION ALL SELECT 'notificacoes', COUNT(*)::int FROM notificacoes
     UNION ALL SELECT 'audit_logs', COUNT(*)::int FROM audit_logs
     UNION ALL SELECT 'webhooks_subscriptions', COUNT(*)::int FROM webhooks_subscriptions
     UNION ALL SELECT 'webhooks_eventos', COUNT(*)::int FROM webhooks_eventos
     UNION ALL SELECT 'construtora_score_historico', COUNT(*)::int FROM construtora_score_historico
     UNION ALL SELECT 'recaps_relatorio', COUNT(*)::int FROM recaps_relatorio
-    UNION ALL SELECT 'parcela_antecipacoes', COUNT(*)::int FROM parcela_antecipacoes
     ORDER BY qtd DESC
   `);
   const tables = extractRows<{ nome: string; qtd: number }>(tablesRes);
@@ -856,6 +881,319 @@ export async function getSystemHealth() {
     total24h: number;
   }>(notifRes)[0] ?? { email_ok: 0, sms_ok: 0, total24h: 0 };
 
+  /* ===== CHAT (tickets + mensagens) ===== */
+  const chatRes = await db.execute(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE status = 'aberto')::int AS abertos,
+      COUNT(*) FILTER (WHERE status = 'aberto' AND arquivado_em IS NULL)::int AS ativos,
+      COUNT(*) FILTER (WHERE arquivado_em IS NOT NULL)::int AS arquivados,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int AS criados24h
+    FROM tickets
+  `);
+  const chatTickets = extractRows<{
+    abertos: number;
+    ativos: number;
+    arquivados: number;
+    criados24h: number;
+  }>(chatRes)[0] ?? { abertos: 0, ativos: 0, arquivados: 0, criados24h: 0 };
+
+  const chatMsgRes = await db.execute(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int AS msgs24h,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours' AND kind = 'system')::int AS sys24h,
+      COUNT(*) FILTER (WHERE attachments IS NOT NULL AND created_at >= NOW() - INTERVAL '7 days')::int AS anexos7d
+    FROM ticket_messages
+  `);
+  const chatMsgs = extractRows<{
+    msgs24h: number;
+    sys24h: number;
+    anexos7d: number;
+  }>(chatMsgRes)[0] ?? { msgs24h: 0, sys24h: 0, anexos7d: 0 };
+
+  // Tickets sem resposta há mais de 3 dias (SLA)
+  const chatSlaRes = await db.execute(sql`
+    SELECT COUNT(*)::int AS qtd
+    FROM tickets t
+    WHERE t.status = 'aberto'
+      AND t.arquivado_em IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM ticket_messages tm
+        WHERE tm.ticket_id = t.id
+          AND tm.kind = 'user'
+          AND tm.created_at >= NOW() - INTERVAL '3 days'
+      )
+  `);
+  const chatSla = extractRows<{ qtd: number }>(chatSlaRes)[0]?.qtd ?? 0;
+
+  const chat = {
+    ...chatTickets,
+    ...chatMsgs,
+    sem_resposta_3d: chatSla,
+  };
+
+  /* ===== FATURAS DOS FUNDOS ===== */
+  const faturasRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status = 'pendente')::int AS pendentes,
+      COUNT(*) FILTER (WHERE status = 'paga')::int AS pagas,
+      COUNT(*) FILTER (WHERE status = 'parcial')::int AS parciais,
+      COUNT(*) FILTER (WHERE status = 'vencida')::int AS vencidas,
+      COUNT(*) FILTER (WHERE status = 'pendente' AND vencimento < CURRENT_DATE)::int AS pendentes_vencidas,
+      COALESCE(SUM(valor_devido - valor_pago) FILTER (WHERE status IN ('pendente','parcial','vencida'))::float, 0) AS valor_aberto,
+      COUNT(*) FILTER (WHERE emitida_em >= NOW() - INTERVAL '30 days')::int AS emitidas30d
+    FROM faturas_fundo
+  `);
+  const faturas = extractRows<{
+    total: number;
+    pendentes: number;
+    pagas: number;
+    parciais: number;
+    vencidas: number;
+    pendentes_vencidas: number;
+    valor_aberto: number;
+    emitidas30d: number;
+  }>(faturasRes)[0] ?? {
+    total: 0,
+    pendentes: 0,
+    pagas: 0,
+    parciais: 0,
+    vencidas: 0,
+    pendentes_vencidas: 0,
+    valor_aberto: 0,
+    emitidas30d: 0,
+  };
+
+  /* ===== COMISSÕES COMERCIAIS ===== */
+  const comissoesRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status = 'pendente')::int AS pendentes,
+      COUNT(*) FILTER (WHERE status = 'paga')::int AS pagas,
+      COUNT(*) FILTER (WHERE status = 'cancelada')::int AS canceladas,
+      COALESCE(SUM(valor_devido - valor_pago) FILTER (WHERE status = 'pendente')::float, 0) AS valor_pendente,
+      COALESCE(SUM(valor_pago) FILTER (WHERE paga_em >= NOW() - INTERVAL '30 days')::float, 0) AS pago30d
+    FROM comissoes_comercial
+  `);
+  const comissoes = extractRows<{
+    total: number;
+    pendentes: number;
+    pagas: number;
+    canceladas: number;
+    valor_pendente: number;
+    pago30d: number;
+  }>(comissoesRes)[0] ?? {
+    total: 0,
+    pendentes: 0,
+    pagas: 0,
+    canceladas: 0,
+    valor_pendente: 0,
+    pago30d: 0,
+  };
+
+  /* ===== MURAL (recados ativos) ===== */
+  const muralRes = await db.execute(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE active = true AND (expires_at IS NULL OR expires_at > NOW()))::int AS ativos,
+      COUNT(*) FILTER (WHERE active = true AND expires_at IS NOT NULL AND expires_at <= NOW())::int AS expirados_ativos,
+      COUNT(*)::int AS total,
+      MAX(created_at) AS ultimo_em
+    FROM mural_messages
+  `);
+  const mural = extractRows<{
+    ativos: number;
+    expirados_ativos: number;
+    total: number;
+    ultimo_em: string | null;
+  }>(muralRes)[0] ?? {
+    ativos: 0,
+    expirados_ativos: 0,
+    total: 0,
+    ultimo_em: null,
+  };
+
+  /* ===== REPOSITÓRIO de arquivos (uploads admin) ===== */
+  const repoRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int AS criados7d,
+      COALESCE(SUM(size_bytes)::float, 0) AS bytes
+    FROM repositorio_files
+  `);
+  const repositorio = extractRows<{
+    total: number;
+    criados7d: number;
+    bytes: number;
+  }>(repoRes)[0] ?? { total: 0, criados7d: 0, bytes: 0 };
+
+  /* ===== CRÉDITO (consultas Serasa/Boavista) ===== */
+  const creditoRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE consultado_em >= NOW() - INTERVAL '24 hours')::int AS consultas24h,
+      COUNT(*) FILTER (WHERE consultado_em >= NOW() - INTERVAL '30 days')::int AS consultas30d,
+      COUNT(DISTINCT documento)::int AS docs_unicos,
+      COUNT(*) FILTER (WHERE provedor = 'stub')::int AS stub_total,
+      COUNT(*) FILTER (WHERE risco IN ('alto','critico'))::int AS risco_alto
+    FROM consultas_credito
+  `);
+  const credito = extractRows<{
+    total: number;
+    consultas24h: number;
+    consultas30d: number;
+    docs_unicos: number;
+    stub_total: number;
+    risco_alto: number;
+  }>(creditoRes)[0] ?? {
+    total: 0,
+    consultas24h: 0,
+    consultas30d: 0,
+    docs_unicos: 0,
+    stub_total: 0,
+    risco_alto: 0,
+  };
+
+  /* ===== API EXTERNA dos fundos ===== */
+  const apiKeysRes = await db.execute(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE revoked_at IS NULL)::int AS ativas,
+      COUNT(*) FILTER (WHERE revoked_at IS NOT NULL)::int AS revogadas,
+      COUNT(*) FILTER (WHERE last_used_at IS NOT NULL AND last_used_at >= NOW() - INTERVAL '24 hours')::int AS usadas24h,
+      COUNT(*) FILTER (WHERE last_used_at IS NULL AND revoked_at IS NULL)::int AS nunca_usadas,
+      MAX(last_used_at) AS ultimo_uso
+    FROM fundo_api_keys
+  `);
+  const apiKeys = extractRows<{
+    ativas: number;
+    revogadas: number;
+    usadas24h: number;
+    nunca_usadas: number;
+    ultimo_uso: string | null;
+  }>(apiKeysRes)[0] ?? {
+    ativas: 0,
+    revogadas: 0,
+    usadas24h: 0,
+    nunca_usadas: 0,
+    ultimo_uso: null,
+  };
+
+  /* ===== CONVITES DE COMPRADOR (coleta de dados via link) ===== */
+  const compradorRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE preenchido_em IS NULL AND expires_at > NOW())::int AS aguardando,
+      COUNT(*) FILTER (WHERE preenchido_em IS NOT NULL)::int AS preenchidos,
+      COUNT(*) FILTER (WHERE preenchido_em IS NULL AND expires_at <= NOW())::int AS expirados,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int AS criados7d
+    FROM comprador_coleta_tokens
+  `);
+  const compradorTokens = extractRows<{
+    total: number;
+    aguardando: number;
+    preenchidos: number;
+    expirados: number;
+    criados7d: number;
+  }>(compradorRes)[0] ?? {
+    total: 0,
+    aguardando: 0,
+    preenchidos: 0,
+    expirados: 0,
+    criados7d: 0,
+  };
+
+  /* ===== ANTECIPAÇÕES E RENEGOCIAÇÕES DE PARCELAS ===== */
+  const antecipRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status = 'pendente')::int AS pendentes,
+      COUNT(*) FILTER (WHERE status = 'aprovada')::int AS aprovadas,
+      COUNT(*) FILTER (WHERE status = 'quitada')::int AS quitadas,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS criadas30d
+    FROM parcela_antecipacoes
+  `);
+  const antecipacoes = extractRows<{
+    total: number;
+    pendentes: number;
+    aprovadas: number;
+    quitadas: number;
+    criadas30d: number;
+  }>(antecipRes)[0] ?? {
+    total: 0,
+    pendentes: 0,
+    aprovadas: 0,
+    quitadas: 0,
+    criadas30d: 0,
+  };
+
+  const renegRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status = 'pendente')::int AS pendentes,
+      COUNT(*) FILTER (WHERE status = 'aplicada')::int AS aplicadas,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS criadas30d
+    FROM parcela_renegociacoes
+  `);
+  const renegociacoes = extractRows<{
+    total: number;
+    pendentes: number;
+    aplicadas: number;
+    criadas30d: number;
+  }>(renegRes)[0] ?? { total: 0, pendentes: 0, aplicadas: 0, criadas30d: 0 };
+
+  /* ===== SOLICITAÇÕES DE DOCUMENTOS (pendências) ===== */
+  const docsSolRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status = 'pendente')::int AS pendentes,
+      COUNT(*) FILTER (WHERE status = 'atendida')::int AS atendidas,
+      COUNT(*) FILTER (WHERE status = 'pendente' AND created_at < NOW() - INTERVAL '7 days')::int AS pendentes_7d_plus
+    FROM documento_solicitacoes
+  `);
+  const docsSol = extractRows<{
+    total: number;
+    pendentes: number;
+    atendidas: number;
+    pendentes_7d_plus: number;
+  }>(docsSolRes)[0] ?? {
+    total: 0,
+    pendentes: 0,
+    atendidas: 0,
+    pendentes_7d_plus: 0,
+  };
+
+  /* ===== CONTRATOS ZapSign (estado da assinatura) ===== */
+  const contratosRes = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status = 'gerado')::int AS gerados,
+      COUNT(*) FILTER (WHERE status IN ('enviado_assinatura','parcialmente_assinado'))::int AS aguardando_assinatura,
+      COUNT(*) FILTER (WHERE status = 'totalmente_assinado')::int AS assinados,
+      COUNT(*) FILTER (WHERE status = 'cancelado')::int AS cancelados,
+      COUNT(*) FILTER (
+        WHERE status IN ('enviado_assinatura','parcialmente_assinado')
+        AND created_at < NOW() - INTERVAL '5 days'
+      )::int AS travados_5d,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS criados30d
+    FROM contratos
+  `);
+  const contratos = extractRows<{
+    total: number;
+    gerados: number;
+    aguardando_assinatura: number;
+    assinados: number;
+    cancelados: number;
+    travados_5d: number;
+    criados30d: number;
+  }>(contratosRes)[0] ?? {
+    total: 0,
+    gerados: 0,
+    aguardando_assinatura: 0,
+    assinados: 0,
+    cancelados: 0,
+    travados_5d: 0,
+    criados30d: 0,
+  };
+
   return {
     env,
     last24h,
@@ -869,5 +1207,17 @@ export async function getSystemHealth() {
     recaps: { list: recapsList, hoje: recapsHoje },
     snapshots24h,
     notif,
+    chat,
+    faturas,
+    comissoes,
+    mural,
+    repositorio,
+    credito,
+    apiKeys,
+    compradorTokens,
+    antecipacoes,
+    renegociacoes,
+    docsSol,
+    contratos,
   };
 }

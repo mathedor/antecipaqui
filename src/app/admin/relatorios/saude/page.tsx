@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { getSystemHealth } from "@/lib/actions/reports-extra";
 import { EnvVarsList } from "@/components/env-var-help";
+import { formatBRLcompact } from "@/lib/format";
 
 export const metadata = { title: "Admin · Saúde do sistema" };
 export const dynamic = "force-dynamic";
@@ -17,6 +18,18 @@ function timeAgo(iso: string | null): string {
   if (h < 48) return `${h}h atrás`;
   const d = Math.floor(h / 24);
   return `${d}d atrás`;
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let v = bytes;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
 function fmtDT(iso: string | null): string {
@@ -123,7 +136,7 @@ export default async function AdminSaudePage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <KpiCard
           label="Eventos hoje"
           value={String(health.todayQty)}
@@ -143,6 +156,33 @@ export default async function AdminSaudePage() {
           label="Snapshots score 24h"
           value={String(health.snapshots24h)}
           sub={`${health.notif.total24h} notificações enviadas`}
+        />
+      </div>
+
+      {/* === KPIs de features novas === */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        <KpiCard
+          label="Chat · abertos"
+          value={String(health.chat.abertos)}
+          sub={`${health.chat.msgs24h} msgs 24h · ${health.chat.sem_resposta_3d} sem resposta 3d+`}
+          tone={health.chat.sem_resposta_3d > 5 ? "warn" : "default"}
+        />
+        <KpiCard
+          label="Faturas em aberto"
+          value={formatBRLcompact(health.faturas.valor_aberto)}
+          sub={`${health.faturas.pendentes + health.faturas.parciais + health.faturas.vencidas} fatura(s) · ${health.faturas.vencidas} vencida(s)`}
+          tone={health.faturas.vencidas > 0 ? "warn" : "default"}
+        />
+        <KpiCard
+          label="Comissões a pagar"
+          value={formatBRLcompact(health.comissoes.valor_pendente)}
+          sub={`${health.comissoes.pendentes} pendente(s) · pago 30d: ${formatBRLcompact(health.comissoes.pago30d)}`}
+        />
+        <KpiCard
+          label="Contratos travados"
+          value={String(health.contratos.travados_5d)}
+          sub={`${health.contratos.aguardando_assinatura} aguardando · ${health.contratos.assinados} assinados`}
+          tone={health.contratos.travados_5d > 0 ? "warn" : "default"}
         />
       </div>
 
@@ -438,6 +478,437 @@ export default async function AdminSaudePage() {
                 </tbody>
               </table>
             </div>
+          )}
+        </section>
+
+        {/* === CHAT (tickets) === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-3 mb-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim">
+              chat · tickets
+            </div>
+            <Link
+              href="/admin/tickets"
+              className="text-accent text-xs font-semibold hover:underline"
+            >
+              abrir tickets →
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat label="Abertos" value={String(health.chat.abertos)} />
+            <MiniStat
+              label="Criados 24h"
+              value={String(health.chat.criados24h)}
+            />
+            <MiniStat
+              label="Arquivados"
+              value={String(health.chat.arquivados)}
+            />
+            <MiniStat label="Msgs 24h" value={String(health.chat.msgs24h)} />
+            <MiniStat
+              label="Mensagens system 24h"
+              value={String(health.chat.sys24h)}
+            />
+            <MiniStat
+              label="Anexos 7d"
+              value={String(health.chat.anexos7d)}
+            />
+            <MiniStat
+              label="Sem resposta 3d+"
+              value={String(health.chat.sem_resposta_3d)}
+              tone={
+                health.chat.sem_resposta_3d > 10
+                  ? "danger"
+                  : health.chat.sem_resposta_3d > 5
+                    ? "warn"
+                    : "default"
+              }
+            />
+          </div>
+          <p className="text-[11px] text-fg-dim mt-3">
+            Auto-nudge (cron 12:30 UTC) cutuca chats sem resposta automaticamente.
+          </p>
+        </section>
+
+        {/* === FATURAS DOS FUNDOS === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-3 mb-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim">
+              faturas dos fundos
+            </div>
+            <Link
+              href="/admin/faturas"
+              className="text-accent text-xs font-semibold hover:underline"
+            >
+              gerenciar →
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat label="Total" value={String(health.faturas.total)} />
+            <MiniStat
+              label="Pendentes"
+              value={String(health.faturas.pendentes)}
+              tone={health.faturas.pendentes > 0 ? "warn" : "default"}
+            />
+            <MiniStat label="Pagas" value={String(health.faturas.pagas)} />
+            <MiniStat label="Parciais" value={String(health.faturas.parciais)} />
+            <MiniStat
+              label="Vencidas"
+              value={String(health.faturas.vencidas)}
+              tone={health.faturas.vencidas > 0 ? "danger" : "success"}
+            />
+            <MiniStat
+              label="Emitidas 30d"
+              value={String(health.faturas.emitidas30d)}
+            />
+          </div>
+          <p className="text-[11px] text-fg-dim mt-3">
+            Valor total em aberto:{" "}
+            <span className="font-bold text-fg">
+              {formatBRLcompact(health.faturas.valor_aberto)}
+            </span>
+          </p>
+        </section>
+
+        {/* === COMISSÕES COMERCIAIS === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-3 mb-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim">
+              comissões dos comerciais
+            </div>
+            <Link
+              href="/admin/comerciais/comissoes"
+              className="text-accent text-xs font-semibold hover:underline"
+            >
+              pagar →
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat label="Total" value={String(health.comissoes.total)} />
+            <MiniStat
+              label="Pendentes"
+              value={String(health.comissoes.pendentes)}
+              tone={health.comissoes.pendentes > 0 ? "warn" : "default"}
+            />
+            <MiniStat label="Pagas" value={String(health.comissoes.pagas)} />
+            <MiniStat
+              label="Canceladas"
+              value={String(health.comissoes.canceladas)}
+            />
+            <MiniStat
+              label="A pagar"
+              value={formatBRLcompact(health.comissoes.valor_pendente)}
+            />
+            <MiniStat
+              label="Pago 30d"
+              value={formatBRLcompact(health.comissoes.pago30d)}
+            />
+          </div>
+        </section>
+
+        {/* === CONTRATOS ZapSign === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-3 mb-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim">
+              contratos · assinatura digital
+            </div>
+            <span className="text-[10px] text-fg-dim font-mono">
+              integra ZapSign
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat label="Total" value={String(health.contratos.total)} />
+            <MiniStat
+              label="Gerados"
+              value={String(health.contratos.gerados)}
+            />
+            <MiniStat
+              label="Aguardando assin."
+              value={String(health.contratos.aguardando_assinatura)}
+              tone={
+                health.contratos.aguardando_assinatura > 0 ? "warn" : "default"
+              }
+            />
+            <MiniStat
+              label="Assinados"
+              value={String(health.contratos.assinados)}
+              tone="success"
+            />
+            <MiniStat
+              label="Travados 5d+"
+              value={String(health.contratos.travados_5d)}
+              tone={health.contratos.travados_5d > 0 ? "danger" : "success"}
+            />
+            <MiniStat
+              label="Cancelados"
+              value={String(health.contratos.cancelados)}
+            />
+          </div>
+        </section>
+
+        {/* === ANTECIPAÇÕES / RENEGOCIAÇÕES === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-4">
+            antecipações & renegociações de parcelas
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-xs font-semibold text-fg-muted mb-2">
+                Antecipações
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <MiniStat
+                  label="Pendentes"
+                  value={String(health.antecipacoes.pendentes)}
+                  tone={
+                    health.antecipacoes.pendentes > 0 ? "warn" : "default"
+                  }
+                />
+                <MiniStat
+                  label="Aprovadas"
+                  value={String(health.antecipacoes.aprovadas)}
+                />
+                <MiniStat
+                  label="Quitadas"
+                  value={String(health.antecipacoes.quitadas)}
+                />
+                <MiniStat
+                  label="Criadas 30d"
+                  value={String(health.antecipacoes.criadas30d)}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-fg-muted mb-2">
+                Renegociações
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <MiniStat
+                  label="Pendentes"
+                  value={String(health.renegociacoes.pendentes)}
+                  tone={
+                    health.renegociacoes.pendentes > 0 ? "warn" : "default"
+                  }
+                />
+                <MiniStat
+                  label="Aplicadas"
+                  value={String(health.renegociacoes.aplicadas)}
+                />
+                <MiniStat
+                  label="Total"
+                  value={String(health.renegociacoes.total)}
+                />
+                <MiniStat
+                  label="Criadas 30d"
+                  value={String(health.renegociacoes.criadas30d)}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* === ANÁLISE DE CRÉDITO === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-3 mb-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim">
+              análise de crédito
+            </div>
+            <Link
+              href="/admin/credito"
+              className="text-accent text-xs font-semibold hover:underline"
+            >
+              consultar →
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat label="Total" value={String(health.credito.total)} />
+            <MiniStat
+              label="Consultas 24h"
+              value={String(health.credito.consultas24h)}
+            />
+            <MiniStat
+              label="Consultas 30d"
+              value={String(health.credito.consultas30d)}
+            />
+            <MiniStat
+              label="Docs únicos"
+              value={String(health.credito.docs_unicos)}
+            />
+            <MiniStat
+              label="Risco alto/crítico"
+              value={String(health.credito.risco_alto)}
+              tone={health.credito.risco_alto > 0 ? "warn" : "default"}
+            />
+            <MiniStat
+              label="Stub (sem provedor)"
+              value={String(health.credito.stub_total)}
+              tone={
+                health.credito.stub_total > 0 &&
+                health.credito.stub_total === health.credito.total
+                  ? "warn"
+                  : "default"
+              }
+            />
+          </div>
+          {health.credito.stub_total > 0 &&
+            health.credito.stub_total === health.credito.total && (
+              <p className="text-[11px] text-warn mt-3">
+                Todas as consultas usam o provedor stub. Configure
+                CREDIT_PROVIDER_API_KEY para integrar Serasa/Boavista de verdade.
+              </p>
+            )}
+        </section>
+
+        {/* === API EXTERNA / WEBHOOKS DE COBRANÇA === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-3 mb-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim">
+              API externa dos fundos
+            </div>
+            <Link
+              href="/admin/api-docs"
+              className="text-accent text-xs font-semibold hover:underline"
+            >
+              docs →
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat
+              label="Keys ativas"
+              value={String(health.apiKeys.ativas)}
+            />
+            <MiniStat
+              label="Revogadas"
+              value={String(health.apiKeys.revogadas)}
+            />
+            <MiniStat
+              label="Usadas 24h"
+              value={String(health.apiKeys.usadas24h)}
+            />
+            <MiniStat
+              label="Nunca usadas"
+              value={String(health.apiKeys.nunca_usadas)}
+              tone={health.apiKeys.nunca_usadas > 0 ? "warn" : "default"}
+            />
+            <MiniStat
+              label="Último uso"
+              value={health.apiKeys.ultimo_uso ? timeAgo(health.apiKeys.ultimo_uso) : "—"}
+            />
+            <MiniStat
+              label="Subs cobrança"
+              value={`${health.webhooks.subscriptions.ativas}/${health.webhooks.subscriptions.total}`}
+            />
+          </div>
+        </section>
+
+        {/* === CONVITES DE COMPRADOR === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-4">
+            convites de coleta · comprador
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat
+              label="Aguardando"
+              value={String(health.compradorTokens.aguardando)}
+            />
+            <MiniStat
+              label="Preenchidos"
+              value={String(health.compradorTokens.preenchidos)}
+              tone="success"
+            />
+            <MiniStat
+              label="Expirados"
+              value={String(health.compradorTokens.expirados)}
+              tone={health.compradorTokens.expirados > 0 ? "warn" : "default"}
+            />
+            <MiniStat
+              label="Total"
+              value={String(health.compradorTokens.total)}
+            />
+            <MiniStat
+              label="Criados 7d"
+              value={String(health.compradorTokens.criados7d)}
+            />
+            <MiniStat
+              label="Conversão"
+              value={
+                health.compradorTokens.total > 0
+                  ? `${Math.round((health.compradorTokens.preenchidos / health.compradorTokens.total) * 100)}%`
+                  : "—"
+              }
+            />
+          </div>
+        </section>
+
+        {/* === MURAL & REPOSITÓRIO === */}
+        <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-4">
+            mural & repositório
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="flex items-baseline justify-between gap-2 mb-2">
+                <div className="text-xs font-semibold text-fg-muted">
+                  Mural de recados
+                </div>
+                <Link
+                  href="/admin/mural"
+                  className="text-accent text-[10px] font-semibold hover:underline"
+                >
+                  abrir →
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <MiniStat
+                  label="Ativos"
+                  value={String(health.mural.ativos)}
+                />
+                <MiniStat label="Total" value={String(health.mural.total)} />
+                <MiniStat
+                  label="Expirados ativos"
+                  value={String(health.mural.expirados_ativos)}
+                  tone={
+                    health.mural.expirados_ativos > 0 ? "warn" : "default"
+                  }
+                />
+                <MiniStat
+                  label="Último em"
+                  value={health.mural.ultimo_em ? timeAgo(health.mural.ultimo_em) : "—"}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-fg-muted mb-2">
+                Repositório (uploads admin)
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <MiniStat
+                  label="Arquivos"
+                  value={String(health.repositorio.total)}
+                />
+                <MiniStat
+                  label="Criados 7d"
+                  value={String(health.repositorio.criados7d)}
+                />
+                <MiniStat
+                  label="Tamanho"
+                  value={formatBytes(health.repositorio.bytes)}
+                />
+                <MiniStat
+                  label="Solicitações pend."
+                  value={String(health.docsSol.pendentes)}
+                  tone={
+                    health.docsSol.pendentes_7d_plus > 0 ? "warn" : "default"
+                  }
+                />
+              </div>
+            </div>
+          </div>
+          {health.docsSol.pendentes_7d_plus > 0 && (
+            <p className="text-[11px] text-warn mt-3">
+              {health.docsSol.pendentes_7d_plus} solicitação(ões) de documento
+              pendente(s) há mais de 7 dias.
+            </p>
           )}
         </section>
 
