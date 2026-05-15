@@ -4,6 +4,7 @@ import { SairButton } from "@/components/sair-button";
 import { NotificationBell } from "@/components/notification-bell";
 import { VersionFooter } from "@/components/version-footer";
 import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
+import { NavDropdown } from "@/components/nav-dropdown";
 import {
   MobileBottomNav,
   type MobileNavItem,
@@ -17,7 +18,9 @@ type Role =
   | "fundo"
   | "comercial";
 
-type NavItem = { href: string; label: string };
+type NavItem =
+  | { href: string; label: string; submenu?: undefined }
+  | { label: string; submenu: { href: string; label: string }[]; href?: undefined };
 
 const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   corretor: [
@@ -39,18 +42,22 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/suporte", label: "Chats" },
   ],
   construtora: [
-    { href: "/painel", label: "Painel" },
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/duplicatas", label: "Duplicatas" },
     { href: "/painel/extrato", label: "Extrato" },
-    { href: "/painel/empreendimentos", label: "Empreendimentos" },
-    { href: "/painel/documentos", label: "Documentos" },
     { href: "/painel/pendencias", label: "Pendências" },
     { href: "/painel/forecast", label: "Forecast" },
     { href: "/painel/risco", label: "Risco" },
     { href: "/painel/score", label: "Score" },
     { href: "/painel/cashback", label: "Cashback" },
-    { href: "/painel/equipe", label: "Equipe" },
+    {
+      label: "Gestão",
+      submenu: [
+        { href: "/painel/documentos", label: "Documentos" },
+        { href: "/painel/equipe", label: "Equipe" },
+        { href: "/painel/empreendimentos", label: "Empreendimentos" },
+      ],
+    },
     { href: "/painel/suporte", label: "Chats" },
   ],
   admin: [
@@ -184,9 +191,8 @@ const MOBILE_FULLMENU: Record<
     {
       section: "principal",
       items: [
-        { href: "/painel", label: "Painel", icon: "home" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
-        { href: "/painel/empreendimentos", label: "Empreendimentos", icon: "doc" },
+        { href: "/painel/pendencias", label: "Pendências", icon: "doc" },
       ],
     },
     {
@@ -199,16 +205,16 @@ const MOBILE_FULLMENU: Record<
       ],
     },
     {
-      section: "documentos",
+      section: "gestão",
       items: [
-        { href: "/painel/documentos", label: "Central de documentos", icon: "doc" },
-        { href: "/painel/pendencias", label: "Pendências", icon: "doc" },
+        { href: "/painel/documentos", label: "Documentos", icon: "doc" },
+        { href: "/painel/equipe", label: "Equipe", icon: "tag" },
+        { href: "/painel/empreendimentos", label: "Empreendimentos", icon: "doc" },
       ],
     },
     {
       section: "suporte",
       items: [
-        { href: "/painel/equipe", label: "Equipe", icon: "tag" },
         { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
         { href: "/painel/perfil", label: "Editar perfil", icon: "doc" },
@@ -309,7 +315,17 @@ export function PainelShell({
 }) {
   const navAll = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
   const nav = allowedHrefs
-    ? navAll.filter((item) => allowedHrefs.has(item.href))
+    ? navAll.flatMap<NavItem>((item) => {
+        if (item.submenu) {
+          const filtered = item.submenu.filter((s) =>
+            allowedHrefs.has(s.href),
+          );
+          return filtered.length > 0
+            ? [{ label: item.label, submenu: filtered }]
+            : [];
+        }
+        return allowedHrefs.has(item.href) ? [item] : [];
+      })
     : navAll;
   const homeHref = role === "admin" ? "/admin" : "/painel";
   const userLabel = userName ?? ROLE_LABEL[role];
@@ -327,6 +343,16 @@ export function PainelShell({
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             {nav.map((item) => {
+              if (item.submenu) {
+                return (
+                  <NavDropdown
+                    key={item.label}
+                    label={item.label}
+                    items={item.submenu}
+                    active={active}
+                  />
+                );
+              }
               const isActive = active === item.href;
               return (
                 <Link
