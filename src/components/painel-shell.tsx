@@ -102,15 +102,15 @@ const ROLE_LABEL: Record<Role, string> = {
 
 const MOBILE_SHORTCUTS: Record<Role, MobileNavItem[]> = {
   corretor: [
-    { href: "/painel", label: "Painel", icon: "home" },
-    { href: "/painel/operacoes", label: "Ops", icon: "table" },
+    { href: "/painel/operacoes", label: "Operações", icon: "table" },
     { href: "/painel/operacoes/nova", label: "Nova", icon: "doc" },
+    { href: "/painel/forecast-corretor", label: "Projeção", icon: "report" },
     { href: "/painel/convites", label: "Convites", icon: "tag" },
   ],
   imobiliaria: [
-    { href: "/painel", label: "Painel", icon: "home" },
-    { href: "/painel/operacoes", label: "Ops", icon: "table" },
+    { href: "/painel/operacoes", label: "Operações", icon: "table" },
     { href: "/painel/operacoes/nova", label: "Nova", icon: "doc" },
+    { href: "/painel/forecast-corretor", label: "Projeção", icon: "report" },
     { href: "/painel/convites", label: "Convites", icon: "tag" },
   ],
   construtora: [
@@ -146,9 +146,12 @@ const MOBILE_FULLMENU: Record<
     {
       section: "principal",
       items: [
-        { href: "/painel", label: "Painel", icon: "home" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
         { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
+        { href: "/painel/operacoes/importar", label: "Importar contrato", icon: "doc" },
+        { href: "/painel/coleta-comprador", label: "Coleta comprador", icon: "doc" },
+        { href: "/painel/forecast-corretor", label: "Projeção", icon: "report" },
+        { href: "/painel/relatorio", label: "Relatório", icon: "report" },
         { href: "/painel/convites", label: "Convites recebidos", icon: "tag" },
       ],
     },
@@ -164,9 +167,12 @@ const MOBILE_FULLMENU: Record<
     {
       section: "principal",
       items: [
-        { href: "/painel", label: "Painel", icon: "home" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
         { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
+        { href: "/painel/operacoes/importar", label: "Importar contrato", icon: "doc" },
+        { href: "/painel/coleta-comprador", label: "Coleta comprador", icon: "doc" },
+        { href: "/painel/forecast-corretor", label: "Projeção", icon: "report" },
+        { href: "/painel/relatorio", label: "Relatório", icon: "report" },
         { href: "/painel/convites", label: "Convites recebidos", icon: "tag" },
       ],
     },
