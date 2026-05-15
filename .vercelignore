@@ -1,0 +1,5 @@
+# Sub-projeto Remotion roda só local — não vai pra produção
+video/
+
+# Scripts utilitários locais
+scripts/
