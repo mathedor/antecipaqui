@@ -45,8 +45,6 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/duplicatas", label: "Duplicatas" },
     { href: "/painel/extrato", label: "Extrato" },
-    { href: "/painel/pendencias", label: "Pendências" },
-    { href: "/painel/forecast", label: "Forecast" },
     { href: "/painel/risco", label: "Risco" },
     { href: "/painel/score", label: "Score" },
     { href: "/painel/cashback", label: "Cashback" },
@@ -56,6 +54,8 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
         { href: "/painel/documentos", label: "Documentos" },
         { href: "/painel/equipe", label: "Equipe" },
         { href: "/painel/empreendimentos", label: "Empreendimentos" },
+        { href: "/painel/pendencias", label: "Pendências" },
+        { href: "/painel/forecast", label: "Forecast" },
       ],
     },
     { href: "/painel/suporte", label: "Chats" },
@@ -192,7 +192,6 @@ const MOBILE_FULLMENU: Record<
       section: "principal",
       items: [
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
-        { href: "/painel/pendencias", label: "Pendências", icon: "doc" },
       ],
     },
     {
@@ -201,7 +200,6 @@ const MOBILE_FULLMENU: Record<
         { href: "/painel/duplicatas", label: "Duplicatas a pagar", icon: "wallet" },
         { href: "/painel/extrato", label: "Extrato", icon: "money" },
         { href: "/painel/cashback", label: "Cashback", icon: "money" },
-        { href: "/painel/forecast", label: "Forecast", icon: "table" },
       ],
     },
     {
@@ -210,6 +208,8 @@ const MOBILE_FULLMENU: Record<
         { href: "/painel/documentos", label: "Documentos", icon: "doc" },
         { href: "/painel/equipe", label: "Equipe", icon: "tag" },
         { href: "/painel/empreendimentos", label: "Empreendimentos", icon: "doc" },
+        { href: "/painel/pendencias", label: "Pendências", icon: "doc" },
+        { href: "/painel/forecast", label: "Forecast", icon: "table" },
       ],
     },
     {
