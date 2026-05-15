@@ -13,6 +13,7 @@ import {
 import { getCurrentFundo } from "@/lib/actions/fundos";
 import { NovaOperacaoForm } from "@/components/nova-operacao-form";
 import { FundoCadastrarOperacaoForm } from "@/components/fundo-cadastrar-operacao-form";
+import { ImportarContratoForm } from "@/components/importar-contrato-form";
 import { PainelShell } from "@/components/painel-shell";
 
 export const metadata = {
@@ -20,7 +21,7 @@ export const metadata = {
 };
 
 type Search = {
-  searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<{ from?: string; tab?: string }>;
 };
 
 export default async function NovaOperacaoPage({ searchParams }: Search) {
@@ -120,22 +121,21 @@ export default async function NovaOperacaoPage({ searchParams }: Search) {
     | "corretor"
     | "imobiliaria";
 
+  const tab = params.tab === "importar" ? "importar" : "formulario";
+
   return (
     <PainelShell
       role={role}
       userName={user.nome}
       active="/painel/operacoes/nova"
     >
-      <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-        <div>
-          <h1 className="text-display-md">
-            Nova <span className="text-gradient-blue">operação</span>
-          </h1>
-          <p className="mt-2 text-fg-muted">
-            Preencha os dados da venda. O valor presente é calculado em tempo
-            real conforme você digita.
-          </p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-display-md">
+          Nova <span className="text-gradient-blue">operação</span>
+        </h1>
+        <p className="mt-2 text-fg-muted">
+          Preencha o formulário ou importe um contrato e deixe a IA preencher.
+        </p>
       </div>
 
       {docsFaltando.length > 0 ? (
@@ -166,11 +166,61 @@ export default async function NovaOperacaoPage({ searchParams }: Search) {
           </div>
         </div>
       ) : (
-        <NovaOperacaoForm
-          construtoras={construtoras}
-          taxaMensalSugerida={taxaMensalSugerida}
-          preset={preset}
-        />
+        <>
+          {/* Tabs */}
+          <div
+            role="tablist"
+            className="mb-6 inline-flex p-1 bg-bg-card border border-border rounded-xl"
+          >
+            <Link
+              href="/painel/operacoes/nova"
+              role="tab"
+              aria-selected={tab === "formulario"}
+              className={`px-4 h-10 inline-flex items-center text-sm font-semibold rounded-lg transition-colors ${
+                tab === "formulario"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-fg-muted hover:text-fg"
+              }`}
+            >
+              📝 Preencher formulário
+            </Link>
+            <Link
+              href="/painel/operacoes/nova?tab=importar"
+              role="tab"
+              aria-selected={tab === "importar"}
+              className={`px-4 h-10 inline-flex items-center text-sm font-semibold rounded-lg transition-colors ${
+                tab === "importar"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-fg-muted hover:text-fg"
+              }`}
+            >
+              📄 Importar contrato
+            </Link>
+          </div>
+
+          {tab === "importar" ? (
+            <>
+              <p className="mb-5 text-sm text-fg-muted max-w-2xl">
+                Tire foto ou suba o PDF do contrato. Nossa IA extrai os
+                campos-chave (valor, data, parcelas) e pré-preenche o
+                formulário. Você confere antes de enviar.
+              </p>
+              <ImportarContratoForm />
+            </>
+          ) : (
+            <>
+              <p className="mb-5 text-sm text-fg-muted max-w-2xl">
+                O valor presente é calculado em tempo real conforme você
+                digita. Sem letra miúda, sem surpresa.
+              </p>
+              <NovaOperacaoForm
+                construtoras={construtoras}
+                taxaMensalSugerida={taxaMensalSugerida}
+                preset={preset}
+              />
+            </>
+          )}
+        </>
       )}
     </PainelShell>
   );
