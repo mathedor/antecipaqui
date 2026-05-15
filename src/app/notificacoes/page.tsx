@@ -113,8 +113,12 @@ export default async function NotificacoesPage() {
       ? "construtora"
       : user.role === "imobiliaria"
         ? "imobiliaria"
-        : "corretor"
-  ) as "construtora" | "corretor" | "imobiliaria";
+        : user.role === "fundo"
+          ? "fundo"
+          : user.role === "comercial"
+            ? "comercial"
+            : "corretor"
+  ) as "construtora" | "corretor" | "imobiliaria" | "fundo" | "comercial";
   return (
     <PainelShell role={role} userName={user.nome}>
       {content}
