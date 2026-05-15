@@ -642,7 +642,7 @@ export async function getFundoMesaMetrics(
     ),
     decididas90d AS (
       SELECT
-        EXTRACT(EPOCH FROM (fundo_aprovado_em - created_at))/3600 AS horas,
+        GREATEST(0, EXTRACT(EPOCH FROM (fundo_aprovado_em - created_at))/3600)::float AS horas,
         fundo_aprovacao
       FROM operacoes
       WHERE fundo_id = ${fundoId}::uuid
@@ -653,10 +653,10 @@ export async function getFundoMesaMetrics(
       (SELECT COUNT(*) FROM pend)::int AS pend_qtd,
       (SELECT COALESCE(SUM(vp),0) FROM pend)::float AS pend_valor,
       (SELECT COUNT(*) FROM pend WHERE created_at < NOW() - INTERVAL '3 days')::int AS mais_3d,
-      (SELECT AVG(horas) FROM decididas90d) AS tmd_horas,
+      (SELECT AVG(horas)::float FROM decididas90d) AS tmd_horas,
       (SELECT
         CASE WHEN COUNT(*) > 0
-          THEN COUNT(*) FILTER (WHERE fundo_aprovacao = 'aprovada')::float / COUNT(*)::float
+          THEN (COUNT(*) FILTER (WHERE fundo_aprovacao = 'aprovada')::float / COUNT(*)::float)::float
           ELSE NULL END
        FROM decididas90d) AS pct_aprovacao
   `);
@@ -679,8 +679,9 @@ export async function getFundoMesaMetrics(
     pendentesQtd: row.pend_qtd,
     pendentesValor: row.pend_valor,
     pendentesMais3d: row.mais_3d,
-    tmdHoras: row.tmd_horas,
-    pctAprovacao90d: row.pct_aprovacao,
+    tmdHoras: row.tmd_horas == null ? null : Number(row.tmd_horas),
+    pctAprovacao90d:
+      row.pct_aprovacao == null ? null : Number(row.pct_aprovacao),
   };
 }
 
