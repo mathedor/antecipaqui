@@ -7,6 +7,8 @@
   "scripts": {
     "studio": "remotion studio src/index.ts",
     "render": "bash scripts/render.sh",
+    "render:fundo": "bash scripts/render.sh fundo",
+    "render:imob": "bash scripts/render.sh imobiliaria",
     "build": "npm run render",
     "narration": "tsx scripts/gen-narration.ts",
     "voices": "tsx scripts/list-voices.ts",

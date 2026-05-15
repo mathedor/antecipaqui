@@ -1,5 +1,6 @@
 import { Composition } from "remotion";
 import { ApresentacaoImobiliaria } from "./compositions/ApresentacaoImobiliaria";
+import { ApresentacaoFundo } from "./compositions/ApresentacaoFundo";
 import { FPS, DURATION_FRAMES, WIDTH, HEIGHT } from "./constants";
 
 export function RemotionRoot() {
@@ -8,6 +9,15 @@ export function RemotionRoot() {
       <Composition
         id="apresentacao-imobiliaria"
         component={ApresentacaoImobiliaria}
+        durationInFrames={DURATION_FRAMES}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{ withMusic: false }}
+      />
+      <Composition
+        id="apresentacao-fundo"
+        component={ApresentacaoFundo}
         durationInFrames={DURATION_FRAMES}
         fps={FPS}
         width={WIDTH}
