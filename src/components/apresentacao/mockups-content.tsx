@@ -431,3 +431,290 @@ export function DesktopRelatorio() {
     </div>
   );
 }
+
+/* ============ DESKTOP — FUNDO ============ */
+
+export function DesktopMesaFundo() {
+  return (
+    <div className="w-full h-full bg-[#f8fafc] flex">
+      {/* Sidebar */}
+      <div className="w-44 h-full bg-white border-r border-slate-200 p-3 text-[9px]">
+        <div className="font-bold text-[12px] text-[#1c6dd0] mb-4 px-1">
+          Antecipaqui · Fundo
+        </div>
+        <div className="space-y-1">
+          <div className="px-2 py-1.5 rounded bg-blue-50 text-[#1c6dd0] font-semibold">
+            ⚖️ Aprovar
+          </div>
+          <div className="px-2 py-1.5 text-slate-600">📋 Operações</div>
+          <div className="px-2 py-1.5 text-slate-600">📅 Daily</div>
+          <div className="px-2 py-1.5 text-slate-600">💰 Recebimentos</div>
+          <div className="px-2 py-1.5 text-slate-600">📈 Projeção</div>
+          <div className="px-2 py-1.5 text-slate-600">⚙️ Regras</div>
+          <div className="px-2 py-1.5 text-slate-600">🔌 API</div>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div className="flex-1 h-full p-5 overflow-hidden">
+        <div className="text-[8px] uppercase tracking-wider font-mono text-slate-500 mb-1">
+          mesa de decisão · fundo
+        </div>
+        <div className="text-[16px] font-bold text-slate-900 mb-3">
+          5 operações aguardando você
+        </div>
+
+        {/* Cards de op pra aprovar */}
+        <div className="space-y-1.5">
+          {[
+            {
+              num: "AQ-2026-201",
+              valor: "R$ 142.000",
+              const: "Solar Construtora",
+              score: 92,
+              taxa: "6,2%",
+              tone: "success",
+            },
+            {
+              num: "AQ-2026-202",
+              valor: "R$ 80.000",
+              const: "MRV Engenharia",
+              score: 88,
+              taxa: "6,0%",
+              tone: "success",
+            },
+            {
+              num: "AQ-2026-203",
+              valor: "R$ 240.000",
+              const: "Direcional",
+              score: 75,
+              taxa: "6,8%",
+              tone: "warn",
+            },
+            {
+              num: "AQ-2026-204",
+              valor: "R$ 65.000",
+              const: "Capricórnio",
+              score: 58,
+              taxa: "7,5%",
+              tone: "warn",
+            },
+          ].map((op) => {
+            const scoreCor =
+              op.tone === "success"
+                ? "#15803d"
+                : op.tone === "warn"
+                  ? "#a16207"
+                  : "#1c6dd0";
+            const scoreBg =
+              op.tone === "success"
+                ? "#dcfce7"
+                : op.tone === "warn"
+                  ? "#fef3c7"
+                  : "#dbeafe";
+            return (
+              <div
+                key={op.num}
+                className="border border-slate-200 rounded-lg p-2 bg-white flex items-center gap-2"
+              >
+                <div
+                  className="px-2 py-1 rounded text-[10px] font-bold"
+                  style={{ background: scoreBg, color: scoreCor }}
+                >
+                  {op.score}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-mono text-[8px] text-slate-500">
+                    {op.num}
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-900 truncate">
+                    {op.const}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] font-bold text-slate-900">
+                    {op.valor}
+                  </div>
+                  <div className="text-[8px] text-slate-500 font-mono">
+                    {op.taxa} a.m.
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <div className="px-1.5 py-0.5 rounded bg-emerald-500 text-white text-[8px] font-bold">
+                    ✓
+                  </div>
+                  <div className="px-1.5 py-0.5 rounded bg-rose-500 text-white text-[8px] font-bold">
+                    ✕
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 text-[8px] text-slate-500 font-mono">
+          ⚡ Auto-aprovação ativa em 12 regras · 3 ops aprovadas hoje
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DesktopFundoDashboard() {
+  return (
+    <div className="w-full h-full bg-[#f8fafc] p-5 overflow-hidden">
+      <div className="text-[8px] uppercase tracking-wider font-mono text-slate-500 mb-1">
+        painel · fundo investidor
+      </div>
+      <div className="text-[16px] font-bold text-slate-900 mb-4">
+        Sua carteira em tempo real
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        {[
+          { l: "Capital exposto", v: "R$ 2.4M", c: "#1c6dd0" },
+          { l: "Operações ativas", v: "62", c: "#0f172a" },
+          { l: "Rentabilidade m.", v: "+5,8%", c: "#15803d" },
+          { l: "Inadimplência", v: "1,2%", c: "#a16207" },
+        ].map((k, i) => (
+          <div
+            key={i}
+            className="border border-slate-200 rounded-lg p-2.5 bg-white"
+          >
+            <div className="text-[7px] uppercase tracking-wider text-slate-500 mb-0.5 font-mono">
+              {k.l}
+            </div>
+            <div className="text-[14px] font-bold" style={{ color: k.c }}>
+              {k.v}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="border border-slate-200 rounded-lg p-3 bg-white">
+          <div className="text-[9px] font-bold text-slate-900 mb-2">
+            Carteira por construtora
+          </div>
+          {[
+            { nome: "Solar Construtora", v: "32%" },
+            { nome: "MRV Engenharia", v: "24%" },
+            { nome: "Direcional", v: "21%" },
+            { nome: "Outras (8)", v: "23%" },
+          ].map((r) => (
+            <div key={r.nome} className="mb-1">
+              <div className="flex justify-between text-[8px] mb-0.5">
+                <span className="text-slate-700">{r.nome}</span>
+                <span className="text-slate-500 font-mono">{r.v}</span>
+              </div>
+              <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#1c6dd0]"
+                  style={{ width: r.v }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="border border-slate-200 rounded-lg p-3 bg-white">
+          <div className="text-[9px] font-bold text-slate-900 mb-2">
+            Recebimentos próximos 30d
+          </div>
+          <div className="flex items-end gap-1 h-12 mb-2">
+            {[20, 35, 28, 45, 38, 52, 48, 55, 60, 58, 70].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 bg-gradient-to-t from-[#1c6dd0] to-[#60a5fa] rounded-sm"
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+          <div className="text-[10px] font-bold text-slate-900">
+            R$ 380.000 previstos
+          </div>
+          <div className="text-[7px] text-slate-500">142 parcelas</div>
+        </div>
+      </div>
+
+      <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-2.5">
+        <div className="text-[9px] font-bold text-emerald-700 mb-0.5">
+          ✓ 3 ops aprovadas automaticamente nas últimas 24h
+        </div>
+        <div className="text-[8px] text-emerald-600">
+          Score ≥ 85 · taxa ≥ 6% · construtora pré-aprovada
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DesktopFundoApi() {
+  return (
+    <div className="w-full h-full bg-[#0f172a] p-5 overflow-hidden text-white font-mono">
+      <div className="text-[8px] uppercase tracking-wider text-blue-300 mb-1">
+        integração · webhooks + api
+      </div>
+      <div className="text-[16px] font-bold text-white mb-4 font-sans">
+        Plugue no seu sistema
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {/* API endpoint */}
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+          <div className="text-[8px] text-emerald-300 font-bold mb-1">
+            GET /api/external/fundo/operacoes
+          </div>
+          <div className="text-[7px] text-slate-400 mb-1.5">
+            Authorization: Bearer aq_...
+          </div>
+          <pre className="text-[7px] text-slate-300 leading-snug">{`{
+  "operacoes": [
+    {
+      "numero": "AQ-2026-201",
+      "valorPresente": 71337,
+      "construtora": "Solar",
+      "score": 92
+    }
+  ]
+}`}</pre>
+        </div>
+
+        {/* Webhook */}
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+          <div className="text-[8px] text-blue-300 font-bold mb-1">
+            POST /seu-endpoint
+          </div>
+          <div className="text-[7px] text-slate-400 mb-1.5">
+            x-antecipaqui-signature: sha256=...
+          </div>
+          <pre className="text-[7px] text-slate-300 leading-snug">{`{
+  "evento": "op_aprovada",
+  "operacaoId": "uuid",
+  "valor": 142000,
+  "construtora": "Solar"
+}`}</pre>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {[
+          { l: "Webhooks", v: "HMAC-SHA256" },
+          { l: "Eventos", v: "7 tipos" },
+          { l: "Retry", v: "4 tentativas" },
+        ].map((b) => (
+          <div
+            key={b.l}
+            className="border border-slate-700 rounded-lg p-2 bg-slate-900"
+          >
+            <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-0.5">
+              {b.l}
+            </div>
+            <div className="text-[10px] font-bold text-white font-sans">
+              {b.v}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
