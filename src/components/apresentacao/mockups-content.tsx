@@ -718,3 +718,309 @@ export function DesktopFundoApi() {
     </div>
   );
 }
+
+/* ============ DESKTOP — CONSTRUTORA ============ */
+
+export function DesktopConstrutoraPainel() {
+  return (
+    <div className="w-full h-full bg-[#f8fafc] flex">
+      {/* Sidebar */}
+      <div className="w-44 h-full bg-white border-r border-slate-200 p-3 text-[9px]">
+        <div className="font-bold text-[12px] text-[#1c6dd0] mb-4 px-1">
+          Antecipaqui
+        </div>
+        <div className="space-y-1">
+          <div className="px-2 py-1.5 rounded bg-blue-50 text-[#1c6dd0] font-semibold">
+            🏠 Painel
+          </div>
+          <div className="px-2 py-1.5 text-slate-600">🏗 Empreendimentos</div>
+          <div className="px-2 py-1.5 text-slate-600">💼 Duplicatas</div>
+          <div className="px-2 py-1.5 text-slate-600">💰 Cashback</div>
+          <div className="px-2 py-1.5 text-slate-600">📋 Operações</div>
+          <div className="px-2 py-1.5 text-slate-600">📊 Forecast</div>
+          <div className="px-2 py-1.5 text-slate-600">🎯 Score</div>
+          <div className="px-2 py-1.5 text-slate-600">👥 Equipe</div>
+        </div>
+      </div>
+
+      <div className="flex-1 h-full p-5 overflow-hidden">
+        <div className="text-[8px] uppercase tracking-wider font-mono text-slate-500 mb-1">
+          construtora · visão financeira
+        </div>
+        <div className="text-[16px] font-bold text-slate-900 mb-3">
+          Construtora Solar — caixa unificado
+        </div>
+
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {[
+            { l: "Saldo a pagar", v: "R$ 1.8M", sub: "comissões 90d", c: "#0f172a" },
+            { l: "Antecipado", v: "R$ 1.2M", sub: "pago hoje", c: "#1c6dd0" },
+            { l: "Cashback retorno", v: "R$ 18k", sub: "este mês", c: "#15803d" },
+            { l: "Vendas 30d", v: "42 ops", sub: "+18% vs mês ant.", c: "#15803d" },
+          ].map((k, i) => (
+            <div
+              key={i}
+              className="border border-slate-200 rounded-lg p-2.5 bg-white"
+            >
+              <div className="text-[7px] uppercase tracking-wider text-slate-500 mb-0.5 font-mono">
+                {k.l}
+              </div>
+              <div
+                className="text-[14px] font-bold"
+                style={{ color: k.c }}
+              >
+                {k.v}
+              </div>
+              <div className="text-[7px] text-slate-400 mt-0.5">{k.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="border border-slate-200 rounded-xl p-3 bg-white">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[10px] font-bold text-slate-900">
+              Próximos pagamentos · 30 dias
+            </div>
+            <div className="text-[8px] text-slate-500">
+              <span className="text-[#15803d]">86% confirmado</span>
+            </div>
+          </div>
+          {[
+            { dia: "15/05", val: "R$ 24.500", corretor: "Carlos Silva · AQ-128", st: "ok" },
+            { dia: "18/05", val: "R$ 18.200", corretor: "Ana Souza · AQ-127", st: "ok" },
+            { dia: "22/05", val: "R$ 32.100", corretor: "Diego Lima · AQ-126", st: "ok" },
+            { dia: "28/05", val: "R$ 14.800", corretor: "Bruna · AQ-125", st: "warn" },
+          ].map((p, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between py-1.5 border-t border-slate-100 first:border-t-0"
+            >
+              <div className="flex items-center gap-2">
+                <div className="font-mono text-[9px] text-slate-500 w-10">
+                  {p.dia}
+                </div>
+                <div className="text-[9px] text-slate-700">{p.corretor}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-[10px] font-bold text-slate-900">
+                  {p.val}
+                </div>
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    p.st === "ok" ? "bg-emerald-500" : "bg-amber-500"
+                  }`}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DesktopConstrutoraBI() {
+  return (
+    <div className="w-full h-full bg-[#f8fafc] p-5 overflow-hidden">
+      <div className="text-[8px] uppercase tracking-wider font-mono text-slate-500 mb-1">
+        b.i. · desempenho comercial
+      </div>
+      <div className="text-[15px] font-bold text-slate-900 mb-3">
+        Empreendimentos · últimos 90 dias
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {[
+          { l: "Total VGV", v: "R$ 48.2M", c: "#1c6dd0" },
+          { l: "Comissões", v: "R$ 1.92M", c: "#1c6dd0" },
+          { l: "Velocidade venda", v: "12 d/un", c: "#15803d" },
+        ].map((k, i) => (
+          <div
+            key={i}
+            className="border border-slate-200 rounded-lg p-2.5 bg-white"
+          >
+            <div className="text-[7px] uppercase tracking-wider text-slate-500 mb-0.5 font-mono">
+              {k.l}
+            </div>
+            <div
+              className="text-[16px] font-bold"
+              style={{ color: k.c }}
+            >
+              {k.v}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="border border-slate-200 rounded-xl p-3 bg-white">
+          <div className="text-[9px] font-bold text-slate-900 mb-2">
+            Vendas por empreendimento
+          </div>
+          {[
+            { nome: "Solar Park", v: "18 ops", w: "85%" },
+            { nome: "Vista Mar", v: "13 ops", w: "62%" },
+            { nome: "Residence", v: "9 ops", w: "44%" },
+            { nome: "Jardins", v: "2 ops", w: "12%" },
+          ].map((r) => (
+            <div key={r.nome} className="mb-1.5">
+              <div className="flex justify-between text-[8px] mb-0.5">
+                <span className="text-slate-700">{r.nome}</span>
+                <span className="text-slate-500 font-mono">{r.v}</span>
+              </div>
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#1c6dd0]"
+                  style={{ width: r.w }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="border border-slate-200 rounded-xl p-3 bg-white">
+          <div className="text-[9px] font-bold text-slate-900 mb-2">
+            Tempo médio · cadastro → venda
+          </div>
+          <div className="flex items-end gap-1 h-12 mb-2">
+            {[20, 25, 18, 22, 15, 14, 12, 10, 11, 9, 8, 12].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 bg-gradient-to-t from-[#15803d] to-[#10b981] rounded-sm"
+                style={{ height: `${(h / 25) * 100}%` }}
+              />
+            ))}
+          </div>
+          <div className="text-[10px] font-bold text-slate-900">
+            12 dias <span className="text-[#15803d] text-[8px]">↓ -52% vs 12m</span>
+          </div>
+          <div className="text-[7px] text-slate-400 mt-0.5">
+            esteira encurta com antecipação
+          </div>
+        </div>
+
+        <div className="border border-slate-200 rounded-xl p-3 bg-white col-span-2">
+          <div className="text-[9px] font-bold text-slate-900 mb-2">
+            Top corretores · giro de carteira
+          </div>
+          <div className="grid grid-cols-5 gap-2 text-[8px]">
+            {[
+              { n: "Carlos S.", v: "8 ops", r: "R$ 240k", t: "92" },
+              { n: "Ana M.", v: "6 ops", r: "R$ 195k", t: "88" },
+              { n: "Diego L.", v: "5 ops", r: "R$ 162k", t: "85" },
+              { n: "Bruna C.", v: "4 ops", r: "R$ 138k", t: "78" },
+              { n: "Felipe O.", v: "3 ops", r: "R$ 105k", t: "72" },
+            ].map((c) => (
+              <div
+                key={c.n}
+                className="rounded-lg bg-slate-50 p-2 text-center"
+              >
+                <div className="font-bold text-slate-900 text-[9px]">
+                  {c.n}
+                </div>
+                <div className="text-slate-700 mt-0.5">{c.v}</div>
+                <div className="text-[#1c6dd0] font-mono">{c.r}</div>
+                <div className="mt-1 inline-block px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[7px] font-bold">
+                  score {c.t}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DesktopConstrutoraCobranca() {
+  return (
+    <div className="w-full h-full bg-[#f8fafc] p-5 overflow-hidden">
+      <div className="text-[8px] uppercase tracking-wider font-mono text-slate-500 mb-1">
+        cobrança · unificada
+      </div>
+      <div className="text-[15px] font-bold text-slate-900 mb-3">
+        Duplicatas a pagar — 1 portal pra tudo
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        {[
+          { l: "A vencer 30d", v: "R$ 420k", t: "ok" },
+          { l: "Já antecipadas", v: "32 ops", t: "info" },
+          { l: "Vencidas", v: "0", t: "ok" },
+        ].map((k, i) => (
+          <div
+            key={i}
+            className="border border-slate-200 rounded-lg p-2.5 bg-white"
+          >
+            <div className="text-[7px] uppercase tracking-wider text-slate-500 mb-0.5 font-mono">
+              {k.l}
+            </div>
+            <div
+              className={`text-[16px] font-bold ${
+                k.t === "ok"
+                  ? "text-emerald-600"
+                  : "text-[#1c6dd0]"
+              }`}
+            >
+              {k.v}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+        <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 text-[8px] uppercase tracking-wider font-mono text-slate-500 font-bold">
+          <div className="col-span-2">Venc.</div>
+          <div className="col-span-3">Comprador</div>
+          <div className="col-span-2">Corretor</div>
+          <div className="col-span-2 text-right">Valor</div>
+          <div className="col-span-1 text-right">Fundo</div>
+          <div className="col-span-2 text-right">Status</div>
+        </div>
+        {[
+          { d: "15/05", c: "João Silva", co: "Carlos S.", v: "R$ 24.5k", f: "C", st: "ok", stl: "✓ pago" },
+          { d: "18/05", c: "Maria S.", co: "Ana M.", v: "R$ 18.2k", f: "C", st: "warn", stl: "vence em 3d" },
+          { d: "22/05", c: "Pedro L.", co: "Diego L.", v: "R$ 32.1k", f: "X", st: "warn", stl: "vence em 7d" },
+          { d: "28/05", c: "Lucia M.", co: "Bruna C.", v: "R$ 14.8k", f: "C", st: "info", stl: "boleto pronto" },
+          { d: "02/06", c: "Carlos F.", co: "Felipe O.", v: "R$ 28.6k", f: "X", st: "info", stl: "boleto pronto" },
+        ].map((r, i) => {
+          const stColor =
+            r.st === "ok"
+              ? { bg: "#dcfce7", fg: "#15803d" }
+              : r.st === "warn"
+                ? { bg: "#fef3c7", fg: "#a16207" }
+                : { bg: "#dbeafe", fg: "#1c6dd0" };
+          return (
+            <div
+              key={i}
+              className="grid grid-cols-12 gap-2 px-3 py-2 border-t border-slate-100 text-[9px] items-center first:border-t-0"
+            >
+              <div className="col-span-2 font-mono text-slate-700">{r.d}</div>
+              <div className="col-span-3 text-slate-900 truncate">{r.c}</div>
+              <div className="col-span-2 text-slate-600 truncate">{r.co}</div>
+              <div className="col-span-2 text-right font-bold text-slate-900">
+                {r.v}
+              </div>
+              <div className="col-span-1 text-right">
+                <span className="inline-block w-4 h-4 rounded bg-[#1c6dd0] text-white text-[8px] font-bold leading-4">
+                  {r.f}
+                </span>
+              </div>
+              <div className="col-span-2 text-right">
+                <span
+                  className="px-2 py-0.5 rounded-full text-[8px] font-bold"
+                  style={{ background: stColor.bg, color: stColor.fg }}
+                >
+                  {r.stl}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 text-[8px] text-slate-500 text-center">
+        💡 Boletos gerados automaticamente · baixa automática · multa/juros aplicados na régua
+      </div>
+    </div>
+  );
+}
