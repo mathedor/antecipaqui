@@ -386,13 +386,17 @@ export async function getAdminSourcing(limit = 8): Promise<SourcingOp[]> {
 
   // Agregação volume da construtora por fundo (todas as construtoras envolvidas)
   const construtoraIds = Array.from(new Set(ops.map((o) => o.construtora_id)));
+  const idsPlaceholders = sql.join(
+    construtoraIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
   const concRes = await db.execute(sql`
     SELECT
       o.construtora_id, o.fundo_id,
       COUNT(*)::int AS qtd,
       COALESCE(SUM(o.valor_presente)::float, 0) AS volume
     FROM operacoes o
-    WHERE o.construtora_id = ANY(${construtoraIds}::uuid[])
+    WHERE o.construtora_id IN (${idsPlaceholders})
       AND o.fundo_id IS NOT NULL
       AND o.status NOT IN ('rascunho','recusada','cancelada')
     GROUP BY o.construtora_id, o.fundo_id
