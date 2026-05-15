@@ -70,21 +70,29 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/admin/configuracoes", label: "Configurações" },
   ],
   fundo: [
-    { href: "/painel", label: "Painel" },
     { href: "/painel/aprovar", label: "Aprovar" },
     { href: "/painel/pendencias-decisao", label: "Pendências" },
     { href: "/painel/operacoes", label: "Operações" },
-    { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/daily", label: "Daily" },
     { href: "/painel/recebimentos", label: "Recebimentos" },
-    { href: "/painel/recaps", label: "Recaps" },
-    { href: "/painel/forecast", label: "Forecast" },
-    { href: "/painel/risco", label: "Risco" },
     { href: "/painel/faturas", label: "Faturas" },
-    { href: "/painel/regras", label: "Regras" },
-    { href: "/painel/api", label: "API" },
-    { href: "/painel/webhooks", label: "Webhooks" },
-    { href: "/painel/parceiros", label: "Parceiros" },
+    {
+      label: "Gestão",
+      submenu: [
+        { href: "/painel/recaps", label: "Recaps" },
+        { href: "/painel/forecast", label: "Forecast" },
+        { href: "/painel/risco", label: "Risco" },
+        { href: "/painel/parceiros", label: "Parceiros" },
+      ],
+    },
+    {
+      label: "Integração",
+      submenu: [
+        { href: "/painel/regras", label: "Regras" },
+        { href: "/painel/api", label: "API" },
+        { href: "/painel/webhooks", label: "Webhooks" },
+      ],
+    },
     { href: "/painel/suporte", label: "Chats" },
   ],
   comercial: [
@@ -256,9 +264,9 @@ const MOBILE_FULLMENU: Record<
     {
       section: "principal",
       items: [
-        { href: "/painel", label: "Painel", icon: "home" },
+        { href: "/painel/aprovar", label: "Aprovar", icon: "doc" },
+        { href: "/painel/pendencias-decisao", label: "Pendências", icon: "doc" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
-        { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
         { href: "/painel/daily", label: "Daily", icon: "table" },
       ],
     },
@@ -266,8 +274,24 @@ const MOBILE_FULLMENU: Record<
       section: "financeiro",
       items: [
         { href: "/painel/recebimentos", label: "Parcelas a receber", icon: "wallet" },
-        { href: "/painel/parceiros", label: "Parceiros", icon: "list" },
+        { href: "/painel/faturas", label: "Faturas", icon: "money" },
+      ],
+    },
+    {
+      section: "gestão",
+      items: [
         { href: "/painel/recaps", label: "Recaps", icon: "report" },
+        { href: "/painel/forecast", label: "Forecast", icon: "report" },
+        { href: "/painel/risco", label: "Risco", icon: "report" },
+        { href: "/painel/parceiros", label: "Parceiros", icon: "list" },
+      ],
+    },
+    {
+      section: "integração",
+      items: [
+        { href: "/painel/regras", label: "Regras", icon: "config" },
+        { href: "/painel/api", label: "API", icon: "config" },
+        { href: "/painel/webhooks", label: "Webhooks", icon: "config" },
       ],
     },
     {

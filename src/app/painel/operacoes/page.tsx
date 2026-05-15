@@ -175,7 +175,7 @@ export default async function OperacoesPage({ searchParams }: Search) {
             {operacoes.length === 1 ? "operação" : "operações"} no resultado
           </p>
         </div>
-        {!isConstrutora && !isFundo && (
+        {!isConstrutora && (
           <Link
             href="/painel/operacoes/nova"
             className="btn-primary !h-11 !px-5"
