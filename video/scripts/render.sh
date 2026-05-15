@@ -13,9 +13,10 @@ cd "$(dirname "$0")/.."
 
 KIND="${1:-imobiliaria}"
 case "$KIND" in
-  imobiliaria|imob) COMPOSITION="apresentacao-imobiliaria" ;;
-  fundo|fundos)     COMPOSITION="apresentacao-fundo" ;;
-  *)                COMPOSITION="$KIND" ;;
+  imobiliaria|imob)         COMPOSITION="apresentacao-imobiliaria" ;;
+  fundo|fundos)             COMPOSITION="apresentacao-fundo" ;;
+  construtora|construtoras) COMPOSITION="apresentacao-construtora" ;;
+  *)                        COMPOSITION="$KIND" ;;
 esac
 
 OUTPUT="${2:-out/$COMPOSITION.mp4}"
