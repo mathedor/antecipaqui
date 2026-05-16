@@ -437,3 +437,79 @@ html, body {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
+
+/* =========================================================
+   Apresentações cinematográficas — transições entre cenas
+   ========================================================= */
+
+@keyframes sceneFadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes sceneFadeZoom {
+  from { opacity: 0; transform: scale(0.92); filter: blur(8px); }
+  to   { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes sceneSlideLeft {
+  from { opacity: 0; transform: translateX(60px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes sceneSlideRight {
+  from { opacity: 0; transform: translateX(-60px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes sceneFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes textStagger {
+  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes mockupPop {
+  from { opacity: 0; transform: translateY(20px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-scene-fade-up      { animation: sceneFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-scene-fade-zoom    { animation: sceneFadeZoom 0.8s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-scene-slide-left   { animation: sceneSlideLeft 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-scene-slide-right  { animation: sceneSlideRight 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-scene-fade         { animation: sceneFade 0.6s ease both; }
+.animate-text-stagger       { animation: textStagger 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-mockup-pop         { animation: mockupPop 0.9s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Micro-animações dentro de mockups (números crescendo, badges, etc) */
+@keyframes badgePop {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes barFill {
+  from { width: 0; }
+  to   { width: var(--target-width, 100%); }
+}
+@keyframes numberPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); color: var(--accent); }
+}
+@keyframes dotPing {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+@keyframes slideInBottom {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kanbanCardMove {
+  0%   { transform: translateX(0); }
+  40%  { transform: translateX(80%); }
+  100% { transform: translateX(160%); }
+}
+
+.animate-badge-pop          { animation: badgePop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+.animate-bar-fill           { animation: barFill 1.2s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-number-pulse       { animation: numberPulse 1.6s ease-in-out infinite; }
+.animate-dot-ping           { animation: dotPing 1.8s ease-out infinite; }
+.animate-slide-in-bottom    { animation: slideInBottom 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-kanban-move        { animation: kanbanCardMove 2.4s cubic-bezier(0.65,0,0.35,1) both; }

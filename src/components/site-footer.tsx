@@ -10,7 +10,7 @@ export function SiteFooter() {
     <footer className="relative z-10 border-t border-border mt-24 bg-bg-elev">
       <div className="mx-auto max-w-6xl px-6 py-16">
         <div className="grid gap-12 md:grid-cols-12">
-          <div className="md:col-span-5">
+          <div className="md:col-span-4">
             <Logo />
             <p className="mt-6 max-w-md text-fg-muted leading-relaxed text-sm">
               Antecipação de comissões imobiliárias. Sua comissão parcelada vira
@@ -33,6 +33,18 @@ export function SiteFooter() {
               <li><CtaSimular className="hover:text-fg transition-colors cursor-pointer">Simulador</CtaSimular></li>
               <li><Link href={LINKS.paraConstrutoras} className="hover:text-fg transition-colors">Para construtoras</Link></li>
               <li><Link href={LINKS.perguntas} className="hover:text-fg transition-colors">Perguntas</Link></li>
+            </ul>
+          </div>
+
+          <div className="md:col-span-2">
+            <h4 className="text-fg-dim uppercase tracking-[0.2em] text-[10px] mb-4 font-mono">
+              Apresentações
+            </h4>
+            <ul className="space-y-2 text-fg-muted text-sm">
+              <li><Link href="/apresentacao/imobiliaria" className="hover:text-fg transition-colors">Corretor / Imobiliária</Link></li>
+              <li><Link href="/apresentacao/construtora" className="hover:text-fg transition-colors">Construtora</Link></li>
+              <li><Link href="/apresentacao/fundo" className="hover:text-fg transition-colors">Fundo investidor</Link></li>
+              <li><Link href="/apresentacao/comercial" className="hover:text-fg transition-colors">Comercial</Link></li>
             </ul>
           </div>
 
