@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   darOpiniaoConstrutora,
   removerVinculoConstrutora,
+} from "@/lib/actions/atendimento-construtoras";
+import {
   TIPO_OPINIAO_LABEL,
   type TipoOpiniao,
-} from "@/lib/actions/atendimento-construtoras";
+} from "@/lib/atendimento-construtoras-types";
 import {
   type AtendimentoStatus,
   EVENTO_EMOJI,

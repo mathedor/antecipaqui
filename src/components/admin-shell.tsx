@@ -5,6 +5,7 @@ import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notification-bell";
 import { VersionFooter } from "@/components/version-footer";
 import { AdminNav, type AdminNavItem } from "@/components/admin-nav";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import {
   MobileBottomNav,
   type MobileNavItem,
@@ -151,6 +152,7 @@ const mobileFullMenu: { section: string; items: MobileNavItem[] }[] = [
     items: [
       { href: "/admin/tickets", label: "Tickets", icon: "ticket" },
       { href: "/admin/mural", label: "Mural de recados", icon: "tag" },
+      { href: "/admin/visao", label: "Visualizar como…", icon: "tag" },
       { href: "/admin/interno/invoice", label: "Invoice", icon: "money" },
       { href: "/admin/faturas", label: "Faturas dos fundos", icon: "money" },
       { href: "/admin/configuracoes", label: "Configurações", icon: "config" },
@@ -175,6 +177,9 @@ const mobileFullMenu: { section: string; items: MobileNavItem[] }[] = [
     items: [
       { href: "/admin/relatorios", label: "Todos os relatórios", icon: "report" },
       { href: "/admin/relatorios/daily", label: "Daily", icon: "report" },
+      { href: "/admin/relatorios/comerciais", label: "Desempenho comerciais", icon: "report" },
+      { href: "/admin/relatorios/inadimplentes", label: "Inadimplentes", icon: "report" },
+      { href: "/admin/relatorios/saude", label: "Saúde do sistema", icon: "report" },
       { href: "/admin/relatorios/borderos", label: "Borderôs", icon: "doc" },
     ],
   },
@@ -202,6 +207,7 @@ export async function AdminShell({
   const profileLabel = ADMIN_PROFILE_LABEL[profile];
   return (
     <div className="min-h-screen pb-20 md:pb-0">
+      <ImpersonationBanner />
       <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border">
         <div className="mx-auto max-w-7xl px-4 md:px-6 h-16 flex items-center justify-between gap-3 md:gap-6">
           <Link

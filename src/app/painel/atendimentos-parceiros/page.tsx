@@ -5,9 +5,11 @@ import { PainelShell } from "@/components/painel-shell";
 import {
   getTopParceirosConstrutora,
   listAtendimentosObservandoComoConstrutora,
+} from "@/lib/actions/atendimento-construtoras";
+import {
   TIPO_OPINIAO_LABEL,
   type TipoOpiniao,
-} from "@/lib/actions/atendimento-construtoras";
+} from "@/lib/atendimento-construtoras-types";
 import { formatBRLcompact } from "@/lib/format";
 import { STATUS_LABEL, type AtendimentoStatus } from "@/lib/atendimento-types";
 

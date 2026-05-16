@@ -10,7 +10,7 @@ import {
   encaminharParaAntecipacao,
   updateAtendimento,
 } from "@/lib/actions/atendimentos";
-import type { ConstrutoraVinculo } from "@/lib/actions/atendimento-construtoras";
+import type { ConstrutoraVinculo } from "@/lib/atendimento-construtoras-types";
 import { ConstrutorasAcompanhandoCard } from "@/components/dashboards/atendimento-construtoras-card";
 import {
   type AtendimentoStatus,

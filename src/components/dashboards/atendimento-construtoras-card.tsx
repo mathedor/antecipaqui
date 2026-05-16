@@ -3,13 +3,15 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  type ConstrutoraVinculo,
   convidarConstrutoraAcompanhar,
   removerVinculoConstrutora,
   solicitarOpiniaoConstrutora,
+} from "@/lib/actions/atendimento-construtoras";
+import {
+  type ConstrutoraVinculo,
   TIPO_OPINIAO_LABEL,
   type TipoOpiniao,
-} from "@/lib/actions/atendimento-construtoras";
+} from "@/lib/atendimento-construtoras-types";
 
 type ConstrutoraOpt = {
   id: string;

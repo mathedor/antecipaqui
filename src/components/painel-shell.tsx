@@ -6,6 +6,7 @@ import { VersionFooter } from "@/components/version-footer";
 import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
 import { NavDropdown } from "@/components/nav-dropdown";
 import { getImpersonationStatus } from "@/lib/actions/admin-impersonate";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import {
   MobileBottomNav,
   type MobileNavItem,
@@ -447,6 +448,7 @@ export async function PainelShell({
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
+      <ImpersonationBanner />
       <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border">
         <div className="mx-auto max-w-7xl px-4 md:px-6 h-16 flex items-center justify-between gap-3 md:gap-6">
           <Link
