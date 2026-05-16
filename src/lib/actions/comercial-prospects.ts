@@ -260,22 +260,32 @@ export async function buscarGooglePlacesPorCoords(input: {
   const results = data.results ?? [];
   if (results.length === 0) return { ok: true, items: [] };
 
-  // Verificar match com base e com pontos já salvos
-  const nomes = results.map((r) => r.name);
+  // Verificar match com base e com pontos já salvos.
+  // Drizzle serializa arrays JS como CSV, então ANY(array) com cast quebra.
+  // Usamos sql.join + IN com placeholders individuais.
+  const nomesLower = results.map((r) => r.name.toLowerCase());
   const placeIds = results.map((r) => r.place_id);
+  const nomesPlaceholder = sql.join(
+    nomesLower.map((n) => sql`${n}`),
+    sql`, `,
+  );
+  const placeIdsPlaceholder = sql.join(
+    placeIds.map((p) => sql`${p}`),
+    sql`, `,
+  );
 
   const baseImobsMatch = await db.execute(sql`
     SELECT LOWER(razao_social) AS n FROM imobiliarias
-    WHERE LOWER(razao_social) = ANY(${nomes.map((n) => n.toLowerCase())}::text[])
+    WHERE LOWER(razao_social) IN (${nomesPlaceholder})
   `);
   const baseConstrMatch = await db.execute(sql`
     SELECT LOWER(razao_social) AS n FROM construtoras
-    WHERE LOWER(razao_social) = ANY(${nomes.map((n) => n.toLowerCase())}::text[])
+    WHERE LOWER(razao_social) IN (${nomesPlaceholder})
   `);
   const meusPontosMatch = await db.execute(sql`
     SELECT google_place_id FROM comercial_prospect_pontos
     WHERE comercial_id = ${comercialId}::uuid
-      AND google_place_id = ANY(${placeIds}::text[])
+      AND google_place_id IN (${placeIdsPlaceholder})
   `);
 
   const baseSet = new Set<string>([
