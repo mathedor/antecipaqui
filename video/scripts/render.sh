@@ -16,6 +16,7 @@ case "$KIND" in
   imobiliaria|imob)         COMPOSITION="apresentacao-imobiliaria" ;;
   fundo|fundos)             COMPOSITION="apresentacao-fundo" ;;
   construtora|construtoras) COMPOSITION="apresentacao-construtora" ;;
+  comercial|comerciais)     COMPOSITION="apresentacao-comercial" ;;
   *)                        COMPOSITION="$KIND" ;;
 esac
 

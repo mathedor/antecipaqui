@@ -12,6 +12,8 @@ import { SceneSolucao } from "../scenes/SceneSolucao";
 import { SceneMobile } from "../scenes/SceneMobile";
 import { SceneCalculadora } from "../scenes/SceneCalculadora";
 import { SceneDesktop } from "../scenes/SceneDesktop";
+import { SceneRecursos } from "../scenes/SceneRecursos";
+import { SceneBeneficios } from "../scenes/SceneBeneficios";
 import { SceneCTA } from "../scenes/SceneCTA";
 
 export function ApresentacaoImobiliaria({
@@ -20,8 +22,6 @@ export function ApresentacaoImobiliaria({
   /** Inclui trilha de fundo (music.mp3 em public/). */
   withMusic?: boolean;
 }) {
-  const frame = useCurrentFrame();
-
   return (
     <AbsoluteFill style={{ background: COLORS.bg, fontFamily: "Inter, system-ui, sans-serif" }}>
       {/* Trilha musical de fundo — loop, volume baixo pra não ofuscar.
@@ -71,6 +71,20 @@ export function ApresentacaoImobiliaria({
         durationInFrames={SCENES.desktop.duration}
       >
         <SceneDesktop />
+      </Sequence>
+
+      <Sequence
+        from={SCENES.recursos.start}
+        durationInFrames={SCENES.recursos.duration}
+      >
+        <SceneRecursos role="imobiliaria" />
+      </Sequence>
+
+      <Sequence
+        from={SCENES.beneficios.start}
+        durationInFrames={SCENES.beneficios.duration}
+      >
+        <SceneBeneficios role="imobiliaria" />
       </Sequence>
 
       <Sequence from={SCENES.cta.start} durationInFrames={SCENES.cta.duration}>

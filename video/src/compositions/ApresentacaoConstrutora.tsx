@@ -12,6 +12,8 @@ import { fadeIn, slideX, slideY, popIn } from "../anim";
 import { Noise } from "../components/Noise";
 import { Blob } from "../components/Blob";
 import { Sticker } from "../components/Sticker";
+import { SceneRecursos } from "../scenes/SceneRecursos";
+import { SceneBeneficios } from "../scenes/SceneBeneficios";
 
 /* =========================================================================
    Apresentação para CONSTRUTORAS
@@ -67,6 +69,18 @@ export function ApresentacaoConstrutora({
         durationInFrames={SCENES.desktop.duration}
       >
         <SceneDigital />
+      </Sequence>
+      <Sequence
+        from={SCENES.recursos.start}
+        durationInFrames={SCENES.recursos.duration}
+      >
+        <SceneRecursos role="construtora" />
+      </Sequence>
+      <Sequence
+        from={SCENES.beneficios.start}
+        durationInFrames={SCENES.beneficios.duration}
+      >
+        <SceneBeneficios role="construtora" />
       </Sequence>
       <Sequence from={SCENES.cta.start} durationInFrames={SCENES.cta.duration}>
         <SceneCTA />

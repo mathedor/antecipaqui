@@ -6,13 +6,20 @@ import {
   MockupPipelineKanban,
   MockupCadastroExpress,
   MockupComissoes,
+  MockupTemplatesWhatsapp,
+  MockupDailyComercial,
+  MockupHolerite,
+  MockupConviteLink,
+  MockupRelatorioCorretor,
+  MockupChatSuporte,
+  MockupNotificacoes,
   MockupGenericoSlide,
 } from "@/components/apresentacao/scene-mockups";
 
 export const metadata = {
   title: "Antecipaqui · Pra time comercial",
   description:
-    "Capture imobiliárias e construtoras, gerencie pipeline de leads, ganhe comissão recorrente sobre cada operação fechada.",
+    "Tour completo: mapa de prospects, pipeline, cadastro express, templates WA, daily, comissões, holerite, link de convite e mais.",
 };
 
 const SCENES: Scene[] = [
@@ -21,8 +28,8 @@ const SCENES: Scene[] = [
     duration: 5,
     eyebrow: "comercial Antecipaqui",
     titulo: "Capture mais. Feche mais. Ganhe mais.",
-    legenda: "Ferramentas pro time de captação trabalhar com volume e foco.",
-    conteudo: <SceneHero emoji="💼" title="Bora prospectar?" subtitle="60s pra ver tudo o que tem aqui" />,
+    legenda: "Tour completo (~2 min) — ferramentas pro time de captação trabalhar com volume e foco.",
+    conteudo: <SceneHero emoji="💼" title="Bora prospectar?" subtitle="cada ferramenta do painel do comercial" />,
     fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 100%)",
     overlay: true,
     transicao: "fade-zoom",
@@ -48,9 +55,29 @@ const SCENES: Scene[] = [
     transicao: "fade-up",
   },
   {
+    id: "daily",
+    duration: 7,
+    eyebrow: "cena 3 · disciplina",
+    titulo: "Daily — sua agenda do dia",
+    legenda: "Cada manhã, abre e vê: leads pra contatar, visitas agendadas, ops avançando, tickets pra responder. Sem sumir tarefa.",
+    conteudo: <MockupDailyComercial />,
+    fundo: "linear-gradient(135deg, #0d1729 0%, #1c6dd0 100%)",
+    transicao: "slide-right",
+  },
+  {
+    id: "templates",
+    duration: 7,
+    eyebrow: "cena 4 · velocidade",
+    titulo: "Templates WhatsApp prontos",
+    legenda: "Primeiro contato, follow-up, confirmação. Variáveis {{nome}} {{empresa}} preenchem sozinhas. Tom consistente.",
+    conteudo: <MockupTemplatesWhatsapp />,
+    fundo: "linear-gradient(135deg, #1c6dd0 0%, #0d4e9e 100%)",
+    transicao: "fade-up",
+  },
+  {
     id: "cadastro",
     duration: 7,
-    eyebrow: "cena 3 · cadastro express",
+    eyebrow: "cena 5 · cadastro express",
     titulo: "Lead fechou? Cadastra em 2 minutos",
     legenda: "Form mobile rápido pra criar conta da imob/construtora. Convite vai por email automático, vínculo com você.",
     conteudo: <MockupCadastroExpress />,
@@ -58,43 +85,93 @@ const SCENES: Scene[] = [
     transicao: "slide-right",
   },
   {
+    id: "convite-link",
+    duration: 7,
+    eyebrow: "cena 6 · self-service",
+    titulo: "Link único de convite",
+    legenda: "Manda só o link no WhatsApp ou QR no evento. Qualquer imob que cadastrar vira sua. Métricas em tempo real.",
+    conteudo: <MockupConviteLink />,
+    fundo: "linear-gradient(135deg, #15803d 0%, #1c6dd0 100%)",
+    transicao: "slide-left",
+  },
+  {
     id: "comissoes",
     duration: 8,
-    eyebrow: "cena 4 · ganhos",
-    titulo: "Comissão por cada op fechada",
-    legenda: "Toda operação aprovada das suas contas vinculadas gera comissão automática. Acumula no holerite mensal.",
+    eyebrow: "cena 7 · ganhos",
+    titulo: "Comissões — acumulado mês a mês",
+    legenda: "Toda operação aprovada das suas contas vinculadas gera comissão automática. Gráfico mensal + breakdown por status.",
     conteudo: <MockupComissoes />,
     fundo: "linear-gradient(135deg, #0a0e1a 0%, #15803d 100%)",
     transicao: "fade-up",
   },
   {
-    id: "templates",
+    id: "holerite",
     duration: 7,
-    eyebrow: "cena 5 · velocidade",
-    titulo: "Templates WhatsApp prontos",
-    legenda: "Primeiro contato, follow-up, confirmação. Variáveis {{nome}} {{empresa}} preenchem sozinhas. Mantém tom consistente.",
-    conteudo: <MockupGenericoSlide emoji="💬" title="Templates" subtitle="copia, cola, envia · economiza minutos por contato" />,
-    fundo: "linear-gradient(135deg, #1c6dd0 0%, #0d4e9e 100%)",
+    eyebrow: "cena 8 · pagamento",
+    titulo: "Holerite mensal — PDF + transferência",
+    legenda: "Fechamento automático no dia 1º. PDF assinado pra contabilidade. Pagamento via PIX em 5 dias úteis.",
+    conteudo: <MockupHolerite />,
+    fundo: "linear-gradient(135deg, #15803d 0%, #166534 100%)",
+    transicao: "slide-right",
+  },
+  {
+    id: "relatorios",
+    duration: 6,
+    eyebrow: "cena 9 · performance",
+    titulo: "Relatórios — você vê onde precisa apertar",
+    legenda: "Ops fechadas, taxa de conversão, ranking interno do time. Comparativo com mês anterior e meta.",
+    conteudo: <MockupRelatorioCorretor />,
+    fundo: "linear-gradient(135deg, #0d1729 0%, #0d4e9e 100%)",
+    transicao: "fade-zoom",
+  },
+  {
+    id: "notificacoes",
+    duration: 6,
+    eyebrow: "cena 10 · alertas",
+    titulo: "Notificações — não perde lead",
+    legenda: "Lead respondeu, op aprovada, parcela paga, comissão fechada. Push real no celular + email + in-app.",
+    conteudo: <MockupNotificacoes />,
+    fundo: "linear-gradient(135deg, #0d4e9e 0%, #1c6dd0 100%)",
+    transicao: "fade-up",
+  },
+  {
+    id: "chat",
+    duration: 6,
+    eyebrow: "cena 11 · suporte",
+    titulo: "Chat — direto com cliente + AQ",
+    legenda: "Suporte AQ, conversa com sua imob vinculada, dúvidas administrativas. Sem ticket que dorme.",
+    conteudo: <MockupChatSuporte />,
+    fundo: "linear-gradient(135deg, #0d1729 0%, #1e293b 100%)",
+    transicao: "slide-left",
+  },
+  {
+    id: "mobile",
+    duration: 5,
+    eyebrow: "cena 12 · mobile",
+    titulo: "100% mobile — trabalha do café, do carro, do evento",
+    legenda: "PWA instalável. Push real. Mapa funciona offline. Templates WA com 1 toque.",
+    conteudo: <MockupGenericoSlide emoji="📱" title="Captação na rua" subtitle="PWA · GPS · push · QR code" />,
+    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 100%)",
     overlay: true,
     transicao: "fade-zoom",
   },
   {
-    id: "daily",
-    duration: 7,
-    eyebrow: "cena 6 · disciplina",
-    titulo: "Daily — foco do dia",
-    legenda: "Cada manhã, abre e vê: leads pra contatar, visitas agendadas, ops avançando. Sem sumir tarefa.",
-    conteudo: <MockupGenericoSlide emoji="📅" title="Sua agenda do dia" subtitle="leads · visitas · ops · tickets" />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #1c6dd0 100%)",
+    id: "treinamento",
+    duration: 5,
+    eyebrow: "cena 13 · onboarding",
+    titulo: "Tour guiado + base de contatos pré-qualificada",
+    legenda: "Primeiros 30 dias: treinamento, mentoria 1:1, leads pré-aquecidos do mapa. Você arrebenta cedo.",
+    conteudo: <MockupGenericoSlide emoji="🎯" title="Programa Acelera" subtitle="treinamento · mentor · leads quentes" />,
+    fundo: "linear-gradient(135deg, #15803d 0%, #0d4e9e 100%)",
     overlay: true,
-    transicao: "slide-left",
+    transicao: "fade-up",
   },
   {
     id: "cta",
     duration: 6,
     eyebrow: "bora?",
     titulo: "Pronto pra começar?",
-    legenda: "Tour completo, treinamento e suporte direto pra você arrebentar nos primeiros 30 dias.",
+    legenda: "Comissão atrativa + ferramentas que economizam horas todo dia + base de contatos pré-qualificada.",
     conteudo: (
       <div className="text-center text-white">
         <div className="text-7xl mb-4 animate-mockup-pop">🚀</div>
@@ -131,12 +208,12 @@ export default function ApresentacaoComercialPage() {
             O kit do captador.
             <br />
             <span className="bg-gradient-to-r from-emerald-300 to-blue-200 bg-clip-text text-transparent">
-              Em ~60 segundos.
+              Em ~2 minutos.
             </span>
           </h1>
           <p className="mt-4 text-base md:text-lg text-blue-50 max-w-2xl">
-            Veja como o comercial usa o painel: mapa de prospects, pipeline de
-            leads, cadastro express, comissões automáticas e mais.
+            Tour completo: mapa, pipeline, daily, templates WA, cadastro express,
+            comissões, holerite, link de convite e mais.
           </p>
         </div>
       </section>

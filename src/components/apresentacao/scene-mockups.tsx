@@ -708,6 +708,787 @@ export function MockupRisco() {
 }
 
 /* ===================================================================
+   CORRETOR / IMOBILIÁRIA — extras
+   =================================================================== */
+
+export function MockupNovaOperacao() {
+  return (
+    <DesktopFrame url="painel/operacoes/nova" label="Nova operação · campos auto-preenchidos por OCR">
+      <div className="h-full p-4 bg-white">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs font-bold text-slate-700">Nova operação</div>
+          <div className="px-2 py-1 rounded-full bg-accent/15 text-accent text-[9px] font-bold uppercase animate-badge-pop">
+            📎 contrato lido por IA
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          {[
+            { l: "Comprador", v: "Maria Silva", d: "0.2s" },
+            { l: "Construtora", v: "Atlas Empreend.", d: "0.4s" },
+            { l: "Unidade", v: "Apt 1207 · Bloco B", d: "0.6s" },
+            { l: "Valor comissão", v: "R$ 24.500", d: "0.8s" },
+            { l: "Parcelas", v: "8x R$ 3.062", d: "1.0s" },
+            { l: "1ª parcela", v: "15/06/2026", d: "1.2s" },
+          ].map((f, i) => (
+            <div key={i} className="rounded border border-border bg-slate-50 p-2 animate-slide-in-bottom" style={{ animationDelay: f.d }}>
+              <div className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">{f.l}</div>
+              <div className="font-bold text-slate-900 text-[11px]">{f.v}</div>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg bg-emerald-50 border border-success/30 p-2.5 mb-2 animate-slide-in-bottom" style={{ animationDelay: "1.4s" }}>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="size-2 rounded-full bg-success animate-dot-ping" />
+            <span className="font-bold text-success">campos validados pelo Claude Haiku</span>
+          </div>
+          <div className="text-[10px] text-slate-600 mt-1">você só confere e clica enviar</div>
+        </div>
+        <div className="h-9 rounded-lg bg-accent text-white text-xs font-bold flex items-center justify-center animate-badge-pop" style={{ animationDelay: "1.7s" }}>
+          Enviar pra análise →
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupEquipeCorretor() {
+  return (
+    <DesktopFrame url="painel/equipe" label="Equipe · gerente vê tudo, corretor vê só os dele">
+      <div className="h-full p-4 bg-white">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs font-bold text-slate-700">Equipe Imobiliária Vista Mar</div>
+          <div className="text-[9px] font-mono px-2 py-1 rounded bg-accent text-white">+ Convidar</div>
+        </div>
+        {[
+          { n: "Júlia Castro", r: "owner", c: "danger", ops: 24, val: "R$ 312k" },
+          { n: "Lucas Silva", r: "corretor", c: "accent", ops: 18, val: "R$ 245k" },
+          { n: "Bruno Lima", r: "corretor", c: "accent", ops: 12, val: "R$ 167k" },
+          { n: "Ana Costa", r: "gerente", c: "warn", ops: 9, val: "R$ 134k" },
+        ].map((m, i) => (
+          <div key={i} className="flex items-center gap-3 p-2.5 border-b border-border last:border-0 animate-slide-in-bottom" style={{ animationDelay: `${0.2 + i * 0.15}s` }}>
+            <div className="size-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700">
+              {m.n.split(" ").map(s => s[0]).join("")}
+            </div>
+            <div className="flex-1">
+              <div className="text-[11px] font-bold text-slate-900">{m.n}</div>
+              <div className={`text-[9px] font-mono uppercase tracking-wider font-bold text-${m.c}`}>{m.r}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] text-slate-500">{m.ops} ops · {m.val}</div>
+              <div className="text-[9px] font-mono text-slate-400">mês atual</div>
+            </div>
+          </div>
+        ))}
+        <div className="mt-2 text-[10px] text-fg-muted text-center italic">
+          permissões: owner = tudo · gerente = relatórios · corretor = só suas ops
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupRelatorioCorretor() {
+  return (
+    <DesktopFrame url="painel/relatorio" label="Relatório · performance + ranking">
+      <div className="h-full p-4 bg-white">
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {[
+            { l: "Ops fechadas", v: "18", d: "0.2s" },
+            { l: "Volume", v: "R$ 245k", d: "0.4s" },
+            { l: "Comissão líq.", v: "R$ 28k", d: "0.6s" },
+          ].map((k, i) => (
+            <div key={i} className="rounded-lg bg-accent/5 border border-accent/20 p-2.5 animate-slide-in-bottom" style={{ animationDelay: k.d }}>
+              <div className="text-[9px] uppercase text-slate-500 font-mono">{k.l}</div>
+              <div className="text-base font-bold text-accent tabular animate-number-pulse" style={{ animationDelay: k.d }}>{k.v}</div>
+            </div>
+          ))}
+        </div>
+        <div className="text-[10px] font-bold uppercase text-slate-500 font-mono mb-2">ranking da imobiliária</div>
+        <div className="space-y-1.5">
+          {[
+            { p: "🥇", n: "Júlia (você)", v: "R$ 312k", hi: true },
+            { p: "🥈", n: "Lucas Silva", v: "R$ 245k" },
+            { p: "🥉", n: "Bruno Lima", v: "R$ 167k" },
+            { p: "4º", n: "Ana Costa", v: "R$ 134k" },
+          ].map((r, i) => (
+            <div key={i} className={`flex items-center gap-2 p-2 rounded-lg text-[10px] animate-slide-in-bottom ${r.hi ? "bg-success/10 border border-success/30" : "bg-slate-50"}`} style={{ animationDelay: `${0.8 + i * 0.1}s` }}>
+              <span className="text-base">{r.p}</span>
+              <span className="flex-1 font-semibold text-slate-700">{r.n}</span>
+              <span className="font-mono tabular text-slate-600">{r.v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupConvitesCorretor() {
+  return (
+    <MobileFrame label="Convites · imobs convidando você">
+      <div className="px-4 pt-2 space-y-3 text-[11px]">
+        <div className="font-bold text-slate-900 text-sm">📩 Convites</div>
+        <div className="text-slate-500 text-[10px]">imobiliárias querem você no time</div>
+        {[
+          { n: "Imob Vista Mar", t: "corretor", d: "12 corretores · 4.8★", c: "success", delay: "0.3s" },
+          { n: "Atlas Imóveis", t: "gerente", d: "convite premium", c: "warn", delay: "0.6s" },
+          { n: "Solaris Empreend.", t: "corretor", d: "8 corretores", c: "accent", delay: "0.9s" },
+        ].map((c, i) => (
+          <div key={i} className="rounded-xl border border-border p-3 animate-slide-in-bottom" style={{ animationDelay: c.delay }}>
+            <div className="flex items-start justify-between mb-1">
+              <div>
+                <div className="font-bold text-slate-900 text-xs">{c.n}</div>
+                <div className="text-[9px] text-slate-500">{c.d}</div>
+              </div>
+              <div className={`px-2 py-0.5 rounded-full bg-${c.c}/15 text-${c.c} text-[8px] font-bold uppercase`}>
+                {c.t}
+              </div>
+            </div>
+            <div className="flex gap-1.5 mt-2">
+              <div className="flex-1 h-7 rounded bg-success text-white text-[9px] font-bold flex items-center justify-center">✓ Aceitar</div>
+              <div className="flex-1 h-7 rounded border border-slate-300 text-slate-500 text-[9px] font-bold flex items-center justify-center">recusar</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </MobileFrame>
+  );
+}
+
+export function MockupSimulador() {
+  return (
+    <MobileFrame label="Simulador · quanto cai pra mim?">
+      <div className="px-4 pt-2 space-y-3 text-[11px]">
+        <div className="font-bold text-slate-900 text-sm">🧮 Simulador</div>
+        <div className="text-slate-500 text-[10px]">veja antes de cadastrar</div>
+        <div className="space-y-2">
+          <div className="animate-slide-in-bottom" style={{ animationDelay: "0.2s" }}>
+            <div className="text-[9px] uppercase text-slate-500 font-mono">Valor comissão</div>
+            <div className="font-bold text-slate-900 text-lg tabular">R$ 24.500</div>
+          </div>
+          <div className="animate-slide-in-bottom" style={{ animationDelay: "0.4s" }}>
+            <div className="text-[9px] uppercase text-slate-500 font-mono">Parcelas</div>
+            <div className="font-bold text-slate-900">8 × R$ 3.062</div>
+          </div>
+        </div>
+        <div className="rounded-2xl bg-gradient-to-br from-success to-emerald-700 text-white p-4 shadow-lg animate-slide-in-bottom" style={{ animationDelay: "0.8s" }}>
+          <div className="text-[9px] uppercase tracking-wider opacity-80">você recebe HOJE</div>
+          <div className="text-3xl font-bold tabular mt-1 animate-number-pulse">R$ 21.832</div>
+          <div className="text-[10px] opacity-80 mt-1">deságio R$ 2.668 (6% a.m.)</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-2 text-[10px]">
+          <div className="rounded border border-border bg-slate-50 p-2 animate-slide-in-bottom" style={{ animationDelay: "1.0s" }}>
+            <div className="text-[9px] uppercase text-slate-500 font-mono">% líquido</div>
+            <div className="font-bold text-slate-900">89,1%</div>
+          </div>
+          <div className="rounded border border-border bg-slate-50 p-2 animate-slide-in-bottom" style={{ animationDelay: "1.2s" }}>
+            <div className="text-[9px] uppercase text-slate-500 font-mono">tx mensal</div>
+            <div className="font-bold text-slate-900">6,00%</div>
+          </div>
+        </div>
+        <div className="text-[9px] text-slate-500 text-center italic">cadastre pra travar essa taxa</div>
+      </div>
+    </MobileFrame>
+  );
+}
+
+export function MockupChatSuporte() {
+  return (
+    <DesktopFrame url="painel/suporte/CH-321" label="Chat · suporte direto · resposta em minutos">
+      <div className="h-full flex bg-white">
+        <div className="w-32 border-r border-border p-2 bg-slate-50">
+          <div className="text-[9px] uppercase text-slate-500 font-mono mb-2">categorias</div>
+          {["Suporte", "Documentos", "Negociação", "Cobrança"].map((c, i) => (
+            <div key={i} className={`text-[10px] p-1.5 rounded mb-1 ${i === 0 ? "bg-accent text-white font-bold" : "text-slate-700"}`}>
+              # {c}
+            </div>
+          ))}
+        </div>
+        <div className="flex-1 p-3 flex flex-col">
+          <div className="text-xs font-bold text-slate-700 mb-2">Chat com suporte AQ</div>
+          <div className="space-y-2 flex-1">
+            <div className="flex justify-start animate-slide-in-bottom" style={{ animationDelay: "0.3s" }}>
+              <div className="bg-slate-100 rounded-2xl rounded-tl-sm p-2 max-w-[70%] text-[10px]">
+                Como faço pra editar uma op já enviada?
+              </div>
+            </div>
+            <div className="flex justify-end animate-slide-in-bottom" style={{ animationDelay: "1.0s" }}>
+              <div className="bg-accent text-white rounded-2xl rounded-br-sm p-2 max-w-[70%] text-[10px]">
+                Antes da aprovação dá: vai em Operações → clica nela → ✏ editar. Depois só se desfizer.
+              </div>
+            </div>
+            <div className="flex justify-start animate-slide-in-bottom" style={{ animationDelay: "1.5s" }}>
+              <div className="bg-slate-100 rounded-2xl rounded-tl-sm p-2 max-w-[70%] text-[10px]">
+                Valeu! 👍
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <div className="flex-1 h-8 rounded-lg border border-border bg-slate-50 px-3 flex items-center text-[10px] text-slate-400">
+              digite...
+            </div>
+            <div className="h-8 px-3 rounded-lg bg-accent text-white text-[10px] font-bold flex items-center">→</div>
+          </div>
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+/* ===================================================================
+   CONSTRUTORA — extras
+   =================================================================== */
+
+export function MockupExtratoConstrutora() {
+  return (
+    <DesktopFrame url="painel/extrato" label="Extrato · histórico de movimentações">
+      <div className="h-full p-4 bg-white">
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="rounded-lg bg-emerald-50 border border-success/30 p-2 animate-slide-in-bottom" style={{ animationDelay: "0.2s" }}>
+            <div className="text-[9px] uppercase text-success font-mono">cashback ganho</div>
+            <div className="text-base font-bold text-success tabular">R$ 1.240</div>
+          </div>
+          <div className="rounded-lg bg-yellow-50 border border-warn/30 p-2 animate-slide-in-bottom" style={{ animationDelay: "0.4s" }}>
+            <div className="text-[9px] uppercase text-warn font-mono">a pagar</div>
+            <div className="text-base font-bold text-warn tabular">R$ 75k</div>
+          </div>
+          <div className="rounded-lg bg-blue-50 border border-accent/30 p-2 animate-slide-in-bottom" style={{ animationDelay: "0.6s" }}>
+            <div className="text-[9px] uppercase text-accent font-mono">pago no mês</div>
+            <div className="text-base font-bold text-accent tabular">R$ 38k</div>
+          </div>
+        </div>
+        <div className="text-[10px] font-bold uppercase text-slate-500 font-mono mb-2">últimos lançamentos</div>
+        <div className="space-y-1">
+          {[
+            { d: "16/05", l: "Cashback OP-0142", v: "+R$ 124", c: "success" },
+            { d: "15/05", l: "Pagamento parcela 3/8", v: "-R$ 3.062", c: "danger" },
+            { d: "12/05", l: "Cashback OP-0138", v: "+R$ 98", c: "success" },
+            { d: "10/05", l: "Pagamento parcela 6/8", v: "-R$ 4.500", c: "danger" },
+            { d: "08/05", l: "Estorno parcela 2/12 (cancelada)", v: "+R$ 1.800", c: "success" },
+          ].map((m, i) => (
+            <div key={i} className="flex items-center gap-2 text-[10px] p-1.5 border-b border-border/40 animate-slide-in-bottom" style={{ animationDelay: `${0.8 + i * 0.1}s` }}>
+              <span className="font-mono text-slate-500 w-9">{m.d}</span>
+              <span className="flex-1 text-slate-700">{m.l}</span>
+              <span className={`font-mono tabular font-bold text-${m.c}`}>{m.v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupEmpreendimentos() {
+  return (
+    <DesktopFrame url="painel/empreendimentos" label="Empreendimentos · cadastro por torre/unidade">
+      <div className="h-full p-4 bg-white">
+        <div className="text-xs font-bold mb-3 text-slate-700">Empreendimentos ativos · 6</div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { n: "Edifício Atlas", l: "Joinville · SC", u: "120 unidades", v: "84 vendidas", c: "success" },
+            { n: "Vista Mar Resid.", l: "Itajaí · SC", u: "84 unidades", v: "42 vendidas", c: "accent" },
+            { n: "Solaris Premium", l: "Balneário · SC", u: "60 unidades", v: "31 vendidas", c: "accent" },
+            { n: "Edifício Bela", l: "Jaraguá · SC", u: "48 unidades", v: "12 vendidas", c: "warn" },
+          ].map((e, i) => (
+            <div key={i} className="rounded-xl border border-border p-3 hover:border-accent/40 animate-slide-in-bottom" style={{ animationDelay: `${0.2 + i * 0.15}s` }}>
+              <div className="flex items-start justify-between mb-1.5">
+                <div className="size-8 rounded-lg bg-gradient-to-br from-accent to-blue-700 flex items-center justify-center text-white text-xs">🏢</div>
+                <div className={`px-1.5 py-0.5 rounded-full bg-${e.c}/15 text-${e.c} text-[8px] font-bold`}>{e.v.split(" ")[0]}</div>
+              </div>
+              <div className="font-bold text-slate-900 text-xs">{e.n}</div>
+              <div className="text-[9px] text-slate-500">{e.l}</div>
+              <div className="text-[9px] font-mono text-slate-600 mt-1">{e.u}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 h-9 rounded-lg border-2 border-dashed border-border text-[10px] text-slate-500 flex items-center justify-center animate-slide-in-bottom" style={{ animationDelay: "1.0s" }}>
+          + Cadastrar novo empreendimento
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupEquipeConstrutora() {
+  return (
+    <DesktopFrame url="painel/equipe" label="Equipe · roles internas separadas">
+      <div className="h-full p-4 bg-white">
+        <div className="text-xs font-bold mb-3 text-slate-700">Equipe Construtora Atlas</div>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          {[
+            { n: "Diego Santos", r: "owner", v: "tudo", e: "👑", d: "0.2s" },
+            { n: "Carla Mendes", r: "financeiro", v: "duplicatas + cashback", e: "💰", d: "0.4s" },
+            { n: "Pedro Lima", r: "comercial", v: "operações + atendimentos", e: "💼", d: "0.6s" },
+            { n: "Rita Vargas", r: "jurídico", v: "documentos + contratos", e: "⚖️", d: "0.8s" },
+          ].map((m, i) => (
+            <div key={i} className="rounded-lg border border-border p-2.5 animate-slide-in-bottom" style={{ animationDelay: m.d }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-base">{m.e}</span>
+                <div className="flex-1">
+                  <div className="text-[11px] font-bold text-slate-900">{m.n}</div>
+                  <div className="text-[9px] font-mono uppercase text-accent font-bold">{m.r}</div>
+                </div>
+              </div>
+              <div className="text-[9px] text-slate-500 italic">vê: {m.v}</div>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg bg-accent/5 border border-accent/30 p-2.5 animate-slide-in-bottom" style={{ animationDelay: "1.0s" }}>
+          <div className="text-[10px] font-bold text-accent uppercase tracking-wider">🔒 separação de poderes</div>
+          <div className="text-[10px] text-slate-700 mt-0.5">cada um só acessa o que cabe pra função · audit por usuário</div>
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupForecastPagamentos() {
+  const meses = [
+    { m: "Jun", v: 38 },
+    { m: "Jul", v: 52 },
+    { m: "Ago", v: 64 },
+    { m: "Set", v: 71 },
+    { m: "Out", v: 58 },
+    { m: "Nov", v: 41 },
+  ];
+  return (
+    <DesktopFrame url="painel/forecast" label="Forecast · quanto sua construtora vai pagar">
+      <div className="h-full p-5 bg-white">
+        <div className="text-xs font-bold mb-1 text-slate-700">Pagamentos previstos · 6 meses</div>
+        <div className="text-2xl font-bold text-accent tabular animate-number-pulse">R$ 324k</div>
+        <div className="text-[10px] text-slate-500 mb-5">total a desembolsar até nov/2026</div>
+        <div className="flex items-end gap-2 h-32 mt-4">
+          {meses.map((b, i) => {
+            const max = Math.max(...meses.map(x => x.v));
+            const pct = (b.v / max) * 100;
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div className="text-[9px] font-mono text-slate-600">R${b.v}k</div>
+                <div
+                  className="w-full bg-gradient-to-t from-accent to-blue-400 rounded-t animate-bar-fill"
+                  style={{ height: `${pct}%`, ["--target-width" as never]: "100%", animationDelay: `${0.3 + i * 0.15}s` }}
+                />
+                <div className="text-[9px] text-slate-500 font-mono">{b.m}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 text-[10px]">
+          <div className="rounded border border-border p-2">
+            <div className="text-[9px] uppercase text-slate-500 font-mono">média mensal</div>
+            <div className="font-bold text-slate-900 tabular">R$ 54k</div>
+          </div>
+          <div className="rounded border border-warn/30 bg-yellow-50 p-2">
+            <div className="text-[9px] uppercase text-warn font-mono">pico (set)</div>
+            <div className="font-bold text-warn tabular">R$ 71k</div>
+          </div>
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupPendencias() {
+  return (
+    <MobileFrame label="Pendências · TODO de docs + aprovações">
+      <div className="px-4 pt-2 space-y-2 text-[11px]">
+        <div className="font-bold text-slate-900 text-sm">📋 Pendências</div>
+        <div className="text-slate-500 text-[10px]">5 itens precisam de você</div>
+        {[
+          { e: "📄", l: "Enviar contrato OP-0142", t: "documento", urg: true },
+          { e: "✅", l: "Confirmar comissão OP-0143", t: "aprovação", urg: true },
+          { e: "💬", l: "Responder ticket #321", t: "atendimento" },
+          { e: "📊", l: "Conferir extrato mensal", t: "financeiro" },
+          { e: "👥", l: "Aprovar novo membro equipe", t: "equipe" },
+        ].map((p, i) => (
+          <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg animate-slide-in-bottom ${p.urg ? "bg-red-50 border border-danger/30" : "bg-slate-50 border border-border"}`} style={{ animationDelay: `${0.2 + i * 0.12}s` }}>
+            <span className="text-base">{p.e}</span>
+            <div className="flex-1">
+              <div className="font-semibold text-slate-900 text-[10px]">{p.l}</div>
+              <div className="text-[9px] text-slate-500 font-mono">{p.t}{p.urg && " · urgente"}</div>
+            </div>
+            <div className="size-5 rounded border-2 border-slate-300" />
+          </div>
+        ))}
+      </div>
+    </MobileFrame>
+  );
+}
+
+/* ===================================================================
+   FUNDO — extras
+   =================================================================== */
+
+export function MockupDailyFundo() {
+  return (
+    <DesktopFrame url="painel/daily" label="Daily · parcelas vencendo hoje + atrasadas">
+      <div className="h-full p-4 bg-white">
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="rounded-lg bg-red-50 border border-danger/30 p-2 animate-slide-in-bottom" style={{ animationDelay: "0.2s" }}>
+            <div className="text-[9px] uppercase text-danger font-mono">vencidas</div>
+            <div className="text-base font-bold text-danger tabular animate-number-pulse">R$ 47k</div>
+            <div className="text-[9px] text-slate-500">3 parcelas</div>
+          </div>
+          <div className="rounded-lg bg-yellow-50 border border-warn/30 p-2 animate-slide-in-bottom" style={{ animationDelay: "0.4s" }}>
+            <div className="text-[9px] uppercase text-warn font-mono">vencem hoje</div>
+            <div className="text-base font-bold text-warn tabular">R$ 28k</div>
+            <div className="text-[9px] text-slate-500">5 parcelas</div>
+          </div>
+          <div className="rounded-lg bg-emerald-50 border border-success/30 p-2 animate-slide-in-bottom" style={{ animationDelay: "0.6s" }}>
+            <div className="text-[9px] uppercase text-success font-mono">recebidas</div>
+            <div className="text-base font-bold text-success tabular">R$ 92k</div>
+            <div className="text-[9px] text-slate-500">12 parcelas</div>
+          </div>
+        </div>
+        <div className="text-[10px] font-bold uppercase text-slate-500 font-mono mb-2">cobrar agora</div>
+        <div className="space-y-1.5">
+          {[
+            { n: "OP-0142 · Atlas", v: "R$ 15.500", at: "3 dias", c: "danger" },
+            { n: "OP-0138 · Vista Mar", v: "R$ 12.800", at: "1 dia", c: "danger" },
+            { n: "OP-0145 · Solaris", v: "R$ 18.200", at: "hoje", c: "warn" },
+          ].map((p, i) => (
+            <div key={i} className={`flex items-center gap-2 p-2 rounded-lg text-[10px] animate-slide-in-bottom border bg-${p.c}/5 border-${p.c}/30`} style={{ animationDelay: `${0.8 + i * 0.12}s` }}>
+              <div className={`size-2 rounded-full bg-${p.c} animate-dot-ping`} />
+              <span className="font-mono text-slate-700 flex-1">{p.n}</span>
+              <span className="font-bold tabular">{p.v}</span>
+              <span className={`text-${p.c} font-mono`}>{p.at}</span>
+              <div className="h-6 px-2 rounded bg-accent text-white text-[9px] font-bold flex items-center">cobrar</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupFaturas() {
+  return (
+    <DesktopFrame url="painel/faturas/FAT-0042" label="Faturas · AQ cobra fundo proporcional ao pago">
+      <div className="h-full p-4 bg-white">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-xs font-bold text-slate-700">Fatura mai/2026</div>
+            <div className="text-[10px] text-slate-500">parcelas pagas no período</div>
+          </div>
+          <div className="px-2 py-1 rounded-full bg-success/15 text-success text-[9px] font-bold uppercase">
+            ✓ paga
+          </div>
+        </div>
+        <div className="rounded-xl bg-gradient-to-br from-accent to-blue-700 text-white p-4 shadow-lg mb-3">
+          <div className="text-[9px] uppercase tracking-wider opacity-80">total a pagar</div>
+          <div className="text-3xl font-bold tabular mt-1 animate-number-pulse">R$ 8.423</div>
+          <div className="text-[10px] opacity-80 mt-1">12 ops · R$ 142k movimentado</div>
+        </div>
+        <div className="space-y-1">
+          {[
+            { l: "Custos operacionais", v: "R$ 3.840", n: "100% AQ" },
+            { l: "Spread / 2", v: "R$ 4.583", n: "AQ" },
+            { l: "Custo dinheiro fundo", v: "R$ 18.250", n: "→ fundo" },
+            { l: "Spread / 2", v: "R$ 4.583", n: "→ fundo" },
+          ].map((m, i) => (
+            <div key={i} className="flex items-center gap-2 text-[10px] py-1.5 border-b border-border/40 animate-slide-in-bottom" style={{ animationDelay: `${0.4 + i * 0.1}s` }}>
+              <span className="flex-1 text-slate-700">{m.l}</span>
+              <span className="font-mono tabular text-slate-700">{m.v}</span>
+              <span className="text-[9px] font-bold text-accent w-16 text-right font-mono">{m.n}</span>
+            </div>
+          ))}
+        </div>
+        <div className="text-[9px] text-slate-500 text-center mt-3 italic">cobrança proporcional ao % pago do período</div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupForecastFundo() {
+  const meses = ["Jun", "Jul", "Ago", "Set", "Out", "Nov"];
+  const bruto = [180, 220, 260, 290, 240, 200];
+  const fundo = [150, 184, 218, 244, 200, 168];
+  return (
+    <DesktopFrame url="painel/forecast" label="Forecast · projeção bruta + parte do fundo + AQ">
+      <div className="h-full p-5 bg-white">
+        <div className="text-xs font-bold mb-1 text-slate-700">Forecast 6 meses</div>
+        <div className="text-2xl font-bold text-accent tabular animate-number-pulse">R$ 1.16M</div>
+        <div className="text-[10px] text-slate-500 mb-4">previsão de recebimentos brutos</div>
+        <div className="flex items-end gap-2 h-32 mt-2">
+          {meses.map((m, i) => {
+            const max = Math.max(...bruto);
+            const pctB = (bruto[i] / max) * 100;
+            const pctF = (fundo[i] / max) * 100;
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1 relative h-32">
+                <div className="flex-1 w-full relative flex items-end">
+                  <div
+                    className="absolute inset-x-0 bottom-0 w-full bg-accent/20 rounded-t animate-bar-fill"
+                    style={{ height: `${pctB}%`, ["--target-width" as never]: "100%", animationDelay: `${0.3 + i * 0.12}s` }}
+                  />
+                  <div
+                    className="absolute inset-x-0 bottom-0 w-full bg-gradient-to-t from-success to-emerald-400 rounded-t animate-bar-fill"
+                    style={{ height: `${pctF}%`, ["--target-width" as never]: "100%", animationDelay: `${0.5 + i * 0.12}s` }}
+                  />
+                </div>
+                <div className="text-[9px] text-slate-500 font-mono">{m}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex gap-3 text-[9px] font-mono justify-center mt-3">
+          <div className="flex items-center gap-1"><span className="size-2 rounded bg-accent/30" /> bruto</div>
+          <div className="flex items-center gap-1"><span className="size-2 rounded bg-success" /> parte fundo</div>
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupRecaps() {
+  return (
+    <MobileFrame label="Recap · resumo diário automático">
+      <div className="px-4 pt-2 space-y-3 text-[11px]">
+        <div className="font-bold text-slate-900 text-sm">📊 Recap · 16/mai</div>
+        <div className="rounded-xl bg-gradient-to-br from-accent to-blue-700 text-white p-3 shadow-lg animate-slide-in-bottom" style={{ animationDelay: "0.2s" }}>
+          <div className="text-[9px] uppercase tracking-wider opacity-80">resultado do dia</div>
+          <div className="text-2xl font-bold tabular mt-0.5 animate-number-pulse">+R$ 47.230</div>
+          <div className="text-[10px] opacity-80">12 ops · 8 aprovadas auto · 4 manuais</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { l: "ops aprovadas", v: "12", d: "0.4s" },
+            { l: "ops recusadas", v: "3", d: "0.5s" },
+            { l: "parcelas pagas", v: "R$ 89k", d: "0.6s" },
+            { l: "parcelas vencidas", v: "R$ 18k", d: "0.7s" },
+          ].map((k, i) => (
+            <div key={i} className="rounded-lg border border-border p-2 animate-slide-in-bottom" style={{ animationDelay: k.d }}>
+              <div className="text-[9px] uppercase text-slate-500 font-mono">{k.l}</div>
+              <div className="font-bold text-slate-900 tabular">{k.v}</div>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg bg-emerald-50 border border-success/30 p-2.5 animate-slide-in-bottom" style={{ animationDelay: "0.9s" }}>
+          <div className="text-[9px] uppercase text-success font-bold font-mono">✓ destaque</div>
+          <div className="text-[10px] text-slate-700 mt-0.5">Atlas pagou 4 parcelas adiantadas — score +5</div>
+        </div>
+        <div className="text-[9px] text-slate-500 text-center italic">recaps diário · semanal · mensal por email</div>
+      </div>
+    </MobileFrame>
+  );
+}
+
+export function MockupRecebimentos() {
+  const dias = Array.from({ length: 14 }, (_, i) => i + 1);
+  return (
+    <DesktopFrame url="painel/recebimentos" label="Recebimentos · cronograma quinzenal">
+      <div className="h-full p-4 bg-white">
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="rounded-lg bg-success/10 border border-success/30 p-2.5 animate-slide-in-bottom" style={{ animationDelay: "0.2s" }}>
+            <div className="text-[9px] uppercase text-success font-mono">recebido</div>
+            <div className="text-base font-bold text-success tabular animate-number-pulse">R$ 234k</div>
+            <div className="text-[9px] text-slate-500">+12% vs mês anterior</div>
+          </div>
+          <div className="rounded-lg bg-warn/10 border border-warn/30 p-2.5 animate-slide-in-bottom" style={{ animationDelay: "0.4s" }}>
+            <div className="text-[9px] uppercase text-warn font-mono">previsto 14 dias</div>
+            <div className="text-base font-bold text-warn tabular">R$ 187k</div>
+            <div className="text-[9px] text-slate-500">28 parcelas</div>
+          </div>
+        </div>
+        <div className="text-[10px] font-bold uppercase text-slate-500 font-mono mb-2">próximos 14 dias</div>
+        <div className="grid grid-cols-7 gap-1">
+          {dias.map((d, i) => {
+            const v = Math.floor(Math.random() * 50 + 5);
+            const intensity = v / 55;
+            return (
+              <div key={i} className="aspect-square rounded relative overflow-hidden animate-badge-pop" style={{ animationDelay: `${0.6 + i * 0.05}s` }}>
+                <div className="absolute inset-0 bg-accent" style={{ opacity: 0.15 + intensity * 0.7 }} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-[9px]">
+                  <div className="font-mono text-white font-bold">{d}</div>
+                  <div className="text-[7px] text-white/80 tabular">{v}k</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="text-[9px] text-slate-500 text-center mt-2 italic">heatmap · azul mais escuro = + dinheiro</div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+/* ===================================================================
+   COMERCIAL — extras
+   =================================================================== */
+
+export function MockupTemplatesWhatsapp() {
+  return (
+    <MobileFrame label="Templates · WhatsApp com placeholders">
+      <div className="px-4 pt-2 space-y-3 text-[11px]">
+        <div className="font-bold text-slate-900 text-sm">💬 Templates</div>
+        <div className="text-slate-500 text-[10px]">5 prontos · personalizam sozinhos</div>
+        {[
+          { t: "primeiro contato", e: "👋", c: "accent" },
+          { t: "follow-up · 3 dias", e: "📞", c: "warn" },
+          { t: "envio de proposta", e: "📄", c: "success" },
+          { t: "confirmação reunião", e: "📅", c: "accent" },
+          { t: "fechamento", e: "🎉", c: "success" },
+        ].map((t, i) => (
+          <div key={i} className="rounded-lg border border-border p-2.5 animate-slide-in-bottom" style={{ animationDelay: `${0.2 + i * 0.12}s` }}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-base">{t.e}</span>
+              <span className="flex-1 font-semibold text-slate-900 text-[10px]">{t.t}</span>
+              <div className="size-6 rounded bg-success text-white text-[10px] font-bold flex items-center justify-center">→</div>
+            </div>
+          </div>
+        ))}
+        <div className="rounded-lg bg-emerald-50 border border-success/30 p-2.5 animate-slide-in-bottom" style={{ animationDelay: "0.8s" }}>
+          <div className="text-[10px] font-bold text-success">Oi <span className="px-1 rounded bg-success/20">{`{{nome}}`}</span>, sou Mateus da Antecipaqui...</div>
+          <div className="text-[9px] text-slate-600 mt-1 italic">variáveis preenchem com dados do lead</div>
+        </div>
+      </div>
+    </MobileFrame>
+  );
+}
+
+export function MockupDailyComercial() {
+  return (
+    <DesktopFrame url="painel/daily" label="Daily · sua agenda do dia">
+      <div className="h-full p-4 bg-white">
+        <div className="text-xs font-bold mb-2 text-slate-700">Hoje · sex, 16/mai</div>
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          {[
+            { l: "leads novos", v: "8", c: "accent" },
+            { l: "visitas", v: "3", c: "success" },
+            { l: "ops avançando", v: "5", c: "warn" },
+            { l: "tickets pra você", v: "2", c: "danger" },
+          ].map((k, i) => (
+            <div key={i} className={`rounded-lg bg-${k.c}/10 border border-${k.c}/30 p-2 animate-slide-in-bottom`} style={{ animationDelay: `${0.2 + i * 0.1}s` }}>
+              <div className={`text-[9px] uppercase text-${k.c} font-mono font-bold`}>{k.l}</div>
+              <div className={`text-base font-bold text-${k.c} tabular`}>{k.v}</div>
+            </div>
+          ))}
+        </div>
+        <div className="text-[10px] font-bold uppercase text-slate-500 font-mono mb-2">agenda</div>
+        <div className="space-y-1.5">
+          {[
+            { h: "09h", l: "Ligar pra Vista Mar (lead novo)", c: "accent" },
+            { h: "10h30", l: "Visita Imob Solaris · café", c: "success" },
+            { h: "14h", l: "Apresentação Atlas Empreend.", c: "success" },
+            { h: "16h", l: "Follow-up 3 leads · WhatsApp", c: "warn" },
+            { h: "17h30", l: "Fechar OP-0142 (assinatura)", c: "danger" },
+          ].map((a, i) => (
+            <div key={i} className={`flex items-center gap-2 p-2 rounded-lg text-[10px] animate-slide-in-bottom border-l-4 bg-slate-50 border-${a.c}`} style={{ animationDelay: `${0.6 + i * 0.1}s` }}>
+              <span className="font-mono font-bold text-slate-500 w-12">{a.h}</span>
+              <span className="flex-1 text-slate-700">{a.l}</span>
+              <div className="size-4 rounded border border-slate-300" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupHolerite() {
+  return (
+    <DesktopFrame url="painel/comissoes/holerite" label="Holerite · maio 2026">
+      <div className="h-full p-5 bg-white">
+        <div className="flex items-baseline justify-between mb-3">
+          <div>
+            <div className="text-xs font-bold text-slate-700">Holerite · maio 2026</div>
+            <div className="text-[10px] text-slate-500">Mateus Schmitz · comercial</div>
+          </div>
+          <div className="px-2 py-1 rounded-full bg-success/15 text-success text-[9px] font-bold uppercase animate-badge-pop">
+            ✓ aprovado
+          </div>
+        </div>
+        <div className="rounded-2xl bg-gradient-to-br from-success to-emerald-700 text-white p-4 shadow-lg mb-3">
+          <div className="text-[9px] uppercase tracking-wider opacity-80">total líquido a receber</div>
+          <div className="text-3xl font-bold tabular mt-1 animate-number-pulse">R$ 8.428</div>
+          <div className="text-[10px] opacity-80 mt-1">cai em 05/jun · conta cadastrada</div>
+        </div>
+        <div className="space-y-1.5 text-[10px]">
+          {[
+            { l: "Comissão 18 ops fechadas", v: "+R$ 7.840", c: "success" },
+            { l: "Bônus meta 100%", v: "+R$ 1.200", c: "success" },
+            { l: "IRRF (5,5%)", v: "-R$ 497", c: "danger" },
+            { l: "INSS (1,3%)", v: "-R$ 115", c: "danger" },
+          ].map((r, i) => (
+            <div key={i} className="flex items-center gap-2 py-1.5 border-b border-border/40 animate-slide-in-bottom" style={{ animationDelay: `${0.4 + i * 0.1}s` }}>
+              <span className="flex-1 text-slate-700">{r.l}</span>
+              <span className={`font-mono tabular font-bold text-${r.c}`}>{r.v}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 h-9 rounded-lg border-2 border-accent text-accent text-[10px] font-bold flex items-center justify-center animate-slide-in-bottom" style={{ animationDelay: "1.0s" }}>
+          📥 Baixar PDF
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}
+
+export function MockupConviteLink() {
+  return (
+    <MobileFrame label="Link de convite · imob entra com você vinculado">
+      <div className="px-4 pt-2 space-y-3 text-[11px]">
+        <div className="font-bold text-slate-900 text-sm">🔗 Seu link de convite</div>
+        <div className="text-slate-500 text-[10px]">imob que entrar fica vinculada a você</div>
+        <div className="rounded-lg border border-accent bg-accent/5 p-3 animate-slide-in-bottom" style={{ animationDelay: "0.3s" }}>
+          <div className="text-[9px] uppercase text-accent font-mono">seu link</div>
+          <div className="font-mono text-[10px] text-slate-700 break-all mt-1">antecipaqui.digital/c/<span className="text-accent font-bold">m4t3us</span></div>
+          <div className="flex gap-2 mt-3">
+            <div className="flex-1 h-8 rounded-lg bg-accent text-white text-[10px] font-bold flex items-center justify-center">📋 copiar</div>
+            <div className="flex-1 h-8 rounded-lg border border-success text-success text-[10px] font-bold flex items-center justify-center">📱 enviar WA</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          {[
+            { l: "cliques", v: "84", d: "0.6s" },
+            { l: "cadastros", v: "12", d: "0.8s" },
+            { l: "ativos", v: "8", d: "1.0s" },
+          ].map((k, i) => (
+            <div key={i} className="rounded border border-border bg-slate-50 p-2 text-center animate-slide-in-bottom" style={{ animationDelay: k.d }}>
+              <div className="text-[9px] uppercase text-slate-500 font-mono">{k.l}</div>
+              <div className="text-base font-bold text-slate-900 tabular">{k.v}</div>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg bg-emerald-50 border border-success/30 p-2.5 animate-slide-in-bottom" style={{ animationDelay: "1.2s" }}>
+          <div className="text-[10px] font-bold text-success">QR code também disponível</div>
+          <div className="text-[9px] text-slate-600 mt-0.5">imprime e leva pra reunião</div>
+        </div>
+      </div>
+    </MobileFrame>
+  );
+}
+
+export function MockupNotificacoes() {
+  return (
+    <MobileFrame label="Notificações · push + email + in-app">
+      <div className="px-4 pt-2 space-y-2 text-[11px]">
+        <div className="font-bold text-slate-900 text-sm">🔔 Notificações</div>
+        <div className="text-slate-500 text-[10px]">3 não lidas</div>
+        {[
+          { e: "✅", t: "Operação aprovada!", l: "OP-0142 · R$ 18.5k cai em 4h", c: "success", n: true },
+          { e: "💰", t: "Parcela paga", l: "OP-0138 · parcela 3/8 quitada", c: "success", n: true },
+          { e: "📋", t: "Documento pendente", l: "Atlas precisa do RG do cliente", c: "warn", n: true },
+          { e: "💬", t: "Nova mensagem chat", l: "Suporte respondeu seu ticket", c: "accent", n: false },
+          { e: "⭐", t: "Score subiu", l: "84 → 87 (BOA) · taxas melhores", c: "success", n: false },
+        ].map((n, i) => (
+          <div key={i} className={`rounded-lg border p-2.5 animate-slide-in-bottom ${n.n ? `bg-${n.c}/5 border-${n.c}/40` : "bg-slate-50 border-border"}`} style={{ animationDelay: `${0.2 + i * 0.1}s` }}>
+            <div className="flex items-start gap-2">
+              <span className="text-base">{n.e}</span>
+              <div className="flex-1">
+                <div className="font-bold text-slate-900 text-[10px]">{n.t}</div>
+                <div className="text-[9px] text-slate-600">{n.l}</div>
+              </div>
+              {n.n && <div className={`size-2 rounded-full bg-${n.c} animate-dot-ping`} />}
+            </div>
+          </div>
+        ))}
+      </div>
+    </MobileFrame>
+  );
+}
+
+/* ===================================================================
    ADMIN (caso queira no futuro)
    =================================================================== */
 

@@ -10,6 +10,8 @@
     "render:fundo": "bash scripts/render.sh fundo",
     "render:imob": "bash scripts/render.sh imobiliaria",
     "render:construtora": "bash scripts/render.sh construtora",
+    "render:comercial": "bash scripts/render.sh comercial",
+    "render:all": "bash scripts/render.sh imobiliaria && bash scripts/render.sh construtora && bash scripts/render.sh fundo && bash scripts/render.sh comercial",
     "build": "npm run render",
     "narration": "tsx scripts/gen-narration.ts",
     "voices": "tsx scripts/list-voices.ts",

@@ -6,13 +6,20 @@ import {
   MockupDuplicatas,
   MockupCashbackGrowing,
   MockupScoreBar,
+  MockupExtratoConstrutora,
+  MockupEmpreendimentos,
+  MockupEquipeConstrutora,
+  MockupForecastPagamentos,
+  MockupPendencias,
+  MockupChatSuporte,
+  MockupNotificacoes,
   MockupGenericoSlide,
 } from "@/components/apresentacao/scene-mockups";
 
 export const metadata = {
   title: "Antecipaqui · Pra construtoras",
   description:
-    "Atraia corretores top sem desembolsar nada extra. Mesmas parcelas que você combinou — sistema cuida do resto.",
+    "Tour completo: atendimentos parceiros, duplicatas, cashback, score, extrato, empreendimentos, equipe com roles, forecast e mais.",
 };
 
 const SCENES: Scene[] = [
@@ -21,7 +28,7 @@ const SCENES: Scene[] = [
     duration: 5,
     eyebrow: "pra construtora",
     titulo: "Você atrai os melhores corretores. Sem mexer no caixa.",
-    legenda: "Mesmas parcelas, mesmos prazos — só o destinatário muda. Tour de 60s.",
+    legenda: "Tour completo — todas as ferramentas que o sistema oferece pra construtora.",
     conteudo: <SceneHero emoji="🏗️" title="Comissão à vista pro corretor" subtitle="parcelado pra você · como sempre foi" />,
     fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 100%)",
     overlay: true,
@@ -29,10 +36,10 @@ const SCENES: Scene[] = [
   },
   {
     id: "fluxo",
-    duration: 7,
+    duration: 6,
     eyebrow: "cena 1 · como funciona",
     titulo: "Você paga em parcelas, o fundo paga o corretor à vista",
-    legenda: "Você não desembolsa nada a mais. O deságio (juros) é do corretor — ele topa porque receber hoje vale mais.",
+    legenda: "Você não desembolsa nada a mais. O deságio é do corretor — ele topa porque receber hoje vale mais.",
     conteudo: <MockupGenericoSlide emoji="🔄" title="Mesmas datas. Outro destinatário." subtitle="você → fundo · fundo → corretor (à vista)" />,
     fundo: "linear-gradient(135deg, #15803d 0%, #166534 100%)",
     overlay: true,
@@ -50,7 +57,7 @@ const SCENES: Scene[] = [
   },
   {
     id: "pre-aprovacao",
-    duration: 6,
+    duration: 5,
     eyebrow: "cena 3 · controle",
     titulo: "Sua confirmação antes da assinatura",
     legenda: "Toda op passa pela sua aprovação antes de virar contrato. Você nunca é cobrada por comissão indevida.",
@@ -70,9 +77,19 @@ const SCENES: Scene[] = [
     transicao: "slide-right",
   },
   {
+    id: "extrato",
+    duration: 7,
+    eyebrow: "cena 5 · histórico",
+    titulo: "Extrato — cada centavo registrado",
+    legenda: "Cashback ganho, parcelas pagas, estornos. Filtro por período, exportação contábil pronta.",
+    conteudo: <MockupExtratoConstrutora />,
+    fundo: "linear-gradient(135deg, #0d1729 0%, #1e293b 100%)",
+    transicao: "slide-left",
+  },
+  {
     id: "cashback",
     duration: 8,
-    eyebrow: "★ cena 5 · dinheiro de volta",
+    eyebrow: "★ cena 6 · dinheiro de volta",
     titulo: "Cashback automático por pagar em dia",
     legenda: "Cada op aprovada gera % de cashback. Acumula no saldo, você saca quando quiser. Liquidez extra sem esforço.",
     conteudo: <MockupCashbackGrowing />,
@@ -82,7 +99,7 @@ const SCENES: Scene[] = [
   {
     id: "score",
     duration: 7,
-    eyebrow: "cena 6 · reputação",
+    eyebrow: "cena 7 · reputação",
     titulo: "Score transparente — você sabe como melhorar",
     legenda: "0 a 100, fórmula pública. Score alto = aprovações rápidas, ops maiores, taxas melhores. Atraso reduz, em dia aumenta.",
     conteudo: <MockupScoreBar />,
@@ -90,19 +107,90 @@ const SCENES: Scene[] = [
     transicao: "fade-zoom",
   },
   {
-    id: "equipe",
+    id: "forecast",
+    duration: 7,
+    eyebrow: "cena 8 · previsibilidade",
+    titulo: "Forecast — quanto você vai desembolsar",
+    legenda: "Projeção 6 meses de pagamentos. Identifica picos de fluxo de caixa, ajuda planejar tesouraria.",
+    conteudo: <MockupForecastPagamentos />,
+    fundo: "linear-gradient(135deg, #0d1729 0%, #0d4e9e 100%)",
+    transicao: "slide-right",
+  },
+  {
+    id: "empreendimentos",
+    duration: 7,
+    eyebrow: "cena 9 · seu catálogo",
+    titulo: "Empreendimentos — torres + unidades cadastradas",
+    legenda: "Cada prédio com suas unidades. Quando corretor cadastra venda, ele só seleciona — zero digitação manual.",
+    conteudo: <MockupEmpreendimentos />,
+    fundo: "linear-gradient(135deg, #1e293b 0%, #0d4e9e 100%)",
+    transicao: "fade-up",
+  },
+  {
+    id: "pendencias",
     duration: 6,
-    eyebrow: "cena 7 · governança",
-    titulo: "Equipe com roles internas",
-    legenda: "Financeiro vê duplicatas, comercial vê ops, jurídico vê docs. Cada um no seu quadrado. Auditoria por usuário.",
-    conteudo: <MockupGenericoSlide emoji="👥" title="Separação de poderes" subtitle="financeiro · comercial · jurídico · owner" />,
-    fundo: "linear-gradient(135deg, #1c6dd0 0%, #0d4e9e 100%)",
-    overlay: true,
+    eyebrow: "cena 10 · TODO",
+    titulo: "Pendências — nunca esquece nada",
+    legenda: "Docs faltando, aprovações urgentes, tickets abertos. Tudo numa tela, urgentes em vermelho.",
+    conteudo: <MockupPendencias />,
+    fundo: "linear-gradient(135deg, #0d4e9e 0%, #1c6dd0 100%)",
     transicao: "slide-left",
   },
   {
-    id: "cta",
+    id: "equipe",
+    duration: 8,
+    eyebrow: "cena 11 · governança",
+    titulo: "Equipe — roles internas separadas",
+    legenda: "Financeiro vê duplicatas. Comercial vê ops. Jurídico vê docs. Owner vê tudo. Auditoria por usuário.",
+    conteudo: <MockupEquipeConstrutora />,
+    fundo: "linear-gradient(135deg, #1c6dd0 0%, #0d4e9e 100%)",
+    transicao: "slide-right",
+  },
+  {
+    id: "notificacoes",
+    duration: 6,
+    eyebrow: "cena 12 · alertas",
+    titulo: "Notificações em tempo real",
+    legenda: "Nova op pra confirmar, doc enviado, parcela vencendo, score mudou. Push + email + in-app.",
+    conteudo: <MockupNotificacoes />,
+    fundo: "linear-gradient(135deg, #0d4e9e 0%, #15803d 100%)",
+    transicao: "fade-up",
+  },
+  {
+    id: "chat",
+    duration: 6,
+    eyebrow: "cena 13 · suporte",
+    titulo: "Chat direto com fundo + corretor + AQ",
+    legenda: "Negociação por categoria, todos os envolvidos no mesmo thread. Sem ticket que dorme.",
+    conteudo: <MockupChatSuporte />,
+    fundo: "linear-gradient(135deg, #0d1729 0%, #1e293b 100%)",
+    transicao: "slide-left",
+  },
+  {
+    id: "risco-vendas",
+    duration: 5,
+    eyebrow: "cena 14 · risco",
+    titulo: "Painel de risco — vê vendas em alerta",
+    legenda: "Operações com atraso, comissões disputadas, parcelas vencendo. Cada caso com ação sugerida.",
+    conteudo: <MockupGenericoSlide emoji="⚠️" title="Risco sob controle" subtitle="alertas amarelos · críticos vermelhos · ação 1-clique" />,
+    fundo: "linear-gradient(135deg, #0a0e1a 0%, #dc2626 100%)",
+    overlay: true,
+    transicao: "fade-zoom",
+  },
+  {
+    id: "mobile",
     duration: 4,
+    eyebrow: "cena 15 · mobile",
+    titulo: "Tudo no celular — PWA instalável",
+    legenda: "Aprovação rápida do reunião, foto de doc no canteiro, chat na obra. Funciona offline-first.",
+    conteudo: <MockupGenericoSlide emoji="📱" title="100% mobile" subtitle="aprove no semáforo · tire foto do doc · chat no canteiro" />,
+    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 100%)",
+    overlay: true,
+    transicao: "fade-up",
+  },
+  {
+    id: "cta",
+    duration: 5,
     eyebrow: "começar",
     titulo: "Pronta pra atrair os melhores corretores?",
     legenda: "Sem custo direto pra você. Zero mensalidade. Plataforma completa.",
@@ -143,8 +231,8 @@ export default function ApresentacaoConstrutoraPage() {
             </span>
           </h1>
           <p className="mt-4 text-base md:text-lg text-blue-50 max-w-2xl">
-            Sem desembolso extra. Sem custo direto. Tour de 60 segundos
-            mostrando como funciona.
+            Tour completo (~2 min) — todas as ferramentas que sua construtora
+            ganha sem custo direto.
           </p>
         </div>
       </section>
