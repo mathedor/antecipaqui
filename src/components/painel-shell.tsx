@@ -99,6 +99,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/daily", label: "Daily" },
     { href: "/painel/comissoes", label: "Comissões" },
+    { href: "/painel/relatorios", label: "Relatórios" },
     { href: "/painel/perfil", label: "Meus dados" },
     { href: "/painel/suporte", label: "Chats" },
   ],
@@ -310,6 +311,7 @@ const MOBILE_FULLMENU: Record<
         { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
         { href: "/painel/daily", label: "Daily", icon: "table" },
         { href: "/painel/comissoes", label: "Comissões", icon: "money" },
+        { href: "/painel/relatorios", label: "Relatórios", icon: "report" },
       ],
     },
     {
