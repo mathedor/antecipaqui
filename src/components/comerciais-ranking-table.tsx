@@ -172,6 +172,19 @@ export function ComerciaisRankingTable({ rows }: { rows: Row[] }) {
             ),
             footer: (rs) => sumBy(rs, (r) => r.comissaoComercial, formatBRL),
           },
+          {
+            key: "acoes",
+            header: "",
+            align: "right",
+            render: (r) => (
+              <Link
+                href={`/admin/comerciais/${r.id}/desempenho`}
+                className="inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-dark whitespace-nowrap"
+              >
+                📊 360
+              </Link>
+            ),
+          },
         ]}
       />
     </div>
