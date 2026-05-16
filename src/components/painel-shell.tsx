@@ -97,7 +97,14 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   comercial: [
     { href: "/painel/operacoes", label: "Operações" },
-    { href: "/painel/prospeccao", label: "Prospecção" },
+    {
+      label: "Captação",
+      submenu: [
+        { href: "/painel/prospeccao", label: "Pipeline de leads" },
+        { href: "/painel/cadastrar-imob", label: "Cadastro express" },
+        { href: "/painel/convidar", label: "Link de convite" },
+      ],
+    },
     { href: "/painel/daily", label: "Daily" },
     {
       label: "Financeiro",
@@ -110,7 +117,6 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     {
       label: "Gestão",
       submenu: [
-        { href: "/painel/convidar", label: "Link de convite" },
         { href: "/painel/templates", label: "Templates" },
         { href: "/painel/perfil", label: "Meus dados" },
       ],
@@ -323,9 +329,16 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
         { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
-        { href: "/painel/prospeccao", label: "Prospecção", icon: "tag" },
         { href: "/painel/daily", label: "Daily", icon: "table" },
         { href: "/painel/relatorios", label: "Relatórios", icon: "report" },
+      ],
+    },
+    {
+      section: "captação",
+      items: [
+        { href: "/painel/prospeccao", label: "Pipeline de leads", icon: "tag" },
+        { href: "/painel/cadastrar-imob", label: "Cadastro express", icon: "doc" },
+        { href: "/painel/convidar", label: "Link de convite", icon: "tag" },
       ],
     },
     {
@@ -338,7 +351,6 @@ const MOBILE_FULLMENU: Record<
     {
       section: "gestão",
       items: [
-        { href: "/painel/convidar", label: "Link de convite", icon: "tag" },
         { href: "/painel/templates", label: "Templates WhatsApp", icon: "doc" },
         { href: "/painel/perfil", label: "Meus dados", icon: "config" },
       ],
