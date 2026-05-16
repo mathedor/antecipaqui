@@ -62,17 +62,16 @@ export type GeocodeResult = {
   uf?: string;
 };
 
-export async function geocodeEndereco(
+async function nominatimSearch(
   texto: string,
-): Promise<GeocodeResult | null> {
-  await requireActiveUser();
-  if (!texto.trim()) return null;
-
+  limit: number,
+): Promise<GeocodeResult[]> {
+  if (!texto.trim()) return [];
   const params = new URLSearchParams({
     q: texto + ", Brasil",
     format: "json",
     addressdetails: "1",
-    limit: "1",
+    limit: String(limit),
     countrycodes: "br",
   });
   const res = await fetch(
@@ -83,7 +82,7 @@ export async function geocodeEndereco(
       },
     },
   );
-  if (!res.ok) return null;
+  if (!res.ok) return [];
   const data = (await res.json()) as Array<{
     lat: string;
     lon: string;
@@ -97,22 +96,40 @@ export async function geocodeEndereco(
       state_code?: string;
     };
   }>;
-  if (!Array.isArray(data) || data.length === 0) return null;
-  const r = data[0];
-  const cidade =
-    r.address?.city ??
-    r.address?.town ??
-    r.address?.village ??
-    r.address?.municipality;
-  const uf =
-    r.address?.state_code ?? r.address?.state?.slice(0, 2).toUpperCase();
-  return {
-    lat: parseFloat(r.lat),
-    lng: parseFloat(r.lon),
-    endereco: r.display_name,
-    cidade,
-    uf,
-  };
+  if (!Array.isArray(data)) return [];
+  return data.map((r) => {
+    const cidade =
+      r.address?.city ??
+      r.address?.town ??
+      r.address?.village ??
+      r.address?.municipality;
+    const uf =
+      r.address?.state_code ?? r.address?.state?.slice(0, 2).toUpperCase();
+    return {
+      lat: parseFloat(r.lat),
+      lng: parseFloat(r.lon),
+      endereco: r.display_name,
+      cidade,
+      uf,
+    };
+  });
+}
+
+export async function geocodeEndereco(
+  texto: string,
+): Promise<GeocodeResult | null> {
+  await requireActiveUser();
+  const list = await nominatimSearch(texto, 1);
+  return list[0] ?? null;
+}
+
+/** Autocomplete: retorna até 6 sugestões pra o usuário escolher. */
+export async function searchAddressSuggestions(
+  texto: string,
+): Promise<GeocodeResult[]> {
+  await requireActiveUser();
+  if (texto.trim().length < 3) return [];
+  return nominatimSearch(texto, 6);
 }
 
 /* ============================================================

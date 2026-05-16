@@ -9,11 +9,13 @@ import {
   addProspectPontoManual,
   buscarGooglePlacesPorCoords,
   deleteProspectPonto,
+  type GeocodeResult,
   type GooglePlaceItem,
   promoverPontoParaLead,
   saveProspectPontoFromGoogle,
   updateProspectPontoStatus,
 } from "@/lib/actions/comercial-prospects";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import type { ComercialProspectPonto } from "@/db/schema";
 
 // Importa MapContainer dinamicamente pra evitar SSR (leaflet quebra no servidor)
@@ -539,8 +541,11 @@ function GooglePlacesSearch({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<GooglePlaceItem[] | null>(null);
-  const [lat, setLat] = useState(defaultLat);
-  const [lng, setLng] = useState(defaultLng);
+  const [endereco, setEndereco] = useState<GeocodeResult | null>({
+    lat: defaultLat,
+    lng: defaultLng,
+    endereco: "",
+  });
   const [radius, setRadius] = useState(2000);
   const [categoria, setCategoria] = useState<"imobiliaria" | "construtora">(
     "imobiliaria",
@@ -548,10 +553,14 @@ function GooglePlacesSearch({
 
   const search = () => {
     setError(null);
+    if (!endereco) {
+      setError("Escolha um endereço");
+      return;
+    }
     startTransition(async () => {
       const r = await buscarGooglePlacesPorCoords({
-        lat,
-        lng,
+        lat: endereco.lat,
+        lng: endereco.lng,
         radius,
         categoria,
       });
@@ -574,51 +583,59 @@ function GooglePlacesSearch({
           ✕
         </button>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <select
-          value={categoria}
-          onChange={(e) =>
-            setCategoria(e.target.value as "imobiliaria" | "construtora")
-          }
-          className="h-9 px-3 rounded-lg border border-border bg-bg text-sm"
-        >
-          <option value="imobiliaria">Imobiliárias</option>
-          <option value="construtora">Construtoras</option>
-        </select>
-        <input
-          type="number"
-          value={lat}
-          onChange={(e) => setLat(parseFloat(e.target.value))}
-          step="0.0001"
-          className="h-9 px-3 rounded-lg border border-border bg-bg text-sm font-mono"
-          placeholder="lat"
+
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase tracking-wider font-mono text-fg-dim block">
+          região da busca
+        </label>
+        <AddressAutocomplete
+          initialLabel={endereco?.endereco ?? ""}
+          placeholder="Digite o bairro, cidade ou endereço de referência"
+          onSelect={(r) => setEndereco(r)}
         />
-        <input
-          type="number"
-          value={lng}
-          onChange={(e) => setLng(parseFloat(e.target.value))}
-          step="0.0001"
-          className="h-9 px-3 rounded-lg border border-border bg-bg text-sm font-mono"
-          placeholder="lng"
-        />
-        <select
-          value={radius}
-          onChange={(e) => setRadius(parseInt(e.target.value, 10))}
-          className="h-9 px-3 rounded-lg border border-border bg-bg text-sm"
-        >
-          <option value={1000}>1 km</option>
-          <option value={2000}>2 km</option>
-          <option value={5000}>5 km</option>
-          <option value={10000}>10 km</option>
-        </select>
       </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] uppercase tracking-wider font-mono text-fg-dim block mb-1">
+            categoria
+          </label>
+          <select
+            value={categoria}
+            onChange={(e) =>
+              setCategoria(e.target.value as "imobiliaria" | "construtora")
+            }
+            className="w-full h-9 px-3 rounded-lg border border-border bg-bg text-sm"
+          >
+            <option value="imobiliaria">Imobiliárias</option>
+            <option value="construtora">Construtoras</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] uppercase tracking-wider font-mono text-fg-dim block mb-1">
+            raio da busca
+          </label>
+          <select
+            value={radius}
+            onChange={(e) => setRadius(parseInt(e.target.value, 10))}
+            className="w-full h-9 px-3 rounded-lg border border-border bg-bg text-sm"
+          >
+            <option value={1000}>1 km</option>
+            <option value={2000}>2 km</option>
+            <option value={5000}>5 km</option>
+            <option value={10000}>10 km</option>
+            <option value={20000}>20 km</option>
+          </select>
+        </div>
+      </div>
+
       <button
         type="button"
         onClick={search}
-        disabled={pending}
-        className="btn-primary !h-9 !px-4 text-xs disabled:opacity-50"
+        disabled={pending || !endereco?.endereco}
+        className="btn-primary !h-10 !px-4 text-sm disabled:opacity-50"
       >
-        {pending ? "buscando…" : "Buscar nessa região"}
+        {pending ? "buscando…" : "🔍 Buscar nessa região"}
       </button>
       {error && (
         <p className="text-xs text-danger font-semibold">{error}</p>
