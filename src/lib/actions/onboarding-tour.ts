@@ -12,7 +12,8 @@ export type TourId =
   | "construtora"
   | "imobiliaria"
   | "corretor"
-  | "corretor-equipe";
+  | "corretor-equipe"
+  | "admin";
 
 /** Marca o tour como completado pelo user atual. */
 export async function markTourCompleted(tourId: TourId) {

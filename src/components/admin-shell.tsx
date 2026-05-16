@@ -17,6 +17,7 @@ import {
   resolveAdminProfile,
 } from "@/lib/admin-permissions";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { AdminTourMount } from "@/components/onboarding/admin-tour-mount";
 
 const navFull: AdminNavItem[] = [
   { type: "link", href: "/admin/decidir", label: "Decidir" },
@@ -205,9 +206,13 @@ export async function AdminShell({
   const profile = resolveAdminProfile(me?.adminProfile);
   const nav = filterNavForProfile(me?.adminProfile);
   const profileLabel = ADMIN_PROFILE_LABEL[profile];
+  const tcs =
+    (me?.tutorialsCompleted as Record<string, string> | null) ?? {};
+  const adminTourAutoOpen = !tcs.admin;
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <ImpersonationBanner />
+      <AdminTourMount autoOpen={adminTourAutoOpen} />
       <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border">
         <div className="mx-auto max-w-7xl px-4 md:px-6 h-16 flex items-center justify-between gap-3 md:gap-6">
           <Link
@@ -227,6 +232,7 @@ export async function AdminShell({
               <UserButtonWithPerfil
                 profileLabel={profileLabel}
                 userName={userName}
+                tourId="admin"
               />
             </span>
           </div>
