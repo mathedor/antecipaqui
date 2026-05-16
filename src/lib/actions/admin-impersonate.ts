@@ -175,6 +175,108 @@ export async function listImpersonatableUsers(filters?: {
   }));
 }
 
+/* ============================================================
+   HISTÓRICO — lista detalhada das impersonations
+   ============================================================ */
+
+export type HistoricoEntry = {
+  startedAt: string;
+  stoppedAt: string | null;
+  durationMin: number | null;
+  targetId: string;
+  targetEmail: string;
+  targetNome: string | null;
+  targetRole: string;
+  /** Qtd de ações executadas durante essa sessão de impersonation
+   *  (filtra audit_logs com metadata.impersonatedBy = admin). */
+  acoesExecutadas: number;
+};
+
+export async function listImpersonationHistorico(
+  limit = 50,
+): Promise<HistoricoEntry[]> {
+  const admin = await requireAdmin();
+
+  // Pega todos os 'impersonation_started' e 'impersonation_stopped' do admin
+  const res = await db.execute(sql`
+    WITH starts AS (
+      SELECT
+        al.target_id,
+        al.created_at AS started_at,
+        al.target_label AS target_email,
+        al.id AS event_id
+      FROM audit_logs al
+      WHERE al.user_id = ${admin.id}
+        AND al.action = 'impersonation_started'
+        AND al.target_id IS NOT NULL
+      ORDER BY al.created_at DESC
+      LIMIT ${limit}
+    ),
+    stops AS (
+      SELECT al.target_id, al.created_at AS stopped_at
+      FROM audit_logs al
+      WHERE al.user_id = ${admin.id}
+        AND al.action = 'impersonation_stopped'
+        AND al.target_id IS NOT NULL
+    )
+    SELECT
+      s.target_id,
+      s.target_email,
+      s.started_at,
+      s.event_id,
+      (
+        SELECT stops.stopped_at FROM stops
+        WHERE stops.target_id = s.target_id
+          AND stops.stopped_at > s.started_at
+        ORDER BY stops.stopped_at ASC LIMIT 1
+      ) AS stopped_at,
+      u.nome AS target_nome,
+      u.role AS target_role,
+      (
+        SELECT COUNT(*)::int FROM audit_logs al2
+        WHERE al2.user_id = s.target_id
+          AND al2.created_at >= s.started_at
+          AND al2.created_at <= COALESCE(
+            (SELECT stops.stopped_at FROM stops
+              WHERE stops.target_id = s.target_id
+                AND stops.stopped_at > s.started_at
+              ORDER BY stops.stopped_at ASC LIMIT 1),
+            s.started_at + INTERVAL '4 hours'
+          )
+          AND al2.metadata->>'impersonatedBy' = ${admin.id}
+      ) AS acoes_executadas
+    FROM starts s
+    LEFT JOIN users u ON u.id = s.target_id
+    ORDER BY s.started_at DESC
+  `);
+
+  return extractRows<{
+    target_id: string;
+    target_email: string;
+    target_nome: string | null;
+    target_role: string;
+    started_at: string;
+    stopped_at: string | null;
+    acoes_executadas: number;
+  }>(res).map((r) => {
+    const started = new Date(r.started_at).getTime();
+    const stopped = r.stopped_at ? new Date(r.stopped_at).getTime() : null;
+    const durationMin = stopped
+      ? Math.round((stopped - started) / 60_000)
+      : null;
+    return {
+      startedAt: r.started_at,
+      stoppedAt: r.stopped_at,
+      durationMin,
+      targetId: r.target_id,
+      targetEmail: r.target_email,
+      targetNome: r.target_nome,
+      targetRole: r.target_role,
+      acoesExecutadas: r.acoes_executadas,
+    };
+  });
+}
+
 /** Últimos 5 users impersonados pelo admin atual — atalho rápido. */
 export async function listRecentImpersonations(): Promise<
   ImpersonatableUser[]
