@@ -120,6 +120,13 @@ export const users = pgTable(
     onboardingStatus: onboardingStatusEnum("onboarding_status")
       .notNull()
       .default("pendente"),
+    /** Tours de onboarding já completados (por role). Mapa
+     *  { "comercial": "2026-05-18T12:00Z", "fundo": "...", ... }
+     *  Quando user pula ou conclui, marca a data aqui. Null = nunca abriu.
+     *  Usado pra auto-trigger do tutorial no primeiro acesso. */
+    tutorialsCompleted: jsonb("tutorials_completed").$type<
+      Record<string, string>
+    >(),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

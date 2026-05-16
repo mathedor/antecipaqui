@@ -7,6 +7,8 @@ import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
 import { NavDropdown } from "@/components/nav-dropdown";
 import { getImpersonationStatus } from "@/lib/actions/admin-impersonate";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
+import { ComercialTourMount } from "@/components/onboarding/comercial-tour-mount";
+import { getCurrentDbUser } from "@/lib/auth-user";
 import {
   MobileBottomNav,
   type MobileNavItem,
@@ -428,6 +430,16 @@ export async function PainelShell({
 }) {
   const impersonation = await getImpersonationStatus();
   const isImpersonating = impersonation.active;
+
+  // Auto-trigger do tour comercial só no primeiro acesso (sem
+  // tutorialsCompleted.comercial). Reabertura via dropdown não persiste.
+  let comercialTourAutoOpen = false;
+  if (role === "comercial") {
+    const me = await getCurrentDbUser();
+    const tcs =
+      (me?.tutorialsCompleted as Record<string, string> | null) ?? {};
+    comercialTourAutoOpen = !tcs.comercial;
+  }
   const navAll = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
   const nav = allowedHrefs
     ? navAll.flatMap<NavItem>((item) => {
@@ -449,6 +461,9 @@ export async function PainelShell({
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <ImpersonationBanner />
+      {role === "comercial" && (
+        <ComercialTourMount autoOpen={comercialTourAutoOpen} />
+      )}
       <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border">
         <div className="mx-auto max-w-7xl px-4 md:px-6 h-16 flex items-center justify-between gap-3 md:gap-6">
           <Link
@@ -497,6 +512,7 @@ export async function PainelShell({
               <UserButtonWithPerfil
                 profileLabel={ROLE_LABEL[role]}
                 userName={userName}
+                tourId={role === "comercial" ? "comercial" : null}
               />
             </span>
           </div>
