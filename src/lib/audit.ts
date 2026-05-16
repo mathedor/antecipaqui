@@ -12,7 +12,7 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { auditLogs, users, type AuditLog } from "@/db/schema";
-import { getCurrentDbUser } from "@/lib/auth-user";
+import { getCurrentDbUser, getRealCurrentDbUser } from "@/lib/auth-user";
 
 type AuditArgs = {
   action: string;
@@ -22,11 +22,28 @@ type AuditArgs = {
   metadata?: Record<string, unknown>;
 };
 
-/** Loga uma ação do usuário atual. Best-effort. */
+/** Loga uma ação do usuário atual. Best-effort.
+ *  Se estiver em modo impersonation (admin agindo como X), grava a ação
+ *  como se fosse de X mas adiciona impersonatedBy no metadata pra
+ *  rastreabilidade total. */
 export async function audit(args: AuditArgs): Promise<void> {
   try {
     const user = await getCurrentDbUser();
     if (!user) return;
+
+    // Detecta impersonation: real != effective
+    const real = await getRealCurrentDbUser();
+    const isImpersonating =
+      real && real.id !== user.id && real.role === "admin";
+
+    const metadata: Record<string, unknown> = {
+      ...(args.metadata ?? {}),
+    };
+    if (isImpersonating && real) {
+      metadata.impersonatedBy = real.id;
+      metadata.impersonatedByEmail = real.email;
+    }
+
     await db.insert(auditLogs).values({
       userId: user.id,
       userRole: user.role,
@@ -35,7 +52,7 @@ export async function audit(args: AuditArgs): Promise<void> {
       targetType: args.targetType ?? null,
       targetId: args.targetId ?? null,
       targetLabel: args.targetLabel ?? null,
-      metadata: args.metadata ?? null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
     });
   } catch (e) {
     console.error("[audit] failed:", e);

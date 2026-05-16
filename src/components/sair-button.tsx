@@ -1,16 +1,42 @@
 "use client";
 
 import { SignOutButton } from "@clerk/nextjs";
+import { useTransition } from "react";
+import { stopImpersonation } from "@/lib/actions/admin-impersonate";
 
 type Props = {
   variant?: "ghost" | "danger";
+  /** Quando true, "Sair" vira "Voltar pro admin" (stopImpersonation). */
+  isImpersonating?: boolean;
 };
 
-export function SairButton({ variant = "ghost" }: Props) {
+export function SairButton({ variant = "ghost", isImpersonating = false }: Props) {
+  const [pending, startTransition] = useTransition();
+
   const cls =
     variant === "danger"
       ? "inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-danger/40 text-danger hover:bg-red-50 transition-colors text-sm font-semibold"
-      : "inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border hover:border-danger hover:text-danger text-sm font-medium text-fg-muted transition-colors";
+      : isImpersonating
+        ? "inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-amber-500 bg-amber-50 text-amber-900 hover:bg-amber-100 transition-colors text-sm font-semibold"
+        : "inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border hover:border-danger hover:text-danger text-sm font-medium text-fg-muted transition-colors";
+
+  if (isImpersonating) {
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          startTransition(async () => {
+            await stopImpersonation();
+          })
+        }
+        disabled={pending}
+        className={cls}
+        aria-label="Voltar pro admin"
+      >
+        <span>{pending ? "..." : "✕ Voltar pro admin"}</span>
+      </button>
+    );
+  }
 
   return (
     <SignOutButton redirectUrl="/entrar">

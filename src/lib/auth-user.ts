@@ -17,12 +17,14 @@
  */
 
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { eq, and, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { notificacoes, users, type User } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { sendEmail } from "@/lib/email";
 import { maybeLogLoginFor } from "@/lib/audit";
+import { IMPERSONATE_COOKIE_NAME } from "@/lib/impersonate";
 
 const adminEmails = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
@@ -33,7 +35,37 @@ function isAdminEmail(email: string) {
   return adminEmails.includes(email.toLowerCase());
 }
 
+/** Retorna o user "efetivo" da sessão. Se o user logado é admin E tem
+ *  cookie de impersonation válido, retorna o user impersonado. Senão
+ *  retorna o user real. Permissões dentro da app passam a operar como
+ *  se fosse o user impersonado (corretor vê coisas de corretor, etc).
+ *
+ *  Pra obter o admin de fato (ex: pra fechar a impersonation), use
+ *  `getRealCurrentDbUser`. */
 export async function getCurrentDbUser(): Promise<User | null> {
+  const real = await getRealCurrentDbUser();
+  if (!real) return null;
+  if (real.role !== "admin") return real;
+
+  // Admin com cookie de impersonation: resolve o user-alvo.
+  const cookieStore = await cookies();
+  const targetId = cookieStore.get(IMPERSONATE_COOKIE_NAME)?.value;
+  if (!targetId) return real;
+  const [target] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, targetId))
+    .limit(1);
+  if (!target) return real;
+  // Bloqueio defensivo: nunca impersonar outro admin
+  if (target.role === "admin") return real;
+  if (!target.isActive) return real;
+  return target;
+}
+
+/** Retorna o user real da sessão Clerk (sem aplicar impersonation).
+ *  Use só quando precisa do admin original (banner, audit, stop). */
+export async function getRealCurrentDbUser(): Promise<User | null> {
   const { userId } = await auth();
   if (!userId) return null;
 
@@ -236,7 +268,9 @@ export async function requireActiveUser(): Promise<User> {
 }
 
 export async function requireAdmin(): Promise<User> {
-  const user = await getCurrentDbUser();
+  // requireAdmin sempre olha o user REAL (não o impersonado), porque
+  // mesmo durante impersonation o admin precisa acessar páginas /admin.
+  const user = await getRealCurrentDbUser();
   if (!user) redirect("/entrar");
   if (!user.isActive) redirect("/bloqueado");
   if (user.role !== "admin") redirect("/painel");

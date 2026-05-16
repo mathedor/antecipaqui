@@ -10,6 +10,7 @@ import {
 import { FeedbackProvider } from "@/components/feedback-provider";
 import { ChatFabWrapper } from "@/components/chat-fab-wrapper";
 import { PwaInstaller } from "@/components/pwa-installer";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 
 const sans = Geist({
@@ -69,7 +70,7 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -80,6 +81,7 @@ export default function RootLayout({
       >
         <body className="min-h-full flex flex-col bg-bg text-fg pb-14 md:pb-0">
           <FeedbackProvider>
+            <ImpersonationBanner />
             <MarketingHeader />
             <main className="flex-1 relative z-10">{children}</main>
             <MarketingFooter />

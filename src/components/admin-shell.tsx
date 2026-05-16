@@ -35,6 +35,7 @@ const navFull: AdminNavItem[] = [
     items: [
       { href: "/admin/tickets", label: "Tickets" },
       { href: "/admin/mural", label: "Mural" },
+      { href: "/admin/visao", label: "Visualizar como…" },
       { href: "/admin/interno/invoice", label: "Invoice" },
       { href: "/admin/faturas", label: "Faturas dos fundos" },
       { href: "/admin/credito", label: "Análise de crédito" },

@@ -5,6 +5,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { VersionFooter } from "@/components/version-footer";
 import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
 import { NavDropdown } from "@/components/nav-dropdown";
+import { getImpersonationStatus } from "@/lib/actions/admin-impersonate";
 import {
   MobileBottomNav,
   type MobileNavItem,
@@ -408,7 +409,7 @@ const MOBILE_FULLMENU: Record<
   ],
 };
 
-export function PainelShell({
+export async function PainelShell({
   children,
   role,
   userName,
@@ -424,6 +425,8 @@ export function PainelShell({
    *  veem só a área dele). Se ausente, mostra tudo (default). */
   allowedHrefs?: Set<string>;
 }) {
+  const impersonation = await getImpersonationStatus();
+  const isImpersonating = impersonation.active;
   const navAll = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
   const nav = allowedHrefs
     ? navAll.flatMap<NavItem>((item) => {
@@ -486,7 +489,7 @@ export function PainelShell({
           <div className="flex items-center gap-2 md:gap-3">
             <NotificationBell />
             <span className="hidden md:inline-flex">
-              <SairButton />
+              <SairButton isImpersonating={isImpersonating} />
             </span>
             <span className="hidden md:inline-flex">
               <UserButtonWithPerfil
