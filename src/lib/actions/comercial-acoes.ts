@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { comercialInteracoes } from "@/db/schema";
 import { requireActiveUser } from "@/lib/auth-user";
+import { getDefaultsByComercial } from "@/lib/actions/comercial-templates";
+import { aplicarTemplate } from "@/lib/comercial-templates-types";
+import { formatBRLcompact } from "@/lib/format";
 
 function extractRows<T>(result: unknown): T[] {
   if (Array.isArray(result)) return result as T[];
@@ -45,6 +48,17 @@ export async function getComercialFocoDoDia(
   await requireActiveUser();
 
   const items: FocoItem[] = [];
+  const templatesDefault = await getDefaultsByComercial(comercialId);
+
+  // Helper que escolhe template do comercial ou cai no fallback.
+  const msg = (
+    tipo: string,
+    fallback: string,
+    vars: Record<string, string | number | undefined> = {},
+  ): string => {
+    const t = templatesDefault.get(tipo);
+    return t ? aplicarTemplate(t, vars) : fallback;
+  };
 
   // 1) Imobiliárias dormidas (+60d sem op) — reativar
   const dormidasRes = await db.execute(sql`
@@ -79,7 +93,15 @@ export async function getComercialFocoDoDia(
       alvoNome: r.razao_social,
       telefone: r.telefone,
       tipo: "reativar",
-      msgSugerida: `Oi! Tudo bem por aí? Notei que faz um tempo que a ${r.razao_social} não cadastra uma operação na Antecipaqui. Tem alguma comissão parcelada do mês que dá pra adiantar? Tô à disposição se precisar.`,
+      msgSugerida: msg(
+        "reativar",
+        `Oi! Tudo bem por aí? Notei que faz um tempo que a ${r.razao_social} não cadastra uma operação na Antecipaqui. Tem alguma comissão parcelada do mês que dá pra adiantar? Tô à disposição se precisar.`,
+        {
+          nome: r.razao_social,
+          empresa: r.razao_social,
+          dias_inativa: r.dias_inativa,
+        },
+      ),
     });
   }
 
@@ -114,7 +136,11 @@ export async function getComercialFocoDoDia(
       alvoNome: r.razao_social,
       telefone: r.telefone,
       tipo: "investigar",
-      msgSugerida: `Oi! Você se cadastrou na Antecipaqui há um tempo e ainda não fez nenhuma operação. Tem alguma dúvida? Posso te mostrar em 10 minutos como funciona — qual o melhor horário pra gente conversar?`,
+      msgSugerida: msg(
+        "investigar",
+        `Oi! Você se cadastrou na Antecipaqui há um tempo e ainda não fez nenhuma operação. Tem alguma dúvida? Posso te mostrar em 10 minutos como funciona — qual o melhor horário pra gente conversar?`,
+        { nome: r.razao_social, empresa: r.razao_social },
+      ),
     });
   }
 
@@ -163,9 +189,18 @@ export async function getComercialFocoDoDia(
       alvoNome,
       telefone: tel,
       tipo: "empurrar",
-      msgSugerida: alvoEhConstrutora
-        ? `Oi! A operação ${r.numero} está aguardando sua assinatura há ${r.dias_parada} dias. Conseguimos destravar hoje? Qualquer dúvida, manda mensagem.`
-        : `Oi! A operação ${r.numero} tá parada há ${r.dias_parada} dias precisando de uma ação sua (documentos ou ajuste). Posso te ajudar a destravar?`,
+      msgSugerida: msg(
+        "empurrar",
+        alvoEhConstrutora
+          ? `Oi! A operação ${r.numero} está aguardando sua assinatura há ${r.dias_parada} dias. Conseguimos destravar hoje? Qualquer dúvida, manda mensagem.`
+          : `Oi! A operação ${r.numero} tá parada há ${r.dias_parada} dias precisando de uma ação sua (documentos ou ajuste). Posso te ajudar a destravar?`,
+        {
+          nome: alvoNome,
+          empresa: alvoNome,
+          numero_op: r.numero,
+          dias_inativa: r.dias_parada,
+        },
+      ),
     });
   }
 
@@ -206,7 +241,16 @@ export async function getComercialFocoDoDia(
       alvoNome: r.imob_nome,
       telefone: r.imob_tel,
       tipo: "parabenizar",
-      msgSugerida: `Parabéns pela primeira operação na Antecipaqui! 🎉 Op ${r.numero} aprovada. Qualquer dúvida no processo é só chamar.`,
+      msgSugerida: msg(
+        "parabenizar",
+        `Parabéns pela primeira operação na Antecipaqui! 🎉 Op ${r.numero} aprovada. Qualquer dúvida no processo é só chamar.`,
+        {
+          nome: r.imob_nome,
+          empresa: r.imob_nome,
+          numero_op: r.numero,
+          valor_op: formatBRLcompact(r.vp),
+        },
+      ),
     });
   }
 
@@ -241,7 +285,11 @@ export async function getComercialFocoDoDia(
       alvoNome: r.razao_social,
       telefone: r.telefone,
       tipo: "investigar",
-      msgSugerida: `Oi! Vi que as últimas operações da ${r.razao_social} foram recusadas. Quero entender o que tá pegando pra te ajudar a destravar — tem 10 min hoje pra gente falar?`,
+      msgSugerida: msg(
+        "investigar",
+        `Oi! Vi que as últimas operações da ${r.razao_social} foram recusadas. Quero entender o que tá pegando pra te ajudar a destravar — tem 10 min hoje pra gente falar?`,
+        { nome: r.razao_social, empresa: r.razao_social },
+      ),
     });
   }
 
@@ -279,7 +327,11 @@ export async function getComercialFocoDoDia(
       alvoNome: r.alvo_nome ?? "—",
       telefone: null,
       tipo: "followup",
-      msgSugerida: `Oi! Conforme combinamos, tô retomando contato. ${r.proxima_acao_texto ?? ""}`,
+      msgSugerida: msg(
+        "followup",
+        `Oi! Conforme combinamos, tô retomando contato. ${r.proxima_acao_texto ?? ""}`,
+        { nome: r.alvo_nome ?? "" },
+      ),
     });
   }
 

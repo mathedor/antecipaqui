@@ -97,10 +97,18 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   comercial: [
     { href: "/painel/operacoes", label: "Operações" },
+    { href: "/painel/prospeccao", label: "Prospecção" },
     { href: "/painel/daily", label: "Daily" },
     { href: "/painel/comissoes", label: "Comissões" },
     { href: "/painel/relatorios", label: "Relatórios" },
-    { href: "/painel/perfil", label: "Meus dados" },
+    {
+      label: "Gestão",
+      submenu: [
+        { href: "/painel/convidar", label: "Link de convite" },
+        { href: "/painel/templates", label: "Templates" },
+        { href: "/painel/perfil", label: "Meus dados" },
+      ],
+    },
     { href: "/painel/suporte", label: "Chats" },
   ],
 };
@@ -309,9 +317,18 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
         { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
+        { href: "/painel/prospeccao", label: "Prospecção", icon: "tag" },
         { href: "/painel/daily", label: "Daily", icon: "table" },
         { href: "/painel/comissoes", label: "Comissões", icon: "money" },
         { href: "/painel/relatorios", label: "Relatórios", icon: "report" },
+      ],
+    },
+    {
+      section: "gestão",
+      items: [
+        { href: "/painel/convidar", label: "Link de convite", icon: "tag" },
+        { href: "/painel/templates", label: "Templates WhatsApp", icon: "doc" },
+        { href: "/painel/perfil", label: "Meus dados", icon: "config" },
       ],
     },
     {
@@ -319,7 +336,6 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
-        { href: "/painel/perfil", label: "Meus dados", icon: "config" },
       ],
     },
   ],

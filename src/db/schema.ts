@@ -1845,6 +1845,136 @@ export const comercialInteracoes = pgTable(
 export type ComercialInteracao = typeof comercialInteracoes.$inferSelect;
 
 /* =========================================
+   COMERCIAL — LINK DE CONVITE (tracking de origem)
+   Cada comercial gera 1+ links públicos. Quando alguém acessa /c/[token]
+   o sistema seta cookie de origem; quando essa pessoa cria imobiliária no
+   onboarding, vinculamos imobiliarias.comercial_id automaticamente.
+   ========================================= */
+
+export const comercialConviteLinks = pgTable(
+  "comercial_convite_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    comercialId: uuid("comercial_id")
+      .notNull()
+      .references(() => comerciais.id, { onDelete: "cascade" }),
+    /** Slug curto que vai na URL pública. Único globalmente. */
+    token: text("token").notNull(),
+    /** Label opcional ("evento RioImobi 2026", "indicacao joao", ...) */
+    label: text("label"),
+    /** Conta acessos ao /c/[token]. */
+    cliques: integer("cliques").notNull().default(0),
+    /** Conta imobs/corretores cadastrados via esse link. */
+    conversoes: integer("conversoes").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("comercial_convite_links_token_idx").on(t.token),
+    index("comercial_convite_links_comercial_idx").on(t.comercialId),
+  ],
+);
+
+export type ComercialConviteLink =
+  typeof comercialConviteLinks.$inferSelect;
+
+/* =========================================
+   COMERCIAL — LEADS DE PROSPECÇÃO (kanban)
+   Contatos que o comercial ainda está trabalhando pra fechar. Quando o
+   lead vira cliente (status="fechado"), pode ser vinculado à
+   imobiliária criada (imobiliaria_id).
+   ========================================= */
+
+export const comercialLeads = pgTable(
+  "comercial_leads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    comercialId: uuid("comercial_id")
+      .notNull()
+      .references(() => comerciais.id, { onDelete: "cascade" }),
+    /** Nome do contato pessoa. */
+    nome: text("nome").notNull(),
+    /** Nome da empresa (imob/construtora prospect). */
+    empresa: text("empresa"),
+    cnpjCpf: text("cnpj_cpf"),
+    email: text("email"),
+    telefone: text("telefone"),
+    cidade: text("cidade"),
+    uf: text("uf"),
+    /** Origem do lead (indicacao, evento, linkedin, cold-call, etc) */
+    origem: text("origem"),
+    /** Estágios do funil:
+     *  prospect → contato → reuniao → proposta → fechado | perdido */
+    status: text("status").notNull().default("prospect"),
+    valorEstimado: numeric("valor_estimado", { precision: 15, scale: 2 }),
+    notas: text("notas"),
+    /** Se virou imobiliária cadastrada, link aqui (= status fechado). */
+    imobiliariaId: uuid("imobiliaria_id"),
+    motivoPerda: text("motivo_perda"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("comercial_leads_comercial_idx").on(t.comercialId, t.status),
+    index("comercial_leads_imob_idx").on(t.imobiliariaId),
+  ],
+);
+
+export type ComercialLead = typeof comercialLeads.$inferSelect;
+
+/* =========================================
+   COMERCIAL — TEMPLATES DE MENSAGEM
+   Cada comercial salva templates próprios de WhatsApp/email com
+   variáveis ({nome}, {empresa}, {dias_inativa}, ...). Quando há template
+   marcado como default pra um tipo de ação (reativar/empurrar/etc), o
+   FocoDoDia usa ele em vez da mensagem padrão.
+   ========================================= */
+
+export const comercialTemplates = pgTable(
+  "comercial_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    comercialId: uuid("comercial_id")
+      .notNull()
+      .references(() => comerciais.id, { onDelete: "cascade" }),
+    nome: text("nome").notNull(),
+    /** Tipo de ação onde aplicar: reativar | empurrar | parabenizar |
+     *  investigar | followup | livre (uso manual). */
+    tipo: text("tipo").notNull().default("livre"),
+    /** Conteúdo da mensagem com {placeholders}. Suportados:
+     *  {nome}, {empresa}, {dias_inativa}, {numero_op}, {valor_op}. */
+    conteudo: text("conteudo").notNull(),
+    /** Só um default por (comercial, tipo). Quando true, FocoDoDia usa
+     *  esse em vez da mensagem hardcoded. */
+    isDefault: boolean("is_default").notNull().default(false),
+    usadoCount: integer("usado_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("comercial_templates_comercial_idx").on(t.comercialId),
+    index("comercial_templates_default_idx").on(
+      t.comercialId,
+      t.tipo,
+      t.isDefault,
+    ),
+  ],
+);
+
+export type ComercialTemplate = typeof comercialTemplates.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 

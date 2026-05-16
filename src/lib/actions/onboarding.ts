@@ -2,12 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users, imobiliarias, construtoras, documentos } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { extractValidacao } from "@/lib/validacao-form";
+import { applyRefToImobiliaria } from "@/lib/actions/comercial-convite";
+import { REF_COOKIE_NAME } from "@/lib/comercial-convite-constants";
 
 type DocumentoTipo =
   | "contrato_social"
@@ -226,6 +229,21 @@ export async function saveCompanyDataAction(
         })
         .returning({ id: imobiliarias.id });
       imobiliariaId = created.id;
+
+      // Vincula a um comercial se vier cookie de ref válido (link de
+      // convite usado no signup). Idempotente — se já tiver comercial, no-op.
+      const cookieStore = await cookies();
+      const refToken = cookieStore.get(REF_COOKIE_NAME)?.value;
+      if (refToken) {
+        await applyRefToImobiliaria({
+          imobiliariaId: created.id,
+          token: refToken,
+        }).catch(() => {
+          // Best-effort — não trava onboarding se falhar
+        });
+        // Limpa cookie pra não reutilizar
+        cookieStore.delete(REF_COOKIE_NAME);
+      }
     }
     await persistDocumentos({
       userId: user.id,
