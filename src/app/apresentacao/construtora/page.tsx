@@ -1,7 +1,12 @@
 import Link from "next/link";
-import { PresentationPlayer, type Scene } from "@/components/apresentacao/presentation-player";
+import { ApresentacaoNav } from "@/components/apresentacao/apresentacao-nav";
+import { ApresentacaoVideoButton } from "@/components/apresentacao/apresentacao-video-button";
 import {
-  SceneHero,
+  ApresentacaoSection,
+  ApresentacaoFeature,
+  ApresentacaoBeneficios,
+} from "@/components/apresentacao/apresentacao-section";
+import {
   MockupAtendimentoParceiro,
   MockupDuplicatas,
   MockupCashbackGrowing,
@@ -13,199 +18,22 @@ import {
   MockupPendencias,
   MockupChatSuporte,
   MockupNotificacoes,
-  MockupGenericoSlide,
 } from "@/components/apresentacao/scene-mockups";
 
 export const metadata = {
   title: "Antecipaqui · Pra construtoras",
   description:
-    "Tour completo: atendimentos parceiros, duplicatas, cashback, score, extrato, empreendimentos, equipe com roles, forecast e mais.",
+    "Atraia corretores top sem desembolsar nada extra. Atendimento parceiro, duplicatas, cashback, score, extrato, empreendimentos e mais.",
 };
 
-const SCENES: Scene[] = [
-  {
-    id: "intro",
-    duration: 5,
-    eyebrow: "pra construtora",
-    titulo: "Você atrai os melhores corretores. Sem mexer no caixa.",
-    legenda: "Tour completo — todas as ferramentas que o sistema oferece pra construtora.",
-    conteudo: <SceneHero emoji="🏗️" title="Comissão à vista pro corretor" subtitle="parcelado pra você · como sempre foi" />,
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 100%)",
-    overlay: true,
-    transicao: "fade-zoom",
-  },
-  {
-    id: "fluxo",
-    duration: 6,
-    eyebrow: "cena 1 · como funciona",
-    titulo: "Você paga em parcelas, o fundo paga o corretor à vista",
-    legenda: "Você não desembolsa nada a mais. O deságio é do corretor — ele topa porque receber hoje vale mais.",
-    conteudo: <MockupGenericoSlide emoji="🔄" title="Mesmas datas. Outro destinatário." subtitle="você → fundo · fundo → corretor (à vista)" />,
-    fundo: "linear-gradient(135deg, #15803d 0%, #166534 100%)",
-    overlay: true,
-    transicao: "fade-up",
-  },
-  {
-    id: "atendimento-parceiro",
-    duration: 9,
-    eyebrow: "★ cena 2 · diferencial",
-    titulo: "Você OPINA antes da venda fechar",
-    legenda: "Corretor te convida pra atendimento. Você acompanha em tempo real e responde dúvidas críticas com flag (sim/não/condicional).",
-    conteudo: <MockupAtendimentoParceiro />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #1c6dd0 100%)",
-    transicao: "slide-left",
-  },
-  {
-    id: "pre-aprovacao",
-    duration: 5,
-    eyebrow: "cena 3 · controle",
-    titulo: "Sua confirmação antes da assinatura",
-    legenda: "Toda op passa pela sua aprovação antes de virar contrato. Você nunca é cobrada por comissão indevida.",
-    conteudo: <MockupGenericoSlide emoji="✅" title="Firewall pessoal" subtitle="nenhuma comissão sai sem seu OK" />,
-    fundo: "linear-gradient(135deg, #0d4e9e 0%, #1c6dd0 100%)",
-    overlay: true,
-    transicao: "fade-zoom",
-  },
-  {
-    id: "duplicatas",
-    duration: 8,
-    eyebrow: "cena 4 · pagamento",
-    titulo: "Duplicatas — cronograma transparente",
-    legenda: "Mesmas datas e valores que tinha combinado com o corretor. Pagamento em lote, antecipação com desconto, tudo num lugar.",
-    conteudo: <MockupDuplicatas />,
-    fundo: "linear-gradient(135deg, #1e293b 0%, #0d4e9e 100%)",
-    transicao: "slide-right",
-  },
-  {
-    id: "extrato",
-    duration: 7,
-    eyebrow: "cena 5 · histórico",
-    titulo: "Extrato — cada centavo registrado",
-    legenda: "Cashback ganho, parcelas pagas, estornos. Filtro por período, exportação contábil pronta.",
-    conteudo: <MockupExtratoConstrutora />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #1e293b 100%)",
-    transicao: "slide-left",
-  },
-  {
-    id: "cashback",
-    duration: 8,
-    eyebrow: "★ cena 6 · dinheiro de volta",
-    titulo: "Cashback automático por pagar em dia",
-    legenda: "Cada op aprovada gera % de cashback. Acumula no saldo, você saca quando quiser. Liquidez extra sem esforço.",
-    conteudo: <MockupCashbackGrowing />,
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #15803d 100%)",
-    transicao: "fade-up",
-  },
-  {
-    id: "score",
-    duration: 7,
-    eyebrow: "cena 7 · reputação",
-    titulo: "Score transparente — você sabe como melhorar",
-    legenda: "0 a 100, fórmula pública. Score alto = aprovações rápidas, ops maiores, taxas melhores. Atraso reduz, em dia aumenta.",
-    conteudo: <MockupScoreBar />,
-    fundo: "linear-gradient(135deg, #0d4e9e 0%, #15803d 100%)",
-    transicao: "fade-zoom",
-  },
-  {
-    id: "forecast",
-    duration: 7,
-    eyebrow: "cena 8 · previsibilidade",
-    titulo: "Forecast — quanto você vai desembolsar",
-    legenda: "Projeção 6 meses de pagamentos. Identifica picos de fluxo de caixa, ajuda planejar tesouraria.",
-    conteudo: <MockupForecastPagamentos />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #0d4e9e 100%)",
-    transicao: "slide-right",
-  },
-  {
-    id: "empreendimentos",
-    duration: 7,
-    eyebrow: "cena 9 · seu catálogo",
-    titulo: "Empreendimentos — torres + unidades cadastradas",
-    legenda: "Cada prédio com suas unidades. Quando corretor cadastra venda, ele só seleciona — zero digitação manual.",
-    conteudo: <MockupEmpreendimentos />,
-    fundo: "linear-gradient(135deg, #1e293b 0%, #0d4e9e 100%)",
-    transicao: "fade-up",
-  },
-  {
-    id: "pendencias",
-    duration: 6,
-    eyebrow: "cena 10 · TODO",
-    titulo: "Pendências — nunca esquece nada",
-    legenda: "Docs faltando, aprovações urgentes, tickets abertos. Tudo numa tela, urgentes em vermelho.",
-    conteudo: <MockupPendencias />,
-    fundo: "linear-gradient(135deg, #0d4e9e 0%, #1c6dd0 100%)",
-    transicao: "slide-left",
-  },
-  {
-    id: "equipe",
-    duration: 8,
-    eyebrow: "cena 11 · governança",
-    titulo: "Equipe — roles internas separadas",
-    legenda: "Financeiro vê duplicatas. Comercial vê ops. Jurídico vê docs. Owner vê tudo. Auditoria por usuário.",
-    conteudo: <MockupEquipeConstrutora />,
-    fundo: "linear-gradient(135deg, #1c6dd0 0%, #0d4e9e 100%)",
-    transicao: "slide-right",
-  },
-  {
-    id: "notificacoes",
-    duration: 6,
-    eyebrow: "cena 12 · alertas",
-    titulo: "Notificações em tempo real",
-    legenda: "Nova op pra confirmar, doc enviado, parcela vencendo, score mudou. Push + email + in-app.",
-    conteudo: <MockupNotificacoes />,
-    fundo: "linear-gradient(135deg, #0d4e9e 0%, #15803d 100%)",
-    transicao: "fade-up",
-  },
-  {
-    id: "chat",
-    duration: 6,
-    eyebrow: "cena 13 · suporte",
-    titulo: "Chat direto com fundo + corretor + AQ",
-    legenda: "Negociação por categoria, todos os envolvidos no mesmo thread. Sem ticket que dorme.",
-    conteudo: <MockupChatSuporte />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #1e293b 100%)",
-    transicao: "slide-left",
-  },
-  {
-    id: "risco-vendas",
-    duration: 5,
-    eyebrow: "cena 14 · risco",
-    titulo: "Painel de risco — vê vendas em alerta",
-    legenda: "Operações com atraso, comissões disputadas, parcelas vencendo. Cada caso com ação sugerida.",
-    conteudo: <MockupGenericoSlide emoji="⚠️" title="Risco sob controle" subtitle="alertas amarelos · críticos vermelhos · ação 1-clique" />,
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #dc2626 100%)",
-    overlay: true,
-    transicao: "fade-zoom",
-  },
-  {
-    id: "mobile",
-    duration: 4,
-    eyebrow: "cena 15 · mobile",
-    titulo: "Tudo no celular — PWA instalável",
-    legenda: "Aprovação rápida do reunião, foto de doc no canteiro, chat na obra. Funciona offline-first.",
-    conteudo: <MockupGenericoSlide emoji="📱" title="100% mobile" subtitle="aprove no semáforo · tire foto do doc · chat no canteiro" />,
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 100%)",
-    overlay: true,
-    transicao: "fade-up",
-  },
-  {
-    id: "cta",
-    duration: 5,
-    eyebrow: "começar",
-    titulo: "Pronta pra atrair os melhores corretores?",
-    legenda: "Sem custo direto pra você. Zero mensalidade. Plataforma completa.",
-    conteudo: (
-      <div className="text-center text-white">
-        <div className="text-7xl mb-4 animate-mockup-pop">🏗️</div>
-        <div className="text-2xl font-bold tracking-tight animate-text-stagger" style={{ animationDelay: "0.2s" }}>
-          Vamos conversar?
-        </div>
-      </div>
-    ),
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 50%, #15803d 100%)",
-    overlay: true,
-    transicao: "fade-zoom",
-  },
+const NAV_ITEMS = [
+  { href: "#fluxo", label: "Como funciona" },
+  { href: "#parceria", label: "Parceria" },
+  { href: "#financeiro", label: "Financeiro" },
+  { href: "#operacional", label: "Operacional" },
+  { href: "#governanca", label: "Governança" },
+  { href: "#beneficios", label: "Benefícios" },
+  { href: "#cta", label: "Conversar" },
 ];
 
 export default function ApresentacaoConstrutoraPage() {
@@ -216,42 +44,267 @@ export default function ApresentacaoConstrutoraPage() {
           header, footer, .no-print { display: none !important; }
           body { background: #fff !important; }
         }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0a0e1a] via-[#0d1729] to-[#1c6dd0] text-white">
-        <div className="relative max-w-6xl mx-auto px-6 py-10 md:py-14">
-          <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-blue-200 mb-3">
+      <ApresentacaoNav brand="ANTECIPAQUI · CONSTRUTORA" items={NAV_ITEMS} />
+
+      {/* HERO */}
+      <section
+        id="topo"
+        className="relative overflow-hidden bg-gradient-to-br from-[#0a0e1a] via-[#0d1729] to-[#1c6dd0] text-white"
+      >
+        <div className="relative max-w-6xl mx-auto px-6 py-16 md:py-24">
+          <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-blue-200 mb-3 font-bold">
             Antecipaqui · pra construtoras
           </div>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] max-w-3xl">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] max-w-4xl">
             Corretor recebe hoje.
             <br />
             <span className="bg-gradient-to-r from-emerald-300 to-blue-200 bg-clip-text text-transparent">
               Você paga no prazo combinado.
             </span>
           </h1>
-          <p className="mt-4 text-base md:text-lg text-blue-50 max-w-2xl">
-            Tour completo (~2 min) — todas as ferramentas que sua construtora
-            ganha sem custo direto.
+          <p className="mt-6 text-base md:text-xl text-blue-50 max-w-2xl leading-relaxed">
+            Mesmas parcelas que combinou. Outro destinatário. Sem custo direto.
+            Cashback de presente. Atrai os melhores corretores da praça.
           </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href="/cadastre-se"
+              className="h-12 px-6 rounded-xl bg-white text-[#0a0e1a] font-bold text-sm inline-flex items-center hover:bg-blue-50 transition"
+            >
+              Falar com comercial →
+            </Link>
+            <ApresentacaoVideoButton src="/apresentacao/apresentacao-construtora.mp4" />
+          </div>
         </div>
       </section>
 
-      <section className="bg-[#020617] py-10 md:py-16">
-        <div className="max-w-5xl mx-auto px-4 md:px-6">
-          <PresentationPlayer scenes={SCENES} />
-          <p className="text-center text-xs text-slate-400 mt-4 font-mono no-print">
-            ⏸ pausa · ⏭ pula cena · clique na barra pra avançar
-          </p>
+      {/* SEÇÃO 1 — COMO FUNCIONA */}
+      <ApresentacaoSection
+        id="fluxo"
+        eyebrow="COMO FUNCIONA"
+        titulo="Mesmas datas. Outro destinatário."
+        intro="Você não desembolsa nada a mais. O deságio é cobrado do corretor — ele topa porque receber hoje vale mais que receber em 90 dias."
+      >
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              n: "1",
+              t: "Corretor fecha venda",
+              d: "Cliente assina contrato com sua construtora normalmente — nada muda na operação comercial.",
+            },
+            {
+              n: "2",
+              t: "Antecipaqui paga o corretor à vista",
+              d: "Mesa AQ analisa, fundo aprova, em 4h cai PIX/TED na conta do corretor. Você só confirma a venda.",
+            },
+            {
+              n: "3",
+              t: "Você paga as parcelas pro fundo",
+              d: "Mesmas datas, mesmos valores que combinou com o corretor. Só o destinatário muda. Caixa intacto.",
+            },
+          ].map((s, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-border bg-bg p-6"
+            >
+              <div className="size-12 rounded-xl bg-accent text-white text-xl font-bold flex items-center justify-center mb-4">
+                {s.n}
+              </div>
+              <h3 className="text-lg font-bold tracking-tight mb-2">{s.t}</h3>
+              <p className="text-sm text-fg-muted leading-relaxed">{s.d}</p>
+            </div>
+          ))}
         </div>
-      </section>
+      </ApresentacaoSection>
 
-      <section className="bg-white py-16 md:py-20">
+      {/* SEÇÃO 2 — PARCERIA */}
+      <ApresentacaoSection
+        id="parceria"
+        eyebrow="PARCERIA · DIFERENCIAL"
+        titulo="Você opina ANTES da venda fechar"
+        intro="Diferente de outras factorings: aqui você acompanha cada atendimento em tempo real e responde dúvidas críticas com flag (sim/não/condicional)."
+        bg="dark"
+      >
+        <ApresentacaoFeature
+          onDark
+          titulo="Atendimento parceiro — você dentro da conversa"
+          desc="Corretor te convida pro atendimento. Cliente pediu 8% desconto? Você responde com flag. Nunca mais será pega de surpresa."
+          bullets={[
+            "Acompanha em tempo real (notificação push)",
+            "3 flags pra responder rápido: sim, não, condicional",
+            "Histórico fica anexo à venda pra futuras consultas",
+          ]}
+          mockup={<MockupAtendimentoParceiro />}
+        />
+      </ApresentacaoSection>
+
+      {/* SEÇÃO 3 — FINANCEIRO */}
+      <ApresentacaoSection
+        id="financeiro"
+        eyebrow="FINANCEIRO · TRANSPARÊNCIA"
+        titulo="Cronograma transparente + cashback automático"
+      >
+        <ApresentacaoFeature
+          titulo="Duplicatas — cronograma claro"
+          desc="Mesmas datas e valores que tinha combinado com o corretor. Pagamento em lote, antecipação com desconto, tudo num lugar."
+          bullets={[
+            "Filtros por mês, status, empreendimento",
+            "Exportação pronta pra contabilidade",
+            "Pagamento em lote via PIX, TED ou boleto",
+          ]}
+          mockup={<MockupDuplicatas />}
+        />
+        <ApresentacaoFeature
+          reverse
+          titulo="Extrato — cada centavo registrado"
+          desc="Cashback ganho, parcelas pagas, estornos. Filtro por período, exportação contábil pronta."
+          bullets={[
+            "Conciliação fácil com seu ERP/banco",
+            "Anexo de comprovantes em cada lançamento",
+            "Reconciliação automática com pagamentos PIX",
+          ]}
+          mockup={<MockupExtratoConstrutora />}
+        />
+        <ApresentacaoFeature
+          titulo="Cashback automático por pagar em dia"
+          desc="Cada op aprovada gera % de cashback. Acumula no saldo, você saca quando quiser. Liquidez extra sem esforço."
+          bullets={[
+            "Taxa de cashback configurável por contrato",
+            "Saque via PIX em até 1 dia útil",
+            "Histórico completo de ganhos no extrato",
+          ]}
+          hint="condicionado a pagamento em dia das parcelas anteriores"
+          mockup={<MockupCashbackGrowing />}
+        />
+        <ApresentacaoFeature
+          reverse
+          titulo="Forecast — quanto vai desembolsar"
+          desc="Projeção 6 meses de pagamentos. Identifica picos de fluxo de caixa, ajuda planejar tesouraria com antecedência."
+          bullets={[
+            "Gráfico mensal + tabela detalhada por op",
+            "Cenários: pessimista, esperado, otimista",
+            "Alertas automáticos quando concentração em algum mês passa do limite",
+          ]}
+          mockup={<MockupForecastPagamentos />}
+        />
+      </ApresentacaoSection>
+
+      {/* SEÇÃO 4 — OPERACIONAL */}
+      <ApresentacaoSection
+        id="operacional"
+        eyebrow="OPERACIONAL · CATÁLOGO + PENDÊNCIAS"
+        titulo="Empreendimentos cadastrados, pendências sempre à vista"
+        bg="dark"
+      >
+        <ApresentacaoFeature
+          onDark
+          titulo="Empreendimentos — torres + unidades"
+          desc="Cada prédio com suas unidades. Quando corretor cadastra venda, só seleciona — zero digitação manual, zero erro de typing."
+          bullets={[
+            "Importação em lote via CSV",
+            "Atualização de status (disponível, vendida, reservada)",
+            "Métricas: % vendido, vendas/mês, tempo médio de venda",
+          ]}
+          mockup={<MockupEmpreendimentos />}
+        />
+        <ApresentacaoFeature
+          onDark
+          reverse
+          titulo="Pendências — nunca esquece nada"
+          desc="Docs faltando, aprovações urgentes, tickets abertos. Tudo numa tela, urgentes em vermelho, agrupado por categoria."
+          bullets={[
+            "Atribuível a membros da equipe interna",
+            "Notificação 24h antes do vencimento",
+            "Snooze (lembrar depois) pra coisas não urgentes",
+          ]}
+          mockup={<MockupPendencias />}
+        />
+      </ApresentacaoSection>
+
+      {/* SEÇÃO 5 — GOVERNANÇA */}
+      <ApresentacaoSection
+        id="governanca"
+        eyebrow="GOVERNANÇA · TIME + COMUNICAÇÃO"
+        titulo="Roles internas separadas, comunicação rastreável"
+      >
+        <ApresentacaoFeature
+          titulo="Equipe com roles internas"
+          desc="Financeiro vê duplicatas. Comercial vê ops. Jurídico vê docs. Owner vê tudo. Cada um no seu quadrado, auditoria por usuário."
+          bullets={[
+            "4 roles pré-configuradas (owner, financeiro, comercial, jurídico)",
+            "Audit log completo: quem fez o quê e quando",
+            "2FA opcional pra ações sensíveis (saque, alteração de conta)",
+          ]}
+          mockup={<MockupEquipeConstrutora />}
+        />
+        <ApresentacaoFeature
+          reverse
+          titulo="Score transparente — você sabe como melhorar"
+          desc="0 a 100, fórmula pública. Score alto = aprovações rápidas, ops maiores, taxas melhores. Atraso reduz, em dia aumenta."
+          bullets={[
+            "Histórico do score mês a mês",
+            "Dicas específicas pra subir o seu",
+            "Comparativo com outras construtoras da praça (anonimizado)",
+          ]}
+          hint="fórmula em /docs · public · sem mistérios"
+          mockup={<MockupScoreBar />}
+        />
+        <ApresentacaoFeature
+          titulo="Chat com fundo + corretor + AQ"
+          desc="Negociação por categoria, todos os envolvidos no mesmo thread. Sem ticket que dorme, sem email perdido."
+          bullets={[
+            "Histórico fica anexo à operação correspondente",
+            "Anexos de arquivo (PDF, foto, planilha)",
+            "Notificação push quando responder",
+          ]}
+          mockup={<MockupChatSuporte />}
+        />
+        <ApresentacaoFeature
+          reverse
+          titulo="Notificações em tempo real"
+          desc="Nova op pra confirmar, doc enviado, parcela vencendo, score mudou. Push + email + in-app."
+          mockup={<MockupNotificacoes />}
+        />
+      </ApresentacaoSection>
+
+      {/* BENEFÍCIOS */}
+      <ApresentacaoBeneficios
+        titulo="Por que construtoras escolhem"
+        items={[
+          {
+            emoji: "💚",
+            titulo: "Caixa intacto",
+            desc: "Mesmas datas, mesmos valores. Só o destinatário muda.",
+          },
+          {
+            emoji: "🎁",
+            titulo: "Cashback automático",
+            desc: "Liquidez extra grátis por pagar em dia. Saque PIX.",
+          },
+          {
+            emoji: "🚀",
+            titulo: "Atrai corretores top",
+            desc: "Comissão à vista vs 90 dias. Diferencial enorme.",
+          },
+          {
+            emoji: "🔍",
+            titulo: "Auditoria + compliance",
+            desc: "Roles internas + audit log. Pronto pra ISO/SOX.",
+          },
+        ]}
+      />
+
+      {/* CTA FINAL */}
+      <section id="cta" className="bg-white py-16 md:py-24 scroll-mt-20">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 leading-tight">
             Quer atrair os melhores corretores?
           </h2>
-          <p className="text-fg-muted mb-8 text-base md:text-lg">
+          <p className="text-fg-muted mb-8 text-base md:text-lg leading-relaxed">
             Sem custo direto. O deságio é do corretor (ele topa porque receber
             hoje vale mais). Você ganha um diferencial competitivo enorme — e
             ainda recebe cashback por pagar em dia.
@@ -269,6 +322,11 @@ export default function ApresentacaoConstrutoraPage() {
             >
               Ler em detalhe
             </Link>
+            <ApresentacaoVideoButton
+              src="/apresentacao/apresentacao-construtora.mp4"
+              className="border-border text-fg hover:bg-slate-100"
+              label="▶ Ver em 60s"
+            />
           </div>
         </div>
       </section>

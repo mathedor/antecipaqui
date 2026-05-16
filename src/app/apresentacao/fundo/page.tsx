@@ -1,7 +1,12 @@
 import Link from "next/link";
-import { PresentationPlayer, type Scene } from "@/components/apresentacao/presentation-player";
+import { ApresentacaoNav } from "@/components/apresentacao/apresentacao-nav";
+import { ApresentacaoVideoButton } from "@/components/apresentacao/apresentacao-video-button";
 import {
-  SceneHero,
+  ApresentacaoSection,
+  ApresentacaoFeature,
+  ApresentacaoBeneficios,
+} from "@/components/apresentacao/apresentacao-section";
+import {
   MockupMesaDecisao,
   MockupRegraDryRun,
   MockupRisco,
@@ -13,202 +18,22 @@ import {
   MockupForecastFundo,
   MockupRecaps,
   MockupRecebimentos,
-  MockupChatSuporte,
-  MockupGenericoSlide,
 } from "@/components/apresentacao/scene-mockups";
 
 export const metadata = {
   title: "Antecipaqui · Pra fundos investidores",
   description:
-    "Tour completo: mesa de decisão, regras auto, risco, daily, recebimentos, faturas, forecast, recaps, cobrança, API REST, webhooks.",
+    "Você decide, sistema executa. Mesa de decisão, regras auto, risco, cobrança via API/CNAB, API REST + webhooks. Tour completo.",
 };
 
-const SCENES: Scene[] = [
-  {
-    id: "intro",
-    duration: 5,
-    eyebrow: "pra fundo investidor",
-    titulo: "Você decide. O sistema executa.",
-    legenda: "Tour completo (~2 min) pela cabine de comando de um fundo de antecipação.",
-    conteudo: <SceneHero emoji="🏦" title="Capital + Tecnologia" subtitle="rendimento previsível · risco controlado" />,
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 100%)",
-    overlay: true,
-    transicao: "fade-zoom",
-  },
-  {
-    id: "mesa",
-    duration: 8,
-    eyebrow: "cena 1 · operação diária",
-    titulo: "Mesa de decisão — aprove em segundos",
-    legenda: "Score automático da construtora, validação IA de docs, decomposição financeira inline. 10-15 ops em 30 min.",
-    conteudo: <MockupMesaDecisao />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #1e293b 100%)",
-    transicao: "slide-left",
-  },
-  {
-    id: "regras",
-    duration: 9,
-    eyebrow: "★ cena 2 · automação",
-    titulo: "Regras automáticas — pare de aprovar 1 a 1",
-    legenda: "Configure critérios e o sistema aprova sozinho as ops 'óbvias'. Simulação dry-run testa contra histórico ANTES de salvar.",
-    conteudo: <MockupRegraDryRun />,
-    fundo: "linear-gradient(135deg, #1e293b 0%, #0d4e9e 100%)",
-    transicao: "slide-right",
-  },
-  {
-    id: "risco",
-    duration: 7,
-    eyebrow: "cena 3 · risco proativo",
-    titulo: "Concentração + blacklist",
-    legenda: "Veja quais construtoras concentram seu capital. Alerta automático em 25%, crítico em 40%. Blacklist instantânea.",
-    conteudo: <MockupRisco />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #1c6dd0 100%)",
-    transicao: "fade-up",
-  },
-  {
-    id: "daily",
-    duration: 7,
-    eyebrow: "cena 4 · cobrança do dia",
-    titulo: "Daily — quem precisa pagar HOJE",
-    legenda: "Parcelas vencendo, vencidas e recebidas. Cálculo automático de multa/juros. 1 clique pra cobrar.",
-    conteudo: <MockupDailyFundo />,
-    fundo: "linear-gradient(135deg, #0d4e9e 0%, #1c6dd0 100%)",
-    transicao: "slide-left",
-  },
-  {
-    id: "recebimentos",
-    duration: 7,
-    eyebrow: "cena 5 · fluxo",
-    titulo: "Recebimentos — heatmap dos próximos 14 dias",
-    legenda: "Veja a quinzena inteira de uma vez. Onde concentra dinheiro, onde tem vácuo. Planeje captação.",
-    conteudo: <MockupRecebimentos />,
-    fundo: "linear-gradient(135deg, #1c6dd0 0%, #15803d 100%)",
-    transicao: "slide-right",
-  },
-  {
-    id: "cobranca",
-    duration: 8,
-    eyebrow: "cena 6 · cobrança",
-    titulo: "3 modos de cobrança — escolha o seu",
-    legenda: "Manual (você dá baixa), API (banco emite + webhook auto), CNAB (remessa/retorno em lote). Multa + juros automáticos.",
-    conteudo: <MockupCobrancaModos />,
-    fundo: "linear-gradient(135deg, #1c6dd0 0%, #15803d 100%)",
-    transicao: "fade-up",
-  },
-  {
-    id: "faturas",
-    duration: 7,
-    eyebrow: "cena 7 · cobrança AQ",
-    titulo: "Faturas AQ — proporcional ao que entrou",
-    legenda: "AQ só cobra o % efetivamente pago no período. Spread/2 + custos. Transparência total.",
-    conteudo: <MockupFaturas />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #1e293b 100%)",
-    transicao: "fade-zoom",
-  },
-  {
-    id: "forecast",
-    duration: 7,
-    eyebrow: "cena 8 · estratégia",
-    titulo: "Forecast — 6 meses de previsão",
-    legenda: "Bruto + parte do fundo (spread/2 + custo capital). Plano de captação claro pra próximos 180 dias.",
-    conteudo: <MockupForecastFundo />,
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #0d4e9e 100%)",
-    transicao: "slide-left",
-  },
-  {
-    id: "recaps",
-    duration: 7,
-    eyebrow: "cena 9 · resumos",
-    titulo: "Recaps — diário, semanal, mensal",
-    legenda: "Email todo dia 7h com fechamento. Destaques, KPIs, ops importantes. Você lê em 30 segundos.",
-    conteudo: <MockupRecaps />,
-    fundo: "linear-gradient(135deg, #1e293b 0%, #1c6dd0 100%)",
-    transicao: "slide-right",
-  },
-  {
-    id: "api",
-    duration: 8,
-    eyebrow: "★ cena 10 · API REST",
-    titulo: "Integre com seu ERP/core bancário",
-    legenda: "5 endpoints REST, autenticação Bearer, escopos read_only/read_write. Sandbox com curl pronto pra colar.",
-    conteudo: <MockupApiCurl />,
-    fundo: "linear-gradient(135deg, #020617 0%, #0d1729 100%)",
-    transicao: "slide-left",
-  },
-  {
-    id: "webhooks",
-    duration: 8,
-    eyebrow: "★ cena 11 · push em tempo real",
-    titulo: "Webhooks com HMAC + retry automático",
-    legenda: "Op aprovada, parcela paga, fundo decidiu — tudo cai no seu sistema em tempo real. Botão 🧪 testar valida antes da produção.",
-    conteudo: <MockupWebhookTest />,
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1e293b 100%)",
-    transicao: "fade-zoom",
-  },
-  {
-    id: "chat",
-    duration: 6,
-    eyebrow: "cena 12 · comunicação",
-    titulo: "Chat por operação — fundo ↔ construtora",
-    legenda: "Dúvida em uma op? Abre chat direto com a construtora. Histórico fica anexo à operação.",
-    conteudo: <MockupChatSuporte />,
-    fundo: "linear-gradient(135deg, #0d1729 0%, #1e293b 100%)",
-    transicao: "fade-up",
-  },
-  {
-    id: "parceiros",
-    duration: 5,
-    eyebrow: "cena 13 · rede",
-    titulo: "Parceiros + Comerciais vinculados",
-    legenda: "Construtoras que você financia, time comercial dedicado ao seu fundo. Tudo num só lugar.",
-    conteudo: <MockupGenericoSlide emoji="🤝" title="Sua rede de parceiros" subtitle="construtoras fidelizadas · time AQ dedicado" />,
-    fundo: "linear-gradient(135deg, #1c6dd0 0%, #0d4e9e 100%)",
-    overlay: true,
-    transicao: "fade-zoom",
-  },
-  {
-    id: "pendencias",
-    duration: 5,
-    eyebrow: "cena 14 · TODOs",
-    titulo: "Pendências de decisão — nada cai no esquecimento",
-    legenda: "Tudo que precisa do seu olho: confirmações, ops pra rever, docs anexados. Priorizado por urgência.",
-    conteudo: <MockupGenericoSlide emoji="📋" title="Sua caixa de entrada" subtitle="ops pendentes · docs novos · respostas urgentes" />,
-    fundo: "linear-gradient(135deg, #0d4e9e 0%, #1c6dd0 100%)",
-    overlay: true,
-    transicao: "slide-left",
-  },
-  {
-    id: "mobile",
-    duration: 4,
-    eyebrow: "cena 15 · mobile",
-    titulo: "Mesa de decisão no celular",
-    legenda: "Aprovar 5 ops no carro? Funciona. PWA instalável, push real, gestos rápidos.",
-    conteudo: <MockupGenericoSlide emoji="📱" title="Aprove em qualquer lugar" subtitle="PWA · push · gestos · biometria" />,
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 100%)",
-    overlay: true,
-    transicao: "fade-zoom",
-  },
-  {
-    id: "cta",
-    duration: 5,
-    eyebrow: "vamos conversar?",
-    titulo: "Capital de R$ 5M+ pronto pra alocar?",
-    legenda: "Conversa de 30 min com nosso head comercial pra calibrar volume, retorno alvo e processo de onboarding.",
-    conteudo: (
-      <div className="text-center text-white">
-        <div className="text-7xl mb-4 animate-mockup-pop">🤝</div>
-        <div className="text-2xl font-bold tracking-tight animate-text-stagger" style={{ animationDelay: "0.2s" }}>
-          Bora alocar?
-        </div>
-        <div className="text-sm text-blue-200/90 mt-2 animate-text-stagger" style={{ animationDelay: "0.4s" }}>
-          fundo@antecipaqui.digital
-        </div>
-      </div>
-    ),
-    fundo: "linear-gradient(135deg, #0a0e1a 0%, #1c6dd0 50%, #15803d 100%)",
-    overlay: true,
-    transicao: "fade-zoom",
-  },
+const NAV_ITEMS = [
+  { href: "#decisao", label: "Decisão" },
+  { href: "#risco", label: "Risco" },
+  { href: "#cobranca", label: "Cobrança" },
+  { href: "#financeiro", label: "Financeiro" },
+  { href: "#integracao", label: "Integração" },
+  { href: "#beneficios", label: "Benefícios" },
+  { href: "#cta", label: "Conversar" },
 ];
 
 export default function ApresentacaoFundoPage() {
@@ -219,42 +44,243 @@ export default function ApresentacaoFundoPage() {
           header, footer, .no-print { display: none !important; }
           body { background: #fff !important; }
         }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0a0e1a] via-[#0d1729] to-[#1c6dd0] text-white">
-        <div className="relative max-w-6xl mx-auto px-6 py-10 md:py-14">
-          <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-blue-200 mb-3">
+      <ApresentacaoNav brand="ANTECIPAQUI · FUNDO" items={NAV_ITEMS} />
+
+      {/* HERO */}
+      <section
+        id="topo"
+        className="relative overflow-hidden bg-gradient-to-br from-[#0a0e1a] via-[#0d1729] to-[#1c6dd0] text-white"
+      >
+        <div className="relative max-w-6xl mx-auto px-6 py-16 md:py-24">
+          <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-blue-200 mb-3 font-bold">
             Antecipaqui · pra fundos investidores
           </div>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] max-w-3xl">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] max-w-4xl">
             Capital + tecnologia.
             <br />
             <span className="bg-gradient-to-r from-emerald-300 to-blue-200 bg-clip-text text-transparent">
               Rendimento previsível.
             </span>
           </h1>
-          <p className="mt-4 text-base md:text-lg text-blue-50 max-w-2xl">
-            Tour cinematográfico (~2 min) de todas as ferramentas: mesa, regras,
-            risco, cobrança auto, API REST, webhooks, forecast e mais.
+          <p className="mt-6 text-base md:text-xl text-blue-50 max-w-2xl leading-relaxed">
+            Mesa de decisão, regras automáticas, cobrança auto, API REST e
+            webhooks. Plataforma completa pra fundos a partir de R$ 5M.
           </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href="/cadastre-se"
+              className="h-12 px-6 rounded-xl bg-white text-[#0a0e1a] font-bold text-sm inline-flex items-center hover:bg-blue-50 transition"
+            >
+              Agendar conversa →
+            </Link>
+            <ApresentacaoVideoButton src="/apresentacao/apresentacao-fundo.mp4" />
+          </div>
         </div>
       </section>
 
-      <section className="bg-[#020617] py-10 md:py-16">
-        <div className="max-w-5xl mx-auto px-4 md:px-6">
-          <PresentationPlayer scenes={SCENES} />
-          <p className="text-center text-xs text-slate-400 mt-4 font-mono no-print">
-            ⏸ pausa · ⏭ pula cena · clique na barra pra avançar
-          </p>
-        </div>
-      </section>
+      {/* SEÇÃO 1 — DECISÃO */}
+      <ApresentacaoSection
+        id="decisao"
+        eyebrow="DECISÃO · MESA + AUTOMAÇÃO"
+        titulo="Aprove em segundos. Automatize as óbvias."
+        intro="Score automático de cada construtora, decomposição financeira inline, regras dry-run testáveis contra histórico. Você decide o que delegar."
+      >
+        <ApresentacaoFeature
+          titulo="Mesa de decisão — todas as ops num lugar"
+          desc="Score da construtora, validação IA dos docs, decomposição financeira inline. 10-15 ops aprovadas em 30 minutos."
+          bullets={[
+            "Filtros: pendentes, urgentes, por construtora, por valor",
+            "Aprovação em lote pra ops abaixo de threshold",
+            "Histórico de cada decisão com motivo (auditável)",
+          ]}
+          mockup={<MockupMesaDecisao />}
+        />
+        <ApresentacaoFeature
+          reverse
+          titulo="Regras automáticas — pare de aprovar 1 a 1"
+          desc="Configure critérios e o sistema aprova sozinho as ops 'óbvias'. Simulação dry-run testa contra histórico ANTES de salvar."
+          bullets={[
+            "Critérios: taxa mínima, prazo, valor, construtora",
+            "Dry-run mostra % de cobertura sobre últimas 90 ops",
+            "Auditoria registra qual regra acionou cada aprovação",
+          ]}
+          hint="regras auto cobrem ~70% das ops óbvias em fundos bem calibrados"
+          mockup={<MockupRegraDryRun />}
+        />
+      </ApresentacaoSection>
 
-      <section className="bg-white py-16 md:py-20">
+      {/* SEÇÃO 2 — RISCO */}
+      <ApresentacaoSection
+        id="risco"
+        eyebrow="RISCO · CONCENTRAÇÃO + BLACKLIST"
+        titulo="Risco proativo, não reativo"
+        bg="dark"
+      >
+        <ApresentacaoFeature
+          onDark
+          titulo="Concentração + blacklist"
+          desc="Veja quais construtoras concentram seu capital. Alerta automático em 25%, crítico em 40%. Blacklist instantânea pra bloquear."
+          bullets={[
+            "Concentração por construtora, imobiliária e UF",
+            "Blacklist instantânea (não aceita novas ops)",
+            "Histórico de alertas com responsável que viu/resolveu",
+          ]}
+          mockup={<MockupRisco />}
+        />
+      </ApresentacaoSection>
+
+      {/* SEÇÃO 3 — COBRANÇA */}
+      <ApresentacaoSection
+        id="cobranca"
+        eyebrow="COBRANÇA · 3 MODOS"
+        titulo="Cobrança do jeito que seu banco trabalha"
+      >
+        <ApresentacaoFeature
+          titulo="Manual, API ou CNAB — você escolhe"
+          desc="Manual (você dá baixa). API (banco emite + webhook auto baixa). CNAB (remessa/retorno em lote). Multa + juros automáticos."
+          bullets={[
+            "Manual: pra fundos em fase piloto",
+            "API: integração direta com Itaú, Bradesco, Sicredi, BB",
+            "CNAB 240/400: padrão FEBRABAN, qualquer banco",
+          ]}
+          hint="multa 2% padrão · juros mora 1%/mês · configuráveis por fundo"
+          mockup={<MockupCobrancaModos />}
+        />
+        <ApresentacaoFeature
+          reverse
+          titulo="Daily — quem precisa pagar HOJE"
+          desc="Parcelas vencendo, vencidas e recebidas. Cálculo automático de multa/juros. 1 clique pra cobrar via WhatsApp ou email."
+          bullets={[
+            "Cron diário às 12h UTC notifica fundos + construtoras",
+            "Ticket de confirmação aberto fundo ↔ construtora",
+            "Idempotente: não duplica cobranças",
+          ]}
+          mockup={<MockupDailyFundo />}
+        />
+        <ApresentacaoFeature
+          titulo="Recebimentos — heatmap quinzenal"
+          desc="Veja a quinzena inteira de uma vez. Onde concentra dinheiro, onde tem vácuo. Planeje captação ou pause originação."
+          bullets={[
+            "Heatmap colorido por intensidade de recebimento",
+            "Clique no dia: lista de parcelas detalhadas",
+            "Exportação pra planilha de tesouraria",
+          ]}
+          mockup={<MockupRecebimentos />}
+        />
+      </ApresentacaoSection>
+
+      {/* SEÇÃO 4 — FINANCEIRO */}
+      <ApresentacaoSection
+        id="financeiro"
+        eyebrow="FINANCEIRO · FATURAS + FORECAST"
+        titulo="Spread, custos e forecast — calculados na hora"
+        bg="dark"
+      >
+        <ApresentacaoFeature
+          onDark
+          titulo="Faturas AQ — proporcional ao pago"
+          desc="AQ só cobra o % efetivamente pago no período. Spread/2 + custos. Transparência total, nenhuma surpresa no boleto."
+          bullets={[
+            "Fórmula pública: custos + spread/2 (lado AQ)",
+            "Detalhamento por operação na fatura PDF",
+            "Pagamento via boleto ou TED programado",
+          ]}
+          hint="invoice = resultado_op_AQ × (pago_no_periodo / valor_comissao)"
+          mockup={<MockupFaturas />}
+        />
+        <ApresentacaoFeature
+          onDark
+          reverse
+          titulo="Forecast — 6 meses de previsão"
+          desc="Bruto + parte do fundo (spread/2 + custo capital). Plano de captação claro pra próximos 180 dias."
+          bullets={[
+            "Cenários (pessimista/esperado/otimista) configuráveis",
+            "Comparativo com forecast anterior pra calibrar",
+            "Exportação pra Excel ou Google Sheets",
+          ]}
+          mockup={<MockupForecastFundo />}
+        />
+        <ApresentacaoFeature
+          onDark
+          titulo="Recaps — diário, semanal, mensal por email"
+          desc="Todo dia 7h, fechamento do anterior cai no seu email. Destaques, KPIs, ops importantes. Você lê em 30 segundos."
+          bullets={[
+            "Configurável: quais KPIs aparecem",
+            "Destaques (op excepcional, atraso crítico)",
+            "Envio para múltiplos emails (gestor + comitê)",
+          ]}
+          mockup={<MockupRecaps />}
+        />
+      </ApresentacaoSection>
+
+      {/* SEÇÃO 5 — INTEGRAÇÃO */}
+      <ApresentacaoSection
+        id="integracao"
+        eyebrow="INTEGRAÇÃO · API + WEBHOOKS"
+        titulo="Integre com seu ERP, core bancário ou BI"
+      >
+        <ApresentacaoFeature
+          titulo="API REST — 5 endpoints + Bearer"
+          desc="GET /me, /operacoes, /parcelas + POST /decisao. Autenticação Bearer com escopos read_only e read_write. Sandbox com curl pronto."
+          bullets={[
+            "Token hash SHA-256 (plaintext mostrado uma vez)",
+            "Rate limit configurável por chave",
+            "Histórico de requests pra debugging",
+          ]}
+          hint="docs completas em /docs/api · OpenAPI 3.1"
+          mockup={<MockupApiCurl />}
+        />
+        <ApresentacaoFeature
+          reverse
+          titulo="Webhooks HMAC + retry automático"
+          desc="Op aprovada, parcela paga, fundo decidiu — tudo cai no seu sistema em tempo real. Botão 🧪 testar valida antes da produção."
+          bullets={[
+            "HMAC SHA-256 assina cada payload",
+            "Retry exponencial: 1, 5, 25, 125 minutos",
+            "Histórico de tentativas + replay manual",
+          ]}
+          mockup={<MockupWebhookTest />}
+        />
+      </ApresentacaoSection>
+
+      {/* BENEFÍCIOS */}
+      <ApresentacaoBeneficios
+        titulo="Por que fundos escolhem"
+        items={[
+          {
+            emoji: "🎯",
+            titulo: "Rendimento previsível",
+            desc: "Spread + custo capital calibrável por contrato.",
+          },
+          {
+            emoji: "🛡️",
+            titulo: "Risco controlado",
+            desc: "Alertas em 25% / críticos em 40% / blacklist instantânea.",
+          },
+          {
+            emoji: "⚡",
+            titulo: "Operação enxuta",
+            desc: "Regras auto cobrem 70% das óbvias. Você foca no resto.",
+          },
+          {
+            emoji: "🔗",
+            titulo: "Integra com seu ERP",
+            desc: "API REST + webhooks HMAC prontos. SDK em Node/Python.",
+          },
+        ]}
+      />
+
+      {/* CTA FINAL */}
+      <section id="cta" className="bg-white py-16 md:py-24 scroll-mt-20">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 leading-tight">
             Pronto pra alocar capital com gestão profissional?
           </h2>
-          <p className="text-fg-muted mb-8 text-base md:text-lg">
+          <p className="text-fg-muted mb-8 text-base md:text-lg leading-relaxed">
             Conversa de 30 minutos com nosso head comercial pra calibrar volume
             (a partir de R$ 5M), retorno alvo, prazo e processo de onboarding.
             Documentos e contratos prontos.
@@ -272,6 +298,11 @@ export default function ApresentacaoFundoPage() {
             >
               Ver docs da API
             </a>
+            <ApresentacaoVideoButton
+              src="/apresentacao/apresentacao-fundo.mp4"
+              className="border-border text-fg hover:bg-slate-100"
+              label="▶ Ver em 60s"
+            />
           </div>
         </div>
       </section>
