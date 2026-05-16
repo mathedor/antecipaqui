@@ -8,7 +8,9 @@ import { NavDropdown } from "@/components/nav-dropdown";
 import { getImpersonationStatus } from "@/lib/actions/admin-impersonate";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { ComercialTourMount } from "@/components/onboarding/comercial-tour-mount";
+import { CorretorTourMount } from "@/components/onboarding/corretor-tour-mount";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { getCurrentImobMembership } from "@/lib/actions/imobiliaria-membros";
 import {
   MobileBottomNav,
   type MobileNavItem,
@@ -431,14 +433,25 @@ export async function PainelShell({
   const impersonation = await getImpersonationStatus();
   const isImpersonating = impersonation.active;
 
-  // Auto-trigger do tour comercial só no primeiro acesso (sem
-  // tutorialsCompleted.comercial). Reabertura via dropdown não persiste.
+  // Auto-trigger dos tours só no primeiro acesso (sem
+  // tutorialsCompleted.<tourId>). Reabertura via dropdown não persiste.
   let comercialTourAutoOpen = false;
+  let corretorTourAutoOpen = false;
+  let isImobOwner = false;
   if (role === "comercial") {
     const me = await getCurrentDbUser();
     const tcs =
       (me?.tutorialsCompleted as Record<string, string> | null) ?? {};
     comercialTourAutoOpen = !tcs.comercial;
+  } else if (role === "corretor" || role === "imobiliaria") {
+    const [me, mem] = await Promise.all([
+      getCurrentDbUser(),
+      getCurrentImobMembership(),
+    ]);
+    const tcs =
+      (me?.tutorialsCompleted as Record<string, string> | null) ?? {};
+    corretorTourAutoOpen = !tcs.corretor;
+    isImobOwner = mem?.canManageMembros ?? false;
   }
   const navAll = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
   const nav = allowedHrefs
@@ -463,6 +476,12 @@ export async function PainelShell({
       <ImpersonationBanner />
       {role === "comercial" && (
         <ComercialTourMount autoOpen={comercialTourAutoOpen} />
+      )}
+      {(role === "corretor" || role === "imobiliaria") && (
+        <CorretorTourMount
+          autoOpen={corretorTourAutoOpen}
+          isImobOwner={isImobOwner}
+        />
       )}
       <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border">
         <div className="mx-auto max-w-7xl px-4 md:px-6 h-16 flex items-center justify-between gap-3 md:gap-6">
@@ -512,7 +531,13 @@ export async function PainelShell({
               <UserButtonWithPerfil
                 profileLabel={ROLE_LABEL[role]}
                 userName={userName}
-                tourId={role === "comercial" ? "comercial" : null}
+                tourId={
+                  role === "comercial"
+                    ? "comercial"
+                    : role === "corretor" || role === "imobiliaria"
+                      ? "corretor"
+                      : null
+                }
               />
             </span>
           </div>
