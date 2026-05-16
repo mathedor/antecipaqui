@@ -1798,6 +1798,53 @@ export const fundoApiKeys = pgTable(
 export type FundoApiKey = typeof fundoApiKeys.$inferSelect;
 
 /* =========================================
+   COMERCIAL — INTERAÇÕES (CRM básico)
+   Cada vez que o comercial visita, liga, manda WhatsApp ou anota algo
+   sobre uma imobiliária/construtora/corretor, gera uma linha aqui.
+   Usado pra: histórico de relacionamento, "última visita", próximas
+   ações, score de atenção da carteira viva.
+   ========================================= */
+
+export const comercialInteracoes = pgTable(
+  "comercial_interacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    comercialId: uuid("comercial_id")
+      .notNull()
+      .references(() => comerciais.id, { onDelete: "cascade" }),
+    /** 'imobiliaria' | 'construtora' | 'corretor' */
+    alvoTipo: text("alvo_tipo").notNull(),
+    /** UUID de imobiliarias/construtoras ou Clerk userId pra corretor.
+     *  Sem FK forte porque o tipo varia. */
+    alvoId: text("alvo_id").notNull(),
+    /** Snapshot do nome do alvo no momento da interação — preserva contexto
+     *  mesmo se o cadastro for renomeado depois. */
+    alvoNome: text("alvo_nome"),
+    /** 'visita' | 'ligacao' | 'whatsapp' | 'email' | 'anotacao' */
+    tipo: text("tipo").notNull(),
+    /** O que conversou / observou. */
+    descricao: text("descricao"),
+    /** Data marcada pro próximo follow-up (NULL = sem follow-up). */
+    proximaAcaoEm: date("proxima_acao_em"),
+    /** Texto do follow-up planejado. */
+    proximaAcaoTexto: text("proxima_acao_texto"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("comercial_interacoes_comercial_idx").on(
+      t.comercialId,
+      t.createdAt,
+    ),
+    index("comercial_interacoes_alvo_idx").on(t.alvoTipo, t.alvoId),
+    index("comercial_interacoes_followup_idx").on(t.proximaAcaoEm),
+  ],
+);
+
+export type ComercialInteracao = typeof comercialInteracoes.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 

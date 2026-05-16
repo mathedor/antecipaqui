@@ -4,6 +4,12 @@ import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { ComercialChartsClient } from "@/components/comercial-charts-client";
 import { CalendarList } from "@/components/dashboards/calendar-list";
 import {
+  FocoDoDia,
+  MetaProgress,
+  CarteiraViva,
+  ProjecoesCenarios,
+} from "@/components/dashboards/comercial-blocos";
+import {
   getCurrentComercial,
   getComercialDashboard,
 } from "@/lib/actions/comerciais";
@@ -12,6 +18,12 @@ import {
   getComercialFunil,
   getComercialRanking,
 } from "@/lib/actions/dashboards";
+import {
+  getComercialCarteira,
+  getComercialFocoDoDia,
+  getComercialMeta,
+  getComercialProjecoes,
+} from "@/lib/actions/comercial-acoes";
 import { formatBRL, formatBRLcompact } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -33,16 +45,28 @@ export async function ComercialDashboard({ user }: { user: User }) {
     );
   }
 
-  const [data, calendarioRaw, funil, ranking] = await Promise.all([
+  const [
+    data,
+    calendarioRaw,
+    funil,
+    ranking,
+    foco,
+    meta,
+    carteira,
+    proj,
+  ] = await Promise.all([
     getComercialDashboard(comercial.id),
     getComercialCalendario(comercial.id, 90),
     getComercialFunil(comercial.id),
     getComercialRanking(comercial.id),
+    getComercialFocoDoDia(comercial.id),
+    getComercialMeta(comercial.id),
+    getComercialCarteira(comercial.id),
+    getComercialProjecoes(comercial.id),
   ]);
 
   const ultimas = data.operacoes.slice(0, 6);
 
-  // Adapta o calendário de comissão pra CalendarItem
   const calendario = calendarioRaw.map((c) => ({
     data: c.data.slice(0, 10),
     valor: c.valor,
@@ -65,133 +89,25 @@ export async function ComercialDashboard({ user }: { user: User }) {
           </span>
         </h1>
         <p className="mt-2 text-fg-muted">
-          Sua comissão a receber, funil de carteira e posição no ranking.
+          Sua agenda do dia, meta do mês e saúde da carteira.
         </p>
       </div>
 
-      {/* === 1. COMISSÃO A RECEBER (destaque grande) === */}
-      <section className="rounded-2xl border border-accent bg-accent-soft p-5 md:p-6 mb-6">
-        <div className="flex items-baseline justify-between gap-3 flex-wrap mb-2">
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent mb-1">
-              comissão a receber · próximos 90d
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-fg font-mono tabular">
-              {formatBRL(data.totals.comissaoPendente)}
-            </h2>
-          </div>
-          <Link
-            href="/painel/comissoes"
-            className="text-accent text-xs font-semibold hover:underline shrink-0"
-          >
-            ver comissões →
-          </Link>
-        </div>
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          <Mini
-            label="Faturado este mês"
-            value={formatBRLcompact(data.totals.faturadoNoMes)}
-          />
-          <Mini
-            label="Realizada (total)"
-            value={formatBRLcompact(data.totals.comissaoRealizada)}
-          />
-          <Mini
-            label="Inadimplência"
-            value={formatBRLcompact(data.totals.valorVencido)}
-            tone={data.totals.valorVencido > 0 ? "warn" : "default"}
-          />
-        </div>
-      </section>
+      {/* === 1. FOCO DO DIA — ações priorizadas === */}
+      <FocoDoDia items={foco} comercialId={comercial.id} />
 
-      {/* === 2. FUNIL DE CARTEIRA (NOVO) === */}
-      <section className="rounded-2xl border border-border bg-bg-elev p-5 md:p-6 mb-6">
-        <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-fg-dim mb-1">
-              funil da sua carteira
-            </div>
-            <h2 className="font-bold tracking-tight text-lg">
-              Quem você cadastrou e quem virou operação
-            </h2>
-          </div>
-          <span className="text-xs text-fg-muted">
-            taxa conversão: {" "}
-            <span className="font-bold text-fg">
-              {(funil.taxaConversao * 100).toFixed(0)}%
-            </span>
-          </span>
-        </div>
-        <div className="grid grid-cols-3 gap-3 mb-3">
-          <FunnelStep
-            label="Imobiliárias cadastradas"
-            value={funil.imobiliariasCadastradas}
-            tone="default"
-          />
-          <FunnelStep
-            label="Já operaram"
-            value={funil.imobiliariasComOp}
-            tone="info"
-          />
-          <FunnelStep
-            label="Ativas 90d"
-            value={funil.imobiliariasAtivas90d}
-            tone="success"
-          />
-        </div>
-        <div className="grid grid-cols-3 gap-3 text-[11px]">
-          <FunnelDetail
-            label="Ticket médio"
-            value={formatBRLcompact(funil.ticketMedio)}
-          />
-          <FunnelDetail
-            label="Tempo médio 1ª op"
-            value={
-              funil.tempoMedioPrimeiraOpDias != null
-                ? `${funil.tempoMedioPrimeiraOpDias.toFixed(0)}d`
-                : "—"
-            }
-          />
-          <FunnelDetail
-            label="Ainda não operaram"
-            value={String(
-              Math.max(
-                0,
-                funil.imobiliariasCadastradas - funil.imobiliariasComOp,
-              ),
-            )}
-            tone={
-              funil.imobiliariasCadastradas - funil.imobiliariasComOp > 0
-                ? "warn"
-                : "default"
-            }
-          />
-        </div>
-      </section>
+      {/* === 2. META DO MÊS === */}
+      <MetaProgress meta={meta} />
 
-      {/* === 3. KPIs operacionais === */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Stat
-          label="Operações"
-          value={String(data.totals.qtdOperacoes)}
-          sub="sob sua responsabilidade"
-        />
-        <Stat
-          label="Construtoras"
-          value={String(data.totals.qtdConstrutoras)}
-          sub="distintas atendidas"
-        />
-        <Stat
-          label="Comissão acumulada"
-          value={formatBRLcompact(data.totals.comissaoAcumulada)}
-          sub="histórico total"
-          highlight
-        />
-        <Stat
-          label="A vencer (parcelas)"
-          value={formatBRLcompact(data.totals.valorAVencer)}
-          sub="das ops sob você"
-        />
+      {/* === 3. CARTEIRA VIVA + PROJEÇÕES === */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+        <div className="lg:col-span-2">
+          <CarteiraViva
+            entries={carteira}
+            comercialId={comercial.id}
+          />
+        </div>
+        <ProjecoesCenarios proj={proj} />
       </div>
 
       {/* === 4. CALENDÁRIO + RANKING === */}
@@ -199,7 +115,7 @@ export async function ComercialDashboard({ user }: { user: User }) {
         <CalendarList
           items={calendario}
           title="comissões a receber · 90 dias"
-          emptyText="Sem comissões pendentes pra receber nos próximos 90 dias."
+          emptyText="Sem comissões pendentes nos próximos 90 dias."
           href="/painel/comissoes"
           hrefLabel="comissões completas"
         />
@@ -284,12 +200,37 @@ export async function ComercialDashboard({ user }: { user: User }) {
         </section>
       </div>
 
-      {/* === 5. CHARTS HISTÓRICOS === */}
+      {/* === 5. KPIs RESUMIDOS (consolidados, fica embaixo) === */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <Stat
+          label="A receber 90d"
+          value={formatBRLcompact(data.totals.comissaoPendente)}
+          sub={`hist total ${formatBRLcompact(data.totals.comissaoAcumulada)}`}
+          highlight
+        />
+        <Stat
+          label="Faturado este mês"
+          value={formatBRLcompact(data.totals.faturadoNoMes)}
+        />
+        <Stat
+          label="Inadimplência"
+          value={formatBRLcompact(data.totals.valorVencido)}
+          tone={data.totals.valorVencido > 0 ? "warn" : "default"}
+          sub="vencido em aberto"
+        />
+        <Stat
+          label="Funil carteira"
+          value={`${funil.imobiliariasComOp}/${funil.imobiliariasCadastradas}`}
+          sub={`${(funil.taxaConversao * 100).toFixed(0)}% conversão`}
+        />
+      </div>
+
+      {/* === 6. CHARTS HISTÓRICOS === */}
       <div className="mb-6">
         <ComercialChartsClient porMes={data.porMes} />
       </div>
 
-      {/* === 6. OPS RECENTES + TOP CONSTRUTORAS === */}
+      {/* === 7. OPS RECENTES + TOP CONSTRUTORAS === */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <section className="lg:col-span-2 rounded-2xl border border-border bg-bg-elev p-5 md:p-6">
           <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
@@ -416,93 +357,6 @@ function Stat({
       {sub && (
         <div className="text-[10px] md:text-xs text-fg-muted mt-1">{sub}</div>
       )}
-    </div>
-  );
-}
-
-function Mini({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "warn";
-}) {
-  return (
-    <div
-      className={`rounded-xl border p-3 ${
-        tone === "warn"
-          ? "border-warn/40 bg-yellow-50"
-          : "border-accent/20 bg-white/40"
-      }`}
-    >
-      <div
-        className={`font-mono text-[9px] uppercase tracking-wider mb-1 ${
-          tone === "warn" ? "text-warn" : "text-accent"
-        }`}
-      >
-        {label}
-      </div>
-      <div className="font-mono tabular text-base font-bold text-fg">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function FunnelStep({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "default" | "info" | "success";
-}) {
-  const cls =
-    tone === "success"
-      ? "border-success/40 bg-green-50"
-      : tone === "info"
-        ? "border-accent/30 bg-accent-soft"
-        : "border-border bg-bg";
-  const labelCls =
-    tone === "success"
-      ? "text-success"
-      : tone === "info"
-        ? "text-accent"
-        : "text-fg-dim";
-  return (
-    <div className={`rounded-lg border p-3 ${cls}`}>
-      <div
-        className={`font-mono text-[10px] uppercase tracking-wider mb-1 ${labelCls}`}
-      >
-        {label}
-      </div>
-      <div className="font-mono tabular text-2xl font-bold text-fg">{value}</div>
-    </div>
-  );
-}
-
-function FunnelDetail({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "warn";
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-bg p-2.5">
-      <div
-        className={`font-mono text-[9px] uppercase tracking-wider mb-1 ${
-          tone === "warn" ? "text-warn" : "text-fg-dim"
-        }`}
-      >
-        {label}
-      </div>
-      <div className="font-mono tabular text-sm font-bold text-fg">{value}</div>
     </div>
   );
 }
