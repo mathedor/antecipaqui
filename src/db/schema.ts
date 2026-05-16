@@ -1975,6 +1975,62 @@ export const comercialTemplates = pgTable(
 export type ComercialTemplate = typeof comercialTemplates.$inferSelect;
 
 /* =========================================
+   COMERCIAL — PROSPECT PONTOS (mapa de prospecção geográfica)
+   Pontos que o comercial salva no mapa pra prospectar — adicionados
+   manualmente (via endereço → Nominatim) ou descobertos via Google
+   Places. Cada ponto é tipicamente uma imob/construtora que ainda
+   não é cliente AQ.
+   ========================================= */
+
+export const comercialProspectPontos = pgTable(
+  "comercial_prospect_pontos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    comercialId: uuid("comercial_id")
+      .notNull()
+      .references(() => comerciais.id, { onDelete: "cascade" }),
+    /** ID retornado pela Google Places API (se foi descoberto via API).
+     *  null = adicionado manualmente. */
+    googlePlaceId: text("google_place_id"),
+    nome: text("nome").notNull(),
+    /** 'imobiliaria' | 'construtora' | 'outro' */
+    categoria: text("categoria").notNull().default("imobiliaria"),
+    endereco: text("endereco"),
+    cidade: text("cidade"),
+    uf: text("uf"),
+    /** Coordenadas geo. Lat/lng como numeric pra precisão. */
+    lat: numeric("lat", { precision: 10, scale: 7 }),
+    lng: numeric("lng", { precision: 10, scale: 7 }),
+    telefone: text("telefone"),
+    email: text("email"),
+    website: text("website"),
+    /** 'novo' | 'contactado' | 'reuniao_agendada' | 'descartado' | 'virou_lead' */
+    status: text("status").notNull().default("novo"),
+    /** Se virou lead no pipeline, link aqui. */
+    leadId: uuid("lead_id"),
+    /** Se já é cliente AQ (auto-detectado por match com imobiliarias/construtoras),
+     *  guarda o id pra mostrar visualmente no mapa. */
+    imobiliariaId: uuid("imobiliaria_id"),
+    construtoraId: uuid("construtora_id"),
+    notas: text("notas"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("comercial_prospect_pontos_comercial_idx").on(t.comercialId, t.status),
+    index("comercial_prospect_pontos_geo_idx").on(t.lat, t.lng),
+    index("comercial_prospect_pontos_google_idx").on(t.googlePlaceId),
+  ],
+);
+
+export type ComercialProspectPonto =
+  typeof comercialProspectPontos.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 

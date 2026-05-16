@@ -100,6 +100,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     {
       label: "Captação",
       submenu: [
+        { href: "/painel/prospects", label: "Mapa de prospects" },
         { href: "/painel/prospeccao", label: "Pipeline de leads" },
         { href: "/painel/cadastrar-imob", label: "Cadastro express" },
         { href: "/painel/convidar", label: "Link de convite" },
@@ -336,6 +337,7 @@ const MOBILE_FULLMENU: Record<
     {
       section: "captação",
       items: [
+        { href: "/painel/prospects", label: "Mapa de prospects", icon: "tag" },
         { href: "/painel/prospeccao", label: "Pipeline de leads", icon: "tag" },
         { href: "/painel/cadastrar-imob", label: "Cadastro express", icon: "doc" },
         { href: "/painel/convidar", label: "Link de convite", icon: "tag" },
