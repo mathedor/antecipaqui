@@ -4,6 +4,7 @@ import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { getFundoFaturas } from "@/lib/actions/fundo-caixa";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Faturas · Painel do fundo" };
 export const dynamic = "force-dynamic";
@@ -70,6 +71,9 @@ export default async function FundoFaturasPage() {
           <strong>custos + 50% do spread</strong> de cada operação,
           proporcional ao que foi pago naquele período.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-faturas-fundo" />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">

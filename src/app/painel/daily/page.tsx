@@ -7,6 +7,7 @@ import { getDailyParcelas } from "@/lib/actions/daily";
 import { getCurrentComercial } from "@/lib/actions/comerciais";
 import { getCurrentFundo } from "@/lib/actions/fundos";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Daily" };
 
@@ -88,6 +89,9 @@ export default async function PainelDailyPage({ searchParams }: Search) {
             ? "Parcelas em aberto das operações do seu fundo. Use os botões pra notificar via WhatsApp/email e gerar boletos."
             : "Parcelas em aberto das operações sob sua responsabilidade. Cálculo automático de encargos (multa 2% + juros mora pela taxa × dias)."}
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-daily" />
+        </div>
       </div>
 
       {/* Período preset */}

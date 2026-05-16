@@ -5,6 +5,7 @@ import { AdminSpreadMinimoForm } from "@/components/admin-spread-minimo-form";
 import { AdminCdiForm } from "@/components/admin-cdi-form";
 import { AdminScoreForm } from "@/components/admin-score-form";
 import { getSettingsSnapshot } from "@/lib/actions/settings";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Admin · Configurações",
@@ -26,6 +27,9 @@ export default async function AdminConfiguracoesPage() {
           apenas a sugestão padrão — durante a aprovação de cada operação
           você pode editar a taxa específica daquele negócio.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-configuracoes" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">

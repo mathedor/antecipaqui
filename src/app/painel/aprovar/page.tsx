@@ -5,6 +5,7 @@ import { PainelShell } from "@/components/painel-shell";
 import { getOpsAguardandoFundo } from "@/lib/actions/fundo-mesa";
 import { formatBRL } from "@/lib/format";
 import { DecisaoForm } from "@/components/fundo-decisao-form";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Aprovar · Painel do fundo" };
 export const dynamic = "force-dynamic";
@@ -51,6 +52,9 @@ export default async function FundoAprovarPage() {
           documentos validados (IA), score da construtora baseado no seu
           histórico, e detalhamento financeiro consolidado.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-aprovar" />
+        </div>
       </div>
 
       {ops.length === 0 ? (

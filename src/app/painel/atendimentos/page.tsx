@@ -7,6 +7,7 @@ import {
   listCorretoresDoTime,
 } from "@/lib/actions/imobiliaria-membros";
 import { AtendimentosKanban } from "@/components/dashboards/atendimentos-kanban";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Atendimentos" };
 export const dynamic = "force-dynamic";
@@ -41,6 +42,9 @@ export default async function AtendimentosPage() {
             ? "Todos os atendimentos da imobiliária. Filtre por corretor pra acompanhar quem está vendendo. Cada card vira uma operação encaminhada pra antecipação no fim do funil."
             : "Seus atendimentos. Conforme avança nas etapas, registre cada movimentação na timeline pra não perder histórico."}
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-atendimentos" />
+        </div>
       </div>
       <AtendimentosKanban
         initialAtendimentos={atendimentos}

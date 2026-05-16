@@ -6,6 +6,7 @@ import {
   listAntecipacoesPendentes,
   listRenegociacoesPendentes,
 } from "@/lib/actions/pendencias-decisao";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Pendências de decisão" };
 
@@ -29,6 +30,9 @@ export default async function FundoPendenciasPage() {
           Antecipações e renegociações solicitadas pelas construtoras das ops
           do seu fundo.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-pendencias-decisao" />
+        </div>
       </div>
 
       <PendenciasInbox

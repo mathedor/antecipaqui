@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { FundoOnboardingWizard } from "@/components/fundo-onboarding-wizard";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Novo fundo" };
 
@@ -24,6 +25,9 @@ export default async function AdminNovoFundoPage() {
             Wizard guiado em 6 passos. Cole o CNPJ no primeiro passo e
             preenchemos quase tudo automaticamente via Receita Federal.
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="admin-fundos-novo" />
+          </div>
         </div>
         <Link
           href="/admin/fundos/novo/avancado"

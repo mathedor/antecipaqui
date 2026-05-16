@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { imobiliarias, construtoras, documentos, fundos } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { PerfilForm } from "@/components/perfil-form";
 import { FundoSelfEditForm } from "@/components/fundo-self-edit-form";
 import { painelRole } from "@/lib/painel-role";
@@ -57,6 +58,9 @@ export default async function PerfilPage() {
           Mantenha seus dados sempre atualizados. Endereço usa CEP automático
           (digite o CEP e os outros campos preenchem sozinhos).
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-perfil" />
+        </div>
       </div>
 
       {user.role === "fundo" && fundo ? (

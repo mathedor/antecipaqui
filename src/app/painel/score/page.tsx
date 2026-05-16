@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { getConstrutoraByOwnerId } from "@/lib/actions/operacoes";
 import { getScoreConstrutora, scoreColorClass } from "@/lib/scoring";
 import { getScoreParams } from "@/lib/actions/settings";
@@ -97,6 +98,9 @@ export default async function ConstrutoraScorePage() {
           É a mesma nota que admin e fundos veem ao analisar suas operações.
           Quanto maior, mais fácil aprovar antecipações.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-score-construtora" />
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 mb-8">

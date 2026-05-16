@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { listMyTemplates } from "@/lib/actions/comercial-templates";
 import { TemplatesManager } from "@/components/dashboards/comercial-templates-manager";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Templates de mensagem" };
 export const dynamic = "force-dynamic";
@@ -32,6 +33,9 @@ export default async function ComercialTemplatesPage() {
           <code>{"{dias_inativa}"}</code>, <code>{"{numero_op}"}</code>,{" "}
           <code>{"{valor_op}"}</code>.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-templates" />
+        </div>
       </div>
       <TemplatesManager initialTemplates={templates} />
     </PainelShell>

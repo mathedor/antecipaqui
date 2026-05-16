@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { listMinhasSolicitacoesDocumento } from "@/lib/actions/construtora-operacional";
 
 export const metadata = { title: "Pendências" };
@@ -44,6 +45,9 @@ export default async function PendenciasPage() {
           Documentos solicitados pela Antecipaqui ou pelo fundo da operação.
           Anexe na operação correspondente pra atender.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-pendencias-construtora" />
+        </div>
       </div>
 
       {solicitacoes.length === 0 ? (

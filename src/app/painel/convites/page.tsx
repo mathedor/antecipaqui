@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { listMyConvites } from "@/lib/actions/pending-operacoes";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { formatBRL } from "@/lib/format";
 
 export const metadata = { title: "Meus convites" };
@@ -39,6 +40,9 @@ export default async function ConvitesPage() {
           pode anexar contratos + nota fiscal e enviar pra análise da
           Antecipaqui.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-convites" />
+        </div>
       </div>
 
       {convites.length === 0 ? (

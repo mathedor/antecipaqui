@@ -17,6 +17,7 @@ import {
   ProjecaoForwardChart,
 } from "@/components/dashboards/comercial-relatorios-charts";
 import { formatBRL, formatBRLcompact } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Relatórios" };
 export const dynamic = "force-dynamic";
@@ -59,6 +60,9 @@ export default async function ComercialRelatoriosPage() {
           atualizam em tempo real — toda operação que entra na sua carteira
           recalcula tudo.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-relatorios-comercial" />
+        </div>
       </div>
 
       {/* === Summary KPIs === */}

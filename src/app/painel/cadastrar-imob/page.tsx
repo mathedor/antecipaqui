@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { CadastrarImobExpressForm } from "@/components/dashboards/comercial-cadastrar-imob-form";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Cadastrar imobiliária express" };
 export const dynamic = "force-dynamic";
@@ -27,6 +28,9 @@ export default async function ComercialCadastrarImobPage() {
           provisória e monta a mensagem de WhatsApp pronta — você só copia e
           manda.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-cadastrar-imob" />
+        </div>
       </div>
       <CadastrarImobExpressForm />
     </PainelShell>

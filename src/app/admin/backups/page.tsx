@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Backups & exports" };
 
@@ -17,6 +18,9 @@ export default async function BackupsPage() {
           compradores). Útil pra contabilidade externa, auditoria e backup
           off-platform.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-backups" />
+        </div>
       </div>
 
       <section className="rounded-2xl border border-border bg-bg-elev p-6 mb-6">

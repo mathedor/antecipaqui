@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { getFundoDashboard } from "@/lib/actions/fundos";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Parceiros do fundo" };
 
@@ -27,6 +28,9 @@ export default async function FundoParceirosPage() {
           {construtoras.length} construtoras · {imobiliarias.length} imobiliárias
           / corretores
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-parceiros" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

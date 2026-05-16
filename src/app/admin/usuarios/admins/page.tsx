@@ -11,6 +11,7 @@ import {
   RevokeAdminButton,
   ToggleAdminActiveButton,
 } from "@/components/admin-users-form";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Administradores" };
 
@@ -45,6 +46,9 @@ export default async function AdminUsersPage() {
           Gerencie quem tem acesso ao painel admin e qual perfil cada um tem.
           Apenas super-admins veem essa página.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-usuarios-admins" />
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">

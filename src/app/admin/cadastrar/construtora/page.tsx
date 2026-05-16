@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminCadastrarConstrutoraForm } from "@/components/admin-cadastrar-construtora-form";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Cadastrar construtora" };
 
@@ -23,6 +24,9 @@ export default async function AdminCadastrarConstrutoraPage() {
         Cadastra a construtora no banco. Email comercial recebe convite pra completar
         contrato social, comprovante de endereço, etc.
       </p>
+      <div className="mt-2 mb-6">
+        <PageHelp pageKey="admin-cadastrar-construtora" />
+      </div>
 
       <AdminCadastrarConstrutoraForm />
     </AdminShell>

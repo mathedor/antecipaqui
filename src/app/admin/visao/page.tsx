@@ -6,6 +6,7 @@ import {
   listRecentImpersonations,
 } from "@/lib/actions/admin-impersonate";
 import { ImpersonationPicker } from "@/components/admin-impersonation-picker";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Visualizar como" };
 export const dynamic = "force-dynamic";
@@ -41,6 +42,9 @@ export default async function AdminVisaoPage({ searchParams }: Search) {
             </span>{" "}
             — cliente não recebe notificação disparada por você.
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="admin-visao" />
+          </div>
         </div>
         <Link
           href="/admin/visao/historico"

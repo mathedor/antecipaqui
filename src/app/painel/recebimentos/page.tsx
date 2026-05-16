@@ -4,6 +4,7 @@ import { getRecebimentosFundo } from "@/lib/actions/fundos";
 import { PainelShell } from "@/components/painel-shell";
 import { RecebimentosTable } from "@/components/recebimentos-table";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Recebimentos",
@@ -51,6 +52,9 @@ export default async function RecebimentosPage() {
             Cronograma das parcelas das operações que você financia. Cada
             parcela é paga pela construtora à Antecipaqui e repassada ao fundo.
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="painel-recebimentos" />
+          </div>
         </div>
       </div>
 

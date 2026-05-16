@@ -4,6 +4,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { listMyChats } from "@/lib/actions/chat";
 import { chatCategoriaLabel } from "@/lib/chat-helpers";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
 
 export const metadata = {
@@ -110,6 +111,9 @@ export default async function ChatsPage({ searchParams }: Search) {
           <p className="mt-2 text-fg-muted">
             Suas conversas com o time, com fundos e com construtoras.
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="painel-suporte" />
+          </div>
         </div>
         <Link
           href="/painel/suporte/novo"

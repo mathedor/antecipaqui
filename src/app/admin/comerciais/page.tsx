@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { ComerciaisTable } from "@/components/comerciais-table";
 import { listAllComerciais } from "@/lib/actions/comerciais";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Comerciais" };
 
@@ -21,6 +22,9 @@ export default async function AdminComerciaisPage() {
           <p className="mt-2 text-fg-muted">
             {list.length} comercial(is) cadastrado(s).
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="admin-comerciais" />
+          </div>
         </div>
         <div className="flex gap-2">
           <Link

@@ -5,6 +5,7 @@ import {
   getDuplicatasParaPagar,
 } from "@/lib/actions/operacoes";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { DuplicatasTable } from "@/components/duplicatas-table";
 import { BulkPayPanel } from "@/components/bulk-pay-panel";
 import { formatBRL } from "@/lib/format";
@@ -67,6 +68,9 @@ export default async function DuplicatasPage() {
             Cronograma das parcelas que você deve pra Antecipaqui pelas
             comissões antecipadas dos corretores.
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="painel-duplicatas" />
+          </div>
         </div>
       </div>
 

@@ -19,6 +19,7 @@ import {
   getAdminPipeline,
   getAdminSourcing,
 } from "@/lib/actions/dashboards";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Admin · Dashboard",
@@ -59,6 +60,9 @@ export default async function AdminPage() {
           O que precisa de você agora, status do pipeline e direcionamento de
           operações pra fundos.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-dashboard" />
+        </div>
       </div>
 
       {/* 1. ACTION CENTER — o que resolver agora */}

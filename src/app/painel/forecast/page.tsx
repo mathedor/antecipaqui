@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { sql } from "drizzle-orm";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { getFundoCaixa } from "@/lib/actions/fundo-caixa";
 import { getConstrutoraByOwnerId } from "@/lib/actions/operacoes";
 import { db } from "@/db";
@@ -46,6 +47,9 @@ export default async function ForecastPage() {
           <strong>Parte AQ</strong> = custos + 50% do spread (vai pra
           Antecipaqui via fatura).
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-forecast-fundo" />
+        </div>
       </div>
 
       {/* KPIs topo */}
@@ -260,6 +264,9 @@ async function ConstrutoraForecast({ user }: { user: { id: string; nome: string 
           Quanto sua construtora deve pagar à Antecipaqui nos próximos 12
           meses. Use pra planejar caixa.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-forecast-construtora" />
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-3 mb-8">

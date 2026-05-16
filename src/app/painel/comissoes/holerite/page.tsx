@@ -9,6 +9,7 @@ import {
   listMesesComComissao,
 } from "@/lib/actions/comercial-holerite";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Holerite mensal" };
 export const dynamic = "force-dynamic";
@@ -57,6 +58,9 @@ export default async function ComercialHoleritePage({ searchParams }: Search) {
           Detalhamento das comissões pagas a você no mês. Imprima ou salve em
           PDF pelo botão do navegador (⌘+P / Ctrl+P).
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-comissoes-holerite" />
+        </div>
       </div>
 
       {/* Seletor de mês */}

@@ -14,6 +14,7 @@ import { listImobiliariasForLote } from "@/lib/actions/pending-operacoes";
 import { listComerciaisForSelector } from "@/lib/actions/comerciais";
 import { getAntecipaquiData } from "@/lib/antecipaqui-fundo";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 function fmtCNPJ(s: string) {
   const c = s.replace(/\D/g, "");
@@ -113,6 +114,9 @@ export default async function AdminInvoicePage({ searchParams }: Search) {
             repasse devido = resultado AQ × (pago no mês ÷ valor total da op)
           </span>
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-interno-invoice" />
+        </div>
       </div>
 
       {/* Filtros — período fica fora do form principal pra navegação direta */}

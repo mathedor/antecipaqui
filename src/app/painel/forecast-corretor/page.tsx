@@ -4,6 +4,7 @@ import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { getCorretorFinanceiro } from "@/lib/actions/corretor-financeiro";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Projeção pessoal · Painel" };
 export const dynamic = "force-dynamic";
@@ -41,6 +42,9 @@ export default async function CorretorForecastPage() {
           que já recebeu via antecipação esse ano + quanto pagou em juros pra
           adiantar.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-forecast-corretor" />
+        </div>
       </div>
 
       {/* KPIs topo */}

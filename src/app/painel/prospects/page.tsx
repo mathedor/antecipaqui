@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { listMyProspectPontos } from "@/lib/actions/comercial-prospects";
 import { ProspectsMap } from "@/components/dashboards/comercial-prospects-map";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Mapa de prospects" };
 export const dynamic = "force-dynamic";
@@ -37,6 +38,9 @@ export default async function ComercialProspectsPage() {
             </span>
           )}
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-prospects" />
+        </div>
       </div>
       <ProspectsMap
         initialPontos={pontos}

@@ -9,6 +9,7 @@ import { getFundoDetail } from "@/lib/actions/fundos";
 import { audit } from "@/lib/audit";
 import { formatBRL } from "@/lib/format";
 import { toBlobProxyHref } from "@/lib/blob-url";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Fundo" };
 
@@ -47,6 +48,9 @@ export default async function AdminFundoDetail({ params }: Params) {
           {fundo.nomeFantasia && (
             <p className="mt-1 text-fg-muted">{fundo.nomeFantasia}</p>
           )}
+          <div className="mt-2">
+            <PageHelp pageKey="admin-fundo-detalhe" />
+          </div>
           <div className="mt-3 flex items-center gap-3 flex-wrap">
             <span className="font-mono text-xs text-fg-muted">
               CNPJ {fundo.cnpj}

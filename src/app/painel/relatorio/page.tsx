@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/corretor-financeiro";
 import { getScoreCorretor, scoreColorClass } from "@/lib/scoring";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Relatório · Painel" };
 export const dynamic = "force-dynamic";
@@ -57,6 +58,9 @@ export default async function CorretorRelatorioPage() {
           quem você opera, custo histórico de antecipação e seu score como
           cedente.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-relatorio-corretor" />
+        </div>
       </div>
 
       {/* Score do corretor */}

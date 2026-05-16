@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { getCashbackSummaryForCurrentConstrutora } from "@/lib/actions/cashback";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { SolicitarSaqueForm } from "@/components/solicitar-saque-form";
 import { CashbackOpsTable } from "@/components/cashback-ops-table";
 import { formatBRL } from "@/lib/format";
@@ -26,6 +27,9 @@ export default async function CashbackPage() {
           sua construtora, concedido pela Antecipaqui na aprovação final. O
           saldo disponível pode ser sacado a qualquer momento.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-cashback" />
+        </div>
       </div>
 
       {!summary ? (

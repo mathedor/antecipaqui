@@ -9,6 +9,7 @@ import { formatBRL } from "@/lib/format";
 import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { scoreColorClass } from "@/lib/scoring";
 import { AdminAcaoOpForm } from "@/components/admin-acao-op-form";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Mesa de decisão" };
 export const dynamic = "force-dynamic";
@@ -65,6 +66,9 @@ export default async function AdminDecidirPage({ searchParams }: Search) {
           validação IA dos documentos e decomposição financeira inline. Decida
           em 30 segundos sem precisar entrar em cada op.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-decidir" />
+        </div>
       </div>
 
       {/* Filtros */}

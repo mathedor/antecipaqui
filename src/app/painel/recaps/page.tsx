@@ -9,6 +9,7 @@ import {
 } from "@/lib/recaps";
 import { RecapsManager } from "@/components/recaps-manager";
 import { getCurrentFundo } from "@/lib/actions/fundos";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Recaps · Fundo" };
 export const dynamic = "force-dynamic";
@@ -71,6 +72,9 @@ export default async function FundoRecapsPage({
           prazo médio de análise e antecipações. Gerados diariamente, semanal
           (segunda) e mensal (dia 1).
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-recaps" />
+        </div>
       </div>
 
       <RecapsManager

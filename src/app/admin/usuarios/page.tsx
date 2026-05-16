@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminUsuariosTable } from "@/components/admin-usuarios-table";
 import { listAllUsers } from "@/lib/actions/admin";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Admin · Usuários",
@@ -76,6 +77,9 @@ export default async function AdminUsuariosPage({ searchParams }: Search) {
             {construtoraUsers.length} construtoras · {adminUsers.length} admin
             {adminUsers.length === 1 ? "" : "s"}
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="admin-usuarios" />
+          </div>
         </div>
         <Link
           href="/admin/cadastrar/imobiliaria"

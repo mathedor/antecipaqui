@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Convites de operação" };
 
@@ -90,6 +91,9 @@ export default async function AdminConvitesPage({ searchParams }: Search) {
           {rows.length} {rows.length === 1 ? "convite" : "convites"} —{" "}
           comissão total {formatBRL(totalComissao)}
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-convites" />
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap mb-6">

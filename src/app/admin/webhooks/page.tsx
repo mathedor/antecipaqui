@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { WebhooksManager } from "@/components/webhooks-manager";
 import { listMeusWebhooks } from "@/lib/actions/webhooks";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Webhooks" };
 
@@ -21,6 +22,9 @@ export default async function AdminWebhooksPage() {
           <code className="font-mono">x-antecipaqui-signature</code>. Retry
           exponencial até 4 tentativas (1, 5, 25, 125 min).
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-webhooks" />
+        </div>
       </div>
       <WebhooksManager
         webhooks={webhooks.map((w) => ({

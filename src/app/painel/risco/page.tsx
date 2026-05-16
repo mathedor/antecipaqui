@@ -3,6 +3,7 @@ import Link from "next/link";
 import { sql } from "drizzle-orm";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { getFundoRisco } from "@/lib/actions/fundo-risco";
 import { getConstrutoraByOwnerId } from "@/lib/actions/operacoes";
 import { db } from "@/db";
@@ -56,6 +57,9 @@ export default async function PainelRiscoPage() {
           o % de exposição em uma única contraparte passa de 25% (alerta) ou
           40% (crítico), revise antes de novas operações.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-risco-fundo" />
+        </div>
       </div>
 
       {/* KPIs topo */}
@@ -428,6 +432,9 @@ async function ConstrutoraRisco({
           investidores. Concentrar 100% num só fundo aumenta risco operacional
           — se ele recusar futuras ops, você perde a fonte.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-risco-construtora" />
+        </div>
       </div>
 
       <div className="grid md:grid-cols-4 gap-3 mb-8">

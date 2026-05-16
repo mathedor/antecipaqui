@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { EmpreendimentosManager } from "@/components/empreendimentos-manager";
 import { listEmpreendimentosDaConstrutora } from "@/lib/actions/construtora-operacional";
 
@@ -28,6 +29,9 @@ export default async function EmpreendimentosPage() {
           pode ser linkada a um empreendimento — facilita relatórios e
           filtragem.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-empreendimentos" />
+        </div>
       </div>
 
       <EmpreendimentosManager

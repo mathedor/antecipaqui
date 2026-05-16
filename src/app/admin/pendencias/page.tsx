@@ -5,6 +5,7 @@ import {
   listAntecipacoesPendentes,
   listRenegociacoesPendentes,
 } from "@/lib/actions/pendencias-decisao";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Pendências" };
 
@@ -27,6 +28,9 @@ export default async function AdminPendenciasPage() {
           ou contate o fundo correspondente. Aprovar renegociação aplica a
           mudança automaticamente.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-pendencias" />
+        </div>
       </div>
 
       <PendenciasInbox

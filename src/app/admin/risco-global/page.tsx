@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { getRiscoGlobal } from "@/lib/actions/admin-risco-global";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Risco global" };
 export const dynamic = "force-dynamic";
@@ -27,6 +28,9 @@ export default async function AdminRiscoGlobalPage() {
           (somando todos os fundos) e comparativo de fundos pra negociar
           taxas, blacklists e regras.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-risco-global" />
+        </div>
       </div>
 
       {/* KPIs topo */}

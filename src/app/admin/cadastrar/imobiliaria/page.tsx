@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminCadastrarImobForm } from "@/components/admin-cadastrar-imob-form";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Cadastrar imobiliária" };
 
@@ -23,6 +24,9 @@ export default async function AdminCadastrarImobPage() {
         Cria a empresa cedente + dispara convite Clerk pro responsável definir
         senha e acessar o painel.
       </p>
+      <div className="mt-2 mb-6">
+        <PageHelp pageKey="admin-cadastrar-imobiliaria" />
+      </div>
 
       <AdminCadastrarImobForm />
     </AdminShell>

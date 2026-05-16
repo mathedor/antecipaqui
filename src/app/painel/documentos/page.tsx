@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { listDocumentosConstrutora } from "@/lib/actions/construtora-operacional";
 import { toBlobProxyHref } from "@/lib/blob-url";
 
@@ -73,6 +74,9 @@ export default async function DocumentosPage({ searchParams }: Search) {
           Todos os documentos anexados em qualquer operação ou no cadastro da
           sua construtora.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-documentos" />
+        </div>
       </div>
 
       <form

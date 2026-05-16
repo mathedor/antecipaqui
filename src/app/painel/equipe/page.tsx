@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { EquipeManager } from "@/components/equipe-manager";
 import { listMembrosConstrutora } from "@/lib/actions/construtora-membros";
 import {
@@ -40,6 +41,9 @@ export default async function EquipePage() {
             role tem permissões diferentes — corretor só vê os atendimentos
             dele, financeiro foca em extrato, owner manda em tudo.
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="painel-equipe-imob" />
+          </div>
         </div>
         <EquipeImobManager
           membros={membros}
@@ -80,6 +84,9 @@ export default async function EquipePage() {
           Convide colegas (financeiro, comercial, jurídico) pra acessarem o
           painel da sua construtora. Cada role vê apenas a área pertinente.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-equipe-construtora" />
+        </div>
       </div>
 
       <EquipeManager

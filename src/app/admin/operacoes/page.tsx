@@ -11,6 +11,7 @@ import {
   getAllOperacoes,
 } from "@/lib/actions/admin";
 import { listFundosForSelector } from "@/lib/actions/fundos";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Admin · Operações",
@@ -77,6 +78,9 @@ export default async function AdminOperacoesPage({ searchParams }: Search) {
           {operacoes.length}{" "}
           {operacoes.length === 1 ? "operação" : "operações"} no resultado
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-operacoes" />
+        </div>
       </div>
 
       {/* Stats agregados (sempre totais, não respeitam filtros) */}

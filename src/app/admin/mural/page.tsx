@@ -3,6 +3,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { AdminMuralForm } from "@/components/admin-mural-form";
 import { AdminMuralList } from "@/components/admin-mural-list";
 import { listAllMuralMessages } from "@/lib/actions/mural";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Admin · Mural de recados",
@@ -24,6 +25,9 @@ export default async function AdminMuralPage() {
           (imobiliária / corretor e/ou construtora). Útil pra avisar de nova
           taxa, cashback do dia, mudanças de fluxo etc.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-mural" />
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-12 gap-6">

@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminCadastrarComercialForm } from "@/components/admin-cadastrar-comercial-form";
 import { listFundosForSelector } from "@/lib/actions/fundos";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Cadastrar comercial" };
 
@@ -26,6 +27,9 @@ export default async function AdminCadastrarComercialPage() {
         física ou jurídica. Recebe convite Clerk por email pra definir senha
         e acessar o painel.
       </p>
+      <div className="mt-2 mb-6">
+        <PageHelp pageKey="admin-cadastrar-comercial" />
+      </div>
 
       <AdminCadastrarComercialForm fundos={fundos} />
     </AdminShell>

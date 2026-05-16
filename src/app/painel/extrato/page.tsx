@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import { getExtratoConstrutora } from "@/lib/actions/construtora-operacional";
 import { formatBRL } from "@/lib/format";
 
@@ -54,6 +55,9 @@ export default async function ExtratoPage({ searchParams }: Search) {
           Todas as parcelas (pagas, a vencer, vencidas) com totais por período.
           Exporta pra contabilidade em CSV ou PDF.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-extrato-construtora" />
+        </div>
       </div>
 
       <form

@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { CreditoConsultaForm } from "@/components/credito-consulta-form";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Análise de crédito" };
 
@@ -18,6 +19,9 @@ export default async function CreditoPage() {
           número de restrições. Cache por 30 dias por documento. Stub
           provider — Serasa/Boa Vista quando contratado.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-credito" />
+        </div>
       </div>
       <CreditoConsultaForm />
     </AdminShell>

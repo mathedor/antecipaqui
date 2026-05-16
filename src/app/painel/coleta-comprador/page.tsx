@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { ColetaCompradorManager } from "@/components/coleta-comprador-manager";
 import { listTokensColetaPendentes } from "@/lib/actions/corretor-velocidade";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Coleta de comprador" };
 
@@ -29,6 +30,9 @@ export default async function ColetaCompradorAdminPage() {
           (CPF, telefone, endereço). Você economiza tempo e evita erro de
           digitação. Link válido por 24h.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-coleta-comprador" />
+        </div>
       </div>
 
       <ColetaCompradorManager

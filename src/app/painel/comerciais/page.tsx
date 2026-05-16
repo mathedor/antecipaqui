@@ -8,6 +8,7 @@ import {
   listComerciaisDoFundo,
 } from "@/lib/actions/comercial-desempenho";
 import { formatBRLcompact } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Comerciais vinculados" };
 export const dynamic = "force-dynamic";
@@ -46,6 +47,9 @@ export default async function FundoComerciaisPage() {
           Veja o desempenho de cada um — desde faturamento até prospecção
           de novos clientes.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-comerciais-fundo" />
+        </div>
       </div>
 
       {linhas.length === 0 ? (

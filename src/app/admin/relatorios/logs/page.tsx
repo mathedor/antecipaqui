@@ -5,6 +5,7 @@ import {
   getAuditLogsForViewer,
   getDistinctAuditActions,
 } from "@/lib/actions/reports-extra";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Logs de auditoria" };
 
@@ -71,6 +72,9 @@ export default async function AdminLogsPage({ searchParams }: Search) {
           {logs.length} {logs.length === 1 ? "evento" : "eventos"} no resultado
           (limite 200, ordem decrescente)
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-relatorios-logs" />
+        </div>
       </div>
 
       {/* Filtros */}

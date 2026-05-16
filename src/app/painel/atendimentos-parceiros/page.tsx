@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
+import { PageHelp } from "@/components/page-help";
 import {
   getTopParceirosConstrutora,
   listAtendimentosObservandoComoConstrutora,
@@ -50,6 +51,9 @@ export default async function AtendimentosParceirosPage() {
           Imobiliárias parceiras te convidam pra acompanhar negociações ativas.
           Você vê a timeline, comenta e responde quando opinião for solicitada.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-atendimentos-parceiros" />
+        </div>
       </div>
 
       {/* KPIs */}

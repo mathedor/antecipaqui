@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminConstrutorasTable } from "@/components/admin-construtoras-table";
 import { listAllConstrutoras } from "@/lib/actions/admin";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Admin · Construtoras",
@@ -50,6 +51,9 @@ export default async function AdminConstrutorasPage({
             {list.length} {list.length === 1 ? "construtora" : "construtoras"}{" "}
             cadastradas
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="admin-construtoras" />
+          </div>
         </div>
         <Link
           href="/admin/cadastrar/construtora"

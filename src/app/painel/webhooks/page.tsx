@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { WebhooksManager } from "@/components/webhooks-manager";
 import { listMeusWebhooks } from "@/lib/actions/webhooks";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Webhooks" };
 
@@ -23,6 +24,9 @@ export default async function FundoWebhooksPage() {
           Cada delivery vai assinado com HMAC-SHA256 no header{" "}
           <code className="font-mono">x-antecipaqui-signature</code>.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-webhooks" />
+        </div>
       </div>
       <WebhooksManager
         webhooks={webhooks.map((w) => ({

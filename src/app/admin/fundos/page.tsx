@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminFundosTable } from "@/components/admin-fundos-table";
 import { listAllFundos } from "@/lib/actions/fundos";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Fundos" };
 
@@ -23,6 +24,9 @@ export default async function AdminFundosPage() {
             {list.length === 1 ? "" : "s"} — cada um com taxa-base, contrato e
             login próprios
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="admin-fundos" />
+          </div>
         </div>
         <Link href="/admin/fundos/novo" className="btn-primary !h-11 !px-5">
           + Novo fundo

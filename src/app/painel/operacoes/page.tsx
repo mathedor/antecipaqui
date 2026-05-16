@@ -23,6 +23,8 @@ import {
   OperacoesStatBoxes,
 } from "@/components/operacoes-stats";
 import { painelRole } from "@/lib/painel-role";
+import { PageHelp } from "@/components/page-help";
+import type { PageHelpKey } from "@/lib/page-helps";
 
 export const metadata = {
   title: "Operações",
@@ -226,6 +228,13 @@ export default async function OperacoesPage({ searchParams }: Search) {
         : "operações";
 
   const role = painelRole(user.role);
+  const opPageKey: PageHelpKey = isFundo
+    ? "painel-operacoes-fundo"
+    : isConstrutora
+      ? "painel-operacoes-construtora"
+      : isComercial
+        ? "painel-operacoes-comercial"
+        : "painel-operacoes-corretor";
 
   return (
     <PainelShell role={role} userName={user.nome} active="/painel/operacoes">
@@ -239,6 +248,9 @@ export default async function OperacoesPage({ searchParams }: Search) {
             {operacoes.length}{" "}
             {operacoes.length === 1 ? "operação" : "operações"} no resultado
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey={opPageKey} />
+          </div>
         </div>
         {!isConstrutora && (
           <Link

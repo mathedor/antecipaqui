@@ -20,6 +20,7 @@ import { FundoCadastrarOperacaoForm } from "@/components/fundo-cadastrar-operaca
 import { ImportarContratoForm } from "@/components/importar-contrato-form";
 import { PainelShell } from "@/components/painel-shell";
 import { painelRole } from "@/lib/painel-role";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Nova operação",
@@ -55,6 +56,9 @@ export default async function NovaOperacaoPage({ searchParams }: Search) {
             Cadastre uma operação em nome de uma imobiliária / corretor
             existente. A operação fica vinculada ao seu fundo automaticamente.
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="painel-operacoes-nova" />
+          </div>
         </div>
         <FundoCadastrarOperacaoForm
           corretores={corretoresF}
@@ -90,6 +94,9 @@ export default async function NovaOperacaoPage({ searchParams }: Search) {
             Você fica como comercial responsável e recebe comissão quando a
             operação for realizada.
           </p>
+          <div className="mt-2">
+            <PageHelp pageKey="painel-operacoes-nova" />
+          </div>
         </div>
         <FundoCadastrarOperacaoForm
           mode="comercial"
@@ -177,6 +184,9 @@ export default async function NovaOperacaoPage({ searchParams }: Search) {
         <p className="mt-2 text-fg-muted">
           Preencha o formulário ou importe um contrato e deixe a IA preencher.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-operacoes-nova" />
+        </div>
       </div>
 
       {docsFaltando.length > 0 ? (

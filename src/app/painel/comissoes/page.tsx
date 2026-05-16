@@ -4,6 +4,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { listMinhasComissoes } from "@/lib/actions/comissoes-comercial";
 import { formatBRL } from "@/lib/format";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Comissões" };
 
@@ -50,6 +51,9 @@ export default async function ComissoesComercialPage() {
           Histórico detalhado de comissões por operação carteirizada.
           Comissão = 10% do lucro líquido AQ (spread/2 × 0,82 × 0,10).
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-comissoes" />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-6">

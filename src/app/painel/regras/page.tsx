@@ -6,6 +6,7 @@ import { listRegrasFundo } from "@/lib/actions/fundo-mesa";
 import { formatBRL } from "@/lib/format";
 import { CriarRegraForm } from "@/components/criar-regra-form";
 import { RegraToggleButtons } from "@/components/regra-toggle-buttons";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Regras · Painel do fundo" };
 export const dynamic = "force-dynamic";
@@ -37,6 +38,9 @@ export default async function FundoRegrasPage() {
           prioridade — se a op satisfaz <strong>todos</strong> os critérios de
           alguma regra, é auto-aprovada e creditada à regra que disparou.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-regras" />
+        </div>
       </div>
 
       {/* Form criar */}

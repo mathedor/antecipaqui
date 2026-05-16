@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminFundoForm } from "@/components/admin-fundo-form";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Novo fundo (avançado)" };
 
@@ -28,6 +29,9 @@ export default async function AdminNovoFundoAvancadoPage() {
         </Link>{" "}
         se quiser passos curtos com auto-preenchimento via CNPJ.
       </p>
+      <div className="mt-2 mb-6">
+        <PageHelp pageKey="admin-fundos-novo" />
+      </div>
 
       <AdminFundoForm />
     </AdminShell>

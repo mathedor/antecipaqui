@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Admin · Relatórios",
@@ -108,6 +109,9 @@ export default async function RelatoriosIndexPage() {
           Rankings, comparativos e métricas operacionais. Todos os relatórios
           aceitam filtros de período, status do cadastro e status da operação.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-relatorios" />
+        </div>
       </div>
 
       <div className="space-y-10">

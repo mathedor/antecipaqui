@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { TicketStatusBadge } from "@/components/ticket-status-badge";
 import { listMyChats } from "@/lib/actions/chat";
 import { chatCategoriaLabel } from "@/lib/chat-helpers";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = {
   title: "Admin · Tickets",
@@ -96,6 +97,9 @@ export default async function AdminTicketsPage({ searchParams }: Search) {
             </span>
           )}
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-tickets" />
+        </div>
       </div>
 
       {/* Filtros */}

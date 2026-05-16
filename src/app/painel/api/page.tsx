@@ -5,6 +5,7 @@ import { listApiKeys } from "@/lib/actions/fundo-api-keys";
 import { CriarApiKeyForm } from "@/components/criar-api-key-form";
 import { RevogarApiKeyButton } from "@/components/revogar-api-key-button";
 import { ApiEndpointCard } from "@/components/api-endpoint-card";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "API · Painel do fundo" };
 export const dynamic = "force-dynamic";
@@ -39,6 +40,9 @@ export default async function PainelApiPage() {
           seu próprio sistema. Cada API key é vinculada exclusivamente ao seu
           fundo — não vê dados de outros fundos.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-api" />
+        </div>
       </div>
 
       <section className="rounded-2xl border border-accent/30 bg-accent-soft p-5 md:p-6 mb-6 max-w-4xl">

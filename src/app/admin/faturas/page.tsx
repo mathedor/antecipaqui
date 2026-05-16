@@ -8,6 +8,7 @@ import {
 import { formatBRL } from "@/lib/format";
 import { GerarFaturasForm } from "@/components/gerar-faturas-form";
 import { MarcarFaturaPagaButton } from "@/components/marcar-fatura-paga-button";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Admin · Faturas dos fundos" };
 export const dynamic = "force-dynamic";
@@ -72,6 +73,9 @@ export default async function AdminFaturasPage() {
           a partir do Invoice; depois marque como paga conforme o fundo for
           repassando.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="admin-faturas" />
+        </div>
       </div>
 
       {/* KPIs */}

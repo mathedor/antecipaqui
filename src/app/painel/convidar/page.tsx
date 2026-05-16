@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { listMyConviteLinks } from "@/lib/actions/comercial-convite";
 import { ConviteLinksManager } from "@/components/dashboards/comercial-convite-manager";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Link de convite" };
 export const dynamic = "force-dynamic";
@@ -33,6 +34,9 @@ export default async function ComercialConvidarPage() {
           sem você precisar avisar o admin. Cada link tem contador de cliques
           e conversões.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-convidar" />
+        </div>
       </div>
       <ConviteLinksManager initialLinks={links} siteUrl={siteUrl} />
     </PainelShell>

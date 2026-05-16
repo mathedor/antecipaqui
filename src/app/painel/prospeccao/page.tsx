@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { listMyLeads } from "@/lib/actions/comercial-leads";
 import { LeadsKanban } from "@/components/dashboards/comercial-leads-kanban";
+import { PageHelp } from "@/components/page-help";
 
 export const metadata = { title: "Prospecção" };
 export const dynamic = "force-dynamic";
@@ -29,6 +30,9 @@ export default async function ComercialProspeccaoPage() {
           conforme avança. Quando virar fechado, vincule à imobiliária
           cadastrada pra trackear o ROI da prospecção.
         </p>
+        <div className="mt-2">
+          <PageHelp pageKey="painel-prospeccao" />
+        </div>
       </div>
       <LeadsKanban initialLeads={leads} />
     </PainelShell>
