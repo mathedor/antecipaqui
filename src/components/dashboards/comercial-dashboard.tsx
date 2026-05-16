@@ -24,6 +24,8 @@ import {
   getComercialMeta,
   getComercialProjecoes,
 } from "@/lib/actions/comercial-acoes";
+import { getComercialConquistas } from "@/lib/actions/comercial-conquistas";
+import { ConquistasGrid } from "@/components/dashboards/comercial-conquistas";
 import { formatBRL, formatBRLcompact } from "@/lib/format";
 import type { User } from "@/db/schema";
 
@@ -54,6 +56,7 @@ export async function ComercialDashboard({ user }: { user: User }) {
     meta,
     carteira,
     proj,
+    conquistasData,
   ] = await Promise.all([
     getComercialDashboard(comercial.id),
     getComercialCalendario(comercial.id, 90),
@@ -63,6 +66,7 @@ export async function ComercialDashboard({ user }: { user: User }) {
     getComercialMeta(comercial.id),
     getComercialCarteira(comercial.id),
     getComercialProjecoes(comercial.id),
+    getComercialConquistas(comercial.id),
   ]);
 
   const ultimas = data.operacoes.slice(0, 6);
@@ -98,6 +102,15 @@ export async function ComercialDashboard({ user }: { user: User }) {
 
       {/* === 2. META DO MÊS === */}
       <MetaProgress meta={meta} />
+
+      {/* === 2.5. CONQUISTAS === */}
+      <div className="mb-6">
+        <ConquistasGrid
+          conquistas={conquistasData.conquistas}
+          streak={conquistasData.streak}
+          compact
+        />
+      </div>
 
       {/* === 3. CARTEIRA VIVA + PROJEÇÕES === */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">

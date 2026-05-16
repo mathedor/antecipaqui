@@ -99,7 +99,13 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/prospeccao", label: "Prospecção" },
     { href: "/painel/daily", label: "Daily" },
-    { href: "/painel/comissoes", label: "Comissões" },
+    {
+      label: "Financeiro",
+      submenu: [
+        { href: "/painel/comissoes", label: "Comissões" },
+        { href: "/painel/comissoes/holerite", label: "Holerite mensal" },
+      ],
+    },
     { href: "/painel/relatorios", label: "Relatórios" },
     {
       label: "Gestão",
@@ -319,8 +325,14 @@ const MOBILE_FULLMENU: Record<
         { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
         { href: "/painel/prospeccao", label: "Prospecção", icon: "tag" },
         { href: "/painel/daily", label: "Daily", icon: "table" },
-        { href: "/painel/comissoes", label: "Comissões", icon: "money" },
         { href: "/painel/relatorios", label: "Relatórios", icon: "report" },
+      ],
+    },
+    {
+      section: "financeiro",
+      items: [
+        { href: "/painel/comissoes", label: "Comissões", icon: "money" },
+        { href: "/painel/comissoes/holerite", label: "Holerite mensal", icon: "money" },
       ],
     },
     {
