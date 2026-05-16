@@ -6,6 +6,7 @@ import { getCurrentDbUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { PerfilForm } from "@/components/perfil-form";
 import { FundoSelfEditForm } from "@/components/fundo-self-edit-form";
+import { painelRole } from "@/lib/painel-role";
 
 export const metadata = { title: "Editar dados" };
 
@@ -43,15 +44,7 @@ export default async function PerfilPage() {
       .then((r) => r[0] ?? null),
   ]);
 
-  const role = (
-    user.role === "fundo"
-      ? "fundo"
-      : user.role === "construtora"
-        ? "construtora"
-        : user.role === "imobiliaria"
-          ? "imobiliaria"
-          : "corretor"
-  ) as "construtora" | "imobiliaria" | "corretor" | "fundo";
+  const role = painelRole(user.role);
 
   return (
     <PainelShell role={role} userName={user.nome} active="/painel/perfil">
