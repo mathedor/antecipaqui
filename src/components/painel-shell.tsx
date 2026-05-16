@@ -9,6 +9,7 @@ import { getImpersonationStatus } from "@/lib/actions/admin-impersonate";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { ComercialTourMount } from "@/components/onboarding/comercial-tour-mount";
 import { CorretorTourMount } from "@/components/onboarding/corretor-tour-mount";
+import { CorretorEquipeTourMount } from "@/components/onboarding/corretor-equipe-tour-mount";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { getCurrentImobMembership } from "@/lib/actions/imobiliaria-membros";
 import {
@@ -437,7 +438,12 @@ export async function PainelShell({
   // tutorialsCompleted.<tourId>). Reabertura via dropdown não persiste.
   let comercialTourAutoOpen = false;
   let corretorTourAutoOpen = false;
+  let corretorEquipeTourAutoOpen = false;
   let isImobOwner = false;
+  // Membro = tem vinculo com imob mas roleInterna !== 'owner'.
+  // Solo = sem nenhum vinculo. Owner = canManageMembros.
+  let isImobMembro = false;
+  let imobNome = "";
   if (role === "comercial") {
     const me = await getCurrentDbUser();
     const tcs =
@@ -450,8 +456,14 @@ export async function PainelShell({
     ]);
     const tcs =
       (me?.tutorialsCompleted as Record<string, string> | null) ?? {};
-    corretorTourAutoOpen = !tcs.corretor;
     isImobOwner = mem?.canManageMembros ?? false;
+    isImobMembro = !!mem && mem.roleInterna !== "owner";
+    imobNome = mem?.imobiliariaRazaoSocial ?? "";
+    if (isImobMembro) {
+      corretorEquipeTourAutoOpen = !tcs["corretor-equipe"];
+    } else {
+      corretorTourAutoOpen = !tcs.corretor;
+    }
   }
   const navAll = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
   const nav = allowedHrefs
@@ -477,10 +489,16 @@ export async function PainelShell({
       {role === "comercial" && (
         <ComercialTourMount autoOpen={comercialTourAutoOpen} />
       )}
-      {(role === "corretor" || role === "imobiliaria") && (
+      {(role === "corretor" || role === "imobiliaria") && !isImobMembro && (
         <CorretorTourMount
           autoOpen={corretorTourAutoOpen}
           isImobOwner={isImobOwner}
+        />
+      )}
+      {(role === "corretor" || role === "imobiliaria") && isImobMembro && (
+        <CorretorEquipeTourMount
+          autoOpen={corretorEquipeTourAutoOpen}
+          imobNome={imobNome}
         />
       )}
       <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-xl border-b border-border">
@@ -535,7 +553,9 @@ export async function PainelShell({
                   role === "comercial"
                     ? "comercial"
                     : role === "corretor" || role === "imobiliaria"
-                      ? "corretor"
+                      ? isImobMembro
+                        ? "corretor-equipe"
+                        : "corretor"
                       : null
                 }
               />
