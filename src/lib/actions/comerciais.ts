@@ -52,6 +52,8 @@ export async function cadastrarComercialAction(
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const telefone =
     String(formData.get("telefone") || "").replace(/\D/g, "") || null;
+  const fundoIdRaw = String(formData.get("fundoId") || "").trim();
+  const fundoId = fundoIdRaw && fundoIdRaw !== "_none_" ? fundoIdRaw : null;
 
   // Validações
   if (!nomeCompleto)
@@ -158,6 +160,7 @@ export async function cadastrarComercialAction(
       uf,
       email,
       telefone,
+      fundoId,
     })
     .returning({ id: comerciais.id });
 
@@ -213,6 +216,10 @@ export async function editComercialAction(
       email: String(formData.get("email") || "").trim().toLowerCase(),
       telefone:
         String(formData.get("telefone") || "").replace(/\D/g, "") || null,
+      fundoId: (() => {
+        const v = String(formData.get("fundoId") || "").trim();
+        return v && v !== "_none_" ? v : null;
+      })(),
       updatedAt: new Date(),
     })
     .where(eq(comerciais.id, comercialId));

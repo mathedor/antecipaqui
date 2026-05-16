@@ -313,7 +313,51 @@ export async function buscarGooglePlacesPorCoords(input: {
   };
 }
 
-/** Salva um item retornado pelo Places como ponto do comercial. */
+/** Busca detalhes completos de um Place (telefone, website, endereço
+ *  formatado, horário). Google Places NÃO retorna email — privacidade. */
+async function fetchPlaceDetails(placeId: string): Promise<{
+  telefone: string | null;
+  website: string | null;
+  enderecoFormatado: string | null;
+} | null> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return null;
+  const params = new URLSearchParams({
+    place_id: placeId,
+    fields: "formatted_phone_number,international_phone_number,website,formatted_address",
+    key: apiKey,
+    language: "pt-BR",
+  });
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`,
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      status?: string;
+      result?: {
+        formatted_phone_number?: string;
+        international_phone_number?: string;
+        website?: string;
+        formatted_address?: string;
+      };
+    };
+    if (data.status !== "OK" || !data.result) return null;
+    return {
+      telefone:
+        data.result.international_phone_number ??
+        data.result.formatted_phone_number ??
+        null,
+      website: data.result.website ?? null,
+      enderecoFormatado: data.result.formatted_address ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Salva um item retornado pelo Places como ponto do comercial.
+ *  Faz Place Details em segundo plano pra puxar telefone/website. */
 export async function saveProspectPontoFromGoogle(
   input: GooglePlaceItem & {
     categoria: "imobiliaria" | "construtora";
@@ -336,6 +380,9 @@ export async function saveProspectPontoFromGoogle(
     .limit(1);
   if (dup[0]) return { ok: false, error: "Já está no seu mapa" };
 
+  // Place Details pra completar dados que o Nearby Search não traz
+  const details = await fetchPlaceDetails(input.placeId);
+
   const [row] = await db
     .insert(comercialProspectPontos)
     .values({
@@ -343,12 +390,12 @@ export async function saveProspectPontoFromGoogle(
       googlePlaceId: input.placeId,
       nome: input.nome,
       categoria: input.categoria,
-      endereco: input.endereco,
+      endereco: details?.enderecoFormatado ?? input.endereco,
       lat: String(input.lat),
       lng: String(input.lng),
-      telefone: input.telefone ?? null,
+      telefone: input.telefone ?? details?.telefone ?? null,
       email: input.email ?? null,
-      website: null,
+      website: details?.website ?? null,
     })
     .returning({ id: comercialProspectPontos.id });
 

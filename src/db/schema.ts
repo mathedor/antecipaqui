@@ -244,6 +244,11 @@ export const comerciais = pgTable(
     email: text("email").notNull(),
     /** Telefone com WhatsApp. */
     telefone: text("telefone"),
+    /** Se o comercial trabalha exclusivamente pra um fundo específico,
+     *  esse campo guarda o fundo dono. NULL = comercial generalista
+     *  (atende qualquer fundo). FK validada em runtime. Quando vinculado,
+     *  o fundo vê o desempenho dele no painel próprio. */
+    fundoId: uuid("fundo_id"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -256,6 +261,7 @@ export const comerciais = pgTable(
     uniqueIndex("comerciais_documento_idx").on(t.documento),
     index("comerciais_owner_idx").on(t.ownerUserId),
     index("comerciais_email_idx").on(t.email),
+    index("comerciais_fundo_idx").on(t.fundoId),
   ],
 );
 

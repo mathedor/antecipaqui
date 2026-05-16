@@ -6,6 +6,7 @@ import { comerciais } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminCadastrarComercialForm } from "@/components/admin-cadastrar-comercial-form";
+import { listFundosForSelector } from "@/lib/actions/fundos";
 
 export const metadata = { title: "Admin · Editar comercial" };
 
@@ -20,6 +21,7 @@ export default async function AdminEditarComercial({ params }: Params) {
     .where(eq(comerciais.id, id))
     .limit(1);
   if (!c) notFound();
+  const fundos = await listFundosForSelector();
 
   return (
     <AdminShell active="/admin/comerciais" userName={admin.nome}>
@@ -36,7 +38,7 @@ export default async function AdminEditarComercial({ params }: Params) {
         Altera dados, contatos e endereço. O email é também o login.
       </p>
 
-      <AdminCadastrarComercialForm comercial={c} />
+      <AdminCadastrarComercialForm comercial={c} fundos={fundos} />
     </AdminShell>
   );
 }

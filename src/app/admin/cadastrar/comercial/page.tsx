@@ -2,11 +2,13 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { AdminCadastrarComercialForm } from "@/components/admin-cadastrar-comercial-form";
+import { listFundosForSelector } from "@/lib/actions/fundos";
 
 export const metadata = { title: "Admin · Cadastrar comercial" };
 
 export default async function AdminCadastrarComercialPage() {
   const admin = await requireAdmin();
+  const fundos = await listFundosForSelector();
 
   return (
     <AdminShell active="/admin/cadastrar" userName={admin.nome}>
@@ -25,7 +27,7 @@ export default async function AdminCadastrarComercialPage() {
         e acessar o painel.
       </p>
 
-      <AdminCadastrarComercialForm />
+      <AdminCadastrarComercialForm fundos={fundos} />
     </AdminShell>
   );
 }

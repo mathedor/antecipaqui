@@ -80,6 +80,12 @@ export default async function AdminComercialDetail({ params }: Params) {
             nome={comercial.nomeCompleto}
           />
           <Link
+            href={`/admin/comerciais/${id}/desempenho`}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-accent text-white hover:bg-accent-dark font-semibold text-sm transition-colors"
+          >
+            📊 Desempenho 360
+          </Link>
+          <Link
             href={`/admin/comerciais/${id}/editar`}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"
           >

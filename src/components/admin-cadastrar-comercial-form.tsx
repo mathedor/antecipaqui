@@ -11,11 +11,18 @@ import { useFeedback } from "@/components/feedback-provider";
 import { maskCNPJ, maskCPF, maskPhone } from "@/lib/cnpj";
 import type { Comercial } from "@/db/schema";
 
-type Props = {
-  comercial?: Comercial;
+type FundoOption = {
+  id: string;
+  nomeFantasia: string | null;
+  razaoSocial: string;
 };
 
-export function AdminCadastrarComercialForm({ comercial }: Props) {
+type Props = {
+  comercial?: Comercial;
+  fundos?: FundoOption[];
+};
+
+export function AdminCadastrarComercialForm({ comercial, fundos = [] }: Props) {
   const router = useRouter();
   const { alertSuccess, alertError } = useFeedback();
   const isEdit = Boolean(comercial);
@@ -177,6 +184,27 @@ export function AdminCadastrarComercialForm({ comercial }: Props) {
             />
           </Field>
         </Grid>
+      </Card>
+
+      {/* Vinculação ao fundo */}
+      <Card
+        title="Vinculação ao fundo"
+        subtitle="Se este comercial trabalha exclusivamente para um fundo específico, selecione. O fundo passa a ver o desempenho dele no próprio painel. Comerciais sem vínculo atendem qualquer fundo."
+      >
+        <Field label="Fundo vinculado (opcional)">
+          <select
+            name="fundoId"
+            defaultValue={comercial?.fundoId ?? "_none_"}
+            className="form-input"
+          >
+            <option value="_none_">— sem vínculo (generalista) —</option>
+            {fundos.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nomeFantasia ?? f.razaoSocial}
+              </option>
+            ))}
+          </select>
+        </Field>
       </Card>
 
       <button type="submit" disabled={pending} className="btn-primary !h-12 !px-6">

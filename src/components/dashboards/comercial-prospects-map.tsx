@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import L from "leaflet";
@@ -31,10 +31,6 @@ const Marker = dynamic(
 );
 const Popup = dynamic(
   () => import("react-leaflet").then((m) => m.Popup),
-  { ssr: false },
-);
-const Circle = dynamic(
-  () => import("react-leaflet").then((m) => m.Circle),
   { ssr: false },
 );
 
@@ -88,9 +84,8 @@ export function ProspectsMap({
   googlePlacesEnabled: boolean;
 }) {
   const router = useRouter();
-  const [pontos] = useState(initialPontos);
-  const [selectedPonto, setSelectedPonto] =
-    useState<ComercialProspectPonto | null>(null);
+  // initialPontos vem direto do server component após router.refresh()
+  const pontos = initialPontos;
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
@@ -199,17 +194,11 @@ export function ProspectsMap({
                   pontoMarkerColor(p),
                   p.categoria === "construtora" ? "C" : "I",
                 )}
-                eventHandlers={{
-                  click: () => setSelectedPonto(p),
-                }}
               >
                 <Popup>
                   <PopupContent
                     ponto={p}
-                    onDone={() => {
-                      router.refresh();
-                      setSelectedPonto(null);
-                    }}
+                    onDone={() => router.refresh()}
                   />
                 </Popup>
               </Marker>
@@ -269,6 +258,7 @@ function PopupContent({
 }) {
   const [pending, startTransition] = useTransition();
   const isCliente = !!(ponto.imobiliariaId || ponto.construtoraId);
+  const jaLead = ponto.status === "virou_lead";
 
   const msgImob = `Oi! Sou da Antecipaqui — plataforma de antecipação de comissão imobiliária. Estamos olhando o mercado da sua região e queria te convidar pra conhecer. Pode dar uma olhada em ${SITE_URL}/apresentacao/imobiliaria? Se fizer sentido, podemos marcar uma conversa de 15 min.`;
   const msgConstr = `Oi! Sou da Antecipaqui. Trabalhamos com antecipação de comissão de corretores que vendem imóveis da sua construtora — ajuda a girar o time comercial. Quer dar uma olhada em ${SITE_URL}/apresentacao/construtora? Posso explicar em 15 min como funciona.`;
@@ -280,72 +270,78 @@ function PopupContent({
   const mailtoUrl = ponto.email
     ? `mailto:${ponto.email}?subject=${encodeURIComponent("Antecipaqui — apresentação")}&body=${encodeURIComponent(msg)}`
     : null;
+  const statusLabel = STATUS_LABEL[ponto.status] ?? ponto.status;
 
   return (
-    <div style={{ minWidth: 240 }} className="space-y-2 text-sm">
+    <div style={{ minWidth: 280, maxWidth: 320 }} className="space-y-2.5 text-sm">
       <div>
-        <div className="font-bold text-fg">{ponto.nome}</div>
-        <div className="text-[11px] text-fg-muted">
-          {ponto.categoria === "imobiliaria" ? "Imobiliária" : "Construtora"}
+        <div className="font-bold text-base text-fg leading-tight">
+          {ponto.nome}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap mt-0.5">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-fg-muted">
+            {ponto.categoria === "imobiliaria" ? "Imobiliária" : "Construtora"}
+          </span>
+          <span
+            className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded text-white"
+            style={{
+              background:
+                isCliente
+                  ? "#dc2626"
+                  : STATUS_COLOR[ponto.status] ?? "#94a3b8",
+            }}
+          >
+            {isCliente ? "já cliente" : statusLabel}
+          </span>
         </div>
       </div>
-      {ponto.endereco && (
-        <div className="text-[11px] text-fg-muted">{ponto.endereco}</div>
-      )}
+
       {isCliente && (
-        <div className="rounded bg-red-50 border border-red-200 px-2 py-1 text-[11px] text-red-700">
+        <div className="rounded bg-red-50 border border-red-200 px-2 py-1.5 text-[11px] text-red-700">
           ⚠️ Já é cliente AQ — não prospectar
         </div>
       )}
-      {ponto.telefone && (
-        <div className="text-[11px] text-fg">
-          📱 <span className="font-mono">{ponto.telefone}</span>
-        </div>
-      )}
-      {ponto.email && (
-        <div className="text-[11px] text-fg">
-          ✉ <span className="font-mono">{ponto.email}</span>
-        </div>
-      )}
+
+      {/* Dados de contato */}
+      <div className="space-y-1 rounded bg-gray-50 px-2.5 py-2">
+        {ponto.endereco && (
+          <div className="text-[11px] text-fg-muted leading-snug">
+            📍 {ponto.endereco}
+          </div>
+        )}
+        {ponto.telefone ? (
+          <div className="text-[11px] text-fg">
+            📱 <span className="font-mono font-semibold">{ponto.telefone}</span>
+          </div>
+        ) : !isCliente && (
+          <div className="text-[10px] text-fg-dim italic">
+            Sem telefone (Google não retornou)
+          </div>
+        )}
+        {ponto.email && (
+          <div className="text-[11px] text-fg break-all">
+            ✉ <span className="font-mono">{ponto.email}</span>
+          </div>
+        )}
+        {ponto.website && (
+          <div className="text-[11px] text-fg break-all">
+            🌐{" "}
+            <a
+              href={ponto.website}
+              target="_blank"
+              rel="noopener"
+              className="text-accent hover:underline"
+            >
+              {ponto.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+            </a>
+          </div>
+        )}
+      </div>
+
       {!isCliente && (
         <>
-          <div className="flex flex-wrap gap-1.5 pt-2">
-            {waUrl && (
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener"
-                className="inline-flex items-center gap-1 h-7 px-2 rounded text-[11px] bg-green-600 text-white hover:bg-green-700 no-underline"
-              >
-                💬 WhatsApp
-              </a>
-            )}
-            {mailtoUrl && (
-              <a
-                href={mailtoUrl}
-                className="inline-flex items-center gap-1 h-7 px-2 rounded text-[11px] bg-blue-600 text-white hover:bg-blue-700 no-underline"
-              >
-                ✉ Email
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                startTransition(async () => {
-                  await updateProspectPontoStatus({
-                    id: ponto.id,
-                    status: "contactado",
-                  });
-                  onDone();
-                })
-              }
-              disabled={pending}
-              className="inline-flex items-center gap-1 h-7 px-2 rounded text-[11px] border border-gray-300 hover:bg-gray-100"
-            >
-              ✓ Marcar contactado
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
+          {/* CTA principal — adicionar ao kanban (botão grande) */}
+          {!jaLead && (
             <button
               type="button"
               onClick={() =>
@@ -354,10 +350,60 @@ function PopupContent({
                   onDone();
                 })
               }
-              disabled={pending || ponto.status === "virou_lead"}
-              className="inline-flex items-center gap-1 h-7 px-2 rounded text-[11px] bg-accent text-white hover:bg-accent-dark disabled:opacity-50"
+              disabled={pending}
+              className="w-full h-10 rounded-lg bg-accent text-white text-sm font-bold hover:bg-accent-dark disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              → Promover pra lead
+              {pending ? "..." : "→ Adicionar ao Pipeline (Kanban)"}
+            </button>
+          )}
+          {jaLead && (
+            <div className="w-full h-10 rounded-lg bg-success/15 text-success text-xs font-bold flex items-center justify-center gap-2">
+              ✓ Já está no Pipeline
+            </div>
+          )}
+
+          {/* Contato */}
+          <div className="flex flex-wrap gap-1.5">
+            {waUrl && (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener"
+                className="flex-1 min-w-[110px] inline-flex items-center justify-center gap-1 h-9 px-2 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 no-underline"
+              >
+                💬 WhatsApp
+              </a>
+            )}
+            {mailtoUrl && (
+              <a
+                href={mailtoUrl}
+                className="flex-1 min-w-[110px] inline-flex items-center justify-center gap-1 h-9 px-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 no-underline"
+              >
+                ✉ Email
+              </a>
+            )}
+          </div>
+
+          {/* Ações secundárias */}
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() =>
+                startTransition(async () => {
+                  await updateProspectPontoStatus({
+                    id: ponto.id,
+                    status:
+                      ponto.status === "contactado" ? "novo" : "contactado",
+                  });
+                  onDone();
+                })
+              }
+              disabled={pending}
+              className="flex-1 inline-flex items-center justify-center h-7 px-2 rounded text-[11px] border border-gray-300 hover:bg-gray-100"
+            >
+              {ponto.status === "contactado"
+                ? "↺ desmarcar"
+                : "✓ marcar contactado"}
             </button>
             <button
               type="button"
@@ -369,7 +415,8 @@ function PopupContent({
                 });
               }}
               disabled={pending}
-              className="inline-flex items-center gap-1 h-7 px-2 rounded text-[11px] border border-red-300 text-red-700 hover:bg-red-50"
+              className="inline-flex items-center justify-center h-7 px-2 rounded text-[11px] border border-red-300 text-red-700 hover:bg-red-50"
+              title="Remover"
             >
               ✕
             </button>
