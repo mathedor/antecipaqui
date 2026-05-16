@@ -10,6 +10,7 @@ import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { ComercialTourMount } from "@/components/onboarding/comercial-tour-mount";
 import { CorretorTourMount } from "@/components/onboarding/corretor-tour-mount";
 import { CorretorEquipeTourMount } from "@/components/onboarding/corretor-equipe-tour-mount";
+import { FundoTourMount } from "@/components/onboarding/fundo-tour-mount";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { getCurrentImobMembership } from "@/lib/actions/imobiliaria-membros";
 import {
@@ -439,6 +440,7 @@ export async function PainelShell({
   let comercialTourAutoOpen = false;
   let corretorTourAutoOpen = false;
   let corretorEquipeTourAutoOpen = false;
+  let fundoTourAutoOpen = false;
   let isImobOwner = false;
   // Membro = tem vinculo com imob mas roleInterna !== 'owner'.
   // Solo = sem nenhum vinculo. Owner = canManageMembros.
@@ -449,6 +451,11 @@ export async function PainelShell({
     const tcs =
       (me?.tutorialsCompleted as Record<string, string> | null) ?? {};
     comercialTourAutoOpen = !tcs.comercial;
+  } else if (role === "fundo") {
+    const me = await getCurrentDbUser();
+    const tcs =
+      (me?.tutorialsCompleted as Record<string, string> | null) ?? {};
+    fundoTourAutoOpen = !tcs.fundo;
   } else if (role === "corretor" || role === "imobiliaria") {
     const [me, mem] = await Promise.all([
       getCurrentDbUser(),
@@ -489,6 +496,7 @@ export async function PainelShell({
       {role === "comercial" && (
         <ComercialTourMount autoOpen={comercialTourAutoOpen} />
       )}
+      {role === "fundo" && <FundoTourMount autoOpen={fundoTourAutoOpen} />}
       {(role === "corretor" || role === "imobiliaria") && !isImobMembro && (
         <CorretorTourMount
           autoOpen={corretorTourAutoOpen}
@@ -552,11 +560,13 @@ export async function PainelShell({
                 tourId={
                   role === "comercial"
                     ? "comercial"
-                    : role === "corretor" || role === "imobiliaria"
-                      ? isImobMembro
-                        ? "corretor-equipe"
-                        : "corretor"
-                      : null
+                    : role === "fundo"
+                      ? "fundo"
+                      : role === "corretor" || role === "imobiliaria"
+                        ? isImobMembro
+                          ? "corretor-equipe"
+                          : "corretor"
+                        : null
                 }
               />
             </span>

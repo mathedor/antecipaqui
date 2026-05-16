@@ -1,13 +1,62 @@
 "use client";
 
-import { useActionState } from "react";
-import { criarRegraAction, type RegraState } from "@/lib/actions/fundo-mesa";
+import { useActionState, useRef, useState, useTransition } from "react";
+import {
+  criarRegraAction,
+  simularRegraAction,
+  type RegraState,
+  type SimularRegraResult,
+} from "@/lib/actions/fundo-mesa";
+
+function parseTaxaPct(raw: string): number | null {
+  const v = raw.trim();
+  if (!v) return null;
+  const n = parseFloat(v.replace("%", "").replace(",", "."));
+  if (!Number.isFinite(n)) return null;
+  return n >= 0.5 ? n / 100 : n;
+}
+
+function parseInt0(raw: string): number | null {
+  const v = raw.trim();
+  if (!v) return null;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function parseValor(raw: string): number | null {
+  const v = raw.trim();
+  if (!v) return null;
+  const n = parseFloat(v.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function parseUuids(raw: string): string[] | null {
+  const v = raw.trim();
+  if (!v) return null;
+  const ids = v
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return ids.length > 0 ? ids : null;
+}
+
+function fmtBRL(v: number) {
+  return v.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
 
 export function CriarRegraForm() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState<RegraState, FormData>(
     criarRegraAction,
     null,
   );
+  const [sim, setSim] = useState<SimularRegraResult | null>(null);
+  const [simPending, startSim] = useTransition();
 
   if (state?.ok) {
     return (
@@ -17,8 +66,26 @@ export function CriarRegraForm() {
     );
   }
 
+  function simular() {
+    const f = formRef.current;
+    if (!f) return;
+    const fd = new FormData(f);
+    const input = {
+      taxaMinima: parseTaxaPct(String(fd.get("taxaMinima") || "")),
+      prazoMaximoMeses: parseInt0(String(fd.get("prazoMaximoMeses") || "")),
+      valorMaximoComissao: parseValor(
+        String(fd.get("valorMaximoComissao") || ""),
+      ),
+      construtorasIds: parseUuids(String(fd.get("construtorasIds") || "")),
+    };
+    startSim(async () => {
+      const r = await simularRegraAction(input);
+      setSim(r);
+    });
+  }
+
   return (
-    <form action={action} className="space-y-3">
+    <form ref={formRef} action={action} className="space-y-3">
       {state?.ok === false && (
         <div className="rounded-xl border border-danger/40 bg-red-50 text-danger p-3 text-sm">
           {state.error}
@@ -81,13 +148,75 @@ export function CriarRegraForm() {
         />
       </Field>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="btn-primary !h-11 !px-5"
-      >
-        {pending ? "Salvando..." : "+ Criar regra"}
-      </button>
+      {sim && sim.ok && (
+        <div className="rounded-xl border border-accent/40 bg-accent-soft p-4 space-y-2">
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div className="font-bold text-fg">
+              📊 Resultado da simulação (últimas {sim.totalAvaliadas} ops dos
+              últimos 90 dias)
+            </div>
+            <div className="text-2xl font-bold tabular text-accent">
+              {sim.totalAtendidas}{" "}
+              <span className="text-xs font-mono text-fg-muted">
+                / {sim.totalAvaliadas} ({sim.percentual.toFixed(1)}%)
+              </span>
+            </div>
+          </div>
+          <p className="text-xs text-fg-muted">
+            {sim.totalAtendidas === 0
+              ? "Nenhuma op atenderia. Critérios provavelmente estão muito restritivos — afrouxe taxa/prazo/valor."
+              : sim.percentual > 70
+                ? "Atenção: regra está MUITO permissiva — vai auto-aprovar quase tudo. Considere apertar critérios."
+                : sim.percentual > 30
+                  ? "Boa cobertura. Regra captura uma fatia significativa sem ser agressiva demais."
+                  : "Critérios bem específicos — só captura ops bem qualificadas."}
+          </p>
+          {sim.exemplos.length > 0 && (
+            <div className="space-y-1 mt-2">
+              <div className="text-[10px] uppercase tracking-wider font-mono text-fg-dim">
+                exemplos (até 5)
+              </div>
+              {sim.exemplos.map((ex) => (
+                <div
+                  key={ex.numero}
+                  className="flex items-center justify-between gap-2 text-xs font-mono text-fg bg-bg/60 rounded px-2 py-1"
+                >
+                  <span className="font-bold">{ex.numero}</span>
+                  <span className="text-fg-muted truncate flex-1">
+                    {ex.construtoraNome ?? "—"}
+                  </span>
+                  <span>{fmtBRL(ex.valorComissao)}</span>
+                  <span>{ex.numeroParcelas}p</span>
+                  <span>{(ex.taxaMensalOp * 100).toFixed(2)}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {sim && !sim.ok && (
+        <div className="rounded-xl border border-danger/40 bg-red-50 text-danger p-3 text-sm">
+          {sim.error}
+        </div>
+      )}
+
+      <div className="flex gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={simular}
+          disabled={simPending}
+          className="h-11 px-5 rounded-lg border-2 border-accent text-accent text-sm font-bold hover:bg-accent-soft disabled:opacity-60"
+        >
+          {simPending ? "Simulando…" : "🧪 Simular nas últimas 90 ops"}
+        </button>
+        <button
+          type="submit"
+          disabled={pending}
+          className="btn-primary !h-11 !px-5"
+        >
+          {pending ? "Salvando..." : "+ Criar regra"}
+        </button>
+      </div>
     </form>
   );
 }

@@ -294,6 +294,128 @@ export async function processarFilaWebhooks(opts?: { limit?: number }) {
   return { entregues, falhas, total: pendentes.length };
 }
 
+/** Dispara um payload de exemplo direto pra targetUrl (não passa pela fila).
+ *  Útil pro fundo validar o endpoint antes de ir pra produção. */
+export type TestWebhookResult =
+  | { ok: true; statusCode: number; durationMs: number; responseBody: string }
+  | { ok: false; error: string; statusCode?: number; durationMs?: number };
+
+const PAYLOAD_EXEMPLO: Record<string, Record<string, unknown>> = {
+  op_status_change: {
+    operacaoId: "exemplo-op-uuid",
+    numero: "OP-2026-9999",
+    statusAnterior: "aguardando_aprovacao",
+    statusNovo: "pre_aprovada",
+    mudouEm: new Date().toISOString(),
+  },
+  op_aprovada: {
+    operacaoId: "exemplo-op-uuid",
+    numero: "OP-2026-9999",
+    aprovadoEm: new Date().toISOString(),
+  },
+  op_recusada: {
+    operacaoId: "exemplo-op-uuid",
+    numero: "OP-2026-9999",
+    motivo: "Score de risco insuficiente",
+    recusadoEm: new Date().toISOString(),
+  },
+  fundo_decisao: {
+    operacaoId: "exemplo-op-uuid",
+    numero: "OP-2026-9999",
+    decisao: "aprovada",
+    decididoEm: new Date().toISOString(),
+  },
+  parcela_paga: {
+    parcelaId: "exemplo-parcela-uuid",
+    operacaoId: "exemplo-op-uuid",
+    numero: 1,
+    valor: 50000.0,
+    pagoEm: new Date().toISOString().slice(0, 10),
+    pagoValor: 50000.0,
+  },
+  antecipacao_decisao: {
+    antecipacaoId: "exemplo-antecipacao-uuid",
+    operacaoId: "exemplo-op-uuid",
+    decisao: "aprovada",
+    decididoEm: new Date().toISOString(),
+  },
+  renegociacao_decisao: {
+    renegociacaoId: "exemplo-renegociacao-uuid",
+    operacaoId: "exemplo-op-uuid",
+    decisao: "aprovada",
+    decididoEm: new Date().toISOString(),
+  },
+};
+
+export async function testarWebhookAction(
+  subscriptionId: string,
+  evento?: WebhookEventoTipo,
+): Promise<TestWebhookResult> {
+  const user = await getCurrentDbUser();
+  if (!user) return { ok: false, error: "Não autenticado" };
+
+  const [sub] = await db
+    .select()
+    .from(webhooksSubscriptions)
+    .where(eq(webhooksSubscriptions.id, subscriptionId))
+    .limit(1);
+  if (!sub) return { ok: false, error: "Webhook não encontrado" };
+  if (user.role !== "admin" && sub.ownerUserId !== user.id)
+    return { ok: false, error: "Sem permissão" };
+
+  const eventos = (sub.eventos as string[]) ?? [];
+  const eventoEscolhido =
+    evento && eventos.includes(evento)
+      ? evento
+      : ((eventos[0] as WebhookEventoTipo) ?? "op_status_change");
+
+  const payload = PAYLOAD_EXEMPLO[eventoEscolhido] ?? { teste: true };
+  const body = JSON.stringify({
+    evento: eventoEscolhido,
+    payload,
+    enqueuedAt: new Date(),
+    deliveryId: "test-" + crypto.randomBytes(8).toString("hex"),
+    teste: true,
+  });
+  const signature = crypto
+    .createHmac("sha256", sub.secret)
+    .update(body)
+    .digest("hex");
+
+  const start = Date.now();
+  try {
+    const res = await fetch(sub.targetUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-antecipaqui-signature": `sha256=${signature}`,
+        "x-antecipaqui-event": eventoEscolhido,
+        "x-antecipaqui-test": "true",
+      },
+      body,
+      signal: AbortSignal.timeout(15000),
+    });
+    const durationMs = Date.now() - start;
+    const responseBody = (await res.text().catch(() => "")).slice(0, 500);
+    if (res.ok) {
+      return { ok: true, statusCode: res.status, durationMs, responseBody };
+    }
+    return {
+      ok: false,
+      error: `HTTP ${res.status}`,
+      statusCode: res.status,
+      durationMs,
+    };
+  } catch (e) {
+    const durationMs = Date.now() - start;
+    return {
+      ok: false,
+      error: (e as Error).message,
+      durationMs,
+    };
+  }
+}
+
 export async function listEventosWebhook(subscriptionId: string, limit = 20) {
   const user = await getCurrentDbUser();
   if (!user) return [];

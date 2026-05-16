@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createWebhookAction,
   deleteWebhookAction,
+  testarWebhookAction,
   toggleWebhookAction,
   type CreateWebhookState,
 } from "@/lib/actions/webhooks";
@@ -57,6 +59,17 @@ export function WebhooksManager({
     null,
   );
   const [secretRevelado, setSecretRevelado] = useState<string | null>(null);
+  const [testando, setTestando] = useState<string | null>(null);
+  const [resultadoTeste, setResultadoTeste] = useState<
+    | {
+        webhookId: string;
+        ok: boolean;
+        msg: string;
+        statusCode?: number;
+        durationMs?: number;
+      }
+    | null
+  >(null);
 
   if (state?.ok && state.secret && !secretRevelado) {
     setSecretRevelado(state.secret);
@@ -74,6 +87,35 @@ export function WebhooksManager({
       router.refresh();
     } catch (e) {
       await alertError((e as Error).message);
+    }
+  }
+
+  async function testar(id: string) {
+    setTestando(id);
+    setResultadoTeste(null);
+    try {
+      const r = await testarWebhookAction(id);
+      if (r.ok) {
+        setResultadoTeste({
+          webhookId: id,
+          ok: true,
+          msg: `Endpoint respondeu OK (HTTP ${r.statusCode}) em ${r.durationMs}ms.`,
+          statusCode: r.statusCode,
+          durationMs: r.durationMs,
+        });
+      } else {
+        setResultadoTeste({
+          webhookId: id,
+          ok: false,
+          msg: r.error + (r.statusCode ? ` (HTTP ${r.statusCode})` : ""),
+          statusCode: r.statusCode,
+          durationMs: r.durationMs,
+        });
+      }
+    } catch (e) {
+      setResultadoTeste({ webhookId: id, ok: false, msg: (e as Error).message });
+    } finally {
+      setTestando(null);
     }
   }
 
@@ -210,7 +252,21 @@ export function WebhooksManager({
                       {w.targetUrl}
                     </code>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => testar(w.id)}
+                      disabled={testando === w.id}
+                      className="text-xs text-accent hover:underline disabled:opacity-50"
+                    >
+                      {testando === w.id ? "testando…" : "🧪 testar"}
+                    </button>
+                    <Link
+                      href={`/painel/webhooks/${w.id}/logs`}
+                      className="text-xs text-fg-muted hover:underline"
+                    >
+                      📜 logs
+                    </Link>
                     <button
                       type="button"
                       onClick={() => toggle(w.id, !w.isActive)}
@@ -227,6 +283,18 @@ export function WebhooksManager({
                     </button>
                   </div>
                 </div>
+                {resultadoTeste?.webhookId === w.id && (
+                  <div
+                    className={`mb-2 rounded-lg border px-3 py-2 text-xs ${
+                      resultadoTeste.ok
+                        ? "border-success/40 bg-green-50 text-success"
+                        : "border-danger/40 bg-red-50 text-danger"
+                    }`}
+                  >
+                    {resultadoTeste.ok ? "✓ " : "✗ "}
+                    {resultadoTeste.msg}
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-1 mb-2">
                   {(w.eventos as string[]).map((ev) => (
                     <span

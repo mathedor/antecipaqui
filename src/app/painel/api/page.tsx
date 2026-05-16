@@ -4,6 +4,7 @@ import { PainelShell } from "@/components/painel-shell";
 import { listApiKeys } from "@/lib/actions/fundo-api-keys";
 import { CriarApiKeyForm } from "@/components/criar-api-key-form";
 import { RevogarApiKeyButton } from "@/components/revogar-api-key-button";
+import { ApiEndpointCard } from "@/components/api-endpoint-card";
 
 export const metadata = { title: "API · Painel do fundo" };
 export const dynamic = "force-dynamic";
@@ -149,35 +150,41 @@ export default async function PainelApiPage() {
           Auth: header <code className="font-mono text-fg">Authorization: Bearer aq_...</code>
         </p>
 
+        <div className="rounded-xl border border-accent/30 bg-accent-soft p-3 mb-4 text-xs text-fg">
+          💡 <strong>Sandbox:</strong> copie qualquer curl abaixo, substitua{" "}
+          <code className="font-mono">$TOKEN</code> pela sua key (acima) e cole
+          no terminal pra testar imediatamente. Todos os exemplos são read-only
+          (exceto POST /decisao).
+        </div>
         <div className="space-y-4">
-          <Endpoint
+          <ApiEndpointCard
             method="GET"
             path="/me"
-            desc="Dados do fundo autenticado + estatísticas resumidas."
+            desc="Dados do fundo autenticado + estatísticas resumidas (ops_total, ops_ativas, ops_pendentes, capital_exposto)."
             example={`curl -H "Authorization: Bearer $TOKEN" \\\n  https://www.antecipaqui.digital/api/external/fundo/me`}
           />
-          <Endpoint
+          <ApiEndpointCard
             method="GET"
             path="/operacoes"
             desc="Lista operações. Filtros: status, fundoAprovacao, limit, offset."
             example={`curl -H "Authorization: Bearer $TOKEN" \\\n  "https://www.antecipaqui.digital/api/external/fundo/operacoes?fundoAprovacao=pendente&limit=50"`}
           />
-          <Endpoint
+          <ApiEndpointCard
             method="GET"
             path="/operacoes/{id}"
-            desc="Detalhe completo de uma operação + parcelas + custos."
+            desc="Detalhe completo de uma operação + parcelas + custos + docs + assinaturas."
             example={`curl -H "Authorization: Bearer $TOKEN" \\\n  https://www.antecipaqui.digital/api/external/fundo/operacoes/$ID`}
           />
-          <Endpoint
+          <ApiEndpointCard
             method="POST"
             path="/operacoes/{id}/decisao"
-            desc="Aprovar ou recusar operação pendente. Requer escopo read_write."
+            desc="Aprovar ou recusar operação pendente. Requer escopo read_write. Body: { decisao: 'aprovada' | 'recusada', motivo?: string }."
             example={`curl -X POST -H "Authorization: Bearer $TOKEN" \\\n  -H "Content-Type: application/json" \\\n  -d '{"decisao":"aprovada"}' \\\n  https://www.antecipaqui.digital/api/external/fundo/operacoes/$ID/decisao`}
           />
-          <Endpoint
+          <ApiEndpointCard
             method="GET"
             path="/parcelas"
-            desc="Lista parcelas. Filtros: status, vencimentoDe/Ate, operacaoId, limit, offset."
+            desc="Lista parcelas. Filtros: status (a_vencer/vencida/paga), vencimentoDe/Ate (YYYY-MM-DD), operacaoId, limit, offset."
             example={`curl -H "Authorization: Bearer $TOKEN" \\\n  "https://www.antecipaqui.digital/api/external/fundo/parcelas?status=a_vencer&vencimentoDe=2026-05-01&vencimentoAte=2026-05-31"`}
           />
         </div>
@@ -192,35 +199,3 @@ export default async function PainelApiPage() {
   );
 }
 
-function Endpoint({
-  method,
-  path,
-  desc,
-  example,
-}: {
-  method: "GET" | "POST";
-  path: string;
-  desc: string;
-  example: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-bg p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span
-          className={`font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded ${
-            method === "GET"
-              ? "bg-blue-100 text-accent"
-              : "bg-yellow-100 text-warn"
-          }`}
-        >
-          {method}
-        </span>
-        <code className="font-mono text-sm text-fg">{path}</code>
-      </div>
-      <p className="text-xs text-fg-muted mb-2">{desc}</p>
-      <pre className="rounded-lg bg-bg-soft border border-border-strong p-3 text-[11px] font-mono text-fg overflow-x-auto whitespace-pre">
-        {example}
-      </pre>
-    </div>
-  );
-}

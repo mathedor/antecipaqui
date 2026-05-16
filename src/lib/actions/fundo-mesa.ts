@@ -447,6 +447,132 @@ export async function deletarRegraAction(
 }
 
 /* =========================================
+   SIMULAÇÃO (DRY-RUN) — avalia uma regra contra ops históricas dos últimos 90d
+   sem criar nada nem incrementar contador. Útil pra calibrar critérios.
+   ========================================= */
+
+export type SimularRegraInput = {
+  taxaMinima?: number | null;
+  prazoMaximoMeses?: number | null;
+  valorMaximoComissao?: number | null;
+  construtorasIds?: string[] | null;
+};
+
+export type SimularRegraResult = {
+  ok: boolean;
+  error?: string;
+  totalAvaliadas: number;
+  totalAtendidas: number;
+  percentual: number;
+  exemplos: Array<{
+    numero: string;
+    construtoraNome: string | null;
+    taxaMensalOp: number;
+    valorComissao: number;
+    numeroParcelas: number;
+    atendida: boolean;
+  }>;
+};
+
+export async function simularRegraAction(
+  input: SimularRegraInput,
+): Promise<SimularRegraResult> {
+  const user = await getCurrentDbUser();
+  const fundo = await getCurrentFundo();
+  if (!user || user.role !== "fundo" || !fundo) {
+    return {
+      ok: false,
+      error: "Não autorizado",
+      totalAvaliadas: 0,
+      totalAtendidas: 0,
+      percentual: 0,
+      exemplos: [],
+    };
+  }
+
+  const noventaDiasAtras = new Date();
+  noventaDiasAtras.setDate(noventaDiasAtras.getDate() - 90);
+
+  const rows = await db.execute(sql`
+    SELECT
+      o.id::text AS operacao_id,
+      o.numero,
+      o.construtora_id::text AS construtora_id,
+      COALESCE(c.nome_fantasia, c.razao_social) AS construtora_nome,
+      o.taxa_mensal::float AS taxa_mensal,
+      o.valor_comissao::float AS valor_comissao,
+      COALESCE(o.numero_parcelas, 0)::int AS numero_parcelas
+    FROM operacoes o
+    LEFT JOIN construtoras c ON c.id = o.construtora_id
+    WHERE o.fundo_id = ${fundo.id}::uuid
+      AND o.created_at >= ${noventaDiasAtras.toISOString()}
+      AND o.status NOT IN ('rascunho','cancelada')
+    ORDER BY o.created_at DESC
+    LIMIT 200
+  `);
+
+  type Row = {
+    operacao_id: string;
+    numero: string;
+    construtora_id: string;
+    construtora_nome: string | null;
+    taxa_mensal: number;
+    valor_comissao: number;
+    numero_parcelas: number;
+  };
+  const ops = (
+    Array.isArray(rows)
+      ? rows
+      : ((rows as unknown as { rows: Row[] }).rows ?? [])
+  ) as Row[];
+
+  const taxaMinima = input.taxaMinima ?? null;
+  const prazoMax = input.prazoMaximoMeses ?? null;
+  const valorMax = input.valorMaximoComissao ?? null;
+  const construtorasIds =
+    input.construtorasIds && input.construtorasIds.length > 0
+      ? input.construtorasIds
+      : null;
+
+  const exemplos: SimularRegraResult["exemplos"] = [];
+  let atendidas = 0;
+  for (const op of ops) {
+    let atende = true;
+    if (taxaMinima !== null && op.taxa_mensal < taxaMinima) atende = false;
+    if (atende && prazoMax !== null && op.numero_parcelas > prazoMax)
+      atende = false;
+    if (atende && valorMax !== null && op.valor_comissao > valorMax)
+      atende = false;
+    if (
+      atende &&
+      construtorasIds !== null &&
+      !construtorasIds.includes(op.construtora_id)
+    )
+      atende = false;
+
+    if (atende) atendidas++;
+    if (exemplos.length < 5 && atende) {
+      exemplos.push({
+        numero: op.numero,
+        construtoraNome: op.construtora_nome,
+        taxaMensalOp: op.taxa_mensal,
+        valorComissao: op.valor_comissao,
+        numeroParcelas: op.numero_parcelas,
+        atendida: true,
+      });
+    }
+  }
+
+  return {
+    ok: true,
+    totalAvaliadas: ops.length,
+    totalAtendidas: atendidas,
+    percentual: ops.length > 0 ? (atendidas / ops.length) * 100 : 0,
+    exemplos,
+  };
+}
+
+/* =========================================
    AVALIAÇÃO AUTOMÁTICA — chamada pelo status-flow quando fundo é vinculado
    ========================================= */
 
