@@ -16,6 +16,7 @@ import { ConstrutoraUploadDocForm } from "@/components/construtora-upload-doc-fo
 import { WhatsappShareButton } from "@/components/whatsapp-share-button";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { toBlobProxyHref } from "@/lib/blob-url";
+import { painelRole } from "@/lib/painel-role";
 
 export const metadata = {
   title: "Borderô da operação",
@@ -88,15 +89,7 @@ export default async function OperacaoDetailPage({ params }: Params) {
   const totalVP = parcelasComCalculo.reduce((s, p) => s + p.vp, 0);
   const totalJuros = parcelasComCalculo.reduce((s, p) => s + p.juros, 0);
 
-  const role = (
-    user.role === "fundo"
-      ? "fundo"
-      : user.role === "construtora"
-        ? "construtora"
-        : user.role === "imobiliaria"
-          ? "imobiliaria"
-          : "corretor"
-  ) as "construtora" | "corretor" | "imobiliaria" | "fundo";
+  const role = painelRole(user.role);
 
   const isFundoView = user.role === "fundo" && op.viewerRole === "fundo";
   const totalCustos = custos.reduce((s, c) => s + parseFloat(c.valor), 0);

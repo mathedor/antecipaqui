@@ -6,6 +6,10 @@ import {
   fundoCadastrarOperacaoAction,
   type CadastrarOpFundoState,
 } from "@/lib/actions/fundo-cadastrar";
+import {
+  comercialCadastrarOperacaoAction,
+  type CadastrarOpComercialState,
+} from "@/lib/actions/comercial-cadastrar";
 import { FileUploadField, type UploadedBlob } from "./file-upload-field";
 import { PagadorSelector } from "./pagador-selector";
 import { useFeedback } from "@/components/feedback-provider";
@@ -68,18 +72,28 @@ export function FundoCadastrarOperacaoForm({
   construtoras,
   taxaMensalBaseFundo,
   fundoNome,
+  mode = "fundo",
 }: {
   corretores: CorretorOption[];
   construtoras: ConstrutoraOption[];
+  /** Taxa pra cálculo de VP — taxa-base do fundo OU taxa-padrão do sistema. */
   taxaMensalBaseFundo: number;
+  /** Nome exibido no banner (fundo: nome do fundo; comercial: ignorado). */
   fundoNome: string;
+  /** "fundo" (default) ou "comercial" — muda action chamada e banner. */
+  mode?: "fundo" | "comercial";
 }) {
   const router = useRouter();
   const { alertSuccess, alertError } = useFeedback();
   const [state, action, pending] = useActionState<
-    CadastrarOpFundoState,
+    CadastrarOpFundoState | CadastrarOpComercialState,
     FormData
-  >(fundoCadastrarOperacaoAction, null);
+  >(
+    mode === "comercial"
+      ? comercialCadastrarOperacaoAction
+      : fundoCadastrarOperacaoAction,
+    null,
+  );
 
   const [corretorUserId, setCorretorUserId] = useState("");
   const [construtoraId, setConstrutoraId] = useState("");
@@ -141,12 +155,26 @@ export function FundoCadastrarOperacaoForm({
   return (
     <form action={action} className="space-y-6">
       <div className="rounded-2xl border border-accent/30 bg-accent-soft p-4 text-sm">
-        Operação será vinculada ao seu fundo (<strong>{fundoNome}</strong>) com
-        a sua taxa-base de{" "}
-        <span className="font-mono font-bold">
-          {(taxaMensalBaseFundo * 100).toFixed(2).replace(".", ",")}% a.m.
-        </span>{" "}
-        Pode customizar na aprovação final.
+        {mode === "comercial" ? (
+          <>
+            Operação vai pra mesa da Antecipaqui com a taxa-padrão{" "}
+            <span className="font-mono font-bold">
+              {(taxaMensalBaseFundo * 100).toFixed(2).replace(".", ",")}% a.m.
+            </span>{" "}
+            (admin escolhe o fundo e ajusta a taxa na aprovação). Você fica
+            vinculado(a) como <strong>comercial responsável</strong> e recebe
+            comissão quando a op for realizada.
+          </>
+        ) : (
+          <>
+            Operação será vinculada ao seu fundo (<strong>{fundoNome}</strong>)
+            com a sua taxa-base de{" "}
+            <span className="font-mono font-bold">
+              {(taxaMensalBaseFundo * 100).toFixed(2).replace(".", ",")}% a.m.
+            </span>{" "}
+            Pode customizar na aprovação final.
+          </>
+        )}
       </div>
 
       <Card title="Cedente">

@@ -10,11 +10,16 @@ import {
   listCorretoresForFundoSelector,
   listConstrutorasForFundoSelector,
 } from "@/lib/actions/fundo-cadastrar";
+import {
+  listCorretoresForComercialSelector,
+  listConstrutorasForComercialSelector,
+} from "@/lib/actions/comercial-cadastrar";
 import { getCurrentFundo } from "@/lib/actions/fundos";
 import { NovaOperacaoForm } from "@/components/nova-operacao-form";
 import { FundoCadastrarOperacaoForm } from "@/components/fundo-cadastrar-operacao-form";
 import { ImportarContratoForm } from "@/components/importar-contrato-form";
 import { PainelShell } from "@/components/painel-shell";
+import { painelRole } from "@/lib/painel-role";
 
 export const metadata = {
   title: "Nova operação",
@@ -56,6 +61,42 @@ export default async function NovaOperacaoPage({ searchParams }: Search) {
           construtoras={construtorasF}
           taxaMensalBaseFundo={parseFloat(fundo.taxaMensalBase)}
           fundoNome={fundo.nomeFantasia ?? fundo.razaoSocial}
+        />
+      </PainelShell>
+    );
+  }
+
+  // Comercial: cadastra em nome de imobiliária/corretor + construtora.
+  // Vai pra mesa AQ sem fundo atribuído (admin escolhe). Comercial fica
+  // vinculado como responsável (= comissão dele depois).
+  if (user.role === "comercial") {
+    const [corretoresC, construtorasC, taxaPadrao] = await Promise.all([
+      listCorretoresForComercialSelector(),
+      listConstrutorasForComercialSelector(),
+      getTaxaMensal(),
+    ]);
+    return (
+      <PainelShell
+        role="comercial"
+        userName={user.nome}
+        active="/painel/operacoes/nova"
+      >
+        <div className="mb-8">
+          <h1 className="text-display-md">
+            Nova <span className="text-gradient-blue">operação</span>
+          </h1>
+          <p className="mt-2 text-fg-muted">
+            Cadastre uma operação em nome da imobiliária/corretor + construtora.
+            Você fica como comercial responsável e recebe comissão quando a
+            operação for realizada.
+          </p>
+        </div>
+        <FundoCadastrarOperacaoForm
+          mode="comercial"
+          corretores={corretoresC}
+          construtoras={construtorasC}
+          taxaMensalBaseFundo={taxaPadrao}
+          fundoNome=""
         />
       </PainelShell>
     );

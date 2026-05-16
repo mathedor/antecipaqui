@@ -96,7 +96,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/painel/suporte", label: "Chats" },
   ],
   comercial: [
-    { href: "/painel", label: "Painel" },
+    { href: "/painel/operacoes", label: "Operações" },
     { href: "/painel/daily", label: "Daily" },
     { href: "/painel/comissoes", label: "Comissões" },
     { href: "/painel/perfil", label: "Meus dados" },
@@ -306,9 +306,10 @@ const MOBILE_FULLMENU: Record<
     {
       section: "principal",
       items: [
-        { href: "/painel", label: "Painel", icon: "home" },
+        { href: "/painel/operacoes", label: "Operações", icon: "table" },
+        { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
         { href: "/painel/daily", label: "Daily", icon: "table" },
-        { href: "/painel/perfil", label: "Meus dados", icon: "config" },
+        { href: "/painel/comissoes", label: "Comissões", icon: "money" },
       ],
     },
     {
@@ -316,6 +317,7 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
+        { href: "/painel/perfil", label: "Meus dados", icon: "config" },
       ],
     },
   ],

@@ -1,17 +1,26 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { eq, desc } from "drizzle-orm";
+import { db } from "@/db";
+import {
+  construtoras as construtorasTable,
+  operacoes as operacoesTable,
+  users as usersTable,
+} from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import {
   getConstrutoraByOwnerId,
   getOperacoesByConstrutora,
   getOperacoesByCorretor,
 } from "@/lib/actions/operacoes";
+import { getCurrentComercial } from "@/lib/actions/comerciais";
 import { PainelShell } from "@/components/painel-shell";
 import { PainelOperacoesTable } from "@/components/painel-operacoes-table";
 import {
   DateRangeFilter,
   OperacoesStatBoxes,
 } from "@/components/operacoes-stats";
+import { painelRole } from "@/lib/painel-role";
 
 export const metadata = {
   title: "Operações",
@@ -45,6 +54,7 @@ export default async function OperacoesPage({ searchParams }: Search) {
 
   const isConstrutora = user.role === "construtora";
   const isFundo = user.role === "fundo";
+  const isComercial = user.role === "comercial";
   const { from, to, empreendimentoId } = await searchParams;
 
   let allOps: Array<{
@@ -64,6 +74,42 @@ export default async function OperacoesPage({ searchParams }: Search) {
     const data = await getFundoDashboard();
     if (data) {
       allOps = data.operacoes.map((r) => ({
+        id: r.id,
+        numero: r.numero,
+        status: r.status,
+        valorComissao: r.valorComissao,
+        valorPresente: r.valorPresente,
+        counterpartyLabel:
+          (r.construtoraNome ?? "—") + " · " + (r.corretorNome ?? "—"),
+        createdAt: r.createdAt,
+      }));
+    }
+  } else if (isComercial) {
+    const comercial = await getCurrentComercial();
+    if (comercial) {
+      const rows = await db
+        .select({
+          id: operacoesTable.id,
+          numero: operacoesTable.numero,
+          status: operacoesTable.status,
+          valorComissao: operacoesTable.valorComissao,
+          valorPresente: operacoesTable.valorPresente,
+          createdAt: operacoesTable.createdAt,
+          construtoraNome: construtorasTable.razaoSocial,
+          corretorNome: usersTable.nome,
+        })
+        .from(operacoesTable)
+        .leftJoin(
+          construtorasTable,
+          eq(operacoesTable.construtoraId, construtorasTable.id),
+        )
+        .leftJoin(
+          usersTable,
+          eq(operacoesTable.corretorUserId, usersTable.id),
+        )
+        .where(eq(operacoesTable.comercialId, comercial.id))
+        .orderBy(desc(operacoesTable.createdAt));
+      allOps = rows.map((r) => ({
         id: r.id,
         numero: r.numero,
         status: r.status,
@@ -141,26 +187,21 @@ export default async function OperacoesPage({ searchParams }: Search) {
     return true;
   });
 
-  const counterpartyHeader = isFundo
-    ? "Construtora · Corretor"
-    : isConstrutora
-      ? "Imobiliária / Corretor"
-      : "Construtora";
+  const counterpartyHeader =
+    isFundo || isComercial
+      ? "Construtora · Corretor"
+      : isConstrutora
+        ? "Imobiliária / Corretor"
+        : "Construtora";
   const titleLabel = isFundo
     ? "do fundo"
     : isConstrutora
       ? "vinculadas a você"
-      : "operações";
+      : isComercial
+        ? "da sua carteira"
+        : "operações";
 
-  const role = (
-    isFundo
-      ? "fundo"
-      : isConstrutora
-        ? "construtora"
-        : user.role === "imobiliaria"
-          ? "imobiliaria"
-          : "corretor"
-  ) as "construtora" | "corretor" | "imobiliaria" | "fundo";
+  const role = painelRole(user.role);
 
   return (
     <PainelShell role={role} userName={user.nome} active="/painel/operacoes">
@@ -234,7 +275,7 @@ export default async function OperacoesPage({ searchParams }: Search) {
         <PainelOperacoesTable
           rows={operacoes}
           counterpartyHeader={counterpartyHeader}
-          canClone={!isFundo && !isConstrutora}
+          canClone={!isFundo && !isConstrutora && !isComercial}
         />
       )}
     </PainelShell>
