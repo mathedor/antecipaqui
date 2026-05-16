@@ -427,28 +427,47 @@ export async function encaminharParaAntecipacao(input: {
   if (!imob?.ownerUserId)
     return { ok: false, error: "Imobiliária sem owner cadastrado." };
 
-  // Encontra alguma construtora pra colocar como placeholder?
-  // Na verdade vou exigir que admin imob complete depois — op vai como rascunho
-  // sem construtora? Mas operacoes.construtoraId é NOT NULL.
-  // Solução: criar como rascunho mas precisar de construtora. Vou retornar
-  // erro caso não exista nenhuma construtora ainda na base — admin escolhe
-  // depois pelo /painel/operacoes/[id]/editar.
-  // Workaround temporário: se imob já operou antes, reusa a construtora
-  // mais recente como placeholder; senão, retorna pra admin completar manual.
-  const lastOp = await db
-    .select({ construtoraId: operacoes.construtoraId })
-    .from(operacoes)
-    .where(eq(operacoes.imobiliariaId, a.imobiliariaId))
-    .orderBy(desc(operacoes.createdAt))
-    .limit(1);
-  if (!lastOp[0]?.construtoraId) {
+  // Resolver construtoraId — em ordem de prioridade:
+  // 1) Se atendimento tem 1 construtora acompanhando: usa ela (auto-vínculo)
+  // 2) Se imob já operou antes: reusa construtora mais recente
+  // 3) Senão: bloqueia e pede pra cadastrar uma op manual primeiro
+  const { atendimentoConstrutoras } = await import("@/db/schema");
+  const vinculos = await db
+    .select({ construtoraId: atendimentoConstrutoras.construtoraId })
+    .from(atendimentoConstrutoras)
+    .where(
+      and(
+        eq(atendimentoConstrutoras.atendimentoId, input.atendimentoId),
+        sql`${atendimentoConstrutoras.removedAt} IS NULL`,
+      ),
+    );
+
+  let construtoraId: string | null = null;
+  if (vinculos.length === 1) {
+    construtoraId = vinculos[0].construtoraId;
+  } else if (vinculos.length > 1) {
+    return {
+      ok: false,
+      error: `Atendimento tem ${vinculos.length} construtoras acompanhando. Antes de encaminhar, remova as que não fecharam o negócio — só deve sobrar uma.`,
+    };
+  } else {
+    // Sem acompanhamento — tenta reusar última op da imob
+    const lastOp = await db
+      .select({ construtoraId: operacoes.construtoraId })
+      .from(operacoes)
+      .where(eq(operacoes.imobiliariaId, a.imobiliariaId))
+      .orderBy(desc(operacoes.createdAt))
+      .limit(1);
+    construtoraId = lastOp[0]?.construtoraId ?? null;
+  }
+
+  if (!construtoraId) {
     return {
       ok: false,
       error:
-        "Sua imob ainda não tem nenhuma operação prévia. Cadastre uma operação manualmente primeiro pra vincular uma construtora — depois você usa o atalho.",
+        "Vincule uma construtora ao atendimento (no card 'Construtoras acompanhando') ANTES de encaminhar. Senão, cadastre uma operação manualmente primeiro.",
     };
   }
-  const construtoraId = lastOp[0].construtoraId;
 
   // Calcula VP
   const valorComissao = parseFloat(a.comissaoEstimada);

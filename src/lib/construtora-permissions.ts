@@ -138,6 +138,7 @@ export function getConstrutoraAllowedNav(
     "/painel/score": "score",
     "/painel/cashback": "cashback",
     "/painel/equipe": "equipe",
+    "/painel/atendimentos-parceiros": "operacoes",
     "/painel/suporte": "chats",
     "/painel/perfil": "perfil",
   };

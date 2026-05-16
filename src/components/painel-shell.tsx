@@ -60,6 +60,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   construtora: [
     { href: "/painel/operacoes", label: "Operações" },
+    { href: "/painel/atendimentos-parceiros", label: "Atendimentos parceiros" },
     { href: "/painel/duplicatas", label: "Duplicatas" },
     { href: "/painel/extrato", label: "Extrato" },
     { href: "/painel/risco", label: "Risco" },
@@ -260,6 +261,7 @@ const MOBILE_FULLMENU: Record<
       section: "principal",
       items: [
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
+        { href: "/painel/atendimentos-parceiros", label: "Atendimentos parceiros", icon: "tag" },
       ],
     },
     {

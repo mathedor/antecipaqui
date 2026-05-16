@@ -10,6 +10,8 @@ import {
   encaminharParaAntecipacao,
   updateAtendimento,
 } from "@/lib/actions/atendimentos";
+import type { ConstrutoraVinculo } from "@/lib/actions/atendimento-construtoras";
+import { ConstrutorasAcompanhandoCard } from "@/components/dashboards/atendimento-construtoras-card";
 import {
   type AtendimentoStatus,
   EVENTO_EMOJI,
@@ -35,10 +37,19 @@ export function AtendimentoDetail({
   atendimento,
   eventos,
   currentUserId,
+  construtorasVinculadas,
+  construtorasDisponiveis,
 }: {
   atendimento: Atendimento;
   eventos: AtendimentoEvento[];
   currentUserId: string;
+  construtorasVinculadas: ConstrutoraVinculo[];
+  construtorasDisponiveis: Array<{
+    id: string;
+    razaoSocial: string;
+    nomeFantasia: string | null;
+    cnpj: string;
+  }>;
 }) {
   const router = useRouter();
   const a = atendimento;
@@ -74,9 +85,14 @@ export function AtendimentoDetail({
       <StatusChanger a={a} />
 
       <div className="grid lg:grid-cols-3 gap-5">
-        {/* Coluna principal: dados + timeline */}
+        {/* Coluna principal: dados + construtoras + timeline */}
         <div className="lg:col-span-2 space-y-5">
           <DadosEditaveis a={a} />
+          <ConstrutorasAcompanhandoCard
+            atendimentoId={a.id}
+            vinculos={construtorasVinculadas}
+            construtorasDisponiveis={construtorasDisponiveis}
+          />
           <Timeline
             atendimentoId={a.id}
             eventos={eventos}

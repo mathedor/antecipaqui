@@ -6,6 +6,10 @@ import {
   getAtendimento,
   listEventos,
 } from "@/lib/actions/atendimentos";
+import {
+  listConstrutorasAtivas,
+  listConstrutorasDoAtendimento,
+} from "@/lib/actions/atendimento-construtoras";
 import { getCurrentImobMembership } from "@/lib/actions/imobiliaria-membros";
 import { AtendimentoDetail } from "@/components/dashboards/atendimento-detail";
 
@@ -25,7 +29,11 @@ export default async function AtendimentoDetailPage({ params }: Params) {
   const { id } = await params;
   const a = await getAtendimento(id);
   if (!a) notFound();
-  const eventos = await listEventos(id);
+  const [eventos, vinculos, construtorasDisp] = await Promise.all([
+    listEventos(id),
+    listConstrutorasDoAtendimento(id),
+    listConstrutorasAtivas(),
+  ]);
 
   return (
     <PainelShell
@@ -43,6 +51,8 @@ export default async function AtendimentoDetailPage({ params }: Params) {
         atendimento={a}
         eventos={eventos}
         currentUserId={user.id}
+        construtorasVinculadas={vinculos}
+        construtorasDisponiveis={construtorasDisp}
       />
     </PainelShell>
   );

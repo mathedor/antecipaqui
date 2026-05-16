@@ -2202,6 +2202,78 @@ export const atendimentoEventos = pgTable(
 export type AtendimentoEvento = typeof atendimentoEventos.$inferSelect;
 
 /* =========================================
+   ATENDIMENTO ↔ CONSTRUTORAS (vínculo de acompanhamento)
+   Corretor pode convidar uma ou mais construtoras pra acompanhar a
+   negociação. Construtora vê o atendimento (read-only), pode comentar
+   e responder pedidos formais de opinião.
+   ========================================= */
+
+export const atendimentoConstrutoras = pgTable(
+  "atendimento_construtoras",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    atendimentoId: uuid("atendimento_id")
+      .notNull()
+      .references(() => atendimentos.id, { onDelete: "cascade" }),
+    construtoraId: uuid("construtora_id")
+      .notNull()
+      .references(() => construtoras.id, { onDelete: "cascade" }),
+    convidadoPorUserId: text("convidado_por_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+
+    /** Quando true, atendimento está "travado" aguardando resposta da
+     *  construtora. Indicador visual no kanban. */
+    aguardandoOpiniao: boolean("aguardando_opiniao")
+      .notNull()
+      .default(false),
+
+    /** Tipo da última opinião solicitada:
+     *  'aprovar_valor' | 'aprovar_condicoes' | 'liberar_desconto' |
+     *  'confirmar_disponibilidade' | 'opiniao_geral' */
+    tipoOpiniaoSolicitada: text("tipo_opiniao_solicitada"),
+    opiniaoSolicitadaEm: timestamp("opiniao_solicitada_em", {
+      withTimezone: true,
+    }),
+    opiniaoSolicitadaTexto: text("opiniao_solicitada_texto"),
+
+    /** Resposta */
+    opiniaoRecebidaEm: timestamp("opiniao_recebida_em", {
+      withTimezone: true,
+    }),
+    opiniaoTexto: text("opiniao_texto"),
+    /** Recomendação da construtora: true=prosseguir, false=não, null=condicional/texto. */
+    opiniaoRecomenda: boolean("opiniao_recomenda"),
+
+    /** Construtora ou corretor podem encerrar acompanhamento. */
+    removedAt: timestamp("removed_at", { withTimezone: true }),
+    removedReason: text("removed_reason"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("atendimento_construtoras_unique").on(
+      t.atendimentoId,
+      t.construtoraId,
+    ),
+    index("atendimento_construtoras_construtora_idx").on(
+      t.construtoraId,
+      t.removedAt,
+    ),
+    index("atendimento_construtoras_atendimento_idx").on(
+      t.atendimentoId,
+      t.removedAt,
+    ),
+    index("atendimento_construtoras_aguardando_idx").on(t.aguardandoOpiniao),
+  ],
+);
+
+export type AtendimentoConstrutora =
+  typeof atendimentoConstrutoras.$inferSelect;
+
+/* =========================================
    RELATIONS (pra queries com joins fáceis)
    ========================================= */
 
