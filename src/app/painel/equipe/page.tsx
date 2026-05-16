@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { requireActiveUser } from "@/lib/auth-user";
 import { PainelShell } from "@/components/painel-shell";
 import { EquipeManager } from "@/components/equipe-manager";
 import { listMembrosConstrutora } from "@/lib/actions/construtora-membros";
@@ -6,11 +7,52 @@ import {
   requireConstrutoraPermission,
   getConstrutoraAllowedNav,
 } from "@/lib/construtora-permissions";
+import { EquipeImobManager } from "@/components/dashboards/equipe-imob-manager";
+import {
+  getCurrentImobMembership,
+  listMembrosDaImob,
+} from "@/lib/actions/imobiliaria-membros";
 
 export const metadata = { title: "Equipe" };
+export const dynamic = "force-dynamic";
 
 export default async function EquipePage() {
-  const { user, role } = await requireConstrutoraPermission("equipe");
+  const user = await requireActiveUser();
+
+  // Imobiliária / corretor — fluxo novo
+  if (user.role === "imobiliaria" || user.role === "corretor") {
+    const me = await getCurrentImobMembership();
+    if (!me) redirect("/painel/onboarding");
+    const membros = await listMembrosDaImob();
+    return (
+      <PainelShell
+        role={user.role === "imobiliaria" ? "imobiliaria" : "corretor"}
+        userName={user.nome}
+        active="/painel/equipe"
+      >
+        <div className="mb-6">
+          <div className="eyebrow mb-2">equipe · {me.imobiliariaRazaoSocial}</div>
+          <h1 className="text-display-md">
+            Seu <span className="text-gradient-blue">time</span>
+          </h1>
+          <p className="mt-2 text-fg-muted max-w-2xl">
+            Convide corretores e gerentes pra acessarem a imobiliária. Cada
+            role tem permissões diferentes — corretor só vê os atendimentos
+            dele, financeiro foca em extrato, owner manda em tudo.
+          </p>
+        </div>
+        <EquipeImobManager
+          membros={membros}
+          canManage={me.canManageMembros}
+        />
+      </PainelShell>
+    );
+  }
+
+  // Construtora — fluxo legado
+  if (user.role !== "construtora") redirect("/painel");
+
+  const { role } = await requireConstrutoraPermission("equipe");
 
   let data: Awaited<ReturnType<typeof listMembrosConstrutora>> | null = null;
   try {
@@ -20,7 +62,6 @@ export default async function EquipePage() {
   }
   if (!data) redirect("/painel/onboarding");
 
-  // Só o owner pode gerenciar equipe (sistema simples por enquanto)
   const isOwner = data.owner?.id === user.id;
 
   return (
@@ -37,9 +78,7 @@ export default async function EquipePage() {
         </h1>
         <p className="mt-2 text-fg-muted max-w-2xl">
           Convide colegas (financeiro, comercial, jurídico) pra acessarem o
-          painel da sua construtora. Cada role vê apenas a área pertinente:
-          financeiro tem duplicatas/extrato/forecast; comercial tem operações/
-          empreendimentos; jurídico tem documentos/pendências.
+          painel da sua construtora. Cada role vê apenas a área pertinente.
         </p>
       </div>
 

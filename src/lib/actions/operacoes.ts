@@ -579,6 +579,44 @@ export async function getOperacoesByCorretor(corretorUserId: string) {
     .orderBy(desc(operacoes.createdAt));
 }
 
+/** Lista ops da imobiliária com escopo de permissão.
+ *  - Se canSeeAll = true (owner/gerente/financeiro): retorna TODAS da imob
+ *  - Caso contrário (corretor membro): retorna só onde user é corretor ou
+ *    é corretor_atendente. */
+export async function getOperacoesByImobiliariaScoped(args: {
+  imobiliariaId: string;
+  userId: string;
+  canSeeAll: boolean;
+}) {
+  const baseWhere = eq(operacoes.imobiliariaId, args.imobiliariaId);
+  const where = args.canSeeAll
+    ? baseWhere
+    : and(
+        baseWhere,
+        sql`(${operacoes.corretorUserId} = ${args.userId}
+          OR ${operacoes.corretorAtendenteUserId} = ${args.userId})`,
+      );
+
+  return db
+    .select({
+      id: operacoes.id,
+      numero: operacoes.numero,
+      status: operacoes.status,
+      valorComissao: operacoes.valorComissao,
+      valorPresente: operacoes.valorPresente,
+      desagio: operacoes.desagio,
+      dataVenda: operacoes.dataVenda,
+      createdAt: operacoes.createdAt,
+      construtoraNome: construtoras.razaoSocial,
+      empreendimentoId: operacoes.empreendimentoId,
+      corretorAtendenteUserId: operacoes.corretorAtendenteUserId,
+    })
+    .from(operacoes)
+    .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
+    .where(where)
+    .orderBy(desc(operacoes.createdAt));
+}
+
 export async function getOperacaoDetail(operacaoId: string, userId: string) {
   // Permite acesso pelo corretor que cadastrou, construtora dona da row,
   // ou fundo dono da operação

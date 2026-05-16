@@ -24,21 +24,38 @@ type NavItem =
 
 const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   corretor: [
+    { href: "/painel/atendimentos", label: "Atendimentos" },
     { href: "/painel/operacoes", label: "Operações" },
-    { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/coleta-comprador", label: "Link de Dados" },
-    { href: "/painel/forecast-corretor", label: "Projeção" },
-    { href: "/painel/relatorio", label: "Relatório" },
-    { href: "/painel/convites", label: "Convites" },
+    {
+      label: "Análise",
+      submenu: [
+        { href: "/painel/forecast-corretor", label: "Projeção" },
+        { href: "/painel/relatorio", label: "Relatório" },
+        { href: "/painel/convites", label: "Convites" },
+      ],
+    },
     { href: "/painel/suporte", label: "Chats" },
   ],
   imobiliaria: [
+    { href: "/painel/atendimentos", label: "Atendimentos" },
     { href: "/painel/operacoes", label: "Operações" },
-    { href: "/painel/operacoes/nova", label: "Nova operação" },
     { href: "/painel/coleta-comprador", label: "Link de Dados" },
-    { href: "/painel/forecast-corretor", label: "Projeção" },
-    { href: "/painel/relatorio", label: "Relatório" },
-    { href: "/painel/convites", label: "Convites" },
+    {
+      label: "Análise",
+      submenu: [
+        { href: "/painel/forecast-corretor", label: "Projeção" },
+        { href: "/painel/relatorio", label: "Relatório" },
+        { href: "/painel/convites", label: "Convites" },
+      ],
+    },
+    {
+      label: "Gestão",
+      submenu: [
+        { href: "/painel/equipe", label: "Equipe" },
+        { href: "/painel/perfil", label: "Meus dados" },
+      ],
+    },
     { href: "/painel/suporte", label: "Chats" },
   ],
   construtora: [
@@ -182,9 +199,15 @@ const MOBILE_FULLMENU: Record<
     {
       section: "principal",
       items: [
+        { href: "/painel/atendimentos", label: "Atendimentos (CRM)", icon: "tag" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
         { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
         { href: "/painel/coleta-comprador", label: "Link de Dados", icon: "doc" },
+      ],
+    },
+    {
+      section: "análise",
+      items: [
         { href: "/painel/forecast-corretor", label: "Projeção", icon: "report" },
         { href: "/painel/relatorio", label: "Relatório", icon: "report" },
         { href: "/painel/convites", label: "Convites recebidos", icon: "tag" },
@@ -195,6 +218,7 @@ const MOBILE_FULLMENU: Record<
       items: [
         { href: "/painel/suporte", label: "Chats", icon: "ticket" },
         { href: "/notificacoes", label: "Notificações", icon: "doc" },
+        { href: "/painel/perfil", label: "Meus dados", icon: "config" },
       ],
     },
   ],
@@ -202,12 +226,25 @@ const MOBILE_FULLMENU: Record<
     {
       section: "principal",
       items: [
+        { href: "/painel/atendimentos", label: "Atendimentos (CRM)", icon: "tag" },
         { href: "/painel/operacoes", label: "Operações", icon: "table" },
         { href: "/painel/operacoes/nova", label: "Nova operação", icon: "doc" },
         { href: "/painel/coleta-comprador", label: "Link de Dados", icon: "doc" },
+      ],
+    },
+    {
+      section: "análise",
+      items: [
         { href: "/painel/forecast-corretor", label: "Projeção", icon: "report" },
         { href: "/painel/relatorio", label: "Relatório", icon: "report" },
         { href: "/painel/convites", label: "Convites recebidos", icon: "tag" },
+      ],
+    },
+    {
+      section: "gestão",
+      items: [
+        { href: "/painel/equipe", label: "Equipe", icon: "tag" },
+        { href: "/painel/perfil", label: "Meus dados", icon: "config" },
       ],
     },
     {

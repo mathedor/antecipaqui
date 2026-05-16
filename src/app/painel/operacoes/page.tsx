@@ -12,8 +12,10 @@ import {
   getConstrutoraByOwnerId,
   getOperacoesByConstrutora,
   getOperacoesByCorretor,
+  getOperacoesByImobiliariaScoped,
 } from "@/lib/actions/operacoes";
 import { getCurrentComercial } from "@/lib/actions/comerciais";
+import { getCurrentImobMembership } from "@/lib/actions/imobiliaria-membros";
 import { PainelShell } from "@/components/painel-shell";
 import { PainelOperacoesTable } from "@/components/painel-operacoes-table";
 import {
@@ -144,16 +146,38 @@ export default async function OperacoesPage({ searchParams }: Search) {
         .map((e) => ({ id: e.id, nome: e.nome }));
     }
   } else {
-    const rows = await getOperacoesByCorretor(user.id);
-    allOps = rows.map((r) => ({
-      id: r.id,
-      numero: r.numero,
-      status: r.status,
-      valorComissao: r.valorComissao,
-      valorPresente: r.valorPresente,
-      counterpartyLabel: r.construtoraNome,
-      createdAt: r.createdAt,
-    }));
+    // Imobiliária / corretor: usa membership pra filtrar.
+    // - Owner/gerente/financeiro: vê todas da imob
+    // - Corretor membro: vê só onde é cedente OU atendente
+    const membership = await getCurrentImobMembership();
+    if (membership) {
+      const rows = await getOperacoesByImobiliariaScoped({
+        imobiliariaId: membership.imobiliariaId,
+        userId: user.id,
+        canSeeAll: membership.canSeeAllOps,
+      });
+      allOps = rows.map((r) => ({
+        id: r.id,
+        numero: r.numero,
+        status: r.status,
+        valorComissao: r.valorComissao,
+        valorPresente: r.valorPresente,
+        counterpartyLabel: r.construtoraNome,
+        createdAt: r.createdAt,
+      }));
+    } else {
+      // Fallback legado: user sem vínculo de imobiliária
+      const rows = await getOperacoesByCorretor(user.id);
+      allOps = rows.map((r) => ({
+        id: r.id,
+        numero: r.numero,
+        status: r.status,
+        valorComissao: r.valorComissao,
+        valorPresente: r.valorPresente,
+        counterpartyLabel: r.construtoraNome,
+        createdAt: r.createdAt,
+      }));
+    }
   }
 
   // Stats agregados (sobre TODAS as operações, ignorando o filtro de data)

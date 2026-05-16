@@ -980,6 +980,14 @@ export const operacoes = pgTable(
       { withTimezone: true },
     ),
     construtoraRecusaAssinaturaMotivo: text("construtora_recusa_assinatura_motivo"),
+    /** Corretor atendente (membro da imob) responsável pelo atendimento que
+     *  gerou essa op. Separado de corretor_user_id (cedente). Quando NULL,
+     *  o atendente é o próprio cedente. Usado pra filtrar relatórios e ops
+     *  visíveis no painel de cada corretor membro. */
+    corretorAtendenteUserId: text("corretor_atendente_user_id").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -2035,6 +2043,163 @@ export const comercialProspectPontos = pgTable(
 
 export type ComercialProspectPonto =
   typeof comercialProspectPontos.$inferSelect;
+
+/* =========================================
+   IMOBILIÁRIA — MEMBROS (multi-corretor)
+   A imob pode ter um time. Cada user adicional vira membro com role
+   interna: owner (= ownerUserId), gerente (tudo menos config), corretor
+   (atendimentos próprios + sem financeiro), financeiro (extrato sem CRM).
+   ========================================= */
+
+export const imobiliariaMembros = pgTable(
+  "imobiliaria_membros",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    imobiliariaId: uuid("imobiliaria_id")
+      .notNull()
+      .references(() => imobiliarias.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** 'owner' | 'gerente' | 'corretor' | 'financeiro' */
+    roleInterna: text("role_interna").notNull().default("corretor"),
+    invitedByUserId: text("invited_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** Email convidado (mesmo antes do user aceitar). Identifica o convite. */
+    email: text("email").notNull(),
+    /** Nome do convidado (snapshot). */
+    nome: text("nome"),
+    /** NULL = ativo. Quando dispensado, preencher. */
+    removedAt: timestamp("removed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("imobiliaria_membros_unique").on(t.imobiliariaId, t.userId),
+    index("imobiliaria_membros_imob_idx").on(t.imobiliariaId, t.removedAt),
+    index("imobiliaria_membros_user_idx").on(t.userId, t.removedAt),
+  ],
+);
+
+export type ImobiliariaMembro = typeof imobiliariaMembros.$inferSelect;
+
+/* =========================================
+   ATENDIMENTOS — Kanban CRM da imobiliária
+   Cada atendimento é uma negociação de venda em andamento. Tem um
+   corretor responsável, dados do comprador (potencial), imóvel descrito,
+   e uma timeline de eventos até virar uma operação (ou perder).
+   ========================================= */
+
+export const atendimentos = pgTable(
+  "atendimentos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    imobiliariaId: uuid("imobiliaria_id")
+      .notNull()
+      .references(() => imobiliarias.id, { onDelete: "cascade" }),
+    /** Corretor responsável (vê esse atendimento sempre, mesmo se for
+     *  só "corretor" membro). Owner/gerente vê todos da imob. */
+    corretorUserId: text("corretor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    /** Funil:
+     *  contato_inicial → qualificado → visita → proposta → negociacao
+     *  → fechado | perdido */
+    status: text("status").notNull().default("contato_inicial"),
+
+    /** Dados do comprador (snapshot, mesmo se veio via link de coleta) */
+    compradorNome: text("comprador_nome").notNull(),
+    compradorEmail: text("comprador_email"),
+    compradorTelefone: text("comprador_telefone"),
+    compradorDocumento: text("comprador_documento"),
+    /** Se foi via link de coleta, guarda referência ao token usado.
+     *  Sem FK forte porque comprador_coleta_tokens é volátil. */
+    coletaToken: text("coleta_token"),
+
+    /** Dados do imóvel — descrição livre por enquanto. */
+    imovelDescricao: text("imovel_descricao"),
+    imovelEndereco: text("imovel_endereco"),
+    imovelCidade: text("imovel_cidade"),
+    imovelUf: text("imovel_uf"),
+    imovelValor: numeric("imovel_valor", { precision: 15, scale: 2 }),
+    /** Comissão potencial estimada. Quando vira op, vira a comissão real. */
+    comissaoEstimada: numeric("comissao_estimada", {
+      precision: 15,
+      scale: 2,
+    }),
+
+    /** Último score Serasa consultado (sob demanda). */
+    scoreComprador: integer("score_comprador"),
+    scoreRisco: text("score_risco"), // baixo | medio | alto | critico
+    scoreConsultadoEm: timestamp("score_consultado_em", {
+      withTimezone: true,
+    }),
+
+    /** Quando atendimento é encaminhado pra antecipação, guarda op gerada. */
+    operacaoId: uuid("operacao_id"),
+
+    /** Quando perdido, motivo. */
+    motivoPerda: text("motivo_perda"),
+
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("atendimentos_imob_idx").on(t.imobiliariaId, t.status),
+    index("atendimentos_corretor_idx").on(t.corretorUserId, t.status),
+    index("atendimentos_operacao_idx").on(t.operacaoId),
+  ],
+);
+
+export type Atendimento = typeof atendimentos.$inferSelect;
+
+/* =========================================
+   ATENDIMENTO EVENTOS — timeline rica do atendimento
+   ========================================= */
+
+export const atendimentoEventos = pgTable(
+  "atendimento_eventos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    atendimentoId: uuid("atendimento_id")
+      .notNull()
+      .references(() => atendimentos.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    /** Tipo do evento:
+     *  visita_agendada | visita_realizada | ligacao | whatsapp | email |
+     *  proposta_enviada | contraproposta | documentacao | anotacao |
+     *  status_change | score_consultado | encaminhado_antecipacao */
+    tipo: text("tipo").notNull(),
+    descricao: text("descricao"),
+    /** Para visita agendada — quando vai acontecer. */
+    dataAgendada: timestamp("data_agendada", { withTimezone: true }),
+    /** Para proposta/contraproposta — valor R$. */
+    valor: numeric("valor", { precision: 15, scale: 2 }),
+    /** Para status_change. */
+    statusFrom: text("status_from"),
+    statusTo: text("status_to"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("atendimento_eventos_atendimento_idx").on(
+      t.atendimentoId,
+      t.createdAt,
+    ),
+  ],
+);
+
+export type AtendimentoEvento = typeof atendimentoEventos.$inferSelect;
 
 /* =========================================
    RELATIONS (pra queries com joins fáceis)
