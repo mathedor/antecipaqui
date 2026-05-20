@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import {
   getAdminMesaStats,
+  getMesaFiltroOpcoes,
   getOpsAguardandoAdmin,
 } from "@/lib/actions/admin-mesa";
 import { formatBRL } from "@/lib/format";
@@ -24,9 +25,66 @@ function fmtPct(n: number) {
   return `${(n * 100).toFixed(2).replace(".", ",")}%`;
 }
 
-type Search = {
-  searchParams: Promise<{ filtro?: string }>;
+function isoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+/** Resolve preset de período → { de, ate } em YYYY-MM-DD. */
+function resolvePeriodo(
+  periodo: string | undefined,
+  deRaw: string | undefined,
+  ateRaw: string | undefined,
+): { de?: string; ate?: string } {
+  const hoje = new Date();
+  const hojeStr = isoDate(hoje);
+  switch (periodo) {
+    case "hoje":
+      return { de: hojeStr, ate: hojeStr };
+    case "7d": {
+      const d = new Date(hoje);
+      d.setDate(d.getDate() - 6);
+      return { de: isoDate(d), ate: hojeStr };
+    }
+    case "30d": {
+      const d = new Date(hoje);
+      d.setDate(d.getDate() - 29);
+      return { de: isoDate(d), ate: hojeStr };
+    }
+    case "mes": {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      return { de: isoDate(d), ate: hojeStr };
+    }
+    case "custom":
+      return { de: deRaw || undefined, ate: ateRaw || undefined };
+    default:
+      return {};
+  }
+}
+
+type SearchParams = {
+  filtro?: string;
+  construtora?: string;
+  imobiliaria?: string;
+  comercial?: string;
+  periodo?: string;
+  de?: string;
+  ate?: string;
 };
+
+type Search = {
+  searchParams: Promise<SearchParams>;
+};
+
+/** Monta href preservando params atuais, com overrides. Remove vazios. */
+function buildHref(base: SearchParams, overrides: Partial<SearchParams>): string {
+  const merged: Record<string, string | undefined> = { ...base, ...overrides };
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(merged)) {
+    if (v) qs.set(k, v);
+  }
+  const s = qs.toString();
+  return s ? `/admin/decidir?${s}` : "/admin/decidir";
+}
 
 export default async function AdminDecidirPage({ searchParams }: Search) {
   const admin = await requireAdmin();
@@ -41,9 +99,19 @@ export default async function AdminDecidirPage({ searchParams }: Search) {
   else if (filtro === "fundo_pendente")
     statusFiltro = ["pre_aprovada", "analise_final", "enviada_para_assinatura"];
 
-  const [ops, stats] = await Promise.all([
-    getOpsAguardandoAdmin(statusFiltro ? { status: statusFiltro } : undefined),
+  const { de, ate } = resolvePeriodo(params.periodo, params.de, params.ate);
+
+  const [ops, stats, opcoes] = await Promise.all([
+    getOpsAguardandoAdmin({
+      status: statusFiltro,
+      construtoraId: params.construtora,
+      imobiliariaId: params.imobiliaria,
+      comercialId: params.comercial,
+      dataInicio: de,
+      dataFim: ate,
+    }),
     getAdminMesaStats(),
+    getMesaFiltroOpcoes(),
   ]);
 
   // Aplica filtro adicional pra fundo_pendente
@@ -53,6 +121,12 @@ export default async function AdminDecidirPage({ searchParams }: Search) {
       : filtro === "fundo_recusou"
         ? ops.filter((o) => o.fundoAprovacao === "recusada")
         : ops;
+
+  const temFiltrosAvancados =
+    !!params.construtora ||
+    !!params.imobiliaria ||
+    !!params.comercial ||
+    !!params.periodo;
 
   return (
     <AdminShell active="/admin/decidir" userName={admin.nome}>
@@ -71,43 +145,59 @@ export default async function AdminDecidirPage({ searchParams }: Search) {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="flex items-center gap-2 mb-6 flex-wrap">
+      {/* Chips de status — preservam filtros avançados */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         <FilterChip
           label={`Todos pendentes (${ops.length})`}
-          href="/admin/decidir"
+          href={buildHref(params, { filtro: undefined })}
           active={filtro === "todos"}
         />
         <FilterChip
           label={`Aguardando análise (${stats.qtdAguardandoAprovacao})`}
-          href="/admin/decidir?filtro=aguardando"
+          href={buildHref(params, { filtro: "aguardando" })}
           active={filtro === "aguardando"}
           tone={stats.qtdAguardandoAprovacao > 0 ? "warn" : "default"}
         />
         <FilterChip
           label={`Docs incompletos (${stats.qtdDocsIncompletos})`}
-          href="/admin/decidir?filtro=docs_incompletos"
+          href={buildHref(params, { filtro: "docs_incompletos" })}
           active={filtro === "docs_incompletos"}
         />
         <FilterChip
           label={`Fundo pendente (${stats.qtdFundoPendente})`}
-          href="/admin/decidir?filtro=fundo_pendente"
+          href={buildHref(params, { filtro: "fundo_pendente" })}
           active={filtro === "fundo_pendente"}
           tone={stats.qtdFundoPendente > 0 ? "warn" : "default"}
         />
         {stats.qtdFundoRecusou > 0 && (
           <FilterChip
             label={`Fundo recusou (${stats.qtdFundoRecusou})`}
-            href="/admin/decidir?filtro=fundo_recusou"
+            href={buildHref(params, { filtro: "fundo_recusou" })}
             active={filtro === "fundo_recusou"}
             tone="danger"
           />
         )}
       </div>
 
+      {/* Filtros avançados — form GET (data/período, construtora, imob, comercial) */}
+      <MesaFiltros
+        params={params}
+        opcoes={opcoes}
+        ativo={temFiltrosAvancados}
+      />
+
       {opsFiltradas.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border-strong bg-bg-card p-10 text-center text-fg-muted">
-          🎉 Nenhuma operação na fila selecionada.
+          {temFiltrosAvancados || filtro !== "todos" ? (
+            <>
+              Nenhuma operação bate com os filtros.{" "}
+              <Link href="/admin/decidir" className="text-accent hover:underline">
+                Limpar filtros
+              </Link>
+            </>
+          ) : (
+            "🎉 Nenhuma operação na fila."
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -117,6 +207,156 @@ export default async function AdminDecidirPage({ searchParams }: Search) {
         </div>
       )}
     </AdminShell>
+  );
+}
+
+function MesaFiltros({
+  params,
+  opcoes,
+  ativo,
+}: {
+  params: SearchParams;
+  opcoes: {
+    construtoras: { id: string; nome: string }[];
+    imobiliarias: { id: string; nome: string }[];
+    comerciais: { id: string; nome: string }[];
+  };
+  ativo: boolean;
+}) {
+  const selectCls =
+    "h-9 rounded-lg border border-border bg-bg px-2.5 text-sm text-fg focus:border-accent focus:outline-none";
+  const labelCls =
+    "font-mono text-[10px] uppercase tracking-wider text-fg-dim mb-1 block";
+  return (
+    <form
+      method="get"
+      className="rounded-2xl border border-border bg-bg-card p-4 mb-6"
+    >
+      {/* Preserva o filtro de status atual ao submeter */}
+      {params.filtro && (
+        <input type="hidden" name="filtro" value={params.filtro} />
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div>
+          <label className={labelCls} htmlFor="f-periodo">
+            Período (criação)
+          </label>
+          <select
+            id="f-periodo"
+            name="periodo"
+            defaultValue={params.periodo ?? ""}
+            className={`${selectCls} w-full`}
+          >
+            <option value="">Qualquer data</option>
+            <option value="hoje">Hoje</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="mes">Este mês</option>
+            <option value="custom">Período personalizado ↓</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelCls} htmlFor="f-de">
+            De
+          </label>
+          <input
+            id="f-de"
+            type="date"
+            name="de"
+            defaultValue={params.de ?? ""}
+            className={`${selectCls} w-full`}
+          />
+        </div>
+        <div>
+          <label className={labelCls} htmlFor="f-ate">
+            Até
+          </label>
+          <input
+            id="f-ate"
+            type="date"
+            name="ate"
+            defaultValue={params.ate ?? ""}
+            className={`${selectCls} w-full`}
+          />
+        </div>
+        <div>
+          <label className={labelCls} htmlFor="f-construtora">
+            Construtora
+          </label>
+          <select
+            id="f-construtora"
+            name="construtora"
+            defaultValue={params.construtora ?? ""}
+            className={`${selectCls} w-full`}
+          >
+            <option value="">Todas</option>
+            {opcoes.construtoras.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls} htmlFor="f-imobiliaria">
+            Imobiliária
+          </label>
+          <select
+            id="f-imobiliaria"
+            name="imobiliaria"
+            defaultValue={params.imobiliaria ?? ""}
+            className={`${selectCls} w-full`}
+          >
+            <option value="">Todas</option>
+            {opcoes.imobiliarias.map((im) => (
+              <option key={im.id} value={im.id}>
+                {im.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls} htmlFor="f-comercial">
+            Comercial
+          </label>
+          <select
+            id="f-comercial"
+            name="comercial"
+            defaultValue={params.comercial ?? ""}
+            className={`${selectCls} w-full`}
+          >
+            <option value="">Todos</option>
+            {opcoes.comerciais.map((cm) => (
+              <option key={cm.id} value={cm.id}>
+                {cm.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-4">
+        <button
+          type="submit"
+          className="h-9 px-4 rounded-lg bg-accent text-white font-semibold text-sm hover:bg-accent-dark transition"
+        >
+          Aplicar filtros
+        </button>
+        {ativo && (
+          <Link
+            href={buildHref(
+              {},
+              { filtro: params.filtro === "todos" ? undefined : params.filtro },
+            )}
+            className="h-9 px-4 inline-flex items-center rounded-lg border border-border text-fg-muted font-semibold text-sm hover:border-accent transition"
+          >
+            Limpar
+          </Link>
+        )}
+        <span className="text-[11px] text-fg-dim font-mono ml-auto">
+          use &quot;personalizado&quot; com De/Até pra range específico
+        </span>
+      </div>
+    </form>
   );
 }
 
@@ -161,6 +401,12 @@ function OpCard({ op }: { op: Awaited<ReturnType<typeof getOpsAguardandoAdmin>>[
               <>
                 {" · fundo "}
                 <span className="text-fg">{op.fundoNome}</span>
+              </>
+            )}
+            {op.comercialNome && (
+              <>
+                {" · comercial "}
+                <span className="text-fg">{op.comercialNome}</span>
               </>
             )}
           </div>

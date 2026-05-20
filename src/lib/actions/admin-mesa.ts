@@ -11,8 +11,11 @@ export type AdminOpDecidir = {
   status: string;
   construtoraId: string;
   construtoraNome: string | null;
+  imobiliariaId: string | null;
   imobiliariaNome: string | null;
   corretorNome: string | null;
+  comercialId: string | null;
+  comercialNome: string | null;
   fundoId: string | null;
   fundoNome: string | null;
   valorComissao: number;
@@ -37,9 +40,17 @@ export type AdminOpDecidir = {
 };
 
 /** Carrega ops esperando decisão do admin. Filtra por status do fluxo de
- *  aprovação (não considera estados terminais). */
+ *  aprovação (não considera estados terminais) + filtros opcionais de
+ *  construtora/imobiliária/comercial/período (data de criação). */
 export async function getOpsAguardandoAdmin(opts?: {
   status?: string[];
+  construtoraId?: string;
+  imobiliariaId?: string;
+  comercialId?: string;
+  /** YYYY-MM-DD — filtra por created_at >= dataInicio (00:00). */
+  dataInicio?: string;
+  /** YYYY-MM-DD — filtra por created_at < dataFim + 1 dia (inclui o dia todo). */
+  dataFim?: string;
 }): Promise<AdminOpDecidir[]> {
   await requireAdmin();
 
@@ -58,6 +69,23 @@ export async function getOpsAguardandoAdmin(opts?: {
     sql`, `,
   );
 
+  // Filtros condicionais. O comercial vem da imobiliária da op, com fallback
+  // pra construtora (quem trouxe a conta que originou a operação).
+  const filtros = [sql`o.status IN (${statusList})`];
+  if (opts?.construtoraId)
+    filtros.push(sql`o.construtora_id = ${opts.construtoraId}::uuid`);
+  if (opts?.imobiliariaId)
+    filtros.push(sql`o.imobiliaria_id = ${opts.imobiliariaId}::uuid`);
+  if (opts?.comercialId)
+    filtros.push(
+      sql`COALESCE(im.comercial_id, c.comercial_id) = ${opts.comercialId}::uuid`,
+    );
+  if (opts?.dataInicio)
+    filtros.push(sql`o.created_at >= ${opts.dataInicio}::date`);
+  if (opts?.dataFim)
+    filtros.push(sql`o.created_at < (${opts.dataFim}::date + interval '1 day')`);
+  const whereClause = sql.join(filtros, sql` AND `);
+
   const result = await db.execute(sql`
     SELECT
       o.id::text AS operacao_id,
@@ -65,8 +93,11 @@ export async function getOpsAguardandoAdmin(opts?: {
       o.status,
       o.construtora_id::text AS construtora_id,
       COALESCE(c.nome_fantasia, c.razao_social) AS construtora_nome,
+      o.imobiliaria_id::text AS imobiliaria_id,
       COALESCE(im.nome_fantasia, im.razao_social) AS imobiliaria_nome,
       u.nome AS corretor_nome,
+      COALESCE(im.comercial_id, c.comercial_id)::text AS comercial_id,
+      COALESCE(cm.apelido, cm.nome_completo) AS comercial_nome,
       o.fundo_id::text AS fundo_id,
       COALESCE(f.nome_fantasia, f.razao_social) AS fundo_nome,
       o.valor_comissao::float AS valor_comissao,
@@ -99,13 +130,14 @@ export async function getOpsAguardandoAdmin(opts?: {
     FROM operacoes o
     LEFT JOIN construtoras c ON c.id = o.construtora_id
     LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
+    LEFT JOIN comerciais cm ON cm.id = COALESCE(im.comercial_id, c.comercial_id)
     LEFT JOIN users u ON u.id = o.corretor_user_id
     LEFT JOIN fundos f ON f.id = o.fundo_id
     LEFT JOIN (
       SELECT operacao_id, SUM(valor) AS total
       FROM custos_operacao GROUP BY operacao_id
     ) custos ON custos.operacao_id = o.id
-    WHERE o.status IN (${statusList})
+    WHERE ${whereClause}
     ORDER BY o.created_at ASC
   `);
 
@@ -115,8 +147,11 @@ export async function getOpsAguardandoAdmin(opts?: {
     status: string;
     construtora_id: string;
     construtora_nome: string | null;
+    imobiliaria_id: string | null;
     imobiliaria_nome: string | null;
     corretor_nome: string | null;
+    comercial_id: string | null;
+    comercial_nome: string | null;
     fundo_id: string | null;
     fundo_nome: string | null;
     valor_comissao: number;
@@ -152,8 +187,11 @@ export async function getOpsAguardandoAdmin(opts?: {
       status: r.status,
       construtoraId: r.construtora_id,
       construtoraNome: r.construtora_nome,
+      imobiliariaId: r.imobiliaria_id,
       imobiliariaNome: r.imobiliaria_nome,
       corretorNome: r.corretor_nome,
+      comercialId: r.comercial_id,
+      comercialNome: r.comercial_nome,
       fundoId: r.fundo_id,
       fundoNome: r.fundo_nome,
       valorComissao: r.valor_comissao,
@@ -184,6 +222,64 @@ export async function getOpsAguardandoAdmin(opts?: {
       fundoRecusaMotivo: r.fundo_recusa_motivo,
     };
   });
+}
+
+/** Opções pros selects de filtro da mesa — só entidades que têm ao menos
+ *  uma op na fila de decisão (qualquer status do fluxo). */
+export async function getMesaFiltroOpcoes(): Promise<{
+  construtoras: { id: string; nome: string }[];
+  imobiliarias: { id: string; nome: string }[];
+  comerciais: { id: string; nome: string }[];
+}> {
+  await requireAdmin();
+
+  const statusBase = sql.join(
+    [
+      "aguardando_aprovacao",
+      "documentos_incompletos",
+      "pre_aprovada",
+      "analise_final",
+      "enviada_para_assinatura",
+    ].map((s) => sql`${s}`),
+    sql`, `,
+  );
+
+  const [construtorasRes, imobiliariasRes, comerciaisRes] = await Promise.all([
+    db.execute(sql`
+      SELECT DISTINCT c.id::text AS id,
+        COALESCE(c.nome_fantasia, c.razao_social) AS nome
+      FROM operacoes o
+      JOIN construtoras c ON c.id = o.construtora_id
+      WHERE o.status IN (${statusBase})
+      ORDER BY nome
+    `),
+    db.execute(sql`
+      SELECT DISTINCT im.id::text AS id,
+        COALESCE(im.nome_fantasia, im.razao_social) AS nome
+      FROM operacoes o
+      JOIN imobiliarias im ON im.id = o.imobiliaria_id
+      WHERE o.status IN (${statusBase})
+      ORDER BY nome
+    `),
+    db.execute(sql`
+      SELECT DISTINCT cm.id::text AS id,
+        COALESCE(cm.apelido, cm.nome_completo) AS nome
+      FROM operacoes o
+      LEFT JOIN construtoras c ON c.id = o.construtora_id
+      LEFT JOIN imobiliarias im ON im.id = o.imobiliaria_id
+      JOIN comerciais cm ON cm.id = COALESCE(im.comercial_id, c.comercial_id)
+      WHERE o.status IN (${statusBase})
+      ORDER BY nome
+    `),
+  ]);
+
+  type Row = { id: string; nome: string };
+  const rows = (r: unknown) => (r as { rows: Row[] }).rows ?? [];
+  return {
+    construtoras: rows(construtorasRes),
+    imobiliarias: rows(imobiliariasRes),
+    comerciais: rows(comerciaisRes),
+  };
 }
 
 /** Stats agregadas pro topo da página */
