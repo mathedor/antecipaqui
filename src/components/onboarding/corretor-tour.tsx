@@ -126,7 +126,7 @@ const ALL_STEPS: Step[] = [
     descricao:
       "Em 2 minutos: escolhe a construtora, informa o valor da venda + comissão + parcelas. Sistema calcula valor presente (quanto você recebe à vista) e gera o cronograma de parcelas que a construtora vai pagar pro fundo.",
     pontos: [
-      "Anexe contrato + nota fiscal (obrigatório)",
+      "Anexe os contratos obrigatórios (nota fiscal é opcional)",
       "Mesa AQ pré-aprova (até 24h)",
       "Fundo aprova final + assina contrato (ZapSign)",
       "Em até 1 dia útil o dinheiro cai na sua conta",

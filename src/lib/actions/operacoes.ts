@@ -293,7 +293,7 @@ export async function createOperacaoAction(
     };
   }
 
-  // Documentos obrigatórios (validados antes de inserir a operação)
+  // Documentos: contratos obrigatórios; NF e comprovante de entrada opcionais.
   const docContratoVendaUrl = String(
     formData.get("doc_contrato_venda") || "",
   ).trim();
@@ -311,8 +311,6 @@ export async function createOperacaoAction(
     return { ok: false, error: "Anexe o contrato de compra e venda" };
   if (!docContratoComissaoUrl)
     return { ok: false, error: "Anexe o contrato de comissionamento" };
-  if (!docNotaFiscalUrl)
-    return { ok: false, error: "Anexe a nota fiscal da comissão" };
 
   // Imobiliária do user (se for corretor / imobiliária)
   const imob = (
@@ -455,13 +453,15 @@ export async function createOperacaoAction(
       nome: String(formData.get("doc_contrato_comissao_nome") || "contrato_comissao.pdf"),
       nameBase: "doc_contrato_comissao",
     },
-    {
+  ];
+  if (docNotaFiscalUrl) {
+    docRows.push({
       tipo: "nota_fiscal",
       url: docNotaFiscalUrl,
       nome: String(formData.get("doc_nota_fiscal_nome") || "nota_fiscal.pdf"),
       nameBase: "doc_nota_fiscal",
-    },
-  ];
+    });
+  }
   if (docComprovanteEntradaUrl) {
     docRows.push({
       tipo: "comprovante_entrada",

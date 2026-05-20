@@ -125,7 +125,7 @@ function buildSteps(imobNome: string): Step[] {
       descricao:
         "Em 2 minutos: escolhe a construtora, informa valor da venda + comissão + parcelas. Sistema calcula valor presente e gera cronograma. Você fica registrado como o atendente da op — assim sua comissão entra na SUA projeção, mesmo a operação sendo da imob.",
       pontos: [
-        "Anexe contrato + nota fiscal (obrigatório)",
+        "Anexe os contratos obrigatórios (nota fiscal é opcional)",
         "Mesa AQ pré-aprova (até 24h)",
         "Fundo aprova final + assina contrato (ZapSign)",
         "Em até 1 dia útil o dinheiro cai na conta da imobiliária",

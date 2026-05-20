@@ -177,12 +177,11 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
             onChange={setDocContratoComissao}
           />
           <FileUploadField
-            label="Nota fiscal da comissão"
+            label="Nota fiscal da comissão (opcional)"
             name="doc_nota_fiscal"
-            required
             tipo="nota_fiscal"
             folder="operacoes/nota-fiscal"
-            description="NF emitida pelo cedente pra construtora."
+            description="NF emitida pelo cedente pra construtora. Pode anexar depois."
             onChange={setDocNotaFiscal}
           />
           <input
@@ -207,8 +206,7 @@ export function CompletarConviteForm({ convite, taxaMensalSugerida }: Props) {
           disabled={
             pending ||
             !docContratoVenda ||
-            !docContratoComissao ||
-            !docNotaFiscal
+            !docContratoComissao
           }
           className="btn-primary !w-full justify-center !h-13"
         >

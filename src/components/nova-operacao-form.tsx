@@ -509,12 +509,11 @@ export function NovaOperacaoForm({
               onChange={setDocContratoComissao}
             />
             <FileUploadField
-              label="Nota fiscal da comissão"
+              label="Nota fiscal da comissão (opcional)"
               name="doc_nota_fiscal"
-              required
               tipo="nota_fiscal"
               folder="operacoes/nota-fiscal"
-              description="NF emitida pelo corretor/imobiliária pra construtora."
+              description="NF emitida pelo corretor/imobiliária pra construtora. Pode anexar depois."
               onChange={setDocNotaFiscal}
             />
             <input type="hidden" name="doc_contrato_venda_nome" value={docContratoVenda?.name ?? ""} />
@@ -529,8 +528,7 @@ export function NovaOperacaoForm({
               parcelas.length === 0 ||
               !construtoraId ||
               !docContratoVenda ||
-              !docContratoComissao ||
-              !docNotaFiscal
+              !docContratoComissao
             }
             className="btn-primary !w-full justify-center !h-13"
           >

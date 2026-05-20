@@ -514,7 +514,7 @@ export async function completarConviteAction(
   if (pending.status !== "aguardando_cedente")
     return { ok: false, error: "Convite já foi processado" };
 
-  // Documentos da operação (3 obrigatórios)
+  // Documentos: contratos obrigatórios; NF opcional.
   const docContratoVendaUrl = String(
     formData.get("doc_contrato_venda") || "",
   ).trim();
@@ -528,8 +528,6 @@ export async function completarConviteAction(
     return { ok: false, error: "Anexe o contrato de compra e venda" };
   if (!docContratoComissaoUrl)
     return { ok: false, error: "Anexe o contrato de comissionamento" };
-  if (!docNotaFiscalUrl)
-    return { ok: false, error: "Anexe a nota fiscal da comissão" };
 
   // Imobiliária do user (se for PJ)
   const [imob] = await db
@@ -665,26 +663,33 @@ export async function completarConviteAction(
   );
 
   // Documentos
-  const docNomes = [
+  const docNomes: {
+    tipo: "contrato_venda" | "contrato_comissao" | "nota_fiscal";
+    url: string;
+    nome: string;
+    nameBase: string;
+  }[] = [
     {
-      tipo: "contrato_venda" as const,
+      tipo: "contrato_venda",
       url: docContratoVendaUrl,
       nome: String(formData.get("doc_contrato_venda_nome") || "contrato_venda.pdf"),
       nameBase: "doc_contrato_venda",
     },
     {
-      tipo: "contrato_comissao" as const,
+      tipo: "contrato_comissao",
       url: docContratoComissaoUrl,
       nome: String(formData.get("doc_contrato_comissao_nome") || "contrato_comissao.pdf"),
       nameBase: "doc_contrato_comissao",
     },
-    {
-      tipo: "nota_fiscal" as const,
+  ];
+  if (docNotaFiscalUrl) {
+    docNomes.push({
+      tipo: "nota_fiscal",
       url: docNotaFiscalUrl,
       nome: String(formData.get("doc_nota_fiscal_nome") || "nota_fiscal.pdf"),
       nameBase: "doc_nota_fiscal",
-    },
-  ];
+    });
+  }
   await db.insert(documentos).values(
     docNomes.map((d) => {
       const v = extractValidacao(formData, d.nameBase);
