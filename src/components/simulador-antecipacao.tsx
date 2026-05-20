@@ -22,10 +22,6 @@ function fmtBRL(v: number) {
   });
 }
 
-function fmtPct(v: number, digits = 2) {
-  return `${(v * 100).toFixed(digits).replace(".", ",")}%`;
-}
-
 function parseBRL(s: string): number {
   const cleaned = s
     .replace(/[R$\s]/g, "")
@@ -208,13 +204,13 @@ export function SimuladorAntecipacao({ fundos, taxaPadrao }: Props) {
           Antecipar TODA a comissão agora — comparativo por fundo
         </h2>
         <p className="text-xs text-fg-muted mb-5">
-          Cada fundo tem sua taxa. Quanto menor a taxa, mais você recebe.
+          Compare quanto cada fundo paga pela sua comissão. Quanto maior o
+          valor líquido, melhor pra você.
         </p>
 
         <div className="space-y-2">
           {cenarios.map((c) => {
             const isBest = c.fundoId === melhor.fundoId;
-            const custoPct = comissao > 0 ? c.custo / comissao : 0;
             return (
               <div
                 key={c.fundoId}
@@ -229,28 +225,21 @@ export function SimuladorAntecipacao({ fundos, taxaPadrao }: Props) {
                     <span className="font-bold text-fg">{c.fundoNome}</span>
                     {isBest && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-mono font-semibold bg-success text-white">
-                        melhor taxa
+                        melhor oferta
                       </span>
                     )}
                   </div>
-                  <span className="font-mono text-xs text-fg-muted">
-                    {fmtPct(c.taxaMensal)} a.m.
-                  </span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                <div className="grid grid-cols-2 gap-2 text-sm">
                   <Mini
-                    label="Recebe agora"
+                    label="Recebe líquido"
                     value={fmtBRL(c.vpAgora)}
                     tone="success"
                   />
                   <Mini
-                    label="Custo da antecipação"
+                    label="Deságio"
                     value={fmtBRL(c.custo)}
                     tone="warn"
-                  />
-                  <Mini
-                    label="% do total"
-                    value={fmtPct(custoPct, 1)}
                   />
                 </div>
               </div>

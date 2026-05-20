@@ -10,7 +10,7 @@ import { LINKS } from "@/lib/links";
 
 const stats = [
   { value: 1, suffix: " dia", label: "pra cair na conta" },
-  { value: 6, suffix: "%", label: "taxa média mensal" },
+  { value: 100, suffix: "%", label: "digital" },
   { value: 24, suffix: "h", label: "pra aprovação" },
   { value: 0, suffix: "", label: "papelada física" },
 ];
@@ -141,7 +141,7 @@ export default async function Home() {
           >
             Antecipa a comissão futura da sua próxima venda imobiliária.
             Cadastra, envia os contratos, e em 1 dia útil o valor cai na sua conta.
-            Cobramos um deságio mensal — você sabe quanto recebe antes de aceitar.
+            Você vê o deságio e quanto recebe líquido antes de aceitar — sem surpresa.
           </p>
 
           <div
@@ -185,7 +185,7 @@ export default async function Home() {
             </h2>
             <p className="mt-4 text-fg-muted text-lg leading-relaxed">
               Sem cadastro, sem login. Arraste os controles e simule cenários
-              reais de comissão. O cálculo segue a taxa média de 6% a.m.
+              reais de comissão e veja quanto recebe líquido.
             </p>
           </Reveal>
           <Reveal>

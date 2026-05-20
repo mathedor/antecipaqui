@@ -16,8 +16,8 @@ const groups = [
         a: "Após aprovação técnica + assinatura digital do contrato, em até 1 dia útil. Da abertura da operação até o crédito, tipicamente 24-48h.",
       },
       {
-        q: "Qual a taxa cobrada?",
-        a: "A taxa média é de 6% ao mês, aplicada como deságio no valor presente. O valor exato pode variar conforme análise de crédito da operação. Você sempre vê o valor líquido antes de aceitar.",
+        q: "Como funciona o deságio?",
+        a: "A antecipação aplica um deságio sobre o valor presente da comissão, definido por operação conforme a análise de crédito. Você sempre vê o deságio em reais e o valor líquido que vai receber antes de aceitar — sem surpresa.",
       },
       {
         q: "Posso simular antes de me cadastrar?",

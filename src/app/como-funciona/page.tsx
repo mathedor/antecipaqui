@@ -32,7 +32,7 @@ const passos = [
       "Valor da venda + comissão + parcelas",
       "Cadastro de construtoras (auto-cadastro disponível)",
       "Anexo de contrato de venda, contrato de comissão e NF",
-      "Cálculo do deságio em tempo real (~6% a.m.)",
+      "Cálculo do deságio em tempo real",
     ],
   },
   {

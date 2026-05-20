@@ -874,7 +874,7 @@ export function MockupSimulador() {
         <div className="rounded-2xl bg-gradient-to-br from-success to-emerald-700 text-white p-4 shadow-lg animate-slide-in-bottom" style={{ animationDelay: "0.8s" }}>
           <div className="text-[9px] uppercase tracking-wider opacity-80">você recebe HOJE</div>
           <div className="text-3xl font-bold tabular mt-1 animate-number-pulse">R$ 21.832</div>
-          <div className="text-[10px] opacity-80 mt-1">deságio R$ 2.668 (6% a.m.)</div>
+          <div className="text-[10px] opacity-80 mt-1">deságio de R$ 2.668</div>
         </div>
         <div className="grid grid-cols-2 gap-2 mt-2 text-[10px]">
           <div className="rounded border border-border bg-slate-50 p-2 animate-slide-in-bottom" style={{ animationDelay: "1.0s" }}>
@@ -882,11 +882,11 @@ export function MockupSimulador() {
             <div className="font-bold text-slate-900">89,1%</div>
           </div>
           <div className="rounded border border-border bg-slate-50 p-2 animate-slide-in-bottom" style={{ animationDelay: "1.2s" }}>
-            <div className="text-[9px] uppercase text-slate-500 font-mono">tx mensal</div>
-            <div className="font-bold text-slate-900">6,00%</div>
+            <div className="text-[9px] uppercase text-slate-500 font-mono">cai em</div>
+            <div className="font-bold text-slate-900">1 dia útil</div>
           </div>
         </div>
-        <div className="text-[9px] text-slate-500 text-center italic">cadastre pra travar essa taxa</div>
+        <div className="text-[9px] text-slate-500 text-center italic">cadastre e simule o seu caso</div>
       </div>
     </MobileFrame>
   );
