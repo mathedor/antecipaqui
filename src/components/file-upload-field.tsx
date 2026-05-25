@@ -142,6 +142,17 @@ export function FileUploadField({
       blob: { ...blobBase, validacaoStatus: "revisao", validacaoMotivo: motivo },
     });
 
+    // Arquivos grandes (contrato escaneado de várias páginas, foto de iPhone)
+    // sufocam a validação por IA — a chamada falha/estoura o timeout e cai no
+    // fail-open de qualquer jeito. Pra não fazer o corretor esperar ~20s por
+    // documento, pulamos a checagem desses e mandamos direto pra revisão.
+    const SKIP_VALIDACAO_ACIMA = 5 * 1024 * 1024; // 5 MB
+    if (file.size > SKIP_VALIDACAO_ACIMA) {
+      return aceitoSemChecagem(
+        "Documento grande — enviado direto pra revisão do admin.",
+      );
+    }
+
     // Passo 2 — valida o conteúdo server-side (corpo é só JSON), com timeout
     // rígido. Se passar do tempo, o arquivo já está salvo → segue como revisão.
     setStatus("validating");
