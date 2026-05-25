@@ -94,10 +94,28 @@ export function ImportarContratoForm() {
     };
     if (result.valorVenda !== null)
       draft.valorVenda = numberToMask(result.valorVenda);
-    if (result.valorComissao !== null)
-      draft.valorComissao = numberToMask(result.valorComissao);
+
+    // Comissão: usa o valor em R$ se houver; senão calcula a partir do
+    // percentual (que vem como fração, ex 0.05) × valor da venda.
+    let comissao = result.valorComissao;
+    if (
+      (comissao === null || comissao <= 0) &&
+      result.comissaoPercentual &&
+      result.valorVenda
+    ) {
+      comissao = result.valorVenda * result.comissaoPercentual;
+    }
+    if (comissao !== null && comissao > 0)
+      draft.valorComissao = numberToMask(comissao);
+
     if (result.dataVenda) draft.dataVenda = result.dataVenda;
-    if (result.numeroParcelas) draft.numParcelas = result.numeroParcelas;
+    // Parcelas DA COMISSÃO: o produto aceita no máx 4 (limite de 120 dias).
+    if (result.numeroParcelas)
+      draft.numParcelas = Math.min(Math.max(result.numeroParcelas, 1), 4);
+    // Construtora: leva nome/CNPJ pro form casar com as já cadastradas
+    // (ou abrir o cadastro já preenchido se for nova).
+    if (result.construtoraNome) draft.construtoraNome = result.construtoraNome;
+    if (result.construtoraCnpj) draft.construtoraCnpj = result.construtoraCnpj;
     try {
       localStorage.setItem("nova-operacao-draft-v1", JSON.stringify(draft));
     } catch {

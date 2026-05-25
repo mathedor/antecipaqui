@@ -13,9 +13,18 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onCreated: (construtoraId: string) => void;
+  /** Pré-preenche o cadastro com dados extraídos por OCR (importar contrato). */
+  initialCnpj?: string;
+  initialNome?: string;
 };
 
-export function ConstrutoraModal({ open, onClose, onCreated }: Props) {
+export function ConstrutoraModal({
+  open,
+  onClose,
+  onCreated,
+  initialCnpj,
+  initialNome,
+}: Props) {
   const [state, action, pending] = useActionState<
     CreateConstrutoraState,
     FormData
@@ -77,6 +86,24 @@ export function ConstrutoraModal({ open, onClose, onCreated }: Props) {
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  // Ao abrir pré-preenchido (vindo do OCR de importação): dispara o lookup do
+  // CNPJ na Receita (preenche razão/endereço); se não houver CNPJ válido, usa
+  // o nome extraído como ponto de partida.
+  useEffect(() => {
+    if (!open) return;
+    const cnpjDigits = (initialCnpj ?? "").replace(/\D/g, "");
+    if (cnpjDigits.length === 14) {
+      void onCnpjChange(initialCnpj!);
+    } else {
+      if (initialCnpj) setCnpj(maskCNPJ(initialCnpj));
+      if (initialNome && razaoRef.current && !razaoRef.current.value) {
+        razaoRef.current.value = initialNome;
+      }
+    }
+    // onCnpjChange é recriada a cada render; rodar só quando abrir/prefill mudam.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialCnpj, initialNome]);
 
   return (
     <div

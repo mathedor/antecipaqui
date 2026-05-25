@@ -103,6 +103,8 @@ export function NovaOperacaoForm({
       if (!raw) return null;
       const d = JSON.parse(raw) as {
         construtoraId?: string;
+        construtoraNome?: string;
+        construtoraCnpj?: string;
         valorVenda?: string;
         valorComissao?: string;
         valorEntrada?: string;
@@ -121,10 +123,44 @@ export function NovaOperacaoForm({
     }
   }, [preset]);
 
+  // Casa a construtora extraída por OCR (nome/CNPJ no draft) com uma já
+  // cadastrada: primeiro por CNPJ (só dígitos), depois por nome.
+  const construtoraMatch = useMemo(() => {
+    const nome = (draftRestore?.construtoraNome ?? "").trim();
+    const cnpj = draftRestore?.construtoraCnpj ?? "";
+    const cnpjDigits = cnpj.replace(/\D/g, "");
+    if (!nome && !cnpjDigits) return null;
+    const nomeLc = nome.toLowerCase();
+    let hit: Construtora | undefined;
+    if (cnpjDigits.length >= 8)
+      hit = construtoras.find((c) => c.cnpj.replace(/\D/g, "") === cnpjDigits);
+    if (!hit && nomeLc) {
+      hit = construtoras.find((c) => {
+        const rs = (c.razaoSocial ?? "").trim().toLowerCase();
+        const nf = (c.nomeFantasia ?? "").trim().toLowerCase();
+        return (
+          rs === nomeLc ||
+          nf === nomeLc ||
+          (!!rs && (rs.includes(nomeLc) || nomeLc.includes(rs)))
+        );
+      });
+    }
+    return { hit: hit ?? null, nome, cnpj };
+  }, [draftRestore, construtoras]);
+
   const [construtoraId, setConstrutoraId] = useState(
-    preset?.construtoraId ?? draftRestore?.construtoraId ?? "",
+    preset?.construtoraId ??
+      draftRestore?.construtoraId ??
+      construtoraMatch?.hit?.id ??
+      "",
   );
   const [showModal, setShowModal] = useState(false);
+  // Quando a construtora do contrato não está cadastrada, guardamos os dados
+  // extraídos pra pré-preencher o modal de cadastro num clique.
+  const [modalPrefill, setModalPrefill] = useState<{
+    nome?: string;
+    cnpj?: string;
+  } | null>(null);
 
   const [valorVenda, setValorVenda] = useState(
     preset
@@ -143,7 +179,10 @@ export function NovaOperacaoForm({
     draftRestore?.dataVenda ?? new Date().toISOString().slice(0, 10),
   );
   const [numParcelas, setNumParcelas] = useState(
-    preset?.numeroParcelas ?? draftRestore?.numParcelas ?? 3,
+    preset?.numeroParcelas ??
+      (draftRestore?.numParcelas
+        ? Math.min(Math.max(draftRestore.numParcelas, 1), 4)
+        : 3),
   );
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
 
@@ -301,12 +340,45 @@ export function NovaOperacaoForm({
               </div>
               <button
                 type="button"
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  setModalPrefill(null);
+                  setShowModal(true);
+                }}
                 className="btn-ghost !h-12"
               >
                 + Nova
               </button>
             </div>
+            {construtoraMatch &&
+              !construtoraMatch.hit &&
+              !construtoraId &&
+              (construtoraMatch.nome || construtoraMatch.cnpj) && (
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm">
+                  <span className="text-fg-muted">
+                    Detectei no contrato{" "}
+                    <strong className="text-fg">
+                      {construtoraMatch.nome || construtoraMatch.cnpj}
+                    </strong>
+                    {construtoraMatch.nome && construtoraMatch.cnpj
+                      ? ` (CNPJ ${construtoraMatch.cnpj})`
+                      : ""}
+                    , mas não está cadastrada.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalPrefill({
+                        nome: construtoraMatch.nome,
+                        cnpj: construtoraMatch.cnpj,
+                      });
+                      setShowModal(true);
+                    }}
+                    className="btn-primary !h-9 shrink-0 whitespace-nowrap"
+                  >
+                    Cadastrar agora
+                  </button>
+                </div>
+              )}
             {construtoraId && (
               <div className="mt-4">
                 <TemplatesOperacaoPanel
@@ -574,9 +646,12 @@ export function NovaOperacaoForm({
 
       <ConstrutoraModal
         open={showModal}
+        initialNome={modalPrefill?.nome}
+        initialCnpj={modalPrefill?.cnpj}
         onClose={() => setShowModal(false)}
         onCreated={(id) => {
           setShowModal(false);
+          setModalPrefill(null);
           setConstrutoraId(id);
           // forçar reload pra puxar a nova construtora
           router.refresh();

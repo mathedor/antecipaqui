@@ -11,21 +11,32 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
-const SYSTEM_PROMPT = `Você é um assistente que extrai campos-chave de contratos imobiliários brasileiros (compra e venda, comissionamento, nota fiscal).
+const SYSTEM_PROMPT = `Você extrai campos-chave de contratos imobiliários brasileiros (compra e venda, contrato de comissionamento/corretagem, nota fiscal) para uma fintech que antecipa a COMISSÃO do corretor. Precisão é crítica — leia com atenção e não confunda os valores.
 
-Sua tarefa: ler o documento (imagem ou PDF) e extrair:
-- valor da venda (R$)
-- valor da comissão (R$ ou %)
-- data da venda (YYYY-MM-DD)
-- número de parcelas da comissão
-- razão social ou nome da construtora/incorporadora
-- CNPJ da construtora se visível
+Extraia:
+
+1. valorVenda (R$): preço TOTAL de venda do imóvel — o valor do negócio (normalmente o maior valor do contrato).
+
+2. COMISSÃO de corretagem (a remuneração do corretor/imobiliária pela intermediação — NUNCA confunda com o valor da venda nem com a entrada do comprador):
+   - valorComissao (R$): valor da comissão em reais, SE o documento trouxer um valor explícito em R$.
+   - comissaoPercentual: SE a comissão vier como porcentagem (ex: "comissão de 5%", "6% sobre o valor da venda"), retorne como FRAÇÃO DECIMAL — 5% vira 0.05, 6% vira 0.06. NUNCA retorne 5 ou 6.
+   - A comissão tipicamente é 3% a 6% do valor da venda. Se um suposto "valor de comissão" ficar maior que o valor da venda ou perto dele, você pegou o campo errado.
+   - Pode retornar os dois (valor e percentual). Se só houver um, deixe o outro null. NÃO invente.
+
+3. numeroParcelas: em quantas parcelas a COMISSÃO será paga AO CORRETOR. NÃO é o parcelamento do financiamento/venda do imóvel (que pode ser 24x, 60x). A comissão costuma ser à vista ou em poucas parcelas — quase sempre de 1 a 4. Se não estiver claro o parcelamento da comissão, use 1.
+
+4. dataVenda (YYYY-MM-DD): data de assinatura/celebração do contrato.
+
+5. construtora (a VENDEDORA/incorporadora que DEVE a comissão — NÃO o comprador, NÃO o corretor/imobiliária):
+   - construtoraNome: razão social ou nome da construtora/incorporadora.
+   - construtoraCnpj: CNPJ dela, se visível (pode manter a pontuação).
 
 Princípios:
-- Se um campo não estiver claro, deixe como null. NÃO invente.
-- Valores monetários: SEMPRE em número (sem R$, sem separadores). Ex: "1.234.567,89" → 1234567.89
-- Datas: ISO YYYY-MM-DD. Se só vir mês e ano, use dia 1.
-- Confiança: 0-1, sua certeza geral da extração.`;
+- Se um campo não estiver claro, deixe null. NÃO invente.
+- Valores monetários SEMPRE como número puro, sem R$ nem separador de milhar. Ex: "1.234.567,89" → 1234567.89.
+- comissaoPercentual SEMPRE como fração decimal (0.05 = 5%).
+- Datas em ISO YYYY-MM-DD. Se só vir mês/ano, use dia 1.
+- confianca: 0-1, sua certeza geral. observacao: nota curta do que identificou ou de qualquer dúvida.`;
 
 const ExtracaoSchema = z.object({
   valorVenda: z.number().nullable(),
@@ -95,7 +106,9 @@ export async function extrairCamposContrato(input: {
   try {
     const client = getClient();
     const response = await client.messages.parse({
-      model: "claude-haiku-4-5",
+      // Sonnet (não Haiku): extração de comissão/parcelas exige leitura mais
+      // cuidadosa do contrato. É um uso pontual (uma importação por vez).
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: [
         {
@@ -111,7 +124,7 @@ export async function extrairCamposContrato(input: {
             sourceBlock,
             {
               type: "text",
-              text: "Extraia os campos do documento.",
+              text: "Extraia os campos do documento. Atenção especial à COMISSÃO (valor em R$ e/ou percentual como fração decimal) e ao número de parcelas DA COMISSÃO (não do financiamento do imóvel).",
             },
           ],
         },
