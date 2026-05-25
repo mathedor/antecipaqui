@@ -454,23 +454,10 @@ export function NovaOperacaoForm({
                   />
                 </div>
                 <p className="mt-1 text-[10px] text-fg-dim">
-                  Valor pago à vista pelo comprador. Comprovante abaixo.
+                  Valor pago à vista pelo comprador. O comprovante é anexado na
+                  seção 04 (Documentos), se houver.
                 </p>
               </div>
-              <FileUploadField
-                label="Comprovante de pagamento da entrada"
-                name="doc_comprovante_entrada"
-                tipo="comprovante_entrada"
-                folder="operacoes/comprovante-entrada"
-                description="PDF ou imagem do comprovante (TED, PIX, recibo)"
-                accept="application/pdf,image/jpeg,image/png,image/webp"
-                onChange={setDocComprovanteEntrada}
-              />
-              <input
-                type="hidden"
-                name="doc_comprovante_entrada_nome"
-                value={docComprovanteEntrada?.name ?? ""}
-              />
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
@@ -560,7 +547,7 @@ export function NovaOperacaoForm({
           {/* Documentos da operação */}
           <Section
             title="04. Documentos da operação"
-            subtitle="Anexe os 3 PDFs que comprovam a operação"
+            subtitle="Contratos de venda e comissão são obrigatórios; nota fiscal e comprovante de entrada, opcionais."
           >
             <FileUploadField
               label="Contrato de compra e venda do imóvel"
@@ -588,9 +575,18 @@ export function NovaOperacaoForm({
               description="NF emitida pelo corretor/imobiliária pra construtora. Pode anexar depois."
               onChange={setDocNotaFiscal}
             />
+            <FileUploadField
+              label="Comprovante de entrada (opcional)"
+              name="doc_comprovante_entrada"
+              tipo="comprovante_entrada"
+              folder="operacoes/comprovante-entrada"
+              description="Comprovante do valor pago à vista pelo comprador (TED, PIX, recibo). Anexe só se houver entrada."
+              onChange={setDocComprovanteEntrada}
+            />
             <input type="hidden" name="doc_contrato_venda_nome" value={docContratoVenda?.name ?? ""} />
             <input type="hidden" name="doc_contrato_comissao_nome" value={docContratoComissao?.name ?? ""} />
             <input type="hidden" name="doc_nota_fiscal_nome" value={docNotaFiscal?.name ?? ""} />
+            <input type="hidden" name="doc_comprovante_entrada_nome" value={docComprovanteEntrada?.name ?? ""} />
           </Section>
 
           <button
