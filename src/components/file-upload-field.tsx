@@ -106,7 +106,13 @@ export function FileUploadField({
    *  limite rígido de 4,5 MB do corpo das funções serverless da Vercel —
    *  que era a causa do "Erro 413 no upload" em fotos grandes de iPhone/iPad.
    *  Passo 2: manda só a URL (JSON minúsculo) pro servidor validar o conteúdo
-   *  por IA, lendo o arquivo de volta do Blob. */
+   *  por IA, lendo o arquivo de volta do Blob.
+   *
+   *  IMPORTANTE: a validação por IA é best-effort. Depois do passo 1 o arquivo
+   *  JÁ está salvo no Blob, então uma validação lenta/falha/timeout NUNCA trava
+   *  o campo — concluímos como "revisão" (o admin confere). Só uma recusa
+   *  explícita (422, com o blob já apagado pelo servidor) marca como rejeitado.
+   *  Isso resolve o "Validando conteúdo do arquivo… 90%" travado em PDF grande. */
   async function uploadValidado(
     file: File,
     tipoDoc: string,
@@ -123,19 +129,48 @@ export function FileUploadField({
       onUploadProgress: (e) => setProgress(Math.min(90, e.percentage)),
     });
 
-    // Passo 2 — valida o conteúdo server-side (corpo é só JSON)
-    setStatus("validating");
-    const res = await fetch("/api/upload-validado", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        url: uploaded.url,
-        pathname: uploaded.pathname,
-        tipo: tipoDoc,
-      }),
+    // Arquivo já está salvo — base do resultado, usada mesmo se a validação falhar.
+    const blobBase: UploadedBlob = {
+      url: uploaded.url,
+      pathname: uploaded.pathname,
+      size: file.size,
+      name: file.name,
+      contentType: file.type,
+    };
+    const aceitoSemChecagem = (motivo: string): { ok: true; blob: UploadedBlob } => ({
+      ok: true,
+      blob: { ...blobBase, validacaoStatus: "revisao", validacaoMotivo: motivo },
     });
+
+    // Passo 2 — valida o conteúdo server-side (corpo é só JSON), com timeout
+    // rígido. Se passar do tempo, o arquivo já está salvo → segue como revisão.
+    setStatus("validating");
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 45000);
+    let res: Response;
+    try {
+      res = await fetch("/api/upload-validado", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          url: uploaded.url,
+          pathname: uploaded.pathname,
+          tipo: tipoDoc,
+        }),
+        signal: ctrl.signal,
+      });
+    } catch {
+      // timeout/abort/rede — não trava: arquivo está salvo, manda pra revisão
+      return aceitoSemChecagem(
+        "Validação automática indisponível — enviado pra revisão do admin.",
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+
     const data = await res.json().catch(() => ({}));
     if (res.status === 422) {
+      // Recusa explícita da IA — o servidor já apagou o blob.
       return {
         ok: false,
         motivo:
@@ -144,13 +179,16 @@ export function FileUploadField({
       };
     }
     if (!res.ok) {
-      throw new Error(data.error ?? `Erro ${res.status} na validação`);
+      // Erro operacional na validação, mas o arquivo está salvo → revisão.
+      return aceitoSemChecagem(
+        "Validação automática indisponível — enviado pra revisão do admin.",
+      );
     }
     return {
       ok: true,
       blob: {
-        url: data.url,
-        pathname: data.pathname,
+        url: data.url ?? blobBase.url,
+        pathname: data.pathname ?? blobBase.pathname,
         size: file.size,
         name: file.name,
         contentType: file.type,

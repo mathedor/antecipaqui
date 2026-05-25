@@ -83,7 +83,12 @@ function isEnabled() {
 
 let cachedClient: Anthropic | null = null;
 function getClient(): Anthropic {
-  if (!cachedClient) cachedClient = new Anthropic();
+  if (!cachedClient) {
+    // Timeout curto + sem retry: a validação é best-effort (fail-open). Sem
+    // isso, os defaults do SDK (timeout 10 min, 2 retries) penduravam a função
+    // em PDFs grandes até a Vercel matar — travando o campo em "Validando… 90%".
+    cachedClient = new Anthropic({ timeout: 20_000, maxRetries: 0 });
+  }
   return cachedClient;
 }
 

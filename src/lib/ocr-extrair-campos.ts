@@ -43,7 +43,11 @@ export type ExtracaoCampos = z.infer<typeof ExtracaoSchema>;
 
 let cachedClient: Anthropic | null = null;
 function getClient(): Anthropic {
-  if (!cachedClient) cachedClient = new Anthropic();
+  if (!cachedClient) {
+    // Timeout abaixo do maxDuration (60s) + sem retry, pra não pendurar a
+    // função em PDF grande. Fail-open: o corretor preenche manual se falhar.
+    cachedClient = new Anthropic({ timeout: 45_000, maxRetries: 0 });
+  }
   return cachedClient;
 }
 
