@@ -101,27 +101,39 @@ export function FileUploadField({
     } as UploadedBlob;
   }
 
-  /** Fluxo com validação IA: POST multipart pro /api/upload-validado */
+  /** Fluxo com validação IA.
+   *  Passo 1: sobe o arquivo DIRETO pro Blob (client-side). Isso evita o
+   *  limite rígido de 4,5 MB do corpo das funções serverless da Vercel —
+   *  que era a causa do "Erro 413 no upload" em fotos grandes de iPhone/iPad.
+   *  Passo 2: manda só a URL (JSON minúsculo) pro servidor validar o conteúdo
+   *  por IA, lendo o arquivo de volta do Blob. */
   async function uploadValidado(
     file: File,
     tipoDoc: string,
   ): Promise<{ ok: true; blob: UploadedBlob } | { ok: false; motivo: string }> {
+    // Passo 1 — upload direto pro Blob (sem passar pela função → sem 413)
+    setStatus("uploading");
+    setProgress(0);
+    const safeName = sanitizeFileName(file.name);
+    const path = `${folder}/${tipoDoc}/${Date.now()}-${safeName}`;
+    const uploaded = await upload(path, file, {
+      access: "private",
+      handleUploadUrl: "/api/upload",
+      contentType: file.type || undefined,
+      onUploadProgress: (e) => setProgress(Math.min(90, e.percentage)),
+    });
+
+    // Passo 2 — valida o conteúdo server-side (corpo é só JSON)
     setStatus("validating");
-    const progressInterval = setInterval(() => {
-      setProgress((p) => (p < 85 ? p + 5 : p));
-    }, 400);
-    let res: Response;
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("tipo", tipoDoc);
-      res = await fetch("/api/upload-validado", {
-        method: "POST",
-        body: form,
-      });
-    } finally {
-      clearInterval(progressInterval);
-    }
+    const res = await fetch("/api/upload-validado", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        url: uploaded.url,
+        pathname: uploaded.pathname,
+        tipo: tipoDoc,
+      }),
+    });
     const data = await res.json().catch(() => ({}));
     if (res.status === 422) {
       return {
@@ -132,7 +144,7 @@ export function FileUploadField({
       };
     }
     if (!res.ok) {
-      throw new Error(data.error ?? `Erro ${res.status} no upload`);
+      throw new Error(data.error ?? `Erro ${res.status} na validação`);
     }
     return {
       ok: true,
