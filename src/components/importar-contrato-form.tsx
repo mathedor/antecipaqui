@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 import { useFeedback } from "@/components/feedback-provider";
+import { sanitizeFileName } from "@/lib/sanitize-filename";
 
 type Extracao = {
   valorVenda: number | null;
@@ -34,17 +36,35 @@ export function ImportarContratoForm() {
   const [filename, setFilename] = useState<string | null>(null);
 
   async function onFile(file: File) {
+    if (file.size > 15 * 1024 * 1024) {
+      await alertError(
+        "Arquivo maior que 15MB. Comprima ou tire uma foto menor.",
+        "Arquivo muito grande",
+      );
+      return;
+    }
     setUploading(true);
     setResult(null);
     setFilename(file.name);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
+      // Sobe o arquivo DIRETO pro Blob (client-side) pra evitar o limite de
+      // 4,5MB do corpo das funções da Vercel — que dava 413 em foto grande de
+      // iPhone/iPad. O servidor lê o arquivo de volta e apaga depois do OCR.
+      const safeName = sanitizeFileName(file.name);
+      const uploaded = await upload(`ocr-temp/${Date.now()}-${safeName}`, file, {
+        access: "private",
+        handleUploadUrl: "/api/upload",
+        contentType: file.type || undefined,
+      });
       const res = await fetch("/api/corretor/extrair-contrato", {
         method: "POST",
-        body: fd,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          url: uploaded.url,
+          pathname: uploaded.pathname,
+        }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         await alertError(data.error ?? "Erro ao extrair", "Falha no OCR");
         return;
