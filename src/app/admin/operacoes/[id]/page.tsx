@@ -779,7 +779,7 @@ function ParcelasOperacaoFullSection({ op }: { op: ParcelasOperacaoCtx }) {
       </div>
 
       <div className="overflow-x-auto -mx-1">
-        <table className="w-full text-sm" style={{ minWidth: "1100px" }}>
+        <table className="w-full text-sm table-cards" style={{ minWidth: "1100px" }}>
           <thead className="bg-bg-card border-b border-border">
             <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
               <th className="px-3 py-3 text-left">#</th>

@@ -158,7 +158,8 @@ export function RankingTable({ rows, tipo }: Props) {
   );
 
   return (
-    <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
+    <>
+    <div className="hidden lg:block rounded-2xl border border-border bg-bg-elev overflow-x-auto">
       <table className="w-full text-sm min-w-[760px]">
         <thead className="bg-bg-card border-b border-border">
           <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
@@ -294,6 +295,112 @@ export function RankingTable({ rows, tipo }: Props) {
         </tfoot>
       </table>
     </div>
+
+    {/* Mobile: cards */}
+    <div className="lg:hidden space-y-3">
+      {sorted.map((r, i) => {
+        const phone = normalizePhoneBR(r.telefone);
+        const waLink = phone
+          ? buildWhatsappLink(r.telefone, whatsappMessageFor(r, tipo))
+          : null;
+        const cadastroHref =
+          tipo === "construtora"
+            ? `/admin/construtoras/${r.id}`
+            : tipo === "fundo"
+              ? `/admin/fundos/${r.id}`
+              : `/admin/usuarios/${r.id}`;
+        return (
+          <div
+            key={r.id}
+            className="rounded-2xl border border-border bg-bg-elev p-4"
+          >
+            <Link href={cadastroHref} className="block">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-fg-dim">
+                      #{i + 1}
+                    </span>
+                    <span className="font-semibold text-fg truncate">
+                      {r.nome}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 font-mono text-[11px] text-fg-muted">
+                    {r.documento || r.email || "—"}
+                  </div>
+                </div>
+                {r.isActive ? (
+                  <span className="shrink-0 inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-success">
+                    ativo
+                  </span>
+                ) : (
+                  <span className="shrink-0 inline-flex items-center rounded-full border border-danger/40 bg-red-50 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-danger">
+                    bloqueado
+                  </span>
+                )}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Operado
+                  </div>
+                  <div className="tabular font-mono font-semibold text-fg">
+                    {formatBRL(r.valorOperado)}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Pago
+                  </div>
+                  <div className="tabular font-mono text-success">
+                    {formatBRL(r.valorPago)}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Em aberto
+                  </div>
+                  <div className="tabular font-mono text-warn">
+                    {formatBRL(r.valorAberto)}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Ops
+                  </div>
+                  <div className="tabular font-mono text-fg-muted">
+                    {r.qtdOperacoes}
+                  </div>
+                </div>
+              </div>
+            </Link>
+            <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+              {waLink ? (
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-2 font-mono text-[11px] uppercase tracking-wider text-fg-muted transition-colors hover:border-success hover:text-success"
+                >
+                  <WhatsappIcon /> WhatsApp
+                </a>
+              ) : (
+                <span className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-2 font-mono text-[11px] uppercase tracking-wider text-fg-dim opacity-50">
+                  <WhatsappIcon /> Sem fone
+                </span>
+              )}
+              <Link
+                href={cadastroHref}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-2 font-mono text-[11px] uppercase tracking-wider text-fg-muted transition-colors hover:border-accent hover:text-accent"
+              >
+                <EyeIcon /> Ver
+              </Link>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+    </>
   );
 }
 

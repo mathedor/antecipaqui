@@ -120,7 +120,8 @@ export default async function AdminFaturasPage() {
           Nenhuma fatura emitida ainda.
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
+        <>
+        <div className="hidden lg:block rounded-2xl border border-border bg-bg-elev overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-bg-card">
@@ -190,6 +191,64 @@ export default async function AdminFaturasPage() {
             </table>
           </div>
         </div>
+
+        {/* Mobile: cards */}
+        <div className="lg:hidden space-y-3">
+          {faturas.map((f) => (
+            <div
+              key={f.id}
+              className="rounded-2xl border border-border bg-bg-elev p-4"
+            >
+              <Link href={`/admin/fundos/${f.fundoId}`} className="block">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold text-fg">
+                      {f.fundoNome ?? "—"}
+                    </div>
+                    <div className="font-mono text-[11px] text-fg-muted">
+                      ref {fmtMes(f.refMes)} · vence {fmtDate(f.vencimento)}
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${
+                      STATUS_COLOR[f.status] ?? STATUS_COLOR.pendente
+                    }`}
+                  >
+                    {STATUS_LABEL[f.status]}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      Valor devido
+                    </div>
+                    <div className="tabular font-mono font-semibold text-fg">
+                      {formatBRL(f.valorDevido)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      Valor pago
+                    </div>
+                    <div className="tabular font-mono text-success">
+                      {formatBRL(f.valorPago)}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+              {f.status !== "paga" && f.status !== "cancelada" && (
+                <div className="mt-3 flex border-t border-border pt-3 [&>*]:flex-1">
+                  <MarcarFaturaPagaButton
+                    faturaId={f.id}
+                    valorDevido={f.valorDevido}
+                    valorPagoAtual={f.valorPago}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        </>
       )}
     </AdminShell>
   );

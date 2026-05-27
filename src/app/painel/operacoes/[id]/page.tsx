@@ -432,7 +432,7 @@ export default async function OperacaoDetailPage({ params }: Params) {
 
         <Card label="Cronograma com cálculo de juros por parcela" className="mb-8">
           <div className="overflow-x-auto -mx-2">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-cards">
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-2 font-mono text-[10px] uppercase tracking-wider text-fg-dim">Nº</th>

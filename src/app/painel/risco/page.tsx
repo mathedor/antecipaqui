@@ -111,7 +111,7 @@ export default async function PainelRiscoPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-cards">
               <thead className="border-b border-border">
                 <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono text-left">
                   <th className="py-2">Construtora</th>

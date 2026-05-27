@@ -110,7 +110,8 @@ export function InvoiceTable({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
+    <>
+    <div className="hidden lg:block rounded-2xl border border-border bg-bg-elev overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="border-b border-border bg-bg-card">
@@ -248,5 +249,80 @@ export function InvoiceTable({
         </table>
       </div>
     </div>
+
+    {/* Mobile: cards */}
+    <div className="lg:hidden space-y-3">
+      {sorted.map((r) => (
+        <div
+          key={r.operacaoId}
+          className="rounded-2xl border border-border bg-bg-elev p-4"
+        >
+          <Link href={`/admin/operacoes/${r.operacaoId}`} className="block">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-mono text-sm font-semibold text-fg">
+                  {r.operacaoNumero}
+                </div>
+                <div className="mt-0.5 truncate text-[11px] text-fg-muted">
+                  {r.construtoraNome ?? "—"}
+                  {r.fundoNome ? ` · ${r.fundoNome}` : ""}
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                  Repasse
+                </div>
+                <div className="tabular font-mono font-bold text-success">
+                  {formatBRL(r.saldoRepasse)}
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                  Pago no período
+                </div>
+                <div className="tabular font-mono font-semibold text-fg">
+                  {formatBRL(r.pagoNoPeriodo)} ({fmtPct(r.pctPago)})
+                </div>
+              </div>
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                  Spread
+                </div>
+                <div className="tabular font-mono text-fg">
+                  {formatBRL(r.spread)}
+                </div>
+              </div>
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                  Custo $
+                </div>
+                <div className="tabular font-mono text-accent">
+                  {formatBRL(r.custoDinheiroFundo)}
+                </div>
+              </div>
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                  Custos
+                </div>
+                <div className="tabular font-mono text-warn">
+                  {formatBRL(r.custos)}
+                </div>
+              </div>
+            </div>
+          </Link>
+          <div className="mt-3 flex border-t border-border pt-3">
+            <Link
+              href={`/admin/operacoes/${r.operacaoId}`}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 font-mono text-[11px] uppercase tracking-wider text-fg-muted transition-colors hover:border-accent hover:text-accent"
+            >
+              Ver operação →
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+    </>
   );
 }

@@ -513,3 +513,56 @@ html, body {
 .animate-dot-ping           { animation: dotPing 1.8s ease-out infinite; }
 .animate-slide-in-bottom    { animation: slideInBottom 0.6s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-kanban-move        { animation: kanbanCardMove 2.4s cubic-bezier(0.65,0,0.35,1) both; }
+
+/* ============================================================
+   MOBILE: tabelas com .table-cards viram cards
+   (data-label preenchido por <TableCards/> — table-cards.tsx)
+   ============================================================ */
+@media (max-width: 1023px) {
+  table.table-cards { min-width: 0 !important; width: 100%; }
+  table.table-cards thead { display: none; }
+  table.table-cards tfoot { display: none; }
+  table.table-cards,
+  table.table-cards tbody,
+  table.table-cards tr,
+  table.table-cards td { display: block; width: 100%; }
+  table.table-cards tbody tr {
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--bg-card);
+    padding: 0.25rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+  table.table-cards tbody tr:last-child { margin-bottom: 0; }
+  table.table-cards td {
+    border: 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0.6rem 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    text-align: right;
+    max-width: none !important;
+    white-space: normal;
+  }
+  table.table-cards tr td:last-child { border-bottom: 0 !important; }
+  table.table-cards td::before {
+    content: attr(data-label);
+    flex: 0 0 38%;
+    text-align: left;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  table.table-cards td[data-label=""]::before,
+  table.table-cards td:not([data-label])::before { content: ""; flex: 0 0 0; }
+  table.table-cards td[data-label=""],
+  table.table-cards td:not([data-label]) { justify-content: flex-end; flex-wrap: wrap; }
+}

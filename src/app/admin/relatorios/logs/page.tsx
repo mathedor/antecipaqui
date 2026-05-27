@@ -154,7 +154,7 @@ export default async function AdminLogsPage({ searchParams }: Search) {
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
+          <table className="w-full text-sm min-w-[900px] table-cards">
             <thead className="bg-bg-card border-b border-border">
               <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
                 <th className="px-4 py-3 text-left">Quando</th>

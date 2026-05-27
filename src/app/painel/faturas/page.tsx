@@ -101,7 +101,7 @@ export default async function FundoFaturasPage() {
       ) : (
         <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-cards">
               <thead className="border-b border-border bg-bg-card">
                 <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono text-left">
                   <th className="px-4 py-3">Mês ref.</th>

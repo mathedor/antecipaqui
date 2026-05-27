@@ -434,7 +434,7 @@ export default async function AdminSaudePage() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-cards">
                 <thead className="border-b border-danger/30">
                   <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
                     <th className="px-3 py-2 text-left">Quando</th>

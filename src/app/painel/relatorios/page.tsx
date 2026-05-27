@@ -204,7 +204,7 @@ function MetaTable({
 }) {
   return (
     <div className="mt-4 overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm table-cards">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border">
             <th className="py-2 pr-3">Mês</th>
@@ -266,7 +266,7 @@ function CohortTable({
 }) {
   return (
     <div className="mt-4 overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm table-cards">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border">
             <th className="py-2 pr-3">Mês cadastro</th>

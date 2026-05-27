@@ -257,7 +257,7 @@ export function DailyTable({
         />
       </div>
 
-      <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
+      <div className="hidden lg:block rounded-2xl border border-border bg-bg-elev overflow-x-auto">
         <table className="w-full text-sm" style={{ minWidth: "1550px" }}>
           <thead className="bg-bg-card border-b border-border">
             <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
@@ -475,6 +475,119 @@ export function DailyTable({
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      {/* Mobile: cards */}
+      <div className="lg:hidden space-y-3">
+        {sorted.map((r) => {
+          const overdue = r.diasAtraso > 0;
+          return (
+            <div
+              key={r.parcelaId}
+              className={`rounded-2xl border border-border bg-bg-elev p-4 ${overdue ? "bg-red-50/30" : ""}`}
+            >
+              <Link href={`${opLinkBase}/${r.operacaoId}`} className="block">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold text-fg">
+                      {r.construtoraNome ?? "—"}
+                    </div>
+                    <div className="mt-0.5 font-mono text-[11px] text-fg-muted">
+                      {r.operacaoNumero} · #
+                      {String(r.parcelaNumero).padStart(2, "0")}
+                    </div>
+                    <div className="truncate text-[11px] text-fg-muted">
+                      {r.imobiliariaNome ?? r.corretorNome ?? "—"}
+                      {r.fundoNome ? ` · 🏦 ${r.fundoNome}` : ""}
+                    </div>
+                  </div>
+                  {overdue ? (
+                    <span
+                      className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${
+                        r.diasAtraso >= 90
+                          ? "border-danger/40 bg-red-50 text-danger"
+                          : r.diasAtraso >= 30
+                            ? "border-orange-200 bg-orange-50 text-orange-700"
+                            : "border-yellow-200 bg-yellow-50 text-warn"
+                      }`}
+                    >
+                      {r.diasAtraso}d atraso
+                    </span>
+                  ) : (
+                    <span className="shrink-0 font-mono text-[10px] text-fg-dim">
+                      vence em {Math.abs(r.diasAtraso)}d
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      Parcela
+                    </div>
+                    <div className="tabular font-mono font-semibold text-fg">
+                      {formatBRL(r.valorParcela)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      Encargos
+                    </div>
+                    <div className="tabular font-mono text-warn">
+                      {overdue ? `+ ${formatBRL(r.encargosTotal)}` : "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      Atual
+                    </div>
+                    <div className="tabular font-mono font-bold text-fg">
+                      {formatBRL(r.valorAtual)}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-1 font-mono text-[10px] text-fg-dim">
+                  Vence {fmtDate(r.vencimento)}
+                </div>
+              </Link>
+              <div className="mt-3 flex items-center justify-around gap-1 border-t border-border pt-3">
+                <Link
+                  href={`${opLinkBase}/${r.operacaoId}`}
+                  title="Ver operação"
+                  aria-label="Ver operação"
+                  className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-fg-muted transition-colors hover:border-accent hover:text-accent"
+                >
+                  <EyeIcon />
+                </Link>
+                <ActionBtn
+                  title="Gerar boleto"
+                  onClick={() => handleBoleto(r)}
+                  disabled={pending}
+                  icon={<DocIcon />}
+                  tone="accent"
+                />
+                <ActionBtn
+                  title={`WhatsApp construtora · ${r.construtoraTelefone ?? "sem telefone"}`}
+                  onClick={() => handleWhatsConstrutora(r)}
+                  icon={<WhatsIcon />}
+                  tone="success"
+                />
+                <ActionBtn
+                  title={`WhatsApp imobiliária / corretor · ${r.imobiliariaTelefone ?? r.corretorTelefone ?? "sem telefone"}`}
+                  onClick={() => handleWhatsImobiliaria(r)}
+                  icon={<WhatsIcon />}
+                  tone="success"
+                  outline
+                />
+                <ActionBtn
+                  title="Notificar por email"
+                  onClick={() => handleEmail(r)}
+                  disabled={pending}
+                  icon={<MailIcon />}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

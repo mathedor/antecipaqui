@@ -120,7 +120,8 @@ export default async function AdminConvitesPage({ searchParams }: Search) {
           <p className="text-fg-muted">Nenhum convite encontrado.</p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-bg-elev overflow-x-auto">
+        <>
+        <div className="hidden lg:block rounded-2xl border border-border bg-bg-elev overflow-x-auto">
           <table className="w-full text-sm min-w-[800px]">
             <thead className="bg-bg-card border-b border-border">
               <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
@@ -193,6 +194,65 @@ export default async function AdminConvitesPage({ searchParams }: Search) {
             </tfoot>
           </table>
         </div>
+
+        {/* Mobile: cards */}
+        <div className="lg:hidden space-y-3">
+          {rows.map((r) => (
+            <div
+              key={r.id}
+              className="rounded-2xl border border-border bg-bg-elev p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate font-semibold text-fg">
+                    {r.corretor_nome ?? "(sem nome)"}
+                  </div>
+                  <div className="font-mono text-[11px] text-fg-muted">
+                    {r.corretor_email}
+                  </div>
+                  <div className="mt-0.5 truncate text-[11px] text-fg-muted">
+                    {r.construtora_nome ?? "—"}
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${STATUS_STYLE[r.status] ?? ""}`}
+                >
+                  {r.status.replace(/_/g, " ")}
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Comissão
+                  </div>
+                  <div className="tabular font-mono font-semibold text-fg">
+                    {formatBRL(parseFloat(r.valor_comissao))}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    VV
+                  </div>
+                  <div className="tabular font-mono text-fg-muted">
+                    {formatBRL(parseFloat(r.valor_venda))}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    Parcelas
+                  </div>
+                  <div className="font-mono text-fg-muted">
+                    {r.numero_parcelas}x
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 font-mono text-[10px] text-fg-dim">
+                Enviado em {new Date(r.created_at).toLocaleString("pt-BR")}
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
     </AdminShell>
   );

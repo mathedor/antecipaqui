@@ -121,7 +121,7 @@ export default async function ExtratoPage({ searchParams }: Search) {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border bg-bg-elev">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-cards">
             <thead>
               <tr className="bg-bg-card border-b border-border text-left">
                 <Th>Data</Th>

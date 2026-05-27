@@ -61,6 +61,7 @@ export function DataTable<T>({
   minWidth = 760,
   showFooter,
   className = "",
+  rowHref,
   rowActions,
   actionsHeader,
 }: Props<T>) {
@@ -112,10 +113,15 @@ export function DataTable<T>({
 
   const hasFooter = showFooter ?? columns.some((c) => c.footer);
 
+  const mobileCols = columns.filter((c) => !c.hideOnMobile);
+  const footerCols = columns.filter((c) => c.footer);
+
   return (
-    <div
-      className={`rounded-2xl border border-border bg-bg-elev overflow-x-auto ${className}`}
-    >
+    <>
+      {/* Desktop: tabela */}
+      <div
+        className={`hidden lg:block rounded-2xl border border-border bg-bg-elev overflow-x-auto ${className}`}
+      >
       <table className="w-full text-sm" style={{ minWidth: `${minWidth}px` }}>
         <thead className="bg-bg-card border-b border-border">
           <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
@@ -186,7 +192,74 @@ export function DataTable<T>({
           </tfoot>
         )}
       </table>
-    </div>
+      </div>
+
+      {/* Mobile: cards */}
+      <div className={`lg:hidden space-y-3 ${className}`}>
+        {sortedRows.map((row, i) => {
+          const href = rowHref?.(row) ?? null;
+          const fields = (
+            <div className="space-y-1.5">
+              {mobileCols.map((col) => (
+                <div
+                  key={col.key}
+                  className="flex items-start justify-between gap-3"
+                >
+                  <span className="shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                    {col.header}
+                  </span>
+                  <span
+                    className={`min-w-0 text-sm text-fg ${
+                      col.align === "right"
+                        ? "text-right"
+                        : col.align === "center"
+                          ? "text-center"
+                          : "text-left"
+                    }`}
+                  >
+                    {col.render(row, i)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+          return (
+            <div
+              key={getKey(row)}
+              className="rounded-2xl border border-border bg-bg-elev p-4"
+            >
+              {href ? (
+                <a href={href} className="block">
+                  {fields}
+                </a>
+              ) : (
+                fields
+              )}
+              {rowActions && (
+                <div className="mt-3 flex items-center gap-2 border-t border-border pt-3 [&>*]:flex-1">
+                  {rowActions(row)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {hasFooter && footerCols.length > 0 && (
+          <div className="space-y-1.5 rounded-2xl border border-border-strong bg-bg-card p-4 font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+            {footerCols.map((col) => (
+              <div
+                key={col.key}
+                className="flex items-center justify-between gap-3"
+              >
+                <span>{col.header}</span>
+                <span className="font-bold text-fg">
+                  {col.footer!(sortedRows)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

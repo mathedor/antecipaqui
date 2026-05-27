@@ -82,7 +82,8 @@ export default async function AdminComissoesPage() {
           Nenhuma comissão cadastrada ainda.
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-bg-elev overflow-hidden">
+        <>
+        <div className="hidden lg:block rounded-2xl border border-border bg-bg-elev overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-bg-card">
@@ -153,6 +154,73 @@ export default async function AdminComissoesPage() {
             </table>
           </div>
         </div>
+
+        {/* Mobile: cards */}
+        <div className="lg:hidden space-y-3">
+          {comissoes.map((c) => (
+            <div
+              key={c.id}
+              className="rounded-2xl border border-border bg-bg-elev p-4"
+            >
+              <Link
+                href={`/admin/operacoes/${c.operacaoId}`}
+                className="block"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-mono text-sm font-semibold text-fg">
+                      {c.operacaoNumero}
+                    </div>
+                    <div className="mt-0.5 truncate text-[11px] text-fg-muted">
+                      {c.comercialNome ?? "—"} · gerada {fmtDate(c.geradaEm)}
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${STATUS_COLOR[c.status]}`}
+                  >
+                    {STATUS_LABEL[c.status]}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      Devido
+                    </div>
+                    <div className="tabular font-mono font-semibold text-fg">
+                      {formatBRL(c.valorDevido)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-fg-dim">
+                      Pago
+                    </div>
+                    <div className="tabular font-mono text-success">
+                      {formatBRL(c.valorPago)}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+              <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+                <Link
+                  href={`/admin/comerciais/${c.comercialId}`}
+                  className="inline-flex flex-1 items-center justify-center rounded-lg border border-border py-2 font-mono text-[11px] uppercase tracking-wider text-fg-muted transition-colors hover:border-accent hover:text-accent"
+                >
+                  Ver comercial
+                </Link>
+                {c.status !== "paga" && c.status !== "cancelada" && (
+                  <div className="flex-1 [&>*]:w-full">
+                    <MarcarComissaoPagaButton
+                      comissaoId={c.id}
+                      valorDevido={c.valorDevido}
+                      valorPagoAtual={c.valorPago}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
     </AdminShell>
   );

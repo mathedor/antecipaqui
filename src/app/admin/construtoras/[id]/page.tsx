@@ -356,7 +356,7 @@ export default async function AdminConstrutoraDetail({ params }: Params) {
               </p>
             ) : (
               <div className="overflow-x-auto -mx-1">
-                <table className="w-full text-sm min-w-[680px]">
+                <table className="w-full text-sm min-w-[680px] table-cards">
                   <thead>
                     <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono border-b border-border">
                       <th className="px-2 py-2 text-left">Número</th>

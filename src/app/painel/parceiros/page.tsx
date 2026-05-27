@@ -45,7 +45,8 @@ export default async function FundoParceirosPage() {
               Nenhuma construtora ainda.
             </p>
           ) : (
-            <table className="w-full text-sm">
+            <>
+            <table className="hidden lg:table w-full text-sm">
               <thead className="border-b border-border">
                 <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
                   <th className="px-4 py-2 text-left">Razão social</th>
@@ -85,6 +86,26 @@ export default async function FundoParceirosPage() {
                 </tr>
               </tfoot>
             </table>
+
+            {/* Mobile: cards */}
+            <div className="lg:hidden divide-y divide-border">
+              {construtoras.map((c) => (
+                <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0 font-semibold text-fg truncate">
+                    {c.nome}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="tabular font-mono text-sm font-semibold text-fg">
+                      {formatBRL(c.valorOperado)}
+                    </div>
+                    <div className="font-mono text-[10px] text-fg-dim">
+                      {c.qtd} ops
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </section>
 
@@ -99,7 +120,8 @@ export default async function FundoParceirosPage() {
               Nenhuma imobiliária ainda.
             </p>
           ) : (
-            <table className="w-full text-sm">
+            <>
+            <table className="hidden lg:table w-full text-sm">
               <thead className="border-b border-border">
                 <tr className="text-[10px] uppercase tracking-wider text-fg-dim font-mono">
                   <th className="px-4 py-2 text-left">Razão social</th>
@@ -144,6 +166,31 @@ export default async function FundoParceirosPage() {
                 </tr>
               </tfoot>
             </table>
+
+            {/* Mobile: cards */}
+            <div className="lg:hidden divide-y divide-border">
+              {imobiliarias.map((i) => (
+                <div key={i.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-fg truncate max-w-[200px]">
+                      {i.nome}
+                    </div>
+                    <div className="font-mono text-[10px] text-fg-dim">
+                      {i.cnpj}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="tabular font-mono text-sm font-semibold text-fg">
+                      {formatBRL(i.valorOperado)}
+                    </div>
+                    <div className="font-mono text-[10px] text-fg-dim">
+                      {i.qtd} ops
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </section>
       </div>

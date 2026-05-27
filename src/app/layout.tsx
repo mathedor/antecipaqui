@@ -10,6 +10,7 @@ import {
 import { FeedbackProvider } from "@/components/feedback-provider";
 import { ChatFabWrapper } from "@/components/chat-fab-wrapper";
 import { PwaInstaller } from "@/components/pwa-installer";
+import { TableCards } from "@/components/table-cards";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 
 const sans = Geist({
@@ -85,6 +86,7 @@ export default function RootLayout({
             <MarketingFooter />
             <ChatFabWrapper />
             <PwaInstaller />
+            <TableCards />
           </FeedbackProvider>
         </body>
       </html>
