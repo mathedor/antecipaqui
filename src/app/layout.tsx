@@ -11,7 +11,10 @@ import { FeedbackProvider } from "@/components/feedback-provider";
 import { ChatFabWrapper } from "@/components/chat-fab-wrapper";
 import { PwaInstaller } from "@/components/pwa-installer";
 import { TableCards } from "@/components/table-cards";
+import { DemoBanner } from "@/components/demo-banner";
 import { clerkAppearance } from "@/lib/clerk-appearance";
+
+const IS_DEMO = process.env.NEXT_PUBLIC_DEMO === "1";
 
 const sans = Geist({
   variable: "--font-sans",
@@ -49,7 +52,9 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     type: "website",
   },
-  robots: { index: true, follow: true },
+  robots: IS_DEMO
+    ? { index: false, follow: false }
+    : { index: true, follow: true },
   appleWebApp: {
     capable: true,
     title: "Antecipaqui",
@@ -81,6 +86,7 @@ export default function RootLayout({
       >
         <body className="min-h-full flex flex-col bg-bg text-fg pb-14 md:pb-0">
           <FeedbackProvider>
+            <DemoBanner />
             <MarketingHeader />
             <main className="flex-1 relative z-10">{children}</main>
             <MarketingFooter />
