@@ -13,7 +13,10 @@ import { useFeedback } from "@/components/feedback-provider";
 import { maskPhone } from "@/lib/cnpj";
 import { sanitizeFileName } from "@/lib/sanitize-filename";
 import { toBlobProxyHref } from "@/lib/blob-url";
-import { AssinaturaDigitalCard } from "@/components/admin-fundo-form";
+import {
+  AssinaturaDigitalCard,
+  ModoOperacionalCard,
+} from "@/components/admin-fundo-form";
 import type { Fundo } from "@/db/schema";
 
 type Props = {
@@ -208,6 +211,8 @@ export function FundoSelfEditForm({ fundo }: Props) {
           )}
         </div>
       </Card>
+
+      <ModoOperacionalCard fundo={fundo} />
 
       <AssinaturaDigitalCard fundo={fundo} />
 

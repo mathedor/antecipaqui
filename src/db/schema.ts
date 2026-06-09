@@ -317,9 +317,17 @@ export const fundos = pgTable(
     assinaturaApiUrl: text("assinatura_api_url"),
     /** Credenciais em jsonb (api_key, client_id+secret, etc). */
     assinaturaApiCredenciais: jsonb("assinatura_api_credenciais"),
-    /** Taxa de juros base do fundo (mensal, decimal — 0.06 = 6%). Pode ser
-     *  sobrescrita por operação na aprovação admin. */
+    /** Taxa de juros base do fundo (mensal, decimal — 0.06 = 6%). É o
+     *  "custo do dinheiro" do fundo (taxa_fundo). Pode ser sobrescrita por
+     *  operação na aprovação admin. */
     taxaMensalBase: numeric("taxa_mensal_base", { precision: 6, scale: 4 })
+      .notNull()
+      .default("0.0600"),
+    /** "Valor da operação" padrão desse fundo (taxa_op mensal cobrada do
+     *  cliente, decimal — 0.06 = 6%). Default sugerido ao criar operações
+     *  desse fundo. O custo do dinheiro (taxaMensalBase) é o piso; o spread
+     *  entre os dois é a margem dividida entre fundo e Antecipaqui. */
+    taxaOperacaoPadrao: numeric("taxa_operacao_padrao", { precision: 6, scale: 4 })
       .notNull()
       .default("0.0600"),
     /** Custo financeiro / % de rateio — fatia do juros que vai pra
@@ -391,6 +399,28 @@ export const fundos = pgTable(
     sistemaGestaoNome: text("sistema_gestao_nome"),
     /** URL da documentação da API do sistema de gestão. */
     sistemaGestaoDocsUrl: text("sistema_gestao_docs_url"),
+    /* === Modo operacional do fundo (cada fundo opera diferente) ===
+     *  A operação SEMPRE nasce no Antecipaqui. O que varia por fundo é quem
+     *  cuida de cada etapa depois disso. */
+    /** Quem GERA o contrato da operação: 'antecipa' (padrão) ou 'fundo'. */
+    contratoGeradoPor: text("contrato_gerado_por").notNull().default("antecipa"),
+    /** Quem ENVIA o contrato pra assinatura: 'antecipa' (padrão) ou 'fundo'. */
+    contratoAssinaturaEnviadaPor: text("contrato_assinatura_enviada_por")
+      .notNull()
+      .default("antecipa"),
+    /** Antecipaqui SEMPRE assina como testemunha (regra de negócio fixa).
+     *  Mantido como flag pra ficar explícito no cadastro; sempre true. */
+    antecipaAssinaTestemunha: boolean("antecipa_assina_testemunha")
+      .notNull()
+      .default(true),
+    /** Quando o FUNDO envia pra assinatura, ele nos chama de volta neste
+     *  webhook ao concluir. Segredo HMAC compartilhado pra validar o retorno.
+     *  Endpoint: /api/contrato-assinatura/webhook/{fundoId}. */
+    contratoAssinaturaWebhookSecret: text("contrato_assinatura_webhook_secret"),
+    /** Quem GERA as cobranças (boletos/parcelas): 'antecipa' (padrão) ou
+     *  'fundo'. Quando 'fundo', o COMO o fundo nos repassa segue boletosModo
+     *  (api/cnab/manual). */
+    cobrancaGeradaPor: text("cobranca_gerada_por").notNull().default("antecipa"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -1173,6 +1203,10 @@ export const contratos = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
     // Cada signer (cedente, construtora, antecipaqui) com sign_url + signedAt
     signers: jsonb("signers").$type<ContratoSigner[]>(),
+    /** URL do contrato JÁ ASSINADO devolvido por sistema externo do fundo
+     *  (quando o fundo é quem envia pra assinatura). Preenchido pelo webhook
+     *  /api/contrato-assinatura/webhook/{fundoId}. */
+    assinaturaExternaUrl: text("assinatura_externa_url"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

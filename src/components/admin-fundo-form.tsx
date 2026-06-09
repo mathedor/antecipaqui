@@ -98,6 +98,11 @@ export function AdminFundoForm({ fundo }: Props) {
   const taxaInicial = fundo
     ? (parseFloat(fundo.taxaMensalBase) * 100).toFixed(2).replace(".", ",")
     : "";
+  const taxaOpInicial = fundo
+    ? (parseFloat(fundo.taxaOperacaoPadrao ?? "0.06") * 100)
+        .toFixed(2)
+        .replace(".", ",")
+    : "";
   const custoFinanceiroInicial = fundo
     ? (parseFloat(fundo.custoFinanceiroPct ?? "0") * 100)
         .toFixed(2)
@@ -198,16 +203,16 @@ export function AdminFundoForm({ fundo }: Props) {
 
       <Card
         title="Operação"
-        subtitle="Taxa-base do fundo + contrato modelo. Cada operação pode ter taxa customizada na aprovação."
+        subtitle="Custo do dinheiro do fundo, valor da operação e contrato modelo. Cada operação pode ter taxa customizada na aprovação."
       >
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Taxa de juros base (% a.m.) *">
+          <Field label="Custo do dinheiro · taxa-base (% a.m.) *">
             <div className="flex items-stretch rounded-xl border border-border-strong overflow-hidden focus-within:border-accent transition-colors">
               <input
                 name="taxaMensalBase"
                 required
                 inputMode="decimal"
-                placeholder="6,00"
+                placeholder="2,40"
                 defaultValue={taxaInicial}
                 className="flex-1 min-w-0 bg-bg h-12 px-4 text-fg placeholder:text-fg-dim outline-none tabular text-right"
               />
@@ -216,7 +221,26 @@ export function AdminFundoForm({ fundo }: Props) {
               </span>
             </div>
             <p className="mt-1 text-[11px] text-fg-dim">
-              Limites: 0,1% a 50% ao mês.
+              Quanto custa o capital do fundo. Limites: 0,1% a 50% ao mês.
+            </p>
+          </Field>
+
+          <Field label="Valor da operação · taxa padrão (% a.m.)">
+            <div className="flex items-stretch rounded-xl border border-border-strong overflow-hidden focus-within:border-accent transition-colors">
+              <input
+                name="taxaOperacaoPadrao"
+                inputMode="decimal"
+                placeholder="6,00"
+                defaultValue={taxaOpInicial}
+                className="flex-1 min-w-0 bg-bg h-12 px-4 text-fg placeholder:text-fg-dim outline-none tabular text-right"
+              />
+              <span className="bg-bg-soft px-3 flex items-center text-fg-muted text-sm font-mono border-l border-border-strong shrink-0">
+                % a.m.
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-fg-dim">
+              Taxa padrão cobrada do cliente. O spread entre ela e o custo do
+              dinheiro é a margem dividida com a Antecipaqui.
             </p>
           </Field>
 
@@ -464,6 +488,8 @@ export function AdminFundoForm({ fundo }: Props) {
         </div>
       </Card>
 
+      <ModoOperacionalCard fundo={fundo} />
+
       <CobrancaCard fundo={fundo} />
 
       <AssinaturaDigitalCard fundo={fundo} />
@@ -631,6 +657,137 @@ function CobrancaCard({ fundo }: { fundo?: Fundo }) {
           a parcela como paga quando o pagamento entrar.
         </div>
       )}
+    </Card>
+  );
+}
+
+export function ModoOperacionalCard({ fundo }: { fundo?: Fundo }) {
+  const [contratoPor, setContratoPor] = useState<string>(
+    fundo?.contratoGeradoPor ?? "antecipa",
+  );
+  const [assinaturaPor, setAssinaturaPor] = useState<string>(
+    fundo?.contratoAssinaturaEnviadaPor ?? "antecipa",
+  );
+  const [cobrancaPor, setCobrancaPor] = useState<string>(
+    fundo?.cobrancaGeradaPor ?? "antecipa",
+  );
+  const [origin, setOrigin] = useState("");
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const webhookUrl =
+    fundo && origin
+      ? `${origin}/api/contrato-assinatura/webhook/${fundo.id}`
+      : "";
+
+  return (
+    <Card
+      title="Modo operacional do fundo"
+      subtitle="A operação sempre nasce no Antecipaqui. Configure quem cuida de cada etapa depois disso — cada fundo opera diferente."
+    >
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Field label="Quem gera o contrato?">
+          <select
+            name="contratoGeradoPor"
+            value={contratoPor}
+            onChange={(e) => setContratoPor(e.target.value)}
+            className="form-input"
+          >
+            <option value="antecipa">Antecipaqui gera o contrato</option>
+            <option value="fundo">O fundo gera o contrato</option>
+          </select>
+        </Field>
+
+        <Field label="Quem envia para assinatura?">
+          <select
+            name="contratoAssinaturaEnviadaPor"
+            value={assinaturaPor}
+            onChange={(e) => setAssinaturaPor(e.target.value)}
+            className="form-input"
+          >
+            <option value="antecipa">Antecipaqui envia para assinatura</option>
+            <option value="fundo">O fundo envia para assinatura</option>
+          </select>
+        </Field>
+      </div>
+
+      <div className="mt-3 flex items-start gap-2 rounded-lg border border-border bg-bg-card p-3 text-xs text-fg-muted">
+        <input type="checkbox" checked disabled className="mt-0.5" />
+        <span>
+          <strong className="text-fg">A Antecipaqui sempre assina como testemunha.</strong>{" "}
+          Regra fixa em toda operação, independente de quem gera ou envia o
+          contrato.
+        </span>
+      </div>
+
+      {assinaturaPor === "fundo" && (
+        <div className="space-y-3 mt-4 p-4 rounded-xl bg-bg border border-border">
+          <h4 className="font-mono text-[11px] uppercase tracking-wider text-fg-dim">
+            webhook de retorno da assinatura (fundo → antecipaqui)
+          </h4>
+          <p className="text-xs text-fg-muted">
+            Quando o fundo terminar a assinatura, ele deve chamar este endpoint
+            (POST) avisando que o contrato foi assinado e mandando o link do
+            documento. Aí mudamos o status da operação e avisamos construtora,
+            imobiliária e comercial.
+          </p>
+          {fundo ? (
+            <>
+              <Field label="URL do webhook (configure no sistema do fundo)">
+                <input
+                  readOnly
+                  value={webhookUrl}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="form-input font-mono text-xs bg-bg-soft"
+                />
+              </Field>
+              <Field label="Segredo HMAC (header x-webhook-signature, SHA-256 do corpo)">
+                <input
+                  readOnly
+                  value={
+                    fundo.contratoAssinaturaWebhookSecret ??
+                    "Será gerado ao salvar."
+                  }
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="form-input font-mono text-xs bg-bg-soft"
+                />
+              </Field>
+              <div className="rounded-lg border border-border bg-bg-card p-3 text-[11px] font-mono text-fg-muted overflow-x-auto">
+                {`POST ${webhookUrl || "…"}\n`}
+                {`x-webhook-signature: sha256=<hmac>\n`}
+                {`{ "operacaoId": "<uuid>", "linkAssinado": "https://...", "evento": "assinado" }`}
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-warn">
+              A URL e o segredo do webhook aparecem aqui depois de salvar o
+              fundo.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="mt-4">
+        <Field label="Quem gera as cobranças?">
+          <select
+            name="cobrancaGeradaPor"
+            value={cobrancaPor}
+            onChange={(e) => setCobrancaPor(e.target.value)}
+            className="form-input"
+          >
+            <option value="antecipa">Antecipaqui gera as cobranças</option>
+            <option value="fundo">O fundo gera as cobranças</option>
+          </select>
+        </Field>
+        {cobrancaPor === "fundo" && (
+          <p className="mt-2 text-[11px] text-fg-dim">
+            O <strong>como</strong> o fundo nos repassa as cobranças (API, CNAB
+            ou manual) é definido no card &quot;Cobrança / emissão de boleto&quot;
+            abaixo, pra que fiquem disponíveis no sistema para todos.
+          </p>
+        )}
+      </div>
     </Card>
   );
 }

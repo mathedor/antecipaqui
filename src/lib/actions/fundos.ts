@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { eq, desc, sql, count, inArray } from "drizzle-orm";
 import { db } from "@/db";
@@ -119,6 +120,9 @@ export async function createFundoAction(
       contratoUrl,
       contratoNome,
       taxaMensalBase: taxaMensal.toFixed(4),
+      taxaOperacaoPadrao: parseTaxaOperacao(
+        String(formData.get("taxaOperacaoPadrao") || ""),
+      ),
       custoFinanceiroPct: custoFinanceiroPct.toFixed(4),
       impostosPct: impostosPct.toFixed(4),
       bancoNome: String(formData.get("bancoNome") || "").trim() || null,
@@ -136,6 +140,8 @@ export async function createFundoAction(
         String(formData.get("sistemaGestaoNome") || "").trim() || null,
       sistemaGestaoDocsUrl:
         String(formData.get("sistemaGestaoDocsUrl") || "").trim() || null,
+      /* Modo operacional do fundo (contrato/assinatura/cobrança) */
+      ...buildModoOperacional(formData),
       /* Encargos + cobrança opcionais (wizard preenche) */
       multaAtrasoPct: parseEncargo(
         String(formData.get("multaAtrasoPct") || ""),
@@ -203,6 +209,12 @@ export async function editFundoAction(
   if (impostosPct === "INVALID")
     return { ok: false, error: "% de impostos inválido" };
 
+  const [atual] = await db
+    .select({ secret: fundos.contratoAssinaturaWebhookSecret })
+    .from(fundos)
+    .where(eq(fundos.id, fundoId))
+    .limit(1);
+
   await db
     .update(fundos)
     .set({
@@ -228,6 +240,9 @@ export async function editFundoAction(
       contratoNome:
         String(formData.get("contratoNome") || "").trim() || null,
       taxaMensalBase: taxaMensal.toFixed(4),
+      taxaOperacaoPadrao: parseTaxaOperacao(
+        String(formData.get("taxaOperacaoPadrao") || ""),
+      ),
       custoFinanceiroPct: custoFinanceiroPct.toFixed(4),
       impostosPct: impostosPct.toFixed(4),
       bancoNome: String(formData.get("bancoNome") || "").trim() || null,
@@ -245,6 +260,8 @@ export async function editFundoAction(
         String(formData.get("sistemaGestaoNome") || "").trim() || null,
       sistemaGestaoDocsUrl:
         String(formData.get("sistemaGestaoDocsUrl") || "").trim() || null,
+      /* Modo operacional do fundo (contrato/assinatura/cobrança) */
+      ...buildModoOperacional(formData, atual?.secret),
       /* Encargos de atraso */
       multaAtrasoPct: parseEncargo(
         String(formData.get("multaAtrasoPct") || ""),
@@ -314,6 +331,49 @@ function parseEncargo(raw: string, fallback: string): string {
 function normalizeModo(raw: string): "api" | "cnab" | "manual" {
   if (raw === "api" || raw === "cnab" || raw === "manual") return raw;
   return "manual";
+}
+
+/** Parseia a "taxa de operação padrão" (valor de operação). Aceita "6",
+ *  "6,00", "6%" ou "0.06". Vazio/invalid → fallback (default 0.0600). */
+function parseTaxaOperacao(raw: string, fallback = "0.0600"): string {
+  const cleaned = raw.replace(",", ".").replace("%", "").trim();
+  if (!cleaned) return fallback;
+  const v = parseFloat(cleaned);
+  if (!Number.isFinite(v) || v <= 0) return fallback;
+  const dec = v >= 0.5 ? v / 100 : v;
+  if (dec < 0.001 || dec > 0.5) return fallback;
+  return dec.toFixed(4);
+}
+
+/** Lê do form os campos de "modo operacional" do fundo (quem gera contrato,
+ *  quem envia pra assinatura, quem gera cobrança) e devolve já normalizado.
+ *  Gera o segredo HMAC do webhook de retorno quando o FUNDO é quem envia pra
+ *  assinatura (e ainda não existe um). Antecipaqui sempre assina como
+ *  testemunha (regra fixa). */
+function buildModoOperacional(
+  formData: FormData,
+  existingSecret?: string | null,
+) {
+  const norm = (v: FormDataEntryValue | null): "antecipa" | "fundo" =>
+    String(v || "") === "fundo" ? "fundo" : "antecipa";
+  const contratoGeradoPor = norm(formData.get("contratoGeradoPor"));
+  const contratoAssinaturaEnviadaPor = norm(
+    formData.get("contratoAssinaturaEnviadaPor"),
+  );
+  const cobrancaGeradaPor = norm(formData.get("cobrancaGeradaPor"));
+
+  let contratoAssinaturaWebhookSecret = existingSecret ?? null;
+  if (contratoAssinaturaEnviadaPor === "fundo" && !contratoAssinaturaWebhookSecret) {
+    contratoAssinaturaWebhookSecret = crypto.randomBytes(24).toString("hex");
+  }
+
+  return {
+    contratoGeradoPor,
+    contratoAssinaturaEnviadaPor,
+    antecipaAssinaTestemunha: true as const,
+    contratoAssinaturaWebhookSecret,
+    cobrancaGeradaPor,
+  };
 }
 
 function parseJsonOpcional(raw: string): unknown {
@@ -386,6 +446,8 @@ export async function editFundoSelfAction(
       assinaturaApiCredenciais: parseJsonOpcional(
         String(formData.get("assinaturaApiCredenciais") || ""),
       ),
+      /* Modo operacional do fundo (contrato/assinatura/cobrança) */
+      ...buildModoOperacional(formData, meuFundo.contratoAssinaturaWebhookSecret),
       updatedAt: new Date(),
     })
     .where(eq(fundos.id, meuFundo.id));

@@ -25,8 +25,13 @@ type FormState = {
   uf: string;
   // Step 3
   taxaMensalBase: string;
+  taxaOperacaoPadrao: string;
   custoFinanceiroPct: string;
   impostosPct: string;
+  // Modo operacional
+  contratoGeradoPor: "antecipa" | "fundo";
+  contratoAssinaturaEnviadaPor: "antecipa" | "fundo";
+  cobrancaGeradaPor: "antecipa" | "fundo";
   // Step 4
   bancoNome: string;
   bancoCodigo: string;
@@ -58,9 +63,13 @@ const INITIAL: FormState = {
   endereco: "",
   cidade: "",
   uf: "",
-  taxaMensalBase: "6,00",
+  taxaMensalBase: "2,40",
+  taxaOperacaoPadrao: "6,00",
   custoFinanceiroPct: "1,50",
   impostosPct: "5,00",
+  contratoGeradoPor: "antecipa",
+  contratoAssinaturaEnviadaPor: "antecipa",
+  cobrancaGeradaPor: "antecipa",
   bancoNome: "",
   bancoCodigo: "",
   bancoAgencia: "",
@@ -506,22 +515,37 @@ function Step3({ data, up }: StepProps) {
     <>
       <Header
         title="Custos e taxas"
-        sub="Defina a taxa base de juros e os custos do fundo. Tudo em % ao mês."
+        sub="Defina o custo do dinheiro do fundo e o valor da operação. Tudo em % ao mês."
       />
       <div className="space-y-3">
-        <div>
-          <Label>Taxa mensal base * (%)</Label>
-          <input
-            className="form-input"
-            value={data.taxaMensalBase}
-            onChange={(e) => up("taxaMensalBase", e.target.value)}
-            placeholder="6,00"
-            inputMode="decimal"
-          />
-          <p className="text-[11px] text-fg-dim mt-1">
-            Taxa mínima que o fundo cobra ao mês. Ex: 6 = 6% a.m.
-          </p>
-        </div>
+        <Grid2>
+          <div>
+            <Label>Custo do dinheiro * (% a.m.)</Label>
+            <input
+              className="form-input"
+              value={data.taxaMensalBase}
+              onChange={(e) => up("taxaMensalBase", e.target.value)}
+              placeholder="2,40"
+              inputMode="decimal"
+            />
+            <p className="text-[11px] text-fg-dim mt-1">
+              Quanto custa o capital do fundo. Ex: 2,40 = 2,4% a.m.
+            </p>
+          </div>
+          <div>
+            <Label>Valor da operação (% a.m.)</Label>
+            <input
+              className="form-input"
+              value={data.taxaOperacaoPadrao}
+              onChange={(e) => up("taxaOperacaoPadrao", e.target.value)}
+              placeholder="6,00"
+              inputMode="decimal"
+            />
+            <p className="text-[11px] text-fg-dim mt-1">
+              Taxa padrão cobrada do cliente. Ex: 6 = 6% a.m.
+            </p>
+          </div>
+        </Grid2>
         <Grid2>
           <div>
             <Label>Custo financeiro/rateio (%)</Label>
@@ -707,6 +731,65 @@ function Step5({ data, up }: StepProps) {
           </div>
         )}
 
+        <div className="border-t border-border pt-4 space-y-3">
+          <div className="font-bold text-sm">Modo operacional</div>
+          <p className="text-[11px] text-fg-dim -mt-1">
+            A operação sempre nasce no Antecipaqui. Defina quem cuida de cada
+            etapa depois.
+          </p>
+          <Grid2>
+            <div>
+              <Label>Quem gera o contrato?</Label>
+              <select
+                className="form-input"
+                value={data.contratoGeradoPor}
+                onChange={(e) =>
+                  up(
+                    "contratoGeradoPor",
+                    e.target.value as "antecipa" | "fundo",
+                  )
+                }
+              >
+                <option value="antecipa">Antecipaqui</option>
+                <option value="fundo">O fundo</option>
+              </select>
+            </div>
+            <div>
+              <Label>Quem envia para assinatura?</Label>
+              <select
+                className="form-input"
+                value={data.contratoAssinaturaEnviadaPor}
+                onChange={(e) =>
+                  up(
+                    "contratoAssinaturaEnviadaPor",
+                    e.target.value as "antecipa" | "fundo",
+                  )
+                }
+              >
+                <option value="antecipa">Antecipaqui</option>
+                <option value="fundo">O fundo</option>
+              </select>
+            </div>
+          </Grid2>
+          <div>
+            <Label>Quem gera as cobranças?</Label>
+            <select
+              className="form-input"
+              value={data.cobrancaGeradaPor}
+              onChange={(e) =>
+                up("cobrancaGeradaPor", e.target.value as "antecipa" | "fundo")
+              }
+            >
+              <option value="antecipa">Antecipaqui</option>
+              <option value="fundo">O fundo</option>
+            </select>
+          </div>
+          <p className="text-[11px] text-fg-dim">
+            ℹ A Antecipaqui sempre assina como testemunha. Se o fundo enviar
+            para assinatura, geramos o webhook de retorno após salvar.
+          </p>
+        </div>
+
         <div className="border-t border-border pt-4">
           <div className="font-bold text-sm mb-2">Encargos de atraso</div>
           <Grid2>
@@ -769,9 +852,26 @@ function Step6({ data }: { data: FormState }) {
         <Row label="Email comercial" value={data.emailComercial} />
         <Row label="Email assinatura" value={data.emailAssinatura} />
         <Row label="Endereço" value={`${data.endereco}, ${data.cidade}/${data.uf} · ${data.cep}`} />
-        <Row label="Taxa mensal" value={`${data.taxaMensalBase}%`} />
+        <Row label="Custo do dinheiro" value={`${data.taxaMensalBase}%`} />
+        <Row label="Valor da operação" value={`${data.taxaOperacaoPadrao}%`} />
         <Row label="Custo financeiro" value={`${data.custoFinanceiroPct}%`} />
         <Row label="Impostos" value={`${data.impostosPct}%`} />
+        <Row
+          label="Gera contrato"
+          value={data.contratoGeradoPor === "fundo" ? "Fundo" : "Antecipaqui"}
+        />
+        <Row
+          label="Envia p/ assinatura"
+          value={
+            data.contratoAssinaturaEnviadaPor === "fundo"
+              ? "Fundo"
+              : "Antecipaqui"
+          }
+        />
+        <Row
+          label="Gera cobranças"
+          value={data.cobrancaGeradaPor === "fundo" ? "Fundo" : "Antecipaqui"}
+        />
         <Row
           label="Banco"
           value={`${data.bancoNome} ${data.bancoCodigo ? `(${data.bancoCodigo})` : ""} · Ag ${data.bancoAgencia} · CC ${data.bancoConta}`}
