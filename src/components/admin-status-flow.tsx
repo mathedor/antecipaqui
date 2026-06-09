@@ -162,6 +162,7 @@ type Props = {
     razaoSocial: string;
     nomeFantasia: string | null;
     taxaMensalBase: string;
+    taxaOperacaoPadrao?: string;
   }>;
   /** Fundo atual da operação (se já foi escolhido). */
   currentFundoId?: string | null;
@@ -225,10 +226,12 @@ export function AdminStatusFlow({
 
   function handleSelectFundo(fundoId: string) {
     setSelectedFundoId(fundoId);
-    // Auto-preenche taxa com a taxa-base do fundo
+    // Sugere a taxa DA OPERAÇÃO do fundo (valor de operação), não o custo do
+    // dinheiro (taxa-base). Fallback pra taxa-base em fundos antigos sem o campo.
     const f = fundos.find((x) => x.id === fundoId);
     if (f) {
-      const pct = parseFloat(f.taxaMensalBase) * 100;
+      const taxaOp = parseFloat(f.taxaOperacaoPadrao ?? f.taxaMensalBase);
+      const pct = taxaOp * 100;
       setTaxaInput(pct.toFixed(2).replace(".", ","));
     }
   }

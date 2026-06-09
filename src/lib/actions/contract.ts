@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from "node:crypto";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { put } from "@vercel/blob";
 import { eq } from "drizzle-orm";
@@ -7,6 +8,7 @@ import React from "react";
 import { db } from "@/db";
 import {
   contratos,
+  fundos,
   imobiliarias,
   construtoras,
   operacoes,
@@ -180,6 +182,51 @@ export async function generateContractForOperacao(
     addRandomSuffix: false,
   });
 
+  // PDF pronto — manda pra assinatura (ZapSign) reusando o helper.
+  return sendContratoToZapsign(operacaoId, blob.url);
+}
+
+/**
+ * Cria/atualiza o contrato a partir de um PDF já pronto — renderizado
+ * localmente (fluxo padrão) OU devolvido pelo fundo — e envia pra assinatura
+ * via ZapSign. Reusado pelo webhook quando o fundo GERA o contrato mas a
+ * Antecipaqui é quem coleta a assinatura.
+ */
+export async function sendContratoToZapsign(
+  operacaoId: string,
+  pdfUrl: string,
+): Promise<{
+  contratoId: string;
+  url: string;
+  zapsignDocumentToken: string | null;
+}> {
+  const [op] = await db
+    .select()
+    .from(operacoes)
+    .where(eq(operacoes.id, operacaoId))
+    .limit(1);
+  if (!op) throw new Error("Operação não encontrada");
+
+  const [cedenteUser] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, op.corretorUserId))
+    .limit(1);
+  if (!cedenteUser) throw new Error("Cedente não encontrado");
+
+  const [imob] = await db
+    .select()
+    .from(imobiliarias)
+    .where(eq(imobiliarias.ownerUserId, op.corretorUserId))
+    .limit(1);
+
+  const [construtora] = await db
+    .select()
+    .from(construtoras)
+    .where(eq(construtoras.id, op.construtoraId))
+    .limit(1);
+  if (!construtora) throw new Error("Construtora não encontrada");
+
   // Carrega construtora-owner pra ser signer (se existir cadastrado)
   const construtoraOwner = construtora.ownerUserId
     ? (
@@ -228,7 +275,7 @@ export async function generateContractForOperacao(
   try {
     const zapDoc = await createZapsignDocument({
       name: `Antecipaqui · Cessão de Comissão · ${op.numero}`,
-      urlPdf: blob.url,
+      urlPdf: pdfUrl,
       externalId: op.numero,
       signers: signersInput,
     });
@@ -266,7 +313,7 @@ export async function generateContractForOperacao(
     await db
       .update(contratos)
       .set({
-        pdfUrl: blob.url,
+        pdfUrl,
         status: newStatus,
         zapsignDocumentToken: zapsignDocumentToken ?? existing.zapsignDocumentToken,
         signers: signersData ?? existing.signers,
@@ -279,7 +326,7 @@ export async function generateContractForOperacao(
       .insert(contratos)
       .values({
         operacaoId,
-        pdfUrl: blob.url,
+        pdfUrl,
         status: newStatus,
         zapsignDocumentToken,
         signers: signersData,
@@ -288,7 +335,162 @@ export async function generateContractForOperacao(
     contratoId = created.id;
   }
 
-  return { contratoId, url: blob.url, zapsignDocumentToken };
+  return { contratoId, url: pdfUrl, zapsignDocumentToken };
+}
+
+/**
+ * Quando o FUNDO é quem gera o contrato: envia os dados da operação
+ * (construtora, cedente, parcelas...) pro endpoint do fundo. O fundo gera o
+ * contrato e devolve no webhook /api/contrato-assinatura/webhook/{fundoId}:
+ *  - se a Antecipaqui é quem assina → devolve o contrato (evento
+ *    "contrato_gerado") e nós mandamos pro ZapSign;
+ *  - se o fundo também assina → devolve já assinado (evento "contrato_assinado").
+ *
+ * Cria/garante uma row de contrato em estado "gerado" (aguardando o fundo).
+ * Best-effort: se o fundo não tem URL configurada ou o POST falha, deixa o
+ * contrato pendente e retorna o motivo (sem derrubar o fluxo de status).
+ */
+export async function dispatchOperacaoToFundo(
+  operacaoId: string,
+): Promise<{ dispatched: boolean; reason?: string }> {
+  const [op] = await db
+    .select()
+    .from(operacoes)
+    .where(eq(operacoes.id, operacaoId))
+    .limit(1);
+  if (!op) throw new Error("Operação não encontrada");
+  if (!op.fundoId) return { dispatched: false, reason: "sem fundo vinculado" };
+
+  const [fundo] = await db
+    .select()
+    .from(fundos)
+    .where(eq(fundos.id, op.fundoId))
+    .limit(1);
+  if (!fundo) return { dispatched: false, reason: "fundo não encontrado" };
+
+  // Garante row de contrato em estado "aguardando o fundo gerar".
+  const [existing] = await db
+    .select()
+    .from(contratos)
+    .where(eq(contratos.operacaoId, operacaoId))
+    .limit(1);
+  if (!existing) {
+    await db.insert(contratos).values({ operacaoId, status: "gerado" });
+  }
+
+  if (!fundo.contratoGeracaoUrl) {
+    return {
+      dispatched: false,
+      reason: "fundo sem URL de geração configurada",
+    };
+  }
+
+  // Dados da operação pro fundo gerar o contrato.
+  const [cedenteUser] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, op.corretorUserId))
+    .limit(1);
+  const [imob] = await db
+    .select()
+    .from(imobiliarias)
+    .where(eq(imobiliarias.ownerUserId, op.corretorUserId))
+    .limit(1);
+  const [construtora] = await db
+    .select()
+    .from(construtoras)
+    .where(eq(construtoras.id, op.construtoraId))
+    .limit(1);
+  const parcelas = await db
+    .select()
+    .from(parcelasComissao)
+    .where(eq(parcelasComissao.operacaoId, operacaoId))
+    .orderBy(parcelasComissao.numero);
+
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.antecipaqui.digital";
+
+  const payload = {
+    evento: "gerar_contrato",
+    operacaoId: op.id,
+    numero: op.numero,
+    fundoId: fundo.id,
+    valorComissao: parseFloat(op.valorComissao),
+    valorPresente: parseFloat(op.valorPresente),
+    valorVenda: parseFloat(op.valorVenda),
+    desagio: parseFloat(op.desagio),
+    taxaMensal: parseFloat(op.taxaMensal),
+    numeroParcelas: op.numeroParcelas,
+    dataVenda: op.dataVenda,
+    pagadorTipo: op.pagadorTipo,
+    construtora: construtora
+      ? {
+          razaoSocial: construtora.razaoSocial,
+          cnpj: construtora.cnpj,
+          endereco: construtora.endereco,
+          cidade: construtora.cidade,
+          uf: construtora.uf,
+          email: construtora.email,
+          telefone: construtora.telefone,
+        }
+      : null,
+    cedente: cedenteUser
+      ? {
+          nome: cedenteUser.nome,
+          email: cedenteUser.email,
+          telefone: cedenteUser.telefone,
+        }
+      : null,
+    imobiliaria: imob
+      ? {
+          razaoSocial: imob.razaoSocial,
+          cnpj: imob.cnpj,
+          endereco: imob.endereco,
+          cidade: imob.cidade,
+          uf: imob.uf,
+        }
+      : null,
+    parcelas: parcelas.map((p) => ({
+      numero: p.numero,
+      vencimento: p.vencimento,
+      valor: parseFloat(p.valor),
+    })),
+    // Pra onde o fundo devolve o contrato (gerado ou assinado).
+    callbackUrl: `${siteUrl}/api/contrato-assinatura/webhook/${fundo.id}`,
+  };
+
+  const body = JSON.stringify(payload);
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (fundo.contratoAssinaturaWebhookSecret) {
+    const sig = crypto
+      .createHmac("sha256", fundo.contratoAssinaturaWebhookSecret)
+      .update(body)
+      .digest("hex");
+    headers["x-webhook-signature"] = `sha256=${sig}`;
+  }
+
+  try {
+    const res = await fetch(fundo.contratoGeracaoUrl, {
+      method: "POST",
+      headers,
+      body,
+    });
+    if (!res.ok) {
+      console.error(
+        "[contract/dispatch] fundo respondeu",
+        res.status,
+        await res.text().catch(() => ""),
+      );
+      return { dispatched: false, reason: `fundo respondeu HTTP ${res.status}` };
+    }
+  } catch (e) {
+    console.error("[contract/dispatch] erro ao enviar pro fundo:", e);
+    return { dispatched: false, reason: "erro de rede ao chamar o fundo" };
+  }
+
+  return { dispatched: true };
 }
 
 export async function getContratoForOperacao(operacaoId: string) {

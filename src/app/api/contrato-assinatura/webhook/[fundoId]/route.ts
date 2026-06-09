@@ -31,6 +31,7 @@ import {
   comerciais,
 } from "@/db/schema";
 import { notify } from "@/lib/notify";
+import { sendContratoToZapsign } from "@/lib/actions/contract";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,7 +41,12 @@ type Params = { params: Promise<{ fundoId: string }> };
 type WebhookPayload = {
   operacaoId?: string;
   contratoId?: string;
+  /** Link do contrato ASSINADO (quando o fundo também coleta a assinatura). */
   linkAssinado?: string;
+  /** Link do contrato GERADO mas ainda sem assinatura (quem assina é a AQ). */
+  linkContrato?: string;
+  /** "contrato_gerado" | "contrato_assinado" | "recusado". Sinônimos aceitos:
+   *  "gerado", "assinado". Default: assinado (compat). */
   evento?: string;
 };
 
@@ -123,15 +129,42 @@ export async function POST(req: NextRequest, { params }: Params) {
     );
   }
 
-  const recusado = payload.evento === "recusado";
+  // Normaliza o tipo de retorno do fundo.
+  const ev = (payload.evento ?? "").toLowerCase();
+  const tipo: "recusado" | "gerado" | "assinado" = ev.includes("recus")
+    ? "recusado"
+    : ev.includes("gerad")
+      ? "gerado"
+      : "assinado";
   const link = `/painel/operacoes/${op.id}`;
 
-  if (recusado) {
+  if (tipo === "recusado") {
     await db
       .update(contratos)
       .set({ status: "cancelado", updatedAt: new Date() })
       .where(eq(contratos.id, contrato.id));
+  } else if (tipo === "gerado") {
+    // Fundo GEROU o contrato (ainda sem assinatura) — a Antecipaqui coleta a
+    // assinatura. Guarda o PDF e manda pro ZapSign reusando o fluxo padrão.
+    const pdf = payload.linkContrato ?? payload.linkAssinado;
+    if (!pdf) {
+      return NextResponse.json(
+        { error: "linkContrato ausente para evento 'contrato_gerado'" },
+        { status: 400 },
+      );
+    }
+    try {
+      await sendContratoToZapsign(op.id, pdf);
+    } catch (e) {
+      console.error("[contrato-assinatura/webhook] zapsign falhou", e);
+      // Guarda ao menos o PDF gerado pelo fundo pra reprocessar depois.
+      await db
+        .update(contratos)
+        .set({ pdfUrl: pdf, updatedAt: new Date() })
+        .where(eq(contratos.id, contrato.id));
+    }
   } else {
+    // Fundo já devolveu o contrato ASSINADO.
     await db
       .update(contratos)
       .set({
@@ -211,12 +244,24 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
   }
 
-  const title = recusado
-    ? `Contrato da operação ${op.numero} recusado`
-    : `Contrato da operação ${op.numero} assinado`;
-  const body = recusado
-    ? "O fundo informou que a assinatura foi recusada. Verifique a operação."
-    : "O fundo concluiu a assinatura. A operação seguiu para pagamento.";
+  const title =
+    tipo === "recusado"
+      ? `Contrato da operação ${op.numero} recusado`
+      : tipo === "gerado"
+        ? `Contrato da operação ${op.numero} pronto para assinatura`
+        : `Contrato da operação ${op.numero} assinado`;
+  const body =
+    tipo === "recusado"
+      ? "O fundo informou que a assinatura foi recusada. Verifique a operação."
+      : tipo === "gerado"
+        ? "O fundo gerou o contrato e ele foi encaminhado para assinatura."
+        : "O fundo concluiu a assinatura. A operação seguiu para pagamento.";
+  const notifyType =
+    tipo === "recusado"
+      ? "contrato_recusado"
+      : tipo === "gerado"
+        ? "operacao_enviada_assinatura"
+        : "contrato_totalmente_assinado";
 
   // Dedup por userId pra não notificar 2x quando papéis se sobrepõem.
   const vistos = new Set<string>();
@@ -226,7 +271,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     try {
       await notify({
         userId: d.userId,
-        type: recusado ? "contrato_recusado" : "contrato_totalmente_assinado",
+        type: notifyType,
         title,
         body,
         link,
@@ -250,7 +295,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     ok: true,
     operacaoId: op.id,
     contratoId: contrato.id,
-    status: recusado ? "cancelado" : "totalmente_assinado",
+    status:
+      tipo === "recusado"
+        ? "cancelado"
+        : tipo === "gerado"
+          ? "enviado_assinatura"
+          : "totalmente_assinado",
   });
 }
 

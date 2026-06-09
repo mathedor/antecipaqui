@@ -721,16 +721,45 @@ export function ModoOperacionalCard({ fundo }: { fundo?: Fundo }) {
         </span>
       </div>
 
-      {assinaturaPor === "fundo" && (
+      {contratoPor === "fundo" && (
         <div className="space-y-3 mt-4 p-4 rounded-xl bg-bg border border-border">
           <h4 className="font-mono text-[11px] uppercase tracking-wider text-fg-dim">
-            webhook de retorno da assinatura (fundo → antecipaqui)
+            envio dos dados da operação (antecipaqui → fundo)
           </h4>
           <p className="text-xs text-fg-muted">
-            Quando o fundo terminar a assinatura, ele deve chamar este endpoint
-            (POST) avisando que o contrato foi assinado e mandando o link do
-            documento. Aí mudamos o status da operação e avisamos construtora,
-            imobiliária e comercial.
+            A operação nasce no Antecipaqui. Quando ela vai pra assinatura, nós
+            enviamos (POST, assinado com HMAC) os dados — construtora, cedente,
+            parcelas — pra este endereço do fundo. O fundo gera o contrato e
+            devolve no webhook de retorno abaixo:{" "}
+            {assinaturaPor === "fundo"
+              ? "como o fundo também assina, ele devolve o contrato já assinado."
+              : "como a Antecipaqui assina, o fundo devolve o contrato e nós enviamos pra assinatura (ZapSign)."}
+          </p>
+          <Field label="URL de geração do fundo (pra onde mandamos a operação)">
+            <input
+              name="contratoGeracaoUrl"
+              type="url"
+              defaultValue={fundo?.contratoGeracaoUrl ?? ""}
+              placeholder="https://api.fundo.com/contratos/gerar"
+              className="form-input font-mono text-xs"
+            />
+          </Field>
+        </div>
+      )}
+
+      {(assinaturaPor === "fundo" || contratoPor === "fundo") && (
+        <div className="space-y-3 mt-4 p-4 rounded-xl bg-bg border border-border">
+          <h4 className="font-mono text-[11px] uppercase tracking-wider text-fg-dim">
+            webhook de retorno (fundo → antecipaqui)
+          </h4>
+          <p className="text-xs text-fg-muted">
+            O fundo chama este endpoint (POST) pra devolver o contrato:{" "}
+            <strong>evento &quot;contrato_assinado&quot;</strong> (com o link do
+            assinado) quando o fundo também assina, ou{" "}
+            <strong>evento &quot;contrato_gerado&quot;</strong> (com o link do
+            contrato) quando quem assina é a Antecipaqui. A partir do retorno,
+            atualizamos o status da operação e avisamos construtora, imobiliária
+            e comercial.
           </p>
           {fundo ? (
             <>
@@ -756,7 +785,8 @@ export function ModoOperacionalCard({ fundo }: { fundo?: Fundo }) {
               <div className="rounded-lg border border-border bg-bg-card p-3 text-[11px] font-mono text-fg-muted overflow-x-auto">
                 {`POST ${webhookUrl || "…"}\n`}
                 {`x-webhook-signature: sha256=<hmac>\n`}
-                {`{ "operacaoId": "<uuid>", "linkAssinado": "https://...", "evento": "assinado" }`}
+                {`// fundo assina:  { "operacaoId":"<uuid>", "evento":"contrato_assinado", "linkAssinado":"https://..." }\n`}
+                {`// antecipa assina: { "operacaoId":"<uuid>", "evento":"contrato_gerado", "linkContrato":"https://..." }`}
               </div>
             </>
           ) : (

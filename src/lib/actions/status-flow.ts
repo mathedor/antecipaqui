@@ -14,7 +14,10 @@ import {
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
 import { notify } from "@/lib/notify";
-import { generateContractForOperacao } from "@/lib/actions/contract";
+import {
+  generateContractForOperacao,
+  dispatchOperacaoToFundo,
+} from "@/lib/actions/contract";
 import { audit } from "@/lib/audit";
 import { valorPresente } from "@/lib/format";
 import { getSpreadMinimoMensal } from "@/lib/actions/settings";
@@ -626,16 +629,40 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
       }
       break;
 
-    case "enviada_para_assinatura":
-      // Gera contrato (se não existir) e dispara notificações de "vai assinar"
+    case "enviada_para_assinatura": {
+      // Quem gera o contrato depende do fundo:
+      //  - 'fundo': mandamos os dados da op pro fundo gerar; ele devolve no
+      //    webhook (gerado → ZapSign, ou já assinado).
+      //  - 'antecipa' (padrão): geramos o PDF e mandamos pro ZapSign agora.
+      const fundoIdContrato =
+        (updates.fundoId as string | undefined) ?? op.fundoId ?? null;
+      let geraPeloFundo = false;
+      if (fundoIdContrato) {
+        const [fc] = await db
+          .select({ por: fundos.contratoGeradoPor })
+          .from(fundos)
+          .where(eq(fundos.id, fundoIdContrato))
+          .limit(1);
+        geraPeloFundo = fc?.por === "fundo";
+      }
       try {
-        await generateContractForOperacao(op.id);
-        await db.insert(operacaoEvents).values({
-          operacaoId: op.id,
-          userId: actor.id,
-          type: "contract_generated",
-          payload: {},
-        });
+        if (geraPeloFundo) {
+          const r = await dispatchOperacaoToFundo(op.id);
+          await db.insert(operacaoEvents).values({
+            operacaoId: op.id,
+            userId: actor.id,
+            type: "contract_dispatch_fundo",
+            payload: { dispatched: r.dispatched, reason: r.reason ?? null },
+          });
+        } else {
+          await generateContractForOperacao(op.id);
+          await db.insert(operacaoEvents).values({
+            operacaoId: op.id,
+            userId: actor.id,
+            type: "contract_generated",
+            payload: {},
+          });
+        }
       } catch (e) {
         console.error("[status] contract generation failed:", e);
       }
@@ -670,6 +697,7 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
         });
       }
       break;
+    }
 
     case "enviada_para_pagamento":
       if (cedente) {

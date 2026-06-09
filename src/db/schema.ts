@@ -404,6 +404,11 @@ export const fundos = pgTable(
      *  cuida de cada etapa depois disso. */
     /** Quem GERA o contrato da operação: 'antecipa' (padrão) ou 'fundo'. */
     contratoGeradoPor: text("contrato_gerado_por").notNull().default("antecipa"),
+    /** Quando o FUNDO gera o contrato: endpoint do fundo pra onde mandamos os
+     *  dados da operação (construtora, cedente, parcelas...). O fundo gera o
+     *  contrato e devolve no webhook /api/contrato-assinatura/webhook/{fundoId}.
+     *  A requisição vai assinada com HMAC (contratoAssinaturaWebhookSecret). */
+    contratoGeracaoUrl: text("contrato_geracao_url"),
     /** Quem ENVIA o contrato pra assinatura: 'antecipa' (padrão) ou 'fundo'. */
     contratoAssinaturaEnviadaPor: text("contrato_assinatura_enviada_por")
       .notNull()

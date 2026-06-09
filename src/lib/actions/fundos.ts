@@ -361,14 +361,23 @@ function buildModoOperacional(
     formData.get("contratoAssinaturaEnviadaPor"),
   );
   const cobrancaGeradaPor = norm(formData.get("cobrancaGeradaPor"));
+  const contratoGeracaoUrl =
+    String(formData.get("contratoGeracaoUrl") || "").trim() || null;
 
+  // Segredo HMAC compartilhado da integração de contrato com o fundo. Usado
+  // tanto pra ASSINAR o envio dos dados da op (quando o fundo gera) quanto pra
+  // VALIDAR o retorno do fundo (contrato gerado/assinado). Gera quando o fundo
+  // participa de qualquer ponta.
   let contratoAssinaturaWebhookSecret = existingSecret ?? null;
-  if (contratoAssinaturaEnviadaPor === "fundo" && !contratoAssinaturaWebhookSecret) {
+  const fundoIntegra =
+    contratoAssinaturaEnviadaPor === "fundo" || contratoGeradoPor === "fundo";
+  if (fundoIntegra && !contratoAssinaturaWebhookSecret) {
     contratoAssinaturaWebhookSecret = crypto.randomBytes(24).toString("hex");
   }
 
   return {
     contratoGeradoPor,
+    contratoGeracaoUrl,
     contratoAssinaturaEnviadaPor,
     antecipaAssinaTestemunha: true as const,
     contratoAssinaturaWebhookSecret,
@@ -525,6 +534,7 @@ export async function listFundosForSelector() {
       razaoSocial: fundos.razaoSocial,
       nomeFantasia: fundos.nomeFantasia,
       taxaMensalBase: fundos.taxaMensalBase,
+      taxaOperacaoPadrao: fundos.taxaOperacaoPadrao,
     })
     .from(fundos)
     .where(eq(fundos.isActive, true))
