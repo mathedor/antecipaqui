@@ -1518,3 +1518,54 @@ export function MockupGenericoSlide({
     </div>
   );
 }
+
+export function MockupModoOperacional() {
+  return (
+    <DesktopFrame url="painel/perfil · modo operacional" label="Modo operacional · cada fundo do seu jeito">
+      <div className="h-full p-5 bg-white">
+        <div className="text-xs font-bold mb-3 text-slate-700">
+          Como o fundo opera
+        </div>
+        <div className="space-y-2.5">
+          {[
+            { t: "Quem gera o contrato", v: "Fundo", alt: "Antecipaqui" },
+            { t: "Quem envia p/ assinatura", v: "Antecipaqui", alt: "Fundo" },
+            { t: "Quem gera as cobranças", v: "Fundo", alt: "Antecipaqui" },
+          ].map((m, i) => (
+            <div
+              key={i}
+              className="rounded-xl border border-border bg-slate-50 p-3 flex items-center gap-3 animate-slide-in-bottom"
+              style={{ animationDelay: `${0.3 + i * 0.2}s` }}
+            >
+              <div className="flex-1 text-[11px] text-slate-600">{m.t}</div>
+              <div className="px-2.5 py-1 rounded-full bg-accent text-white text-[10px] font-bold">
+                {m.v}
+              </div>
+              <div className="px-2.5 py-1 rounded-full bg-slate-200 text-slate-400 text-[10px] font-bold">
+                {m.alt}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div
+          className="mt-3 rounded-lg bg-blue-50 border border-accent/30 p-2.5 text-[10px] text-slate-700 flex items-center gap-2 animate-slide-in-bottom"
+          style={{ animationDelay: "1s" }}
+        >
+          <span className="size-4 rounded bg-accent text-white flex items-center justify-center text-[9px]">
+            ✓
+          </span>
+          <span>
+            <span className="font-bold">Antecipaqui sempre assina como testemunha</span>{" "}
+            · regra fixa
+          </span>
+        </div>
+        <div
+          className="mt-2 rounded-lg bg-slate-900 p-2.5 font-mono text-[9px] text-emerald-300 animate-slide-in-bottom overflow-x-auto"
+          style={{ animationDelay: "1.3s" }}
+        >
+          POST /api/contrato-assinatura/webhook/&#123;fundoId&#125; · HMAC
+        </div>
+      </div>
+    </DesktopFrame>
+  );
+}

@@ -18,6 +18,7 @@ import {
   MockupSimulador,
   MockupChatSuporte,
   MockupNotificacoes,
+  MockupGenericoSlide,
 } from "@/components/apresentacao/scene-mockups";
 
 export const metadata = {
@@ -143,6 +144,23 @@ export default function ApresentacaoImobiliariaPage() {
             "Histórico completo de cada etapa pra auditoria",
           ]}
           mockup={<MockupOperacaoFlow />}
+        />
+        <ApresentacaoFeature
+          onDark
+          titulo="Volume? Cadastre em lote ou importe"
+          desc="Imobiliária com muitas vendas não cadastra uma a uma. Suba várias operações de uma vez ou importe de planilha — a IA preenche o que faltar."
+          bullets={[
+            "Cadastro em lote de várias operações na mesma tela",
+            "Importação a partir de planilha (CSV/Excel)",
+            "Cada operação segue o mesmo fluxo de análise e assinatura",
+          ]}
+          mockup={
+            <MockupGenericoSlide
+              emoji="📦"
+              title="Operações em lote"
+              subtitle="cadastre várias de uma vez ou importe de planilha"
+            />
+          }
         />
       </ApresentacaoSection>
 

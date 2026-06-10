@@ -18,6 +18,7 @@ import {
   MockupPendencias,
   MockupChatSuporte,
   MockupNotificacoes,
+  MockupGenericoSlide,
 } from "@/components/apresentacao/scene-mockups";
 
 export const metadata = {
@@ -196,8 +197,8 @@ export default function ApresentacaoConstrutoraPage() {
       {/* SEÇÃO 4 — OPERACIONAL */}
       <ApresentacaoSection
         id="operacional"
-        eyebrow="OPERACIONAL · CATÁLOGO + PENDÊNCIAS"
-        titulo="Empreendimentos cadastrados, pendências sempre à vista"
+        eyebrow="OPERACIONAL · CATÁLOGO · DOCS · RISCO"
+        titulo="Empreendimentos, documentos, pendências e risco — tudo à vista"
         bg="dark"
       >
         <ApresentacaoFeature
@@ -222,6 +223,41 @@ export default function ApresentacaoConstrutoraPage() {
             "Snooze (lembrar depois) pra coisas não urgentes",
           ]}
           mockup={<MockupPendencias />}
+        />
+        <ApresentacaoFeature
+          onDark
+          titulo="Documentos — repositório central"
+          desc="Contrato social, certidões, comprovantes. Tudo num só lugar, organizado por tipo, acessível pra equipe e pro fundo na hora da análise."
+          bullets={[
+            "Upload direto, sem limite de tamanho (vai pro storage seguro)",
+            "Organizado por categoria e validade",
+            "Compartilhado com o fundo na análise da operação",
+          ]}
+          mockup={
+            <MockupGenericoSlide
+              emoji="📁"
+              title="Documentos"
+              subtitle="contrato social · certidões · comprovantes — num lugar só"
+            />
+          }
+        />
+        <ApresentacaoFeature
+          onDark
+          reverse
+          titulo="Risco e concentração por fundo"
+          desc="Veja com quais fundos você opera, quanto deve pra cada um, o que está a vencer e o que está vencido. Concentração e exposição claras."
+          bullets={[
+            "Volume operado, a pagar, vencidas e pagas por fundo",
+            "Exposição total num painel só",
+            "Ajuda a diversificar e negociar melhores condições",
+          ]}
+          mockup={
+            <MockupGenericoSlide
+              emoji="📊"
+              title="Risco & concentração"
+              subtitle="exposição por fundo · a vencer · vencidas · pagas"
+            />
+          }
         />
       </ApresentacaoSection>
 

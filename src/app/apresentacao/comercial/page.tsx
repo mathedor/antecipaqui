@@ -18,6 +18,7 @@ import {
   MockupRelatorioCorretor,
   MockupChatSuporte,
   MockupNotificacoes,
+  MockupGenericoSlide,
 } from "@/components/apresentacao/scene-mockups";
 
 export const metadata = {
@@ -130,6 +131,22 @@ export default function ApresentacaoComercialPage() {
             "Múltiplos links pra campanhas diferentes",
           ]}
           mockup={<MockupConviteLink />}
+        />
+        <ApresentacaoFeature
+          titulo="Cadastrou a imob? Já lança a primeira operação"
+          desc="Não para na captação: você mesmo cadastra a operação do parceiro — solta o contrato, a IA preenche, e ela entra no mesmo fluxo de análise e assinatura."
+          bullets={[
+            "Nova operação direto pelo seu painel",
+            "IA lê o contrato e preenche os dados",
+            "Acompanha o status até virar comissão sua",
+          ]}
+          mockup={
+            <MockupGenericoSlide
+              emoji="📝"
+              title="Nova operação"
+              subtitle="você cadastra a op do parceiro e acompanha até o fim"
+            />
+          }
         />
       </ApresentacaoSection>
 

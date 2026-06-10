@@ -18,16 +18,19 @@ import {
   MockupForecastFundo,
   MockupRecaps,
   MockupRecebimentos,
+  MockupModoOperacional,
+  MockupGenericoSlide,
 } from "@/components/apresentacao/scene-mockups";
 
 export const metadata = {
   title: "Antecipaqui · Pra fundos investidores",
   description:
-    "Você decide, sistema executa. Mesa de decisão, regras auto, risco, cobrança via API/CNAB, API REST + webhooks. Tour completo.",
+    "Você decide, sistema executa. Mesa de decisão, regras auto, risco, modo operacional por fundo (contrato/assinatura/cobrança), API REST + webhooks. Tour completo.",
 };
 
 const NAV_ITEMS = [
   { href: "#decisao", label: "Decisão" },
+  { href: "#operacao", label: "Operação" },
   { href: "#risco", label: "Risco" },
   { href: "#cobranca", label: "Cobrança" },
   { href: "#financeiro", label: "Financeiro" },
@@ -110,6 +113,59 @@ export default function ApresentacaoFundoPage() {
           ]}
           hint="regras auto cobrem ~70% das ops óbvias em fundos bem calibrados"
           mockup={<MockupRegraDryRun />}
+        />
+      </ApresentacaoSection>
+
+      {/* SEÇÃO — MODO OPERACIONAL */}
+      <ApresentacaoSection
+        id="operacao"
+        eyebrow="MODO OPERACIONAL · CADA FUNDO DO SEU JEITO"
+        titulo="A operação nasce no Antecipaqui. Você define o resto."
+        intro="Cada fundo tem sua modulação. Configure quem gera o contrato, quem coleta a assinatura e quem emite as cobranças — o sistema orquestra tudo e mantém construtora, imobiliária e comercial avisados em cada passo."
+      >
+        <ApresentacaoFeature
+          titulo="Contrato e assinatura do seu jeito"
+          desc="Escolha quem gera o contrato e quem coleta a assinatura. A Antecipaqui SEMPRE assina como testemunha — regra fixa em toda operação."
+          bullets={[
+            "Antecipaqui gera + assina: contrato automático via ZapSign",
+            "Você gera + Antecipaqui assina: mandamos os dados da op (HMAC), você devolve o contrato e nós coletamos a assinatura",
+            "Você gera + assina: devolve o contrato já assinado e a gente só registra e segue pro pagamento",
+          ]}
+          hint="webhook de retorno por fundo · POST /api/contrato-assinatura/webhook/{fundoId}"
+          mockup={<MockupModoOperacional />}
+        />
+        <ApresentacaoFeature
+          reverse
+          titulo="Custos, taxas e contrato modelo — pré-configurados"
+          desc="Custo do dinheiro e valor da operação por fundo (spread calculado automático). Custos padrão clonados em cada operação aprovada. Contrato modelo e até sistema de assinatura próprio (D4Sign, Clicksign…)."
+          bullets={[
+            "Custos padrão entram sozinhos em toda op aprovada",
+            "Cobrança: você define se quem gera é o fundo ou a Antecipaqui",
+            "Assinatura digital própria ou o ZapSign padrão da plataforma",
+          ]}
+          mockup={
+            <MockupGenericoSlide
+              emoji="📋"
+              title="Modulação por fundo"
+              subtitle="custo do dinheiro · valor da operação · custos padrão · contrato modelo"
+            />
+          }
+        />
+        <ApresentacaoFeature
+          titulo="Sua rede: parceiros e comerciais vinculados"
+          desc="Veja as construtoras com quem você opera e os comerciais ligados ao seu fundo. Relacionamento e originação num lugar só."
+          bullets={[
+            "Construtoras parceiras com histórico de operações",
+            "Comerciais vinculados que trazem originação pro fundo",
+            "Tudo conectado às operações, recebimentos e faturas",
+          ]}
+          mockup={
+            <MockupGenericoSlide
+              emoji="🤝"
+              title="Parceiros + comerciais"
+              subtitle="construtoras parceiras e captadores ligados ao fundo"
+            />
+          }
         />
       </ApresentacaoSection>
 
