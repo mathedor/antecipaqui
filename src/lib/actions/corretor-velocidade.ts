@@ -274,26 +274,154 @@ export type BrasilCnpjData = {
   email: string | null;
 };
 
+/** Resultado interno de um provedor: achou (data), não-existe (notFound) ou
+ *  falhou/indisponível (erro de rede, 429, 5xx). */
+type ProviderResult =
+  | { kind: "ok"; data: BrasilCnpjData }
+  | { kind: "notfound" }
+  | { kind: "fail" };
+
+async function fetchCnpjJson(
+  url: string,
+): Promise<{ status: number; json: unknown } | null> {
+  try {
+    const res = await fetch(url, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(8000),
+      headers: { accept: "application/json" },
+    });
+    let json: unknown = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+    return { status: res.status, json };
+  } catch {
+    return null;
+  }
+}
+
+/** BrasilAPI — já retorna no formato BrasilCnpjData. */
+async function fromBrasilApi(clean: string): Promise<ProviderResult> {
+  const r = await fetchCnpjJson(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+  if (!r) return { kind: "fail" };
+  if (r.status === 404) return { kind: "notfound" };
+  if (r.status !== 200 || !r.json) return { kind: "fail" };
+  return { kind: "ok", data: r.json as BrasilCnpjData };
+}
+
+/** cnpj.ws (pública) — formato com `estabelecimento`. */
+async function fromCnpjWs(clean: string): Promise<ProviderResult> {
+  const r = await fetchCnpjJson(`https://publica.cnpj.ws/cnpj/${clean}`);
+  if (!r) return { kind: "fail" };
+  if (r.status === 404) return { kind: "notfound" };
+  if (r.status !== 200 || !r.json) return { kind: "fail" };
+  const d = r.json as {
+    razao_social?: string;
+    estabelecimento?: {
+      cnpj?: string;
+      nome_fantasia?: string | null;
+      tipo_logradouro?: string | null;
+      logradouro?: string | null;
+      numero?: string | null;
+      bairro?: string | null;
+      cep?: string | null;
+      ddd1?: string | null;
+      telefone1?: string | null;
+      email?: string | null;
+      cidade?: { nome?: string } | null;
+      estado?: { sigla?: string } | null;
+    };
+  };
+  const e = d.estabelecimento ?? {};
+  const logradouro =
+    [e.tipo_logradouro, e.logradouro, e.numero].filter(Boolean).join(" ") ||
+    null;
+  return {
+    kind: "ok",
+    data: {
+      cnpj: e.cnpj ?? clean,
+      razao_social: d.razao_social ?? "",
+      nome_fantasia: e.nome_fantasia ?? null,
+      logradouro,
+      bairro: e.bairro ?? null,
+      municipio: e.cidade?.nome ?? null,
+      uf: e.estado?.sigla ?? null,
+      cep: e.cep ?? null,
+      ddd_telefone_1:
+        e.ddd1 && e.telefone1 ? `${e.ddd1}${e.telefone1}` : null,
+      email: e.email ?? null,
+    },
+  };
+}
+
+/** ReceitaWS — formato plano. status "ERROR" quando não encontra. */
+async function fromReceitaWs(clean: string): Promise<ProviderResult> {
+  const r = await fetchCnpjJson(`https://www.receitaws.com.br/v1/cnpj/${clean}`);
+  if (!r) return { kind: "fail" };
+  if (r.status === 404) return { kind: "notfound" };
+  if (r.status !== 200 || !r.json) return { kind: "fail" };
+  const d = r.json as {
+    status?: string;
+    nome?: string;
+    fantasia?: string | null;
+    logradouro?: string | null;
+    numero?: string | null;
+    bairro?: string | null;
+    municipio?: string | null;
+    uf?: string | null;
+    cep?: string | null;
+    telefone?: string | null;
+    email?: string | null;
+  };
+  if (d.status === "ERROR" || !d.nome) return { kind: "notfound" };
+  const logradouro =
+    [d.logradouro, d.numero].filter(Boolean).join(", ") || null;
+  return {
+    kind: "ok",
+    data: {
+      cnpj: clean,
+      razao_social: d.nome ?? "",
+      nome_fantasia: d.fantasia || null,
+      logradouro,
+      bairro: d.bairro ?? null,
+      municipio: d.municipio ?? null,
+      uf: d.uf ?? null,
+      cep: (d.cep ?? "").replace(/\D/g, "") || null,
+      ddd_telefone_1: (d.telefone ?? "").replace(/\D/g, "").slice(0, 11) || null,
+      email: d.email || null,
+    },
+  };
+}
+
+/**
+ * Consulta dados do CNPJ com cadeia de fallback entre provedores. A BrasilAPI
+ * costuma rejeitar/limitar (429) os IPs compartilhados da Vercel em produção,
+ * então caímos pra cnpj.ws e ReceitaWS antes de desistir. Cada provedor tem
+ * timeout de 8s. Só retorna "não encontrado" se algum provedor afirmar isso e
+ * nenhum tiver achado.
+ */
 export async function lookupCnpj(cnpj: string): Promise<
   | { ok: true; data: BrasilCnpjData }
   | { ok: false; error: string }
 > {
   const clean = cnpj.replace(/\D/g, "");
   if (clean.length !== 14) return { ok: false, error: "CNPJ inválido" };
-  try {
-    const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`, {
-      // Cache 1h por CNPJ
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: res.status === 404 ? "CNPJ não encontrado" : "Erro na consulta",
-      };
-    }
-    const data = (await res.json()) as BrasilCnpjData;
-    return { ok: true, data };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
+
+  const providers = [fromBrasilApi, fromCnpjWs, fromReceitaWs];
+  let sawNotFound = false;
+  for (const provider of providers) {
+    const r = await provider(clean);
+    if (r.kind === "ok") return { ok: true, data: r.data };
+    if (r.kind === "notfound") sawNotFound = true;
+    // kind === "fail" → tenta o próximo provedor
   }
+
+  if (sawNotFound) return { ok: false, error: "CNPJ não encontrado" };
+  return {
+    ok: false,
+    error:
+      "Não conseguimos consultar o CNPJ agora (serviço indisponível). Preencha os dados manualmente e siga com o cadastro.",
+  };
 }
