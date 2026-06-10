@@ -133,7 +133,7 @@ export const TOUR_CONTENT: Record<
       { emoji: "🔌", nome: "API REST", desc: "5 endpoints + Bearer" },
       { emoji: "🔔", nome: "Webhooks HMAC", desc: "retry automático" },
       { emoji: "📆", nome: "Daily + Forecast", desc: "operacional + estratégico" },
-      { emoji: "📨", nome: "Recaps email", desc: "diário · semanal · mensal" },
+      { emoji: "📑", nome: "Modo operacional", desc: "contrato e cobrança do seu jeito" },
     ],
     beneficios: [
       { emoji: "🎯", titulo: "Rendimento previsível", sub: "spread + custo capital calibrável" },
