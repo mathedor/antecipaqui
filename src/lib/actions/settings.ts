@@ -21,21 +21,23 @@ const SCORE_DIAS_GRAVE_DEFAULT = 30;
 
 /**
  * Taxa mensal usada na calculadora pública e no cadastro de operação
- * pelo corretor. É a MÉDIA das taxas-base dos fundos ativos cadastrados.
+ * pelo corretor. É a MÉDIA da TAXA DE OPERAÇÃO (valor da operação cobrado do
+ * cliente — `taxaOperacaoPadrao`) dos fundos ativos. NÃO usar `taxaMensalBase`
+ * aqui: aquela é o CUSTO DO DINHEIRO do fundo (taxa_fundo), bem menor que a
+ * taxa de operação — usá-la subestima o deságio no simulador.
  *
  * Se não houver fundos, fallback pra system_settings.taxa_mensal, que por
  * sua vez tem default 6% a.m.
  *
  * Importante: essa taxa é só uma estimativa. Na aprovação da operação, o
- * admin escolhe o fundo específico (com sua taxa-base) e pode ainda
- * customizar manualmente.
+ * admin escolhe o fundo específico e pode ainda customizar manualmente.
  */
 export async function getTaxaMensal(): Promise<number> {
   try {
-    // 1. Tenta média dos fundos ativos
+    // 1. Tenta média da taxa de operação dos fundos ativos
     const result = await db
       .select({
-        media: sql<string>`COALESCE(AVG(${fundos.taxaMensalBase})::text, '0')`,
+        media: sql<string>`COALESCE(AVG(${fundos.taxaOperacaoPadrao})::text, '0')`,
         qtd: sql<number>`COUNT(*)::int`,
       })
       .from(fundos)
