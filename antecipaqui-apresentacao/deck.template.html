@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Antecipaqui · Apresentação da Plataforma</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --a:#3f8fe8; --a-soft:#8ec2f7; --a-deep:#0d4e9e; --a-vivid:#1c6dd0;
+  --ink:#081222; --panel:#0d1a30; --panel2:#122239;
+  --line:rgba(142,194,247,.10); --line2:rgba(142,194,247,.18);
+  --tx:#f2f6fb; --mut:#93a4bc; --mut2:#5c6d85;
+  --red:#fb7185; --amber:#fbbf24; --grn:#34d399; --org:#fb923c;
+  --sans:'Inter',system-ui,sans-serif; --disp:'Sora','Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--tx);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+img{max-width:100%;display:block}
+
+#deck{height:100vh;overflow-y:scroll;scroll-snap-type:y mandatory;scroll-behavior:smooth}
+#deck::-webkit-scrollbar{width:0}
+.slide{min-height:100vh;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;justify-content:center;padding:64px 88px 72px;overflow:hidden}
+.slide::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(ellipse 90% 80% at 70% 30%,#000 20%,transparent 80%)}
+.glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.22;pointer-events:none}
+.glow.a{width:540px;height:540px;background:var(--a-vivid);top:-170px;right:-130px}
+.glow.b{width:420px;height:420px;background:#0f766e;bottom:-180px;left:-140px;opacity:.15}
+
+#bar{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,.06);z-index:60}
+#bar>i{display:block;height:100%;width:0;background:var(--a);box-shadow:0 0 18px var(--a);transition:width .3s}
+#hud{position:fixed;top:18px;right:26px;z-index:60;display:flex;align-items:center;gap:14px;font-family:var(--disp);font-size:12px;color:var(--mut)}
+#hud b{color:var(--tx);font-weight:700}
+#hud .k{border:1px solid var(--line2);border-radius:7px;padding:4px 8px;color:var(--mut);cursor:pointer;transition:.2s}
+#hud .k:hover{color:#fff;background:var(--a-vivid);border-color:var(--a-vivid)}
+#rail{position:fixed;left:22px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;gap:11px}
+#rail a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--mut2);font-size:11px;font-family:var(--disp);font-weight:600;letter-spacing:.02em}
+#rail .d{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--mut2);transition:.25s;flex:none}
+#rail a .t{opacity:0;transform:translateX(-6px);transition:.25s;white-space:nowrap}
+#rail a:hover .t,#rail a.on .t{opacity:1;transform:none}
+#rail a.on{color:var(--a-soft)}
+#rail a.on .d{background:var(--a);border-color:var(--a);box-shadow:0 0 12px var(--a);transform:scale(1.15)}
+
+.kick{font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--a-soft);display:flex;align-items:center;gap:12px}
+.kick::before{content:"";width:26px;height:2px;background:var(--a);display:inline-block;border-radius:2px}
+h1.big{font-family:var(--disp);font-weight:800;font-size:clamp(38px,5.2vw,72px);line-height:1.04;letter-spacing:-.025em;margin:18px 0}
+h2.sec{font-family:var(--disp);font-weight:800;font-size:clamp(30px,3.4vw,48px);line-height:1.05;letter-spacing:-.02em;margin:14px 0 10px}
+.lead{font-size:clamp(16px,1.5vw,20px);color:var(--mut);max-width:52ch;line-height:1.55}
+.kid{font-size:17px;line-height:1.6;color:#e3e9f2;max-width:52ch}
+.kid b{color:var(--a-soft);font-weight:700}
+.kid .em{background:linear-gradient(transparent 62%,rgba(63,143,232,.32) 0);padding:0 2px}
+
+#cover,#end{text-align:center;align-items:center}
+.wordmark{font-family:var(--disp);font-weight:800;font-size:clamp(28px,3.4vw,44px);letter-spacing:-.03em}
+.wordmark .am{display:inline-flex;width:1.12em;height:1.12em;border-radius:.26em;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;align-items:center;justify-content:center;margin-right:12px;vertical-align:-12%;font-size:.85em}
+.wordmark b{color:var(--a-soft);font-weight:700}
+#cover .kick,#end .kick{justify-content:center;margin-top:26px}
+#cover h1 .l,#end h2 .l{color:var(--a-soft)}
+#cover .sub{font-size:clamp(16px,1.6vw,21px);color:var(--mut);max-width:64ch;margin:8px auto 0}
+.meta{position:absolute;bottom:34px;left:0;right:0;display:flex;justify-content:space-between;padding:0 88px;font-size:12px;color:var(--mut2);font-family:var(--disp)}
+kbd{border:1px solid var(--line2);border-radius:5px;padding:1px 6px;font-family:var(--disp);font-size:10px}
+.cta{display:inline-block;margin-top:30px;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;font-family:var(--disp);font-weight:800;font-size:17px;padding:16px 34px;border-radius:999px;box-shadow:0 14px 44px -10px rgba(28,109,208,.6)}
+.contact{margin-top:22px;font-size:13px;color:var(--mut)}
+.contact b{color:var(--tx)}
+
+.vg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:34px}
+.v{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px}
+.v .ic{font-size:30px;margin-bottom:12px}
+.v h3{font-family:var(--disp);font-weight:700;font-size:19px;margin-bottom:8px}
+.v p{font-size:13.5px;color:var(--mut);line-height:1.55}
+.overline{margin-top:30px;font-size:12.5px;color:var(--mut2);font-family:var(--disp)}
+
+.levelintro{position:relative;z-index:2;max-width:1300px;margin:0 auto;width:100%}
+.levelintro .no{font-family:var(--disp);font-weight:800;font-size:clamp(70px,9vw,130px);line-height:1;color:transparent;-webkit-text-stroke:2px var(--a);opacity:.9}
+.levelintro .who{font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--a-soft)}
+.levelintro h2{font-family:var(--disp);font-weight:800;font-size:clamp(38px,5vw,68px);letter-spacing:-.02em;line-height:1.02}
+.levelintro .lead{margin-top:18px}
+.idx{display:flex;flex-wrap:wrap;gap:9px;margin-top:30px;max-width:900px}
+.idx span{font-family:var(--disp);font-size:12px;font-weight:600;color:var(--mut);background:var(--panel);border:1px solid var(--line);padding:7px 13px;border-radius:20px}
+.idx span b{color:var(--a-soft);margin-right:6px}
+
+.feat{position:relative;z-index:2;display:grid;grid-template-columns:minmax(320px,42%) 1fr;gap:60px;align-items:center;width:100%;max-width:1500px;margin:0 auto}
+.feat .txt .num{font-family:var(--disp);font-weight:700;font-size:15px;color:var(--mut2)}
+.feat .txt h2{font-family:var(--disp);font-weight:800;font-size:clamp(28px,3vw,44px);line-height:1.06;letter-spacing:-.02em;margin:14px 0 16px}
+.feat .txt h2 .hl{color:var(--a-soft)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.pill{font-family:var(--disp);font-size:12px;font-weight:600;color:var(--tx);background:var(--panel2);border:1px solid var(--line2);border-radius:20px;padding:6px 12px}
+.pill.acc{background:rgba(63,143,232,.14);border-color:rgba(63,143,232,.45);color:var(--a-soft)}
+
+.mockwrap{position:relative}
+.mockwrap::after{content:"";position:absolute;inset:-30px;background:radial-gradient(60% 60% at 50% 40%,rgba(28,109,208,.13),transparent 70%);z-index:-1}
+.browser{background:var(--panel);border:1px solid var(--line2);border-radius:16px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.7)}
+.browser .top{display:flex;align-items:center;gap:8px;padding:11px 14px;background:#091426;border-bottom:1px solid var(--line)}
+.browser .top i{width:11px;height:11px;border-radius:50%;background:#20304a;display:inline-block}
+.browser .top .url{margin-left:12px;flex:1;background:#0f1e36;border:1px solid var(--line);border-radius:7px;padding:5px 12px;font-size:11px;color:var(--mut);font-family:var(--disp)}
+.browser .top .url b{color:var(--a-soft)}
+.browser .body{padding:20px}
+.phone{width:270px;margin:0 auto;background:var(--panel);border:8px solid #122239;border-radius:38px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.8);position:relative}
+.phone .notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:90px;height:20px;background:#122239;border-radius:12px;z-index:5}
+.phone .scr{padding:34px 14px 18px;min-height:490px}
+.app{display:grid;grid-template-columns:158px 1fr;min-height:340px}
+.app .side{background:#091426;border-right:1px solid var(--line);padding:14px 12px}
+.app .side .lg{display:flex;align-items:center;gap:7px;font-family:var(--disp);font-weight:800;font-size:12.5px;margin-bottom:16px}
+.app .side .lg .m{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep))}
+.app .side .nv{font-size:11px;color:var(--mut);padding:7px 9px;border-radius:7px;display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.app .side .nv.on{background:rgba(63,143,232,.14);color:var(--a-soft);font-weight:700}
+.app .side .nv .ic{width:14px;height:14px;border-radius:4px;background:currentColor;opacity:.5}
+.app .main{padding:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 13px}
+.kpi .l{font-size:10.5px;color:var(--mut);letter-spacing:.04em;text-transform:uppercase;font-family:var(--disp)}
+.kpi .v{font-family:var(--disp);font-weight:800;font-size:22px;margin-top:5px;letter-spacing:-.02em}
+.kpi .dl{font-size:11px;margin-top:3px;color:var(--grn);font-weight:600}
+.kpi.hi{background:linear-gradient(160deg,rgba(63,143,232,.18),rgba(63,143,232,.03));border-color:rgba(63,143,232,.4)}
+.kpi.hi .v{color:var(--a-soft)}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card .h{font-family:var(--disp);font-size:12.5px;font-weight:600;color:var(--mut);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card .h .tag{font-size:10px;color:var(--a-soft);background:rgba(63,143,232,.13);border-radius:5px;padding:2px 7px;white-space:nowrap}
+.bars{display:flex;align-items:flex-end;gap:9px;height:110px}
+.bars .b{flex:1;background:linear-gradient(180deg,var(--a),rgba(63,143,232,.22));border-radius:5px 5px 0 0;min-height:6px}
+.line-lbls{display:flex;gap:9px;margin-top:8px}
+.line-lbls span{flex:1;text-align:center;font-size:9px;color:var(--mut2);font-family:var(--disp)}
+.rows{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.rows .r{display:grid;grid-template-columns:1.6fr 1fr 1fr .8fr;gap:8px;padding:10px 13px;background:var(--panel2);font-size:11.5px;align-items:center}
+.rows .r.hd{background:#091426;color:var(--mut);font-family:var(--disp);font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+.rows .r b{font-weight:600}
+.st{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;display:inline-block;justify-self:start}
+.st.ok{background:rgba(52,211,153,.15);color:var(--grn)}
+.st.wa{background:rgba(251,191,36,.15);color:var(--amber)}
+.st.no{background:rgba(251,113,133,.15);color:var(--red)}
+.st.bl{background:rgba(63,143,232,.16);color:var(--a-soft)}
+.list{display:flex;flex-direction:column;gap:7px}
+.li{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:11.5px}
+.li .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,var(--a-vivid),var(--a-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px;font-family:var(--disp);flex:none}
+.li .g{flex:1;min-width:0}
+.li .g b{display:block;font-weight:600}
+.li .g small{color:var(--mut);font-size:10px}
+.progressbar{height:8px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:6px}
+.progressbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--a),var(--a-deep))}
+.kan{display:flex;gap:7px}
+.kan>div{flex:1;background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:10px;padding:8px}
+.kan h6{margin:0 0 7px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);font-family:var(--disp)}
+.kan .c{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px;font-size:9.5px;margin-bottom:5px}
+.kan .c small{color:var(--mut);display:block;font-size:8.5px}
+.mapmk{position:relative;height:150px;border-radius:12px;background:linear-gradient(160deg,#122a45,#0b1729);overflow:hidden}
+.mapmk::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px}
+.mapmk .pin{position:absolute;width:13px;height:13px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff}
+.big-money{background:linear-gradient(120deg,var(--a-deep),var(--a-vivid));border-radius:16px;padding:16px;margin-bottom:10px}
+.big-money small{color:rgba(255,255,255,.75);font-size:9.5px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;font-family:var(--disp)}
+.big-money b{display:block;font-family:var(--disp);font-size:26px;font-weight:800;margin-top:3px}
+.flow{display:flex;flex-direction:column;gap:8px}
+.flow .ef{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:11.5px}
+.flow .ef .n{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;font-size:12px;flex:none}
+.flow .ef.hi{border-color:rgba(52,211,153,.4);background:linear-gradient(160deg,rgba(52,211,153,.1),transparent)}
+.contractmk{background:#f5f7fa;color:#1a2536;border-radius:12px;padding:16px;max-width:340px;margin:0 auto;font-size:10px;box-shadow:0 30px 70px -20px rgba(0,0,0,.6)}
+.contractmk h5{font-family:var(--disp);font-size:12px;margin-bottom:8px;color:#0c1a2c}
+.contractmk .ln{height:5px;background:#d7dee8;border-radius:3px;margin-bottom:5px}
+.contractmk .sig{margin-top:12px;border-top:1.5px dashed #b7c2d2;padding-top:10px;display:flex;justify-content:space-between;align-items:center}
+.contractmk .sig .as{font-family:'Bradley Hand',cursive;font-size:15px;color:#0d4e9e;transform:rotate(-3deg)}
+.gauge{display:flex;align-items:center;gap:14px}
+.gauge .gnum{font-family:var(--disp);font-weight:800;font-size:38px;color:var(--grn)}
+
+.revgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}
+.rev{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.rev .ic{font-size:22px}
+.rev h4{font-family:var(--disp);font-weight:700;font-size:14.5px;margin:8px 0 4px}
+.rev p{font-size:11.5px;color:var(--mut);line-height:1.5}
+.rev b{color:var(--a-soft)}
+
+@media (max-width:980px){
+  .slide{padding:56px 26px 64px}
+  #rail{display:none}
+  .feat{grid-template-columns:1fr;gap:30px}
+  .feat .mockwrap{order:-1}
+  .vg{grid-template-columns:1fr}
+  .revgrid{grid-template-columns:1fr 1fr}
+  .meta{padding:0 26px}
+  .phone{width:240px}.phone .scr{min-height:430px}
+  .app{grid-template-columns:1fr}.app .side{display:none}
+}
+@media (max-width:560px){.revgrid{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="bar"><i></i></div>
+<div id="hud"><span><b id="cur">01</b> / <span id="tot">00</span></span><span class="k" onclick="document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()">⛶ F</span></div>
+<nav id="rail"></nav>
+<main id="deck"></main>
+
+<script>
+const SHOW_ADMIN = __SHOW_ADMIN__;
+
+const LEVELS = [
+  {id:'intro', label:'Início'},
+  {id:'imob',  label:'Imobiliária & Corretor'},
+  {id:'const', label:'Construtora'},
+  {id:'fundo', label:'Fundo'},
+  {id:'com',   label:'Comercial'},
+  ...(SHOW_ADMIN?[{id:'admin', label:'Administração'}]:[]),
+  {id:'fim',   label:'Fim'},
+];
+
+const appShell = (items, active, main, base='painel') => `
+<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">antecipaqui.digital/${base}/<b>${active.toLowerCase().replace(/\\s|&/g,'-')}</b></div></div>
+<div class="app">
+  <div class="side">
+    <div class="lg"><span class="m"></span> antecipaqui</div>
+    ${items.map(n=>`<div class="nv ${n===active?'on':''}"><span class="ic"></span>${n}</div>`).join('')}
+  </div>
+  <div class="main">${main}</div>
+</div></div>`;
+
+const IMOB_NAV = ['Atendimentos','Operações','Link de Dados','Projeção','Equipe','Chats'];
+const CONST_NAV = ['Operações','Duplicatas','Extrato','Risco','Score','Cashback','Documentos'];
+const FUNDO_NAV = ['Aprovar','Operações','Daily','Recebimentos','Faturas','Risco','Regras','API'];
+const COM_NAV = ['Operações','Prospects','Pipeline','Daily','Comissões','Relatórios'];
+const ADMIN_NAV = ['Operações','Usuários','Construtoras','Tickets','Mural','Relatórios','Config'];
+
+const phone = (scr) => `<div class="phone"><div class="notch"></div><div class="scr">${scr}</div></div>`;
+
+const SLIDES = [];
+const S = (o)=>SLIDES.push(o);
+
+/* ========================= CAPA ========================= */
+S({type:'cover'});
+S({type:'value'});
+S({type:'levelmap'});
+
+/* ========================= 01 IMOBILIÁRIA & CORRETOR ========================= */
+S({type:'intro', level:'imob', no:'01', who:'Para quem vende imóvel', title:'Imobiliária & Corretor',
+  desc:'A venda parcelou a comissão em 24 vezes — mas a conta do corretor vence esse mês. Aqui ele cadastra a operação, assina digital e recebe a comissão à vista. O resto (cobrança, parcelas, risco) vira problema da plataforma.',
+  idx:['Nova operação & simulação','Link de Dados do comprador','Da venda ao PIX','Contrato digital','Acompanhamento de operações','Projeção & relatórios','Equipe, convites & chats']});
+
+S({level:'imob', n:'Nova operação & simulação', title:['Simule e veja ','o dinheiro na tela'],
+  kid:'O corretor informa a comissão parcelada e a plataforma <b>calcula na hora</b> quanto sai à vista, com o deságio aberto — sem letra miúda. Gostou do número? <span class="em">Já cadastra a operação ali mesmo</span>.',
+  pills:['Simulação transparente','Deságio aberto, sem surpresa','Parcelas importadas em lote','Operações em lote pra imobiliária'],
+  mock: phone(`
+    <div style="font-family:var(--disp);font-weight:800;font-size:13px;margin-bottom:8px">Simular antecipação</div>
+    <div class="card" style="margin-bottom:8px"><div class="h">Sua comissão</div>
+      <div style="font-family:var(--disp);font-weight:800;font-size:20px">R$ 48.000</div>
+      <div style="font-size:10px;color:var(--mut)">24 parcelas de R$ 2.000 · começa em ago/26</div>
+    </div>
+    <div class="big-money"><small>Você recebe hoje</small><b>R$ 33.406</b><div style="font-size:9.5px;opacity:.8;margin-top:2px">taxa de 6% a.m. aplicada sobre cada parcela</div></div>
+    <div style="background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));border-radius:10px;padding:10px;text-align:center;font-family:var(--disp);font-weight:800;font-size:12px">Quero antecipar →</div>`)});
+
+S({level:'imob', n:'Link de Dados', title:['O comprador preenche ','sozinho'],
+  kid:'Cadê o RG do comprador? O contrato da venda? Em vez de caçar documento no WhatsApp, o corretor manda um <b>link</b> — o comprador preenche os dados e sobe os arquivos <span class="em">direto na operação</span>.',
+  pills:['Link único por operação','Comprador envia os próprios docs','Cai direto no dossiê','Menos idas e vindas'],
+  mock: phone(`
+    <div style="font-family:var(--disp);font-weight:800;font-size:13px;margin-bottom:8px">📎 Dados da compra</div>
+    <div style="font-size:10.5px;color:var(--mut);margin-bottom:10px">Olá, Carlos! O corretor Rafael pediu seus dados pra concluir a operação do apto 302.</div>
+    <div class="list">
+      <div class="li"><div class="av">✓</div><div class="g"><b>CPF e RG</b><small>enviados</small></div><span class="st ok">ok</span></div>
+      <div class="li"><div class="av">✓</div><div class="g"><b>Contrato de compra</b><small>PDF · 2,1 MB</small></div><span class="st ok">ok</span></div>
+      <div class="li"><div class="av">3</div><div class="g"><b>Comprovante de endereço</b><small>arraste ou clique</small></div><span class="st wa">falta</span></div>
+    </div>
+    <div class="progressbar" style="margin-top:12px"><i style="width:66%"></i></div>
+    <div style="font-size:10px;color:var(--a-soft);margin-top:6px;font-weight:700">2 de 3 enviados</div>`)});
+
+S({level:'imob', n:'Da venda ao PIX', title:['O caminho do dinheiro, ','sem mistério'],
+  kid:'O fluxo inteiro é rastreado: cadastro → análise → aprovação → contrato → <b>pagamento à vista</b>. Depois disso, quem paga as parcelas é a construtora, direto pro fundo — <span class="em">o corretor já saiu da fila</span>.',
+  pills:['Status em tempo real','Notificação a cada avanço','Pagamento após assinatura','Parcelas viram problema do fundo'],
+  mock:`<div class="flow" style="max-width:430px">
+    <div class="ef"><span class="n">1</span><span><b>Cadastro</b> — comissão de R$ 48.000 em 24x</span></div>
+    <div class="ef"><span class="n">2</span><span><b>Análise & aprovação</b> — plataforma + fundo avaliam</span></div>
+    <div class="ef"><span class="n">3</span><span><b>Contrato digital</b> — todos assinam do celular</span></div>
+    <div class="ef hi"><span class="n" style="background:var(--grn);color:#04291c">✓</span><span><b style="color:var(--grn)">R$ 33.406 na conta</b> — a comissão virou dinheiro à vista</span></div>
+    <div class="ef" style="border-style:dashed"><span class="n">∞</span><span>Construtora paga as 24 parcelas <b>direto ao fundo</b> — sem você na cadeia</span></div>
+  </div>`});
+
+S({level:'imob', n:'Contrato digital', title:['Assinou do celular, ','valeu no cartório'],
+  kid:'O contrato de cessão é <b>gerado automaticamente</b> com os dados da operação e vai pra assinatura eletrônica — corretor, construtora e fundo assinam do celular, <span class="em">com validade jurídica</span>. Nada de imprimir, escanear, motoboy.',
+  pills:['Geração automática do PDF','Assinatura eletrônica (ZapSign)','Todas as partes no mesmo doc','Plataforma assina como testemunha'],
+  mock:`<div class="contractmk">
+    <h5>📄 Contrato de Cessão de Crédito — Op. #482</h5>
+    <div class="ln" style="width:92%"></div><div class="ln" style="width:98%"></div><div class="ln" style="width:85%"></div><div class="ln" style="width:95%"></div><div class="ln" style="width:60%"></div>
+    <div style="margin:10px 0 4px;font-weight:700;font-size:9px;color:#4a5a70">CEDENTE · Rafael Corretor — R$ 48.000 (24x)</div>
+    <div class="ln" style="width:88%"></div><div class="ln" style="width:70%"></div>
+    <div class="sig"><div><div class="as">Rafael M.</div><div style="font-size:8px;color:#7d8a9c">assinado · 14:32</div></div><span style="background:#dcfce7;color:#15803d;border-radius:99px;padding:3px 10px;font-size:8.5px;font-weight:800">✓ 3 de 3 assinaturas</span></div>
+  </div>`});
+
+S({level:'imob', n:'Acompanhamento', title:['Cada operação ','com status ao vivo'],
+  kid:'A lista de operações mostra <b>onde cada uma está</b>: em análise, aprovada, aguardando assinatura, paga, liquidada. Mudou o status, chega notificação. O corretor <span class="em">nunca precisa ligar pra perguntar</span>.',
+  pills:['Timeline por operação','Notificação a cada mudança','Histórico completo','Pendências sinalizadas'],
+  mock: appShell(IMOB_NAV,'Operações',`
+    <div class="rows">
+      <div class="r hd"><span>Operação</span><span>Valor</span><span>Recebe</span><span>Status</span></div>
+      <div class="r"><b>#482 · Apto 302 Ed. Aurora</b><span>R$ 48.000</span><span>R$ 33.406</span><span class="st ok">paga ✓</span></div>
+      <div class="r"><b>#495 · Casa Cond. Vale</b><span>R$ 31.200</span><span>R$ 22.870</span><span class="st bl">assinatura</span></div>
+      <div class="r"><b>#501 · Sala comercial</b><span>R$ 18.000</span><span>—</span><span class="st wa">em análise</span></div>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="kpi hi"><div class="l">Antecipado (total)</div><div class="v">R$ 214k</div></div>
+      <div class="kpi"><div class="l">Operações ativas</div><div class="v">7</div></div>
+    </div>`)});
+
+S({level:'imob', n:'Projeção & relatórios', title:['Quanto ainda ','tem pra entrar'],
+  kid:'A projeção mostra o <b>pipeline de comissões</b> — o que já virou dinheiro, o que está em andamento e o que dá pra antecipar. A imobiliária enxerga o caixa dos próximos meses <span class="em">antes de ele acontecer</span>.',
+  pills:['Projeção mês a mês','Antecipado × a receber','Relatório exportável','Visão consolidada da equipe'],
+  mock: appShell(IMOB_NAV,'Projeção',`
+    <div class="card"><div class="h">Comissões nos próximos meses <span class="tag">projeção</span></div>
+      <div class="bars">${[40,55,48,70,62,85].map(h=>`<div class="b" style="height:${h}%"></div>`).join('')}</div>
+      <div class="line-lbls"><span>ago</span><span>set</span><span>out</span><span>nov</span><span>dez</span><span>jan</span></div>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="kpi"><div class="l">A receber</div><div class="v">R$ 96k</div></div>
+      <div class="kpi hi"><div class="l">Antecipável hoje</div><div class="v">R$ 71k</div></div>
+    </div>`)});
+
+S({level:'imob', n:'Equipe, convites & chats', title:['A imobiliária ','no comando'],
+  kid:'A imobiliária convida os corretores, acompanha as operações de todo mundo e centraliza a conversa: cada operação tem um <b>chat com todos os envolvidos</b> — corretor, construtora, fundo e plataforma <span class="em">na mesma sala</span>.',
+  pills:['Convite de corretores por link','Visão consolidada da equipe','Chat multi-participante por operação','Suporte dentro do painel'],
+  mock: appShell(IMOB_NAV,'Chats',`
+    <div class="li" style="margin-bottom:10px"><div class="av">#495</div><div class="g"><b>Op. #495 · Casa Cond. Vale</b><small>você, construtora, fundo e Antecipaqui</small></div><span class="st bl">4 online</span></div>
+    <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px 12px 12px 3px;padding:9px 11px;font-size:11px;max-width:85%;margin-bottom:6px"><b style="color:var(--a-soft);font-size:9px">CONSTRUTORA</b><br/>Comissão confirmada! Pode seguir com o contrato.</div>
+    <div style="background:rgba(63,143,232,.16);border:1px solid rgba(63,143,232,.35);border-radius:12px 12px 3px 12px;padding:9px 11px;font-size:11px;max-width:85%;margin-left:auto;margin-bottom:6px">Perfeito! Assinando hoje ainda 🙌</div>
+    <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px 12px 12px 3px;padding:9px 11px;font-size:11px;max-width:85%"><b style="color:var(--grn);font-size:9px">ANTECIPAQUI</b><br/>Contrato enviado pra assinatura de todos ✓</div>`)});
+
+/* ========================= 02 CONSTRUTORA ========================= */
+S({type:'intro', level:'const', no:'02', who:'Para quem deve a comissão', title:'Construtora',
+  desc:'A construtora não desembolsa nada a mais: continua pagando a mesma comissão, nas mesmas datas — só muda o destino. Em troca, ganha corretores mais motivados vendendo seus empreendimentos, painel de controle e até cashback.',
+  idx:['Confirmação de comissões','Duplicatas & extrato','Score & risco próprios','Cashback','Documentos & empreendimentos','Equipe, pendências & forecast']});
+
+S({level:'const', n:'Confirmação de comissões', title:['Um clique que ','destrava tudo'],
+  kid:'O papel da construtora no fluxo é simples: <b>confirmar que a comissão existe</b> e é daquele corretor. Um clique no painel — e é isso que dá segurança ao fundo pra soltar o dinheiro. <span class="em">Sem burocracia nova, sem custo novo</span>.',
+  pills:['Confirmação em 1 clique','Mesmas parcelas, mesmas datas','Só muda o favorecido','Corretores parceiros motivados'],
+  mock: appShell(CONST_NAV,'Operações',`
+    <div class="card" style="margin-bottom:10px;border-color:rgba(251,191,36,.35)"><div class="h">⏳ Aguardando sua confirmação</div>
+      <div style="font-size:11.5px;line-height:1.7"><b>Op. #501</b> · Rafael M. (Imob. Horizonte)<br/><span style="color:var(--mut)">Sala comercial · comissão R$ 18.000 em 12x</span></div>
+      <div class="grid2" style="margin-top:10px">
+        <span class="st ok" style="text-align:center;justify-self:stretch;padding:8px;font-weight:800">CONFIRMAR ✓</span>
+        <span class="st no" style="text-align:center;justify-self:stretch;padding:8px">contestar</span>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--mut)">✓ 14 comissões confirmadas este ano · nenhuma contestação</div>`)});
+
+S({level:'const', n:'Duplicatas & extrato', title:['Tudo que vence, ','numa tela só'],
+  kid:'As parcelas cedidas viram <b>duplicatas organizadas</b>: o que vence esse mês, pra qual fundo pagar, o que já foi quitado. O extrato é a memória completa — <span class="em">financeiro da construtora agradece</span>.',
+  pills:['Agenda de vencimentos','Boleto/PIX do fundo na tela','Extrato completo','Comprovantes anexados'],
+  mock: appShell(CONST_NAV,'Duplicatas',`
+    <div class="rows">
+      <div class="r hd"><span>Duplicata</span><span>Vencimento</span><span>Valor</span><span>Status</span></div>
+      <div class="r"><b>#482-08 · Ed. Aurora</b><span>10/08</span><span>R$ 2.000</span><span class="st wa">a vencer</span></div>
+      <div class="r"><b>#471-12 · Ed. Solar</b><span>05/08</span><span>R$ 1.450</span><span class="st wa">a vencer</span></div>
+      <div class="r"><b>#482-07 · Ed. Aurora</b><span>10/07</span><span>R$ 2.000</span><span class="st ok">paga ✓</span></div>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="kpi"><div class="l">Vence em agosto</div><div class="v">R$ 8.450</div></div>
+      <div class="kpi hi"><div class="l">Pago no prazo</div><div class="v">98%</div></div>
+    </div>`)});
+
+S({level:'const', n:'Score & risco próprios', title:['Veja como o mercado ','te enxerga'],
+  kid:'A construtora tem acesso ao <b>próprio score de pagamento</b> — o mesmo número que os fundos olham pra aprovar operações. Pagou em dia, o score sobe, <span class="em">e as operações dos seus corretores passam mais rápido</span>.',
+  pills:['Score transparente','Histórico que constrói o número','Pagamento em dia = aprovação rápida','Visão de exposição por empreendimento'],
+  mock: appShell(CONST_NAV,'Score',`
+    <div class="card" style="margin-bottom:10px"><div class="h">Seu score de pagamento</div>
+      <div class="gauge"><div class="gnum">92</div>
+        <div style="flex:1"><div class="progressbar"><i style="width:92%;background:linear-gradient(90deg,var(--grn),#10b981)"></i></div>
+        <div style="font-size:10px;color:var(--grn);margin-top:6px;font-weight:700">Excelente — aprovações em até 24h</div></div>
+      </div>
+    </div>
+    <div class="rows">
+      <div class="r" style="grid-template-columns:2fr 1fr"><b>Parcelas pagas em dia</b><span style="color:var(--grn)">142 de 145</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr"><b>Atrasos graves (30d+)</b><span style="color:var(--grn)">0</span></div>
+    </div>`)});
+
+S({level:'const', n:'Cashback', title:['Pagar em dia ','virou receita'],
+  kid:'A construtora que mantém o histórico limpo <b>ganha cashback</b> sobre o volume que passa pela plataforma. O bom pagador deixa de ser só elogiado — <span class="em">passa a ser remunerado</span>.',
+  pills:['% sobre volume operado','Acumula automático','Resgate no painel','Recompensa o bom histórico'],
+  mock: appShell(CONST_NAV,'Cashback',`
+    <div class="big-money" style="background:linear-gradient(120deg,#064e3b,#10b981)"><small>Cashback acumulado</small><b>R$ 1.870,00</b><div style="font-size:9.5px;opacity:.85;margin-top:2px">sobre R$ 187k operados no semestre</div></div>
+    <div class="rows">
+      <div class="r" style="grid-template-columns:1.6fr 1fr .8fr"><b>Jun/26</b><span>R$ 42k operados</span><span style="color:var(--grn)">+R$ 420</span></div>
+      <div class="r" style="grid-template-columns:1.6fr 1fr .8fr"><b>Mai/26</b><span>R$ 38k operados</span><span style="color:var(--grn)">+R$ 380</span></div>
+    </div>`)});
+
+S({level:'const', n:'Documentos & empreendimentos', title:['O dossiê sempre ','em dia'],
+  kid:'Contrato social, certidões, dados dos empreendimentos — tudo num lugar, com <b>validade monitorada</b>. Documento vencendo? O painel avisa antes de travar operação. <span class="em">Cadastro em dia é aprovação sem fricção</span>.',
+  pills:['Central de documentos','Alerta de vencimento','Empreendimentos cadastrados','Menos pendência, mais velocidade'],
+  mock: appShell(CONST_NAV,'Documentos',`
+    <div class="rows">
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>📄 Contrato social</b><span>enviado 02/26</span><span class="st ok">válido</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>📄 CND Federal</b><span>vence em 18 dias</span><span class="st wa">renovar</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>🏗️ Ed. Aurora (48 un.)</b><span>12 ops ativas</span><span class="st ok">ok</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>🏗️ Cond. Vale Verde</b><span>4 ops ativas</span><span class="st ok">ok</span></div>
+    </div>`)});
+
+S({level:'const', n:'Equipe & forecast', title:['O financeiro vê ','o futuro chegando'],
+  kid:'Multiusuário com papéis (diretoria vê tudo, financeiro vê duplicatas), <b>pendências centralizadas</b> e forecast: quanto vence em cada mês dos próximos períodos. Previsibilidade <span class="em">pra dentro do fluxo de caixa da obra</span>.',
+  pills:['Equipe com permissões','Pendências num funil só','Forecast de desembolso','Sem surpresa no caixa'],
+  mock: appShell(CONST_NAV,'Extrato',`
+    <div class="card"><div class="h">Desembolso projetado <span class="tag">6 meses</span></div>
+      <div class="bars">${[60,55,70,45,38,30].map(h=>`<div class="b" style="height:${h}%"></div>`).join('')}</div>
+      <div class="line-lbls"><span>ago</span><span>set</span><span>out</span><span>nov</span><span>dez</span><span>jan</span></div>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="kpi"><div class="l">Pendências abertas</div><div class="v">2</div></div>
+      <div class="kpi hi"><div class="l">Usuários da equipe</div><div class="v">5</div></div>
+    </div>`)});
+
+/* ========================= 03 FUNDO ========================= */
+S({type:'intro', level:'fundo', no:'03', who:'Para quem coloca o capital', title:'Fundo',
+  desc:'O fundo compra recebíveis originados e organizados: dossiê completo, devedora com score, contrato assinado e cobrança automatizada. Com mesa de decisão, regras de auto-aprovação, gestão de risco e API — do jeito que uma gestora espera.',
+  idx:['Mesa de decisão','Regras de auto-aprovação','Risco & blacklist','Forecast, daily & recaps','Recebimentos & cobrança automática','Modo operacional','API & webhooks']});
+
+S({level:'fundo', n:'Mesa de decisão', title:['Cada operação chega ','pronta pra decidir'],
+  kid:'A operação cai na mesa <b>com o dossiê completo</b>: valor, prazo, taxa, score da construtora, docs do comprador e histórico. O analista aprova ou recusa com um clique — <span class="em">e o motivo fica registrado</span>.',
+  pills:['Dossiê completo por operação','Score da devedora na cara','Aprovar/recusar com motivo','Pendências de decisão em fila'],
+  mock: appShell(FUNDO_NAV,'Aprovar',`
+    <div class="card" style="margin-bottom:10px"><div class="h">Op. #501 · aguardando decisão <span class="tag">chegou há 2h</span></div>
+      <div class="grid3" style="margin-bottom:8px">
+        <div class="kpi"><div class="l">Comissão</div><div class="v">R$ 18k</div></div>
+        <div class="kpi"><div class="l">Prazo</div><div class="v">12x</div></div>
+        <div class="kpi hi"><div class="l">Score devedora</div><div class="v">92</div></div>
+      </div>
+      <div class="grid2">
+        <span class="st ok" style="text-align:center;justify-self:stretch;padding:8px;font-weight:800">APROVAR ✓</span>
+        <span class="st no" style="text-align:center;justify-self:stretch;padding:8px">recusar com motivo</span>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--mut)">taxa da operação: 6,00% a.m. · seu custo: 2,40% a.m.</div>`)});
+
+S({level:'fundo', n:'Regras de auto-aprovação', title:['O óbvio se aprova ','sozinho'],
+  kid:'O fundo define critérios — <b>taxa mínima, prazo máximo, valor teto, construtoras liberadas</b> — e o que passa no filtro é aprovado na hora, sem analista. A mesa fica só com o que <span class="em">merece um par de olhos humanos</span>.',
+  pills:['Critérios encadeados por prioridade','Allowlist de construtoras','Contador de acionamentos','Liga e desliga quando quiser'],
+  mock: appShell(FUNDO_NAV,'Regras',`
+    <div class="rows">
+      <div class="r hd" style="grid-template-columns:2fr 1fr .8fr"><span>Regra</span><span>Acionou</span><span>Status</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Taxa ≥ 5,5% · até 24x · até R$ 50k</b><span>31 ops</span><span class="st ok">ativa</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Score ≥ 85 · construtoras A</b><span>18 ops</span><span class="st ok">ativa</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Piloto casas de alto padrão</b><span>2 ops</span><span class="st wa">pausada</span></div>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="kpi hi"><div class="l">Auto-aprovadas</div><div class="v">64%</div></div>
+      <div class="kpi"><div class="l">Tempo médio de decisão</div><div class="v">4h</div></div>
+    </div>`)});
+
+S({level:'fundo', n:'Risco & blacklist', title:['Concentração vigiada, ','portas fechadas na hora'],
+  kid:'O painel de risco mostra a <b>exposição por construtora, imobiliária e estado</b> — passou de 25% acende alerta, 40% é crítico. E a <b>blacklist é impositiva</b>: bloqueou a construtora, nenhuma operação dela entra, <span class="em">nem por engano</span>.',
+  pills:['Limites 25%/40% automáticos','Ranking de devedoras por score','Blacklist que trava o fluxo','Score: atrasos e gravidade'],
+  mock: appShell(FUNDO_NAV,'Risco',`
+    <div class="card" style="margin-bottom:10px"><div class="h">Concentração por construtora <span class="tag">capital exposto</span></div>
+      <div style="font-size:11px;margin-bottom:6px">Construtora Aurora <b style="float:right">31%</b></div><div class="progressbar"><i style="width:31%;background:linear-gradient(90deg,var(--amber),#f59e0b)"></i></div>
+      <div style="font-size:11px;margin:8px 0 6px">Solar Empreend. <b style="float:right">18%</b></div><div class="progressbar"><i style="width:18%"></i></div>
+      <div style="font-size:11px;margin:8px 0 6px">Vale Verde <b style="float:right">12%</b></div><div class="progressbar"><i style="width:12%"></i></div>
+    </div>
+    <div class="li" style="border-color:rgba(251,113,133,.35)"><div class="av" style="background:var(--red)">⛔</div><div class="g"><b>Blacklist: Construtora XPTO</b><small>2 atrasos graves · bloqueada em 05/26</small></div><span class="st no">bloqueada</span></div>`)});
+
+S({level:'fundo', n:'Forecast, daily & recaps', title:['O caixa dos próximos ','6 meses, hoje'],
+  kid:'O forecast projeta <b>entrada bruta, parte do fundo e parte da plataforma</b> mês a mês. E o daily/recap entrega o resumo do dia e da semana — <span class="em">o gestor abre e já sabe o que aconteceu</span> sem pedir relatório pra ninguém.',
+  pills:['Projeção 6 meses','Bruto × líquido do fundo','Daily do que mudou hoje','Recap semanal automático'],
+  mock: appShell(FUNDO_NAV,'Daily',`
+    <div class="card" style="margin-bottom:10px"><div class="h">📅 Daily · hoje</div>
+      <div style="font-size:11px;line-height:2">✓ 3 operações aprovadas (R$ 74k)<br/>💰 12 parcelas recebidas (R$ 21.400)<br/>⚠️ 1 parcela em atraso (2 dias · Ed. Solar)<br/>📈 exposição total: R$ 1,24M</div>
+    </div>
+    <div class="card"><div class="h">Forecast de recebimentos <span class="tag">6 meses</span></div>
+      <div class="bars">${[55,62,58,70,66,78].map(h=>`<div class="b" style="height:${h}%"></div>`).join('')}</div>
+      <div class="line-lbls"><span>ago</span><span>set</span><span>out</span><span>nov</span><span>dez</span><span>jan</span></div>
+    </div>`)});
+
+S({level:'fundo', n:'Recebimentos & cobrança', title:['A régua cobra ','antes de você lembrar'],
+  kid:'Toda parcela tem <b>cobrança automática</b>: aviso à construtora dias antes do vencimento e ticket urgente no primeiro dia de atraso — sem duplicar, sem esquecer. Recebimentos e faturas conciliados <span class="em">parcela por parcela</span>.',
+  pills:['Régua pré-vencimento automática','Ticket urgente no atraso','Boleto via API ou CNAB','Baixa automática no retorno'],
+  mock: appShell(FUNDO_NAV,'Recebimentos',`
+    <div class="grid3" style="margin-bottom:10px">
+      <div class="kpi hi"><div class="l">Recebido (mês)</div><div class="v">R$ 86k</div></div>
+      <div class="kpi"><div class="l">A vencer (30d)</div><div class="v">R$ 74k</div></div>
+      <div class="kpi"><div class="l">Inadimplência</div><div class="v">1,8%</div></div>
+    </div>
+    <div class="rows">
+      <div class="r"><b>#482-08 · Aurora</b><span>vence 10/08</span><span>R$ 2.000</span><span class="st bl">avisada ✉️</span></div>
+      <div class="r"><b>#463-11 · Solar</b><span>2 dias atraso</span><span>R$ 1.450</span><span class="st no">ticket urgente</span></div>
+      <div class="r"><b>#471-09 · Vale</b><span>pago 04/08</span><span>R$ 1.800</span><span class="st ok">baixado ✓</span></div>
+    </div>`)});
+
+S({level:'fundo', n:'Modo operacional', title:['Cada fundo opera ','do seu jeito'],
+  kid:'Quem gera o contrato? Quem envia pra assinatura? Quem emite a cobrança? <b>Cada fundo configura</b> — pode deixar tudo com a plataforma ou plugar a própria esteira via webhook. Só uma regra é fixa: <span class="em">a Antecipaqui sempre assina como testemunha</span>.',
+  pills:['Contrato: plataforma ou fundo','Cobrança: API, CNAB ou manual','Webhook de retorno assinado (HMAC)','Plataforma sempre testemunha'],
+  mock:`<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">antecipaqui.digital/painel/<b>modo-operacional</b></div></div>
+    <div class="body">
+      <div class="rows">
+        <div class="r hd" style="grid-template-columns:1.4fr 1fr"><span>Etapa</span><span>Quem executa</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1fr"><b>Origem da operação</b><span class="st bl">sempre Antecipaqui</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1fr"><b>Geração do contrato</b><span class="st ok">Antecipaqui</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1fr"><b>Envio pra assinatura</b><span class="st wa">fundo (webhook)</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1fr"><b>Emissão de cobrança</b><span class="st ok">Antecipaqui · API</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1fr"><b>Testemunha do contrato</b><span class="st bl">🔒 Antecipaqui (fixo)</span></div>
+      </div>
+    </div></div>`});
+
+S({level:'fundo', n:'API & webhooks', title:['A esteira do fundo, ','plugada na nossa'],
+  kid:'Fundo com sistema próprio integra tudo: <b>API com token</b> pra ler operações e parcelas e até decidir programaticamente, e <b>webhooks assinados</b> avisando cada evento. A plataforma vira <span class="em">uma extensão do back-office da gestora</span>.',
+  pills:['API REST com token próprio','Escopo leitura ou decisão','Webhooks com assinatura HMAC','Doc com exemplos no painel'],
+  mock:`<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">api.antecipaqui.digital/<b>external/fundo</b></div></div>
+    <div class="body" style="font-family:ui-monospace,monospace;font-size:10.5px;line-height:1.8;color:#b6c6de">
+      <div style="color:var(--mut2)"># listar operações pendentes</div>
+      <div>$ curl -H <span style="color:var(--a-soft)">"Authorization: Bearer aq_x9k2..."</span> \\</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;/api/external/fundo/operacoes?status=pendente</div>
+      <div style="margin-top:8px;color:var(--mut2)"># decidir via API</div>
+      <div>$ POST /operacoes/501/decisao <span style="color:var(--grn)">{"decisao":"aprovada"}</span></div>
+      <div style="margin-top:8px;color:var(--mut2)"># webhook recebido</div>
+      <div><span style="color:var(--amber)">event:</span> parcela.paga · <span style="color:var(--amber)">sig:</span> sha256=9f2c… ✓</div>
+    </div></div>`});
+
+/* ========================= 04 COMERCIAL ========================= */
+S({type:'intro', level:'com', no:'04', who:'Para quem traz imobiliária', title:'Comercial',
+  desc:'O parceiro comercial abre portas de imobiliárias e construtoras — com mapa de prospecção, pipeline, cadastro express e comissão sobre o lucro de cada operação que a carteira dele gerar. Pra sempre rastreado, todo mês no holerite.',
+  idx:['Prospecção & pipeline','Cadastro express & convites','Comissões & holerite','Daily, relatórios & templates']});
+
+S({level:'com', n:'Prospecção & pipeline', title:['O mapa mostra ','onde bater na porta'],
+  kid:'Imobiliárias e construtoras da região <b>no mapa e num pipeline kanban</b>: prospect → contato → proposta → fechado. Com anotação e próximo passo em cada card — <span class="em">nenhum lead esfria por esquecimento</span>.',
+  pills:['Mapa de prospects','Kanban de negociação','Próxima ação com lembrete','Histórico por lead'],
+  mock:`<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">antecipaqui.digital/painel/<b>prospeccao</b></div></div>
+    <div class="body">
+      <div class="mapmk" style="height:110px;margin-bottom:10px">
+        <span class="pin" style="left:20%;top:34%;background:var(--grn)"></span>
+        <span class="pin" style="left:48%;top:52%;background:var(--a)"></span>
+        <span class="pin" style="left:70%;top:28%;background:var(--amber)"></span>
+      </div>
+      <div class="kan">
+        <div><h6>Prospect</h6><div class="c">🏠 Imob. Central<small>ligar quinta</small></div></div>
+        <div><h6>Proposta</h6><div class="c">🏠 Horizonte Imóveis<small>reunião sexta</small></div></div>
+        <div><h6>Fechado ✓</h6><div class="c">🏗️ Construtora Aurora<small>onboarding feito</small></div></div>
+      </div>
+    </div></div>`});
+
+S({level:'com', n:'Cadastro express & convites', title:['Fechou na mesa, ','cadastrou na hora'],
+  kid:'Na frente do cliente, o comercial faz o <b>cadastro express</b> da imobiliária em minutos — ou manda o <b>link de convite</b> rastreado. Quem entrar por ali fica <span class="em">vinculado à carteira dele pra sempre</span>.',
+  pills:['Cadastro em minutos','Link de convite rastreado','Vínculo permanente à carteira','Templates de abordagem prontos'],
+  mock: phone(`
+    <div style="font-family:var(--disp);font-weight:800;font-size:13px;margin-bottom:8px">Cadastro express</div>
+    <div class="card" style="margin-bottom:8px"><div class="h">Imobiliária Horizonte</div>
+      <div style="font-size:10.5px;line-height:1.9;color:var(--mut)">CNPJ ✓ · responsável ✓ · cidade ✓<br/><span style="color:var(--grn)">pronta pra operar em 4 minutos</span></div>
+    </div>
+    <div class="card" style="text-align:center"><div class="h" style="justify-content:center">Seu link de convite</div>
+      <div style="font-family:var(--disp);font-weight:800;font-size:13px;color:var(--a-soft)">antecipaqui.digital/c/<b>MARCOS</b></div>
+      <div style="font-size:9.5px;color:var(--mut);margin-top:4px">tudo que entrar por aqui é seu</div>
+    </div>`)});
+
+S({level:'com', n:'Comissões & holerite', title:['Sua carteira ','pinga todo mês'],
+  kid:'A comissão é <b>sobre o lucro de cada operação</b> da carteira — enquanto as operações rodarem, o comercial recebe. E no fim do mês sai o <b>holerite</b>: operação por operação, <span class="em">transparência de contracheque</span>.',
+  pills:['% sobre o lucro das operações','Carteira vitalícia','Holerite mensal detalhado','Extrato em tempo real'],
+  mock: appShell(COM_NAV,'Comissões',`
+    <div class="big-money" style="background:linear-gradient(120deg,#064e3b,#10b981)"><small>Holerite de julho</small><b>R$ 3.240,00</b><div style="font-size:9.5px;opacity:.85;margin-top:2px">28 operações ativas na carteira</div></div>
+    <div class="rows">
+      <div class="r" style="grid-template-columns:1.6fr 1fr .7fr"><b>Op. #482 · Aurora</b><span>parcela 8/24</span><span style="color:var(--grn)">+R$ 118</span></div>
+      <div class="r" style="grid-template-columns:1.6fr 1fr .7fr"><b>Op. #463 · Solar</b><span>parcela 11/18</span><span style="color:var(--grn)">+R$ 96</span></div>
+      <div class="r" style="grid-template-columns:1.6fr 1fr .7fr"><b>Op. #495 · Vale</b><span>parcela 2/12</span><span style="color:var(--grn)">+R$ 87</span></div>
+    </div>`)});
+
+S({level:'com', n:'Daily, relatórios & templates', title:['Rotina de vendas ','com método'],
+  kid:'O daily mostra o que mexeu na carteira hoje; os relatórios mostram conversão e volume; e os <b>templates prontos</b> (mensagem, pitch, proposta) padronizam a abordagem. O comercial foca no que importa: <span class="em">relacionamento</span>.',
+  pills:['Daily da carteira','Relatórios de conversão','Templates de abordagem','Metas acompanhadas'],
+  mock: appShell(COM_NAV,'Daily',`
+    <div class="card" style="margin-bottom:10px"><div class="h">📅 Hoje na sua carteira</div>
+      <div style="font-size:11px;line-height:2">✓ Imob. Horizonte fez a 1ª operação 🎉<br/>💰 3 parcelas pagas → +R$ 301 de comissão<br/>📞 follow-up: Construtora Vale (proposta enviada)</div>
+    </div>
+    <div class="grid3">
+      <div class="kpi"><div class="l">Meta mês</div><div class="v">4/5</div></div>
+      <div class="kpi hi"><div class="l">Conversão</div><div class="v">38%</div></div>
+      <div class="kpi"><div class="l">Carteira</div><div class="v">R$ 480k</div></div>
+    </div>`)});
+
+/* ========================= 05 ADMIN (versão completa) ========================= */
+if(SHOW_ADMIN){
+
+S({type:'intro', level:'admin', no:'05', who:'O motor da operação', title:'Administração',
+  desc:'O back-office que faz a fintech girar: esteira de aprovação com fluxo de status, KYC com validação por IA, motor financeiro com snapshots à prova de retroativo e cobrança que roda sozinha todo dia.',
+  idx:['Esteira de operações','KYC & validação por IA','Tickets, mural & chats','Configurações do motor','Motor financeiro']});
+
+S({level:'admin', n:'Esteira de operações', title:['Do cadastro à liquidação, ','um fluxo só'],
+  kid:'Cada operação percorre um <b>fluxo de status controlado</b>: análise → aprovação → vínculo com fundo (com checagem de blacklist e sugestão de taxa) → contrato → pagamento → parcelas. Nada pula etapa, <span class="em">tudo fica auditado</span>.',
+  pills:['Fluxo de status rígido','Vínculo de fundo com blacklist check','Taxa sugerida automática','Trilha de auditoria completa'],
+  mock: appShell(ADMIN_NAV,'Operações','',''),
+  mockOverride:true});
+
+S({level:'admin', n:'KYC & validação por IA', title:['A IA lê o documento ','antes de você'],
+  kid:'Todo upload passa por <b>validação com IA de visão</b>: é mesmo um RG? O nome bate? Documento suspeito é sinalizado pra revisão humana. O time aprova cadastros <span class="em">com o grosso do trabalho já feito</span>.',
+  pills:['Leitura automática dos docs','Sinalização de inconsistência','Revisão humana só no que importa','KYC de todos os perfis'],
+  mock: appShell(ADMIN_NAV,'Usuários',`
+    <div class="li" style="margin-bottom:10px"><div class="av">RH</div><div class="g"><b>Imob. Horizonte</b><small>cadastro completo · aguardando validação</small></div><span class="st wa">revisar</span></div>
+    <div class="rows">
+      <div class="r" style="grid-template-columns:1.8fr 1fr .8fr"><b>📄 CNPJ</b><span>IA: consistente</span><span class="st ok">✓ auto</span></div>
+      <div class="r" style="grid-template-columns:1.8fr 1fr .8fr"><b>📄 RG do sócio</b><span>IA: consistente</span><span class="st ok">✓ auto</span></div>
+      <div class="r" style="grid-template-columns:1.8fr 1fr .8fr"><b>📄 Comprovante</b><span>IA: data ilegível</span><span class="st wa">humano</span></div>
+    </div>
+    <div style="margin-top:10px;font-size:10px;color:var(--mut)">🤖 82% dos documentos validados sem toque humano</div>`)});
+
+S({level:'admin', n:'Tickets, mural & chats', title:['Comunicação com ','todo o ecossistema'],
+  kid:'Tickets categorizados (confirmação, cobrança, suporte), <b>mural de avisos</b> pra todos os perfis e o chat multi-participante por operação. O admin fala com corretor, construtora e fundo <span class="em">sem sair da plataforma</span>.',
+  pills:['Tickets por categoria','Mural segmentado por perfil','Chat por operação','Histórico centralizado'],
+  mock: appShell(ADMIN_NAV,'Tickets',`
+    <div class="rows">
+      <div class="r hd" style="grid-template-columns:2fr 1fr .8fr"><span>Ticket</span><span>Categoria</span><span>Status</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Parcela #463-11 em atraso</b><span>cobrança</span><span class="st no">urgente</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Confirmar comissão #501</b><span>confirmação</span><span class="st wa">aguarda</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Dúvida contrato #495</b><span>suporte</span><span class="st ok">resolvido</span></div>
+    </div>
+    <div class="card" style="margin-top:10px"><div class="h">📢 Mural</div><div style="font-size:11px;color:#e3e9f2">Novo fundo parceiro ativo — operações de até 36x liberadas a partir de hoje.</div></div>`)});
+
+S({level:'admin', n:'Configurações do motor', title:['Os parâmetros do negócio, ','sem deploy'],
+  kid:'CDI de referência, pesos do score, spread mínimo por operação, taxas padrão — tudo <b>configurável no painel</b>, valendo na próxima operação. O negócio ajusta a régua <span class="em">sem chamar programador</span>.',
+  pills:['CDI e taxas configuráveis','Pesos do score ajustáveis','Spread mínimo garantido','Vale só dali pra frente (snapshots)'],
+  mock: appShell(ADMIN_NAV,'Config',`
+    <div class="rows">
+      <div class="r hd" style="grid-template-columns:2fr 1fr"><span>Parâmetro</span><span>Valor</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr"><b>CDI mensal de referência</b><span>0,85% a.m.</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr"><b>Spread mínimo por operação</b><span>1,20% a.m.</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr"><b>Peso: parcela vencida</b><span>−5 pts</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr"><b>Peso: atraso grave (30d+)</b><span>−10 pts</span></div>
+    </div>`)});
+
+S({level:'admin', n:'Motor financeiro', title:['Cada centavo com ','dono definido'],
+  kid:'O motor separa o dinheiro sem ambiguidade: <b>custos da operação são da plataforma</b>, o custo do capital é do fundo, e o spread é dividido. Com <b>snapshots</b> congelando as taxas na aprovação — mudou a taxa depois, <span class="em">o histórico não mexe</span>.',
+  pills:['Fórmulas canônicas num helper só','Snapshot de taxas na aprovação','Repasse nunca negativo (clamps)','Invoice proporcional ao pago'],
+  mock:`<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">motor/<b>resultado-da-operacao</b></div></div>
+    <div class="body">
+      <div class="flow">
+        <div class="ef"><span class="n">📥</span><span>Juros da op. #482: <b>R$ 14.594</b> (6% a.m. sobre 24x)</span></div>
+        <div class="ef"><span class="n">🏦</span><span>Custo do capital (fundo 2,4%): <b>R$ 5.838</b></span></div>
+        <div class="ef"><span class="n">⚖️</span><span>Spread: <b>R$ 8.756</b> → dividido 50/50</span></div>
+        <div class="ef hi"><span class="n" style="background:var(--grn);color:#04291c">AQ</span><span><b style="color:var(--grn)">Plataforma: custos + R$ 4.378</b> · Fundo: capital + R$ 4.378</span></div>
+      </div>
+    </div></div>`});
+
+/* ===== MODELO DE RECEITA (só completa) ===== */
+S({type:'revenue'});
+
+}
+
+/* ========================= FECHAMENTO ========================= */
+S({type:'end'});
+
+/* ============================================================= */
+/* RENDER                                                         */
+/* ============================================================= */
+const deck = document.getElementById('deck');
+let secOrder = [];
+function levelName(id){return (LEVELS.find(l=>l.id===id)||{}).label||''}
+
+/* mock especial da esteira (usa dados dinâmicos) */
+const esteiraMock = appShell(ADMIN_NAV,'Operações',`
+    <div class="rows">
+      <div class="r hd"><span>Operação</span><span>Fundo</span><span>Valor</span><span>Etapa</span></div>
+      <div class="r"><b>#501 · Horizonte</b><span>—</span><span>R$ 18k</span><span class="st wa">análise</span></div>
+      <div class="r"><b>#495 · Central</b><span>OPERA</span><span>R$ 31k</span><span class="st bl">assinatura</span></div>
+      <div class="r"><b>#482 · Horizonte</b><span>OPERA</span><span>R$ 48k</span><span class="st ok">ativa · 8/24</span></div>
+      <div class="r"><b>#440 · Vale Imob.</b><span>OPERA</span><span>R$ 22k</span><span class="st ok">liquidada ✓</span></div>
+    </div>
+    <div class="grid3" style="margin-top:10px">
+      <div class="kpi"><div class="l">Na esteira</div><div class="v">12</div></div>
+      <div class="kpi hi"><div class="l">Volume ativo</div><div class="v">R$ 1,2M</div></div>
+      <div class="kpi"><div class="l">Liquidez média</div><div class="v">19 meses</div></div>
+    </div>`);
+
+SLIDES.forEach((s,i)=>{
+  const el = document.createElement('section');
+  el.className='slide';
+  let lvl = s.level || (['cover','value','levelmap'].includes(s.type)?'intro':(s.type==='end'?'fim':(s.type==='revenue'?'admin':s.level)));
+  el.dataset.level = lvl;
+  el.dataset.i = i;
+  secOrder.push(lvl);
+
+  if(s.type==='cover'){
+    el.id='cover';
+    el.innerHTML=`<div class="glow a"></div><div class="glow b"></div>
+      <div style="position:relative;z-index:3">
+        <div class="wordmark"><span class="am">A</span>antecipa<b>qui</b></div>
+        <div class="kick">Antecipação de comissão imobiliária</div>
+        <h1 class="big">A venda parcelou em 24x.<br/><span class="l">A comissão cai hoje.</span></h1>
+        <div class="sub">A plataforma que transforma comissão parcelada em dinheiro à vista — conectando corretores, construtoras e fundos num fluxo só: análise, contrato digital, pagamento e cobrança automatizada.</div>
+      </div>
+      <div class="meta">
+        <span>Apresentação da plataforma · 2026</span>
+        <span>Navegue <kbd>←</kbd> <kbd>→</kbd> · <kbd>F</kbd> tela cheia</span>
+      </div>`;
+  }
+  else if(s.type==='value'){
+    el.innerHTML=`<div class="glow a"></div>
+      <div style="position:relative;z-index:2;width:100%;max-width:1300px;margin:0 auto">
+        <div class="kick">Por que a Antecipaqui</div>
+        <h2 class="sec">O corretor vendeu, mas o dinheiro<br/>só chega em <span style="color:var(--a-soft)">2 anos</span>. A gente conserta isso.</h2>
+        <p class="lead">Comissão imobiliária parcelada é um crédito bom preso num fluxo ruim. A Antecipaqui é a <b style="color:var(--tx)">tecnologia que destrava</b> — o capital é dos fundos, a esteira é nossa.</p>
+        <div class="vg">
+          <div class="v"><div class="ic">🏠</div><h3>Pro corretor & imobiliária</h3><p>Comissão à vista com taxa transparente, contrato digital e zero cobrança pra fazer depois. Vendeu, recebeu, foi vender de novo.</p></div>
+          <div class="v"><div class="ic">🏗️</div><h3>Pra construtora</h3><p>Mesmas parcelas, mesmas datas — só muda o favorecido. Em troca: corretores motivados, painel de controle, score e cashback.</p></div>
+          <div class="v"><div class="ic">🏦</div><h3>Pro fundo</h3><p>Originação qualificada com dossiê completo, score da devedora, regras de auto-aprovação, cobrança automática e API. Capital alocado com esteira pronta.</p></div>
+        </div>
+      </div>`;
+  }
+  else if(s.type==='levelmap'){
+    const cards=[['01','Imobiliária & Corretor','Antecipa e acompanha'],['02','Construtora','Confirma e paga o fundo'],['03','Fundo','Decide, monitora e recebe'],['04','Comercial','Expande a rede']];
+    if(SHOW_ADMIN)cards.push(['05','Administração','Opera o motor']);
+    el.innerHTML=`<div class="glow b"></div>
+      <div style="position:relative;z-index:2;width:100%;max-width:1300px;margin:0 auto">
+        <div class="kick">Um sistema, vários acessos</div>
+        <h2 class="sec">Cada parte entra no <span style="color:var(--a-soft)">seu</span> painel.</h2>
+        <p class="lead">A mesma operação atravessa todos os painéis — cada um vê e faz só a sua parte, e o chat da operação junta todo mundo quando precisa.</p>
+        <div class="vg" style="grid-template-columns:repeat(${cards.length>4?3:cards.length},1fr);gap:12px;margin-top:34px">
+          ${cards.map(([n,t,d])=>`<div class="v" style="padding:18px"><div style="font-family:var(--disp);font-weight:800;font-size:26px;color:var(--a-soft)">${n}</div><h3 style="font-size:15px;margin:8px 0 4px">${t}</h3><p style="font-size:12.5px">${d}</p></div>`).join('')}
+        </div>
+        <p class="overline">Nos próximos slides, cada nível — módulo por módulo.</p>
+      </div>`;
+  }
+  else if(s.type==='intro'){
+    el.innerHTML=`<div class="glow a"></div>
+      <div class="levelintro">
+        <div style="display:flex;align-items:baseline;gap:24px;flex-wrap:wrap">
+          <div class="no">${s.no}</div>
+          <div><span class="who">${s.who}</span><h2>${s.title}</h2></div>
+        </div>
+        <p class="lead" style="max-width:70ch">${s.desc}</p>
+        <div class="idx">${s.idx.map(x=>`<span><b>›</b>${x}</span>`).join('')}</div>
+      </div>`;
+  }
+  else if(s.type==='revenue'){
+    el.innerHTML=`<div class="glow a"></div><div class="glow b"></div>
+      <div style="position:relative;z-index:2;width:100%;max-width:1300px;margin:0 auto">
+        <div class="kick">O modelo de negócio</div>
+        <h2 class="sec">AQ é a tecnologia. <span style="color:var(--a-soft)">O capital é dos fundos.</span></h2>
+        <p class="lead">Sem balanço alavancado: a plataforma origina, organiza e opera — e é remunerada em cada operação, com risco de crédito no fundo.</p>
+        <div class="revgrid">
+          <div class="rev"><div class="ic">⚖️</div><h4>Spread dividido</h4><p>Diferença entre a taxa da operação (ex. <b>6% a.m.</b>) e o custo do capital (ex. <b>2,4% a.m.</b>) — dividida meio a meio com o fundo.</p></div>
+          <div class="rev"><div class="ic">🧾</div><h4>Custos da operação</h4><p>Tarifas de contrato, assinatura e serviços da esteira: <b>100% receita da plataforma</b>, cobradas dentro da operação.</p></div>
+          <div class="rev"><div class="ic">🔁</div><h4>Receita recorrente</h4><p>O invoice pro fundo é <b>proporcional ao que foi pago</b> — cada parcela quitada gera repasse. Operação de 24x = 24 meses de receita.</p></div>
+          <div class="rev"><div class="ic">🛡️</div><h4>Sem risco de crédito</h4><p>Quem compra o recebível é o fundo. A plataforma não empresta — <b>escala sem consumir capital</b>.</p></div>
+          <div class="rev"><div class="ic">📈</div><h4>Originação composta</h4><p>Comerciais com carteira vitalícia + imobiliárias operando recorrente = volume que cresce sem mídia paga.</p></div>
+          <div class="rev"><div class="ic">🔌</div><h4>Plataforma multi-fundo</h4><p>Cada fundo novo pluga com seu modo operacional e suas regras — <b>a mesma esteira atende N fundos</b> concorrendo pelas operações.</p></div>
+        </div>
+      </div>`;
+  }
+  else if(s.type==='end'){
+    el.id='end';
+    el.innerHTML=`<div class="glow a"></div><div class="glow b"></div>
+      <div style="position:relative;z-index:3">
+        <div class="wordmark"><span class="am">A</span>antecipa<b>qui</b></div>
+        <div class="kick">Vamos destravar comissões?</div>
+        <h2 class="big" style="font-size:clamp(34px,4.6vw,64px)">O crédito é bom. <span class="l">Agora o fluxo também é.</span></h2>
+        <p class="lead" style="margin:14px auto 0;text-align:center;max-width:60ch">Plataforma em produção com fundo ativo, contrato digital, cobrança automatizada e API pronta pra plugar novos fundos e parceiros.</p>
+        <div class="cta">Falar com a Antecipaqui →</div>
+        <div class="contact"><b>www.antecipaqui.digital</b></div>
+      </div>`;
+  }
+  else{
+    const mockHtml = (s.n==='Esteira de operações') ? esteiraMock : s.mock;
+    el.innerHTML=`<div class="glow a"></div><div class="glow b"></div>
+      <div class="feat">
+        <div class="txt">
+          <div class="num">${String(i).padStart(2,'0')} · ${levelName(lvl)}</div>
+          <div class="kick" style="margin-top:10px">${s.n}</div>
+          <h2>${s.title.map((t,k)=>k%2?`<span class="hl">${t}</span>`:t).join('')}</h2>
+          <p class="kid">${s.kid}</p>
+          <div class="pills">${(s.pills||[]).map((p,k)=>`<span class="pill ${k===0?'acc':''}">${p}</span>`).join('')}</div>
+        </div>
+        <div class="mockwrap">${mockHtml}</div>
+      </div>`;
+  }
+  deck.appendChild(el);
+});
+
+const railEl=document.getElementById('rail');
+const firstOf={};
+secOrder.forEach((lvl,i)=>{if(firstOf[lvl]===undefined)firstOf[lvl]=i});
+LEVELS.forEach(l=>{
+  if(firstOf[l.id]===undefined)return;
+  const a=document.createElement('a');
+  a.href='#';a.dataset.lvl=l.id;
+  a.innerHTML=`<span class="d"></span><span class="t">${l.label}</span>`;
+  a.onclick=(e)=>{e.preventDefault();goTo(firstOf[l.id])};
+  railEl.appendChild(a);
+});
+
+const slides=[...document.querySelectorAll('.slide')];
+document.getElementById('tot').textContent=String(slides.length).padStart(2,'0');
+let idx=0;
+function goTo(i){idx=Math.max(0,Math.min(slides.length-1,i));slides[idx].scrollIntoView()}
+function next(){goTo(idx+1)} function prev(){goTo(idx-1)}
+
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{if(e.isIntersecting){
+    idx=+e.target.dataset.i;
+    document.getElementById('cur').textContent=String(idx+1).padStart(2,'0');
+    document.getElementById('bar').firstElementChild.style.width=((idx)/(slides.length-1)*100)+'%';
+    const lvl=e.target.dataset.level;
+    [...railEl.children].forEach(a=>a.classList.toggle('on',a.dataset.lvl===lvl));
+  }});
+},{threshold:.55});
+slides.forEach(s=>io.observe(s));
+
+addEventListener('keydown',e=>{
+  if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();next()}
+  if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();prev()}
+  if(e.key==='Home')goTo(0);if(e.key==='End')goTo(slides.length-1);
+  if(e.key.toLowerCase()==='f'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()}
+});
+</script>
+</body>
+</html>
