@@ -19,6 +19,7 @@ import { and, desc, eq, gte, inArray, lt, lte, or, sql, type SQL } from "drizzle
 import { db } from "@/db";
 import {
   comerciais,
+  comissoesComercial,
   construtoraMembros,
   construtoras,
   fundos,
@@ -1002,6 +1003,94 @@ const dispararCobranca: CiceroTool = {
   },
 };
 
+const minhasComissoes: CiceroTool = {
+  nome: "minhas_comissoes",
+  descricao:
+    "Comissões do comercial logado (10% do lucro líquido da AQ por operação): quanto tem a receber (pendente), quanto já recebeu, o gerado no mês e as últimas comissões. Use pra 'quanto tenho a receber', 'quanto ganhei esse mês', 'minhas comissões'.",
+  roles: ["comercial"],
+  schema: {
+    properties: {
+      mes: {
+        type: "string",
+        description: "Opcional: mês no formato YYYY-MM pra detalhar (default: mês atual).",
+      },
+    },
+  },
+  run: async (ctx, args) => {
+    if (!ctx.comercialId) {
+      return {
+        texto:
+          "Seu login ainda não está vinculado a um cadastro de comercial — fala com o admin pra ajustar.",
+      };
+    }
+    const rows = await db
+      .select({
+        opNumero: operacoes.numero,
+        opStatus: operacoes.status,
+        construtoraNome: construtoras.razaoSocial,
+        valorDevido: comissoesComercial.valorDevido,
+        valorPago: comissoesComercial.valorPago,
+        status: comissoesComercial.status,
+        geradaEm: comissoesComercial.geradaEm,
+        pagaEm: comissoesComercial.pagaEm,
+      })
+      .from(comissoesComercial)
+      .innerJoin(operacoes, eq(comissoesComercial.operacaoId, operacoes.id))
+      .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))
+      .where(eq(comissoesComercial.comercialId, ctx.comercialId))
+      .orderBy(desc(comissoesComercial.geradaEm))
+      .limit(200);
+
+    if (rows.length === 0) {
+      return {
+        texto:
+          "Você ainda não tem comissões geradas. Elas nascem automaticamente quando uma operação sua é aprovada (10% do lucro líquido da AQ).",
+        links: [{ label: "Minhas comissões", href: "/painel/comissoes" }],
+      };
+    }
+
+    const mesRef =
+      typeof args.mes === "string" && /^\d{4}-\d{2}$/.test(args.mes)
+        ? args.mes
+        : ctx.hoje.slice(0, 7);
+    const mesDe = (d: Date) =>
+      d.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }).slice(0, 7);
+
+    const ativas = rows.filter((r) => r.status !== "cancelada");
+    const aReceber = ativas
+      .filter((r) => r.status === "pendente")
+      .reduce((s, r) => s + (n(r.valorDevido) - n(r.valorPago)), 0);
+    const recebidoTotal = ativas.reduce((s, r) => s + n(r.valorPago), 0);
+    const doMes = ativas.filter((r) => mesDe(r.geradaEm) === mesRef);
+    const geradoMes = doMes.reduce((s, r) => s + n(r.valorDevido), 0);
+    const recebidoMes = ativas
+      .filter((r) => r.pagaEm && mesDe(r.pagaEm) === mesRef)
+      .reduce((s, r) => s + n(r.valorPago), 0);
+
+    const ultimas = rows.slice(0, 6).map((r) => {
+      const situacao =
+        r.status === "paga"
+          ? `paga em ${fmtData(r.pagaEm)}`
+          : r.status === "cancelada"
+            ? "cancelada"
+            : `pendente (op ${STATUS_LABEL[r.opStatus] ?? r.opStatus})`;
+      return `  ${r.opNumero} · ${r.construtoraNome ?? "—"} · ${formatBRL(n(r.valorDevido))} · ${situacao}`;
+    });
+
+    return {
+      texto: [
+        `💰 A receber (pendente): ${formatBRL(aReceber)} · Já recebido (total): ${formatBRL(recebidoTotal)}.`,
+        `Mês ${mesRef}: ${formatBRL(geradoMes)} gerado em ${doMes.length} operação(ões) · ${formatBRL(recebidoMes)} recebido.`,
+        `Últimas comissões:\n${ultimas.join("\n")}`,
+      ].join("\n\n"),
+      links: [
+        { label: "Minhas comissões", href: "/painel/comissoes" },
+        { label: "Holerite mensal", href: "/painel/comissoes/holerite" },
+      ],
+    };
+  },
+};
+
 const desempenhoFundos: CiceroTool = {
   nome: "desempenho_fundos",
   descricao:
@@ -1126,6 +1215,7 @@ const TOOLS: CiceroTool[] = [
   faturamentoDia,
   inadimplencia,
   dispararCobranca,
+  minhasComissoes,
   desempenhoFundos,
   resumoPlataforma,
 ];

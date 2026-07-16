@@ -41,7 +41,12 @@ const SUGESTOES: Record<string, string[]> = {
     "Qual fundo está demorando mais pra operar?",
     "Como está a inadimplência?",
   ],
-  comercial: ["Minhas operações", "Próximos vencimentos"],
+  comercial: [
+    "Quanto tenho a receber?",
+    "Quanto ganhei esse mês?",
+    "Minhas operações",
+    "Próximos vencimentos",
+  ],
 };
 
 export function CiceroWidget({ nome, role }: { nome: string; role: string }) {
