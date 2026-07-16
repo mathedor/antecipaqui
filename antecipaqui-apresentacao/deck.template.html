@@ -103,6 +103,8 @@ kbd{border:1px solid var(--line2);border-radius:5px;padding:1px 6px;font-family:
 .browser .top .url{margin-left:12px;flex:1;background:#0f1e36;border:1px solid var(--line);border-radius:7px;padding:5px 12px;font-size:11px;color:var(--mut);font-family:var(--disp)}
 .browser .top .url b{color:var(--a-soft)}
 .browser .body{padding:20px}
+.browser img.pr{display:block;width:100%}
+.phone img.pr{display:block;width:100%}
 .phone{width:270px;margin:0 auto;background:var(--panel);border:8px solid #122239;border-radius:38px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.8);position:relative}
 .phone .notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:90px;height:20px;background:#122239;border-radius:12px;z-index:5}
 .phone .scr{padding:34px 14px 18px;min-height:490px}
@@ -268,6 +270,7 @@ const SHOW_ADMIN = __SHOW_ADMIN__;
 
 const LEVELS = [
   {id:'intro', label:'Início'},
+  {id:'cicero', label:'Cícero · Atendente IA'},
   {id:'imob',  label:'Imobiliária & Corretor'},
   {id:'const', label:'Construtora'},
   {id:'fundo', label:'Fundo'},
@@ -294,6 +297,12 @@ const ADMIN_NAV = ['Operações','Usuários','Construtoras','Tickets','Mural','R
 
 const phone = (scr) => `<div class="phone"><div class="notch"></div><div class="scr">${scr}</div></div>`;
 
+/* Prints REAIS do sistema (capturados no demo com dados de verdade) */
+const print = (path, img) => `
+<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">🔒 <b>antecipaqui.digital</b>${path}</div></div>
+<img class="pr" src="/img/${img}.jpg" alt="" loading="lazy"/></div>`;
+const printPhone = (img) => `<div class="phone"><div class="notch"></div><img class="pr" src="/img/${img}.jpg" alt="" loading="lazy"/></div>`;
+
 const SLIDES = [];
 const S = (o)=>SLIDES.push(o);
 
@@ -302,22 +311,50 @@ S({type:'cover'});
 S({type:'value'});
 S({type:'levelmap'});
 
-/* ========================= 01 IMOBILIÁRIA & CORRETOR ========================= */
-S({type:'intro', level:'imob', no:'01', who:'Para quem vende imóvel', title:'Imobiliária & Corretor',
+/* ========================= 01 CÍCERO — ATENDENTE IA ========================= */
+S({type:'intro', level:'cicero', no:'01', who:'O atendente de peso — em todos os painéis', title:'Cícero 👔',
+  desc:'Um atendente de IA dentro da plataforma, de plantão em todos os painéis. Cada papel conversa em português e ele responde com dados REAIS do banco: calcula operação, lista vencimentos, informa como pagar, dispara cobrança e cruza números — sempre respeitando o que cada um pode ver.',
+  idx:['Calculadora no chat','Cada papel, suas ferramentas','Cobrança com um pedido','Tudo registrado (auditoria)']});
+
+S({level:'cicero', n:'Calculadora no chat', title:['“Calcula 100 mil ','em 30, 60 e 90 dias”'],
+  kid:'O corretor pede a conta como pediria a um colega — e o Cícero <b>calcula com as fórmulas oficiais da plataforma</b>: parcela por parcela, deságio aberto e o líquido na tela, em segundos. <span class="em">Sem planilha e sem esperar ninguém</span>. Este é um print real do sistema.',
+  pills:['Mesma fórmula do motor financeiro','Deságio aberto por parcela','Responde em segundos','Print real, resposta real'],
+  mock: print('/painel','cicero-calculo')});
+
+S({level:'cicero', n:'Cada papel, suas ferramentas', title:['Ele sabe com quem ','está falando'],
+  kid:'A construtora pergunta <b>“como pago?”</b> e recebe boleto, PIX e o valor atualizado com multa e juros. O fundo pergunta faturamento e inadimplência. O comercial, a comissão. <span class="em">As ferramentas mudam com o crachá</span> — e ninguém enxerga dado dos outros.',
+  pills:['Escopo por papel travado no servidor','Multa e juros calculados na hora','Nunca inventa número','Se não sabe, encaminha pro suporte'],
+  mock: print('/painel','cicero-pagamento')});
+
+S({level:'cicero', n:'Cobrança com um pedido', title:['“Dispara a cobrança ','dos vencidos”'],
+  kid:'O fundo pede e o Cícero <b>monta a lista de inadimplentes</b>, mostra a prévia — quem, quanto atualizado, pra qual email — e <span class="em">só dispara depois do OK explícito</span>. Cada parcela cobrada fica marcada, sem email duplicado.',
+  pills:['Prévia antes de qualquer envio','Confirmação explícita obrigatória','Email com valores atualizados','Parcela marcada como avisada'],
+  mock: print('/painel','cicero-cobranca')});
+
+S({level:'cicero', n:'Tudo registrado', title:['Auditoria de ','cada conversa'],
+  kid:'Toda pergunta e resposta fica <b>gravada no banco</b>: quem perguntou, quais ferramentas o Cícero acionou, quanto custou e o que respondeu. Compliance de fintech <span class="em">valendo também pro atendimento por IA</span>.',
+  pills:['Conversas e mensagens persistidas','Ferramentas usadas por resposta','Custo (tokens) por mensagem','Trilha no audit log'],
+  mock:`<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">antecipaqui.digital/admin/<b>relatorios/logs</b></div></div>
+    <div class="body">
+      <div class="rows">
+        <div class="r hd" style="grid-template-columns:1.4fr 1.8fr 1fr"><span>Quem</span><span>Pergunta</span><span>Ferramentas</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1.8fr 1fr"><b>Patrícia · fundo</b><span>"como está a inadimplência?"</span><span class="st bl">inadimplencia</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1.8fr 1fr"><b>Carlos · corretor</b><span>"calcula 100 mil em 30/60/90"</span><span class="st bl">calcular_operacao</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1.8fr 1fr"><b>Roberto · construtora</b><span>"como pago as parcelas?"</span><span class="st bl">dados_pagamento</span></div>
+        <div class="r" style="grid-template-columns:1.4fr 1.8fr 1fr"><b>Patrícia · fundo</b><span>"dispara a cobrança" → confirmado</span><span class="st ok">cobranca ✓</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--mut)">cada linha guarda: conversa, resposta, ferramentas, tokens e erros — nada se perde</div>
+    </div></div>`});
+
+/* ========================= 02 IMOBILIÁRIA & CORRETOR ========================= */
+S({type:'intro', level:'imob', no:'02', who:'Para quem vende imóvel', title:'Imobiliária & Corretor',
   desc:'A venda parcelou a comissão em 24 vezes — mas a conta do corretor vence esse mês. Aqui ele cadastra a operação, assina digital e recebe a comissão à vista. O resto (cobrança, parcelas, risco) vira problema da plataforma.',
   idx:['Nova operação & simulação','Link de Dados do comprador','Da venda ao PIX','Contrato digital','Acompanhamento de operações','Projeção & relatórios','Equipe, convites & chats']});
 
 S({level:'imob', n:'Nova operação & simulação', title:['Simule e veja ','o dinheiro na tela'],
   kid:'O corretor informa a comissão parcelada e a plataforma <b>calcula na hora</b> quanto sai à vista, com o deságio aberto — sem letra miúda. Gostou do número? <span class="em">Já cadastra a operação ali mesmo</span>.',
   pills:['Simulação transparente','Deságio aberto, sem surpresa','Parcelas importadas em lote','Operações em lote pra imobiliária'],
-  mock: phone(`
-    <div style="font-family:var(--disp);font-weight:800;font-size:13px;margin-bottom:8px">Simular antecipação</div>
-    <div class="card" style="margin-bottom:8px"><div class="h">Sua comissão</div>
-      <div style="font-family:var(--disp);font-weight:800;font-size:20px">R$ 48.000</div>
-      <div style="font-size:10px;color:var(--mut)">24 parcelas de R$ 2.000 · começa em ago/26</div>
-    </div>
-    <div class="big-money"><small>Você recebe hoje</small><b>R$ 33.406</b><div style="font-size:9.5px;opacity:.8;margin-top:2px">taxa de 6% a.m. aplicada sobre cada parcela</div></div>
-    <div style="background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));border-radius:10px;padding:10px;text-align:center;font-family:var(--disp);font-weight:800;font-size:12px">Quero antecipar →</div>`)});
+  mock: print('/painel/simular','simulador')});
 
 S({level:'imob', n:'Link de Dados', title:['O comprador preenche ','sozinho'],
   kid:'Cadê o RG do comprador? O contrato da venda? Em vez de caçar documento no WhatsApp, o corretor manda um <b>link</b> — o comprador preenche os dados e sobe os arquivos <span class="em">direto na operação</span>.',
@@ -358,17 +395,7 @@ S({level:'imob', n:'Contrato digital', title:['Assinou do celular, ','valeu no c
 S({level:'imob', n:'Acompanhamento', title:['Cada operação ','com status ao vivo'],
   kid:'A lista de operações mostra <b>onde cada uma está</b>: em análise, aprovada, aguardando assinatura, paga, liquidada. Mudou o status, chega notificação. O corretor <span class="em">nunca precisa ligar pra perguntar</span>.',
   pills:['Timeline por operação','Notificação a cada mudança','Histórico completo','Pendências sinalizadas'],
-  mock: appShell(IMOB_NAV,'Operações',`
-    <div class="rows">
-      <div class="r hd"><span>Operação</span><span>Valor</span><span>Recebe</span><span>Status</span></div>
-      <div class="r"><b>#482 · Apto 302 Ed. Aurora</b><span>R$ 48.000</span><span>R$ 33.406</span><span class="st ok">paga ✓</span></div>
-      <div class="r"><b>#495 · Casa Cond. Vale</b><span>R$ 31.200</span><span>R$ 22.870</span><span class="st bl">assinatura</span></div>
-      <div class="r"><b>#501 · Sala comercial</b><span>R$ 18.000</span><span>—</span><span class="st wa">em análise</span></div>
-    </div>
-    <div class="grid2" style="margin-top:10px">
-      <div class="kpi hi"><div class="l">Antecipado (total)</div><div class="v">R$ 214k</div></div>
-      <div class="kpi"><div class="l">Operações ativas</div><div class="v">7</div></div>
-    </div>`)});
+  mock: print('/painel/operacoes','operacoes')});
 
 S({level:'imob', n:'Projeção & relatórios', title:['Quanto ainda ','tem pra entrar'],
   kid:'A projeção mostra o <b>pipeline de comissões</b> — o que já virou dinheiro, o que está em andamento e o que dá pra antecipar. A imobiliária enxerga o caixa dos próximos meses <span class="em">antes de ele acontecer</span>.',
@@ -393,7 +420,7 @@ S({level:'imob', n:'Equipe, convites & chats', title:['A imobiliária ','no coma
     <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px 12px 12px 3px;padding:9px 11px;font-size:11px;max-width:85%"><b style="color:var(--grn);font-size:9px">ANTECIPAQUI</b><br/>Contrato enviado pra assinatura de todos ✓</div>`)});
 
 /* ========================= 02 CONSTRUTORA ========================= */
-S({type:'intro', level:'const', no:'02', who:'Para quem deve a comissão', title:'Construtora',
+S({type:'intro', level:'const', no:'03', who:'Para quem deve a comissão', title:'Construtora',
   desc:'A construtora não desembolsa nada a mais: continua pagando a mesma comissão, nas mesmas datas — só muda o destino. Em troca, ganha corretores mais motivados vendendo seus empreendimentos, painel de controle e até cashback.',
   idx:['Confirmação de comissões','Duplicatas & extrato','Score & risco próprios','Cashback','Documentos & empreendimentos','Equipe, pendências & forecast']});
 
@@ -413,17 +440,7 @@ S({level:'const', n:'Confirmação de comissões', title:['Um clique que ','dest
 S({level:'const', n:'Duplicatas & extrato', title:['Tudo que vence, ','numa tela só'],
   kid:'As parcelas cedidas viram <b>duplicatas organizadas</b>: o que vence esse mês, pra qual fundo pagar, o que já foi quitado. O extrato é a memória completa — <span class="em">financeiro da construtora agradece</span>.',
   pills:['Agenda de vencimentos','Boleto/PIX do fundo na tela','Extrato completo','Comprovantes anexados'],
-  mock: appShell(CONST_NAV,'Duplicatas',`
-    <div class="rows">
-      <div class="r hd"><span>Duplicata</span><span>Vencimento</span><span>Valor</span><span>Status</span></div>
-      <div class="r"><b>#482-08 · Ed. Aurora</b><span>10/08</span><span>R$ 2.000</span><span class="st wa">a vencer</span></div>
-      <div class="r"><b>#471-12 · Ed. Solar</b><span>05/08</span><span>R$ 1.450</span><span class="st wa">a vencer</span></div>
-      <div class="r"><b>#482-07 · Ed. Aurora</b><span>10/07</span><span>R$ 2.000</span><span class="st ok">paga ✓</span></div>
-    </div>
-    <div class="grid2" style="margin-top:10px">
-      <div class="kpi"><div class="l">Vence em agosto</div><div class="v">R$ 8.450</div></div>
-      <div class="kpi hi"><div class="l">Pago no prazo</div><div class="v">98%</div></div>
-    </div>`)});
+  mock: print('/painel/duplicatas','duplicatas')});
 
 S({level:'const', n:'Score & risco próprios', title:['Veja como o mercado ','te enxerga'],
   kid:'A construtora tem acesso ao <b>próprio score de pagamento</b> — o mesmo número que os fundos olham pra aprovar operações. Pagou em dia, o score sobe, <span class="em">e as operações dos seus corretores passam mais rápido</span>.',
@@ -475,26 +492,14 @@ S({level:'const', n:'Equipe & forecast', title:['O financeiro vê ','o futuro ch
     </div>`)});
 
 /* ========================= 03 FUNDO ========================= */
-S({type:'intro', level:'fundo', no:'03', who:'Para quem coloca o capital', title:'Fundo',
+S({type:'intro', level:'fundo', no:'04', who:'Para quem coloca o capital', title:'Fundo',
   desc:'O fundo compra recebíveis originados e organizados: dossiê completo, devedora com score, contrato assinado e cobrança automatizada. Com mesa de decisão, regras de auto-aprovação, gestão de risco e API — do jeito que uma gestora espera.',
   idx:['Mesa de decisão','Regras de auto-aprovação','Risco & blacklist','Forecast, daily & recaps','Recebimentos & cobrança automática','Modo operacional','API & webhooks']});
 
 S({level:'fundo', n:'Mesa de decisão', title:['Cada operação chega ','pronta pra decidir'],
   kid:'A operação cai na mesa <b>com o dossiê completo</b>: valor, prazo, taxa, score da construtora, docs do comprador e histórico. O analista aprova ou recusa com um clique — <span class="em">e o motivo fica registrado</span>.',
   pills:['Dossiê completo por operação','Score da devedora na cara','Aprovar/recusar com motivo','Pendências de decisão em fila'],
-  mock: appShell(FUNDO_NAV,'Aprovar',`
-    <div class="card" style="margin-bottom:10px"><div class="h">Op. #501 · aguardando decisão <span class="tag">chegou há 2h</span></div>
-      <div class="grid3" style="margin-bottom:8px">
-        <div class="kpi"><div class="l">Comissão</div><div class="v">R$ 18k</div></div>
-        <div class="kpi"><div class="l">Prazo</div><div class="v">12x</div></div>
-        <div class="kpi hi"><div class="l">Score devedora</div><div class="v">92</div></div>
-      </div>
-      <div class="grid2">
-        <span class="st ok" style="text-align:center;justify-self:stretch;padding:8px;font-weight:800">APROVAR ✓</span>
-        <span class="st no" style="text-align:center;justify-self:stretch;padding:8px">recusar com motivo</span>
-      </div>
-    </div>
-    <div style="font-size:10px;color:var(--mut)">taxa da operação: 6,00% a.m. · seu custo: 2,40% a.m.</div>`)});
+  mock: print('/painel/pendencias-decisao','mesa-decisao')});
 
 S({level:'fundo', n:'Regras de auto-aprovação', title:['O óbvio se aprova ','sozinho'],
   kid:'O fundo define critérios — <b>taxa mínima, prazo máximo, valor teto, construtoras liberadas</b> — e o que passa no filtro é aprovado na hora, sem analista. A mesa fica só com o que <span class="em">merece um par de olhos humanos</span>.',
@@ -514,40 +519,17 @@ S({level:'fundo', n:'Regras de auto-aprovação', title:['O óbvio se aprova ','
 S({level:'fundo', n:'Risco & blacklist', title:['Concentração vigiada, ','portas fechadas na hora'],
   kid:'O painel de risco mostra a <b>exposição por construtora, imobiliária e estado</b> — passou de 25% acende alerta, 40% é crítico. E a <b>blacklist é impositiva</b>: bloqueou a construtora, nenhuma operação dela entra, <span class="em">nem por engano</span>.',
   pills:['Limites 25%/40% automáticos','Ranking de devedoras por score','Blacklist que trava o fluxo','Score: atrasos e gravidade'],
-  mock: appShell(FUNDO_NAV,'Risco',`
-    <div class="card" style="margin-bottom:10px"><div class="h">Concentração por construtora <span class="tag">capital exposto</span></div>
-      <div style="font-size:11px;margin-bottom:6px">Construtora Aurora <b style="float:right">31%</b></div><div class="progressbar"><i style="width:31%;background:linear-gradient(90deg,var(--amber),#f59e0b)"></i></div>
-      <div style="font-size:11px;margin:8px 0 6px">Solar Empreend. <b style="float:right">18%</b></div><div class="progressbar"><i style="width:18%"></i></div>
-      <div style="font-size:11px;margin:8px 0 6px">Vale Verde <b style="float:right">12%</b></div><div class="progressbar"><i style="width:12%"></i></div>
-    </div>
-    <div class="li" style="border-color:rgba(251,113,133,.35)"><div class="av" style="background:var(--red)">⛔</div><div class="g"><b>Blacklist: Construtora XPTO</b><small>2 atrasos graves · bloqueada em 05/26</small></div><span class="st no">bloqueada</span></div>`)});
+  mock: print('/painel/risco','risco')});
 
 S({level:'fundo', n:'Forecast, daily & recaps', title:['O caixa dos próximos ','6 meses, hoje'],
   kid:'O forecast projeta <b>entrada bruta, parte do fundo e parte da plataforma</b> mês a mês. E o daily/recap entrega o resumo do dia e da semana — <span class="em">o gestor abre e já sabe o que aconteceu</span> sem pedir relatório pra ninguém.',
   pills:['Projeção 6 meses','Bruto × líquido do fundo','Daily do que mudou hoje','Recap semanal automático'],
-  mock: appShell(FUNDO_NAV,'Daily',`
-    <div class="card" style="margin-bottom:10px"><div class="h">📅 Daily · hoje</div>
-      <div style="font-size:11px;line-height:2">✓ 3 operações aprovadas (R$ 74k)<br/>💰 12 parcelas recebidas (R$ 21.400)<br/>⚠️ 1 parcela em atraso (2 dias · Ed. Solar)<br/>📈 exposição total: R$ 1,24M</div>
-    </div>
-    <div class="card"><div class="h">Forecast de recebimentos <span class="tag">6 meses</span></div>
-      <div class="bars">${[55,62,58,70,66,78].map(h=>`<div class="b" style="height:${h}%"></div>`).join('')}</div>
-      <div class="line-lbls"><span>ago</span><span>set</span><span>out</span><span>nov</span><span>dez</span><span>jan</span></div>
-    </div>`)});
+  mock: print('/painel/forecast','forecast')});
 
 S({level:'fundo', n:'Recebimentos & cobrança', title:['A régua cobra ','antes de você lembrar'],
   kid:'Toda parcela tem <b>cobrança automática</b>: aviso à construtora dias antes do vencimento e ticket urgente no primeiro dia de atraso — sem duplicar, sem esquecer. Recebimentos e faturas conciliados <span class="em">parcela por parcela</span>.',
   pills:['Régua pré-vencimento automática','Ticket urgente no atraso','Boleto via API ou CNAB','Baixa automática no retorno'],
-  mock: appShell(FUNDO_NAV,'Recebimentos',`
-    <div class="grid3" style="margin-bottom:10px">
-      <div class="kpi hi"><div class="l">Recebido (mês)</div><div class="v">R$ 86k</div></div>
-      <div class="kpi"><div class="l">A vencer (30d)</div><div class="v">R$ 74k</div></div>
-      <div class="kpi"><div class="l">Inadimplência</div><div class="v">1,8%</div></div>
-    </div>
-    <div class="rows">
-      <div class="r"><b>#482-08 · Aurora</b><span>vence 10/08</span><span>R$ 2.000</span><span class="st bl">avisada ✉️</span></div>
-      <div class="r"><b>#463-11 · Solar</b><span>2 dias atraso</span><span>R$ 1.450</span><span class="st no">ticket urgente</span></div>
-      <div class="r"><b>#471-09 · Vale</b><span>pago 04/08</span><span>R$ 1.800</span><span class="st ok">baixado ✓</span></div>
-    </div>`)});
+  mock: print('/painel/recebimentos','recebimentos')});
 
 S({level:'fundo', n:'Modo operacional', title:['Cada fundo opera ','do seu jeito'],
   kid:'Quem gera o contrato? Quem envia pra assinatura? Quem emite a cobrança? <b>Cada fundo configura</b> — pode deixar tudo com a plataforma ou plugar a própria esteira via webhook. Só uma regra é fixa: <span class="em">a Antecipaqui sempre assina como testemunha</span>.',
@@ -579,26 +561,14 @@ S({level:'fundo', n:'API & webhooks', title:['A esteira do fundo, ','plugada na 
     </div></div>`});
 
 /* ========================= 04 COMERCIAL ========================= */
-S({type:'intro', level:'com', no:'04', who:'Para quem traz imobiliária', title:'Comercial',
+S({type:'intro', level:'com', no:'05', who:'Para quem traz imobiliária', title:'Comercial',
   desc:'O parceiro comercial abre portas de imobiliárias e construtoras — com mapa de prospecção, pipeline, cadastro express e comissão sobre o lucro de cada operação que a carteira dele gerar. Pra sempre rastreado, todo mês no holerite.',
   idx:['Prospecção & pipeline','Cadastro express & convites','Comissões & holerite','Daily, relatórios & templates']});
 
 S({level:'com', n:'Prospecção & pipeline', title:['O mapa mostra ','onde bater na porta'],
   kid:'Imobiliárias e construtoras da região <b>no mapa e num pipeline kanban</b>: prospect → contato → proposta → fechado. Com anotação e próximo passo em cada card — <span class="em">nenhum lead esfria por esquecimento</span>.',
   pills:['Mapa de prospects','Kanban de negociação','Próxima ação com lembrete','Histórico por lead'],
-  mock:`<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">antecipaqui.digital/painel/<b>prospeccao</b></div></div>
-    <div class="body">
-      <div class="mapmk" style="height:110px;margin-bottom:10px">
-        <span class="pin" style="left:20%;top:34%;background:var(--grn)"></span>
-        <span class="pin" style="left:48%;top:52%;background:var(--a)"></span>
-        <span class="pin" style="left:70%;top:28%;background:var(--amber)"></span>
-      </div>
-      <div class="kan">
-        <div><h6>Prospect</h6><div class="c">🏠 Imob. Central<small>ligar quinta</small></div></div>
-        <div><h6>Proposta</h6><div class="c">🏠 Horizonte Imóveis<small>reunião sexta</small></div></div>
-        <div><h6>Fechado ✓</h6><div class="c">🏗️ Construtora Aurora<small>onboarding feito</small></div></div>
-      </div>
-    </div></div>`});
+  mock: print('/painel/prospects','prospects')});
 
 S({level:'com', n:'Cadastro express & convites', title:['Fechou na mesa, ','cadastrou na hora'],
   kid:'Na frente do cliente, o comercial faz o <b>cadastro express</b> da imobiliária em minutos — ou manda o <b>link de convite</b> rastreado. Quem entrar por ali fica <span class="em">vinculado à carteira dele pra sempre</span>.',
@@ -616,13 +586,7 @@ S({level:'com', n:'Cadastro express & convites', title:['Fechou na mesa, ','cada
 S({level:'com', n:'Comissões & holerite', title:['Sua carteira ','pinga todo mês'],
   kid:'A comissão é <b>sobre o lucro de cada operação</b> da carteira — enquanto as operações rodarem, o comercial recebe. E no fim do mês sai o <b>holerite</b>: operação por operação, <span class="em">transparência de contracheque</span>.',
   pills:['% sobre o lucro das operações','Carteira vitalícia','Holerite mensal detalhado','Extrato em tempo real'],
-  mock: appShell(COM_NAV,'Comissões',`
-    <div class="big-money" style="background:linear-gradient(120deg,#064e3b,#10b981)"><small>Holerite de julho</small><b>R$ 3.240,00</b><div style="font-size:9.5px;opacity:.85;margin-top:2px">28 operações ativas na carteira</div></div>
-    <div class="rows">
-      <div class="r" style="grid-template-columns:1.6fr 1fr .7fr"><b>Op. #482 · Aurora</b><span>parcela 8/24</span><span style="color:var(--grn)">+R$ 118</span></div>
-      <div class="r" style="grid-template-columns:1.6fr 1fr .7fr"><b>Op. #463 · Solar</b><span>parcela 11/18</span><span style="color:var(--grn)">+R$ 96</span></div>
-      <div class="r" style="grid-template-columns:1.6fr 1fr .7fr"><b>Op. #495 · Vale</b><span>parcela 2/12</span><span style="color:var(--grn)">+R$ 87</span></div>
-    </div>`)});
+  mock: print('/painel/comissoes','comissoes')});
 
 S({level:'com', n:'Daily, relatórios & templates', title:['Rotina de vendas ','com método'],
   kid:'O daily mostra o que mexeu na carteira hoje; os relatórios mostram conversão e volume; e os <b>templates prontos</b> (mensagem, pitch, proposta) padronizam a abordagem. O comercial foca no que importa: <span class="em">relacionamento</span>.',
@@ -640,15 +604,14 @@ S({level:'com', n:'Daily, relatórios & templates', title:['Rotina de vendas ','
 /* ========================= 05 ADMIN (versão completa) ========================= */
 if(SHOW_ADMIN){
 
-S({type:'intro', level:'admin', no:'05', who:'O motor da operação', title:'Administração',
+S({type:'intro', level:'admin', no:'06', who:'O motor da operação', title:'Administração',
   desc:'O back-office que faz a fintech girar: esteira de aprovação com fluxo de status, KYC com validação por IA, motor financeiro com snapshots à prova de retroativo e cobrança que roda sozinha todo dia.',
   idx:['Esteira de operações','KYC & validação por IA','Tickets, mural & chats','Configurações do motor','Motor financeiro']});
 
 S({level:'admin', n:'Esteira de operações', title:['Do cadastro à liquidação, ','um fluxo só'],
   kid:'Cada operação percorre um <b>fluxo de status controlado</b>: análise → aprovação → vínculo com fundo (com checagem de blacklist e sugestão de taxa) → contrato → pagamento → parcelas. Nada pula etapa, <span class="em">tudo fica auditado</span>.',
   pills:['Fluxo de status rígido','Vínculo de fundo com blacklist check','Taxa sugerida automática','Trilha de auditoria completa'],
-  mock: appShell(ADMIN_NAV,'Operações','',''),
-  mockOverride:true});
+  mock: print('/admin/decidir','admin-decidir')});
 
 S({level:'admin', n:'KYC & validação por IA', title:['A IA lê o documento ','antes de você'],
   kid:'Todo upload passa por <b>validação com IA de visão</b>: é mesmo um RG? O nome bate? Documento suspeito é sinalizado pra revisão humana. O time aprova cadastros <span class="em">com o grosso do trabalho já feito</span>.',
@@ -756,7 +719,7 @@ SLIDES.forEach((s,i)=>{
       <div style="position:relative;z-index:2;width:100%;max-width:1300px;margin:0 auto">
         <div class="kick">Por que a Antecipaqui</div>
         <h2 class="sec">O corretor vendeu, mas o dinheiro<br/>só chega em <span style="color:var(--a-soft)">2 anos</span>. A gente conserta isso.</h2>
-        <p class="lead">Comissão imobiliária parcelada é um crédito bom preso num fluxo ruim. A Antecipaqui é a <b style="color:var(--tx)">tecnologia que destrava</b> — o capital é dos fundos, a esteira é nossa.</p>
+        <p class="lead">Comissão imobiliária parcelada é um crédito bom preso num fluxo ruim. A Antecipaqui é a <b style="color:var(--tx)">tecnologia que destrava</b> — o capital é dos fundos, a esteira é nossa. E em cada painel, o <b style="color:var(--tx)">Cícero 👔</b>: atendente de IA que responde com dados reais.</p>
         <div class="vg">
           <div class="v"><div class="ic">🏠</div><h3>Pro corretor & imobiliária</h3><p>Comissão à vista com taxa transparente, contrato digital e zero cobrança pra fazer depois. Vendeu, recebeu, foi vender de novo.</p></div>
           <div class="v"><div class="ic">🏗️</div><h3>Pra construtora</h3><p>Mesmas parcelas, mesmas datas — só muda o favorecido. Em troca: corretores motivados, painel de controle, score e cashback.</p></div>
@@ -765,8 +728,8 @@ SLIDES.forEach((s,i)=>{
       </div>`;
   }
   else if(s.type==='levelmap'){
-    const cards=[['01','Imobiliária & Corretor','Antecipa e acompanha'],['02','Construtora','Confirma e paga o fundo'],['03','Fundo','Decide, monitora e recebe'],['04','Comercial','Expande a rede']];
-    if(SHOW_ADMIN)cards.push(['05','Administração','Opera o motor']);
+    const cards=[['01','Cícero 👔 · IA','Atende todos os papéis'],['02','Imobiliária & Corretor','Antecipa e acompanha'],['03','Construtora','Confirma e paga o fundo'],['04','Fundo','Decide, monitora e recebe'],['05','Comercial','Expande a rede']];
+    if(SHOW_ADMIN)cards.push(['06','Administração','Opera o motor']);
     el.innerHTML=`<div class="glow b"></div>
       <div style="position:relative;z-index:2;width:100%;max-width:1300px;margin:0 auto">
         <div class="kick">Um sistema, vários acessos</div>
@@ -812,13 +775,13 @@ SLIDES.forEach((s,i)=>{
         <div class="wordmark"><span class="am">A</span>antecipa<b>qui</b></div>
         <div class="kick">Vamos destravar comissões?</div>
         <h2 class="big" style="font-size:clamp(34px,4.6vw,64px)">O crédito é bom. <span class="l">Agora o fluxo também é.</span></h2>
-        <p class="lead" style="margin:14px auto 0;text-align:center;max-width:60ch">Plataforma em produção com fundo ativo, contrato digital, cobrança automatizada e API pronta pra plugar novos fundos e parceiros.</p>
+        <p class="lead" style="margin:14px auto 0;text-align:center;max-width:60ch">Plataforma em produção com fundo ativo, contrato digital, cobrança automatizada, API pronta pra plugar novos fundos — e o Cícero 👔, atendente de IA, de plantão em todos os painéis.</p>
         <div class="cta">Falar com a Antecipaqui →</div>
         <div class="contact"><b>www.antecipaqui.digital</b></div>
       </div>`;
   }
   else{
-    const mockHtml = (s.n==='Esteira de operações') ? esteiraMock : s.mock;
+    const mockHtml = s.mock;
     el.innerHTML=`<div class="glow a"></div><div class="glow b"></div>
       <div class="feat">
         <div class="txt">
