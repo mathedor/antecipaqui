@@ -9,6 +9,7 @@ import {
 } from "@/components/route-aware-chrome";
 import { FeedbackProvider } from "@/components/feedback-provider";
 import { ChatFabWrapper } from "@/components/chat-fab-wrapper";
+import { CiceroWidgetWrapper } from "@/components/cicero-widget-wrapper";
 import { PwaInstaller } from "@/components/pwa-installer";
 import { TableCards } from "@/components/table-cards";
 import { DemoBanner } from "@/components/demo-banner";
@@ -91,6 +92,7 @@ export default function RootLayout({
             <main className="flex-1 relative z-10">{children}</main>
             <MarketingFooter />
             <ChatFabWrapper />
+            <CiceroWidgetWrapper />
             <PwaInstaller />
             <TableCards />
           </FeedbackProvider>

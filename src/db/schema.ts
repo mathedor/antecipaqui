@@ -2396,3 +2396,58 @@ export type NewOperacao = typeof operacoes.$inferInsert;
 export type ParcelaComissao = typeof parcelasComissao.$inferSelect;
 export type Contrato = typeof contratos.$inferSelect;
 export type Notificacao = typeof notificacoes.$inferSelect;
+
+/* =========================================
+   CÍCERO — atendente IA da plataforma.
+   TODA conversa e TODA mensagem (incl. tools chamadas e tokens gastos)
+   ficam logadas aqui, além do audit_logs por pergunta.
+   ========================================= */
+
+export const ciceroConversas = pgTable(
+  "cicero_conversas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Snapshot da role no momento da conversa. */
+    userRole: text("user_role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("cicero_conversas_user_idx").on(t.userId, t.createdAt)],
+);
+
+export const ciceroMensagens = pgTable(
+  "cicero_mensagens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversaId: uuid("conversa_id")
+      .notNull()
+      .references(() => ciceroConversas.id, { onDelete: "cascade" }),
+    /** 'user' | 'cicero' */
+    autor: text("autor").notNull(),
+    texto: text("texto").notNull(),
+    /** Tools que o Cícero chamou pra responder: [{ tool, args }] */
+    toolsUsadas: jsonb("tools_usadas").$type<
+      { tool: string; args: Record<string, unknown> }[]
+    >(),
+    /** Modelo usado (só nas mensagens do Cícero). */
+    modelo: text("modelo"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    /** Erro interno (se a resposta falhou). */
+    erro: text("erro"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("cicero_mensagens_conversa_idx").on(t.conversaId, t.createdAt)],
+);
+
+export type CiceroConversa = typeof ciceroConversas.$inferSelect;
+export type CiceroMensagem = typeof ciceroMensagens.$inferSelect;
