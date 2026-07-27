@@ -1,4 +1,4 @@
-/** ANA — Pulso do sistema (Antecipaqui).
+/** ANA — Pulso do sistema (Antecipaqui) — v2.
  *
  *  GET /api/ana/pulso
  *  Auth: Authorization: Bearer $ANA_PULSO_TOKEN
@@ -8,11 +8,24 @@
  *  o campo e registra aviso "metrica X indisponivel".
  *
  *  Fontes reais (src/db/schema.ts):
- *  - online_agora / acessos_hoje ....... audit_logs (action='login' tem dedup de 30min)
- *  - vendas_hoje / transacionado ....... operacoes (valor_comissao = valor antecipado)
- *  - chamados_abertos .................. tickets (chats multi-participante)
- *  - tarefas_pendentes ................. operacoes aguardando ação do time
- *  - avisos ............................ parcelas_comissao vencidas, webhooks_eventos com falha
+ *  - acessos_hoje ....................... audit_logs action='login' (dedup 30min
+ *                                         por sessão em maybeLogLoginFor)
+ *  - online_agora ....................... atividade nos últimos 15min: audit_logs
+ *                                         ∪ ticket_messages ∪ cicero_mensagens
+ *  - novos_cadastros_hoje / por_nivel ... users.created_at por role (enum user_role:
+ *                                         corretor, imobiliaria, construtora,
+ *                                         admin, fundo, comercial)
+ *  - vendas_hoje / transacionado ........ operações EFETIVADAS hoje = aprovado_em
+ *                                         hoje e status aprovado/realizada; valor =
+ *                                         SUM(valor_presente) — mesmo critério do
+ *                                         dashboard admin (valorAntecipado, com
+ *                                         taxa_fundo_snapshot congelada na aprovação)
+ *  - chamados_abertos ................... tickets (chats multi-participante)
+ *  - tarefas_pendentes .................. fila admin + mesa de decisão do fundo +
+ *                                         contratos aguardando assinatura + faturas
+ *                                         do fundo pendentes/vencidas
+ *  - avisos ............................. parcelas_comissao vencidas, ops paradas,
+ *                                         webhooks_eventos com falha
  */
 
 import { NextResponse, type NextRequest } from "next/server";
@@ -23,6 +36,7 @@ import {
   operacoes,
   parcelasComissao,
   tickets,
+  users,
   webhooksEventos,
 } from "@/db/schema";
 
@@ -39,18 +53,32 @@ export async function GET(req: NextRequest) {
   const pulso: Record<string, unknown> = { sistema: "antecipaqui" };
   const avisos: string[] = [];
 
-  // ── online_agora — users com atividade auditada nos últimos 30 min ──
+  // ── online_agora — users distintos com atividade nos últimos 15 min
+  //    (ações auditadas ∪ mensagens de chat ∪ mensagens pro Cícero) ──
   try {
-    const [r] = await db
-      .select({ n: sql<number>`count(distinct ${auditLogs.userId})::int` })
-      .from(auditLogs)
-      .where(sql`${auditLogs.createdAt} > now() - interval '30 minutes'`);
-    pulso.online_agora = r?.n ?? 0;
+    const res = await db.execute(sql`
+      SELECT COUNT(DISTINCT uid)::int AS n FROM (
+        SELECT user_id AS uid FROM audit_logs
+          WHERE created_at > now() - interval '15 minutes'
+            AND user_id IS NOT NULL
+        UNION
+        SELECT from_user_id FROM ticket_messages
+          WHERE created_at > now() - interval '15 minutes'
+        UNION
+        SELECT c.user_id FROM cicero_mensagens m
+          JOIN cicero_conversas c ON c.id = m.conversa_id
+          WHERE m.created_at > now() - interval '15 minutes'
+      ) atividade
+    `);
+    const row = (res as unknown as { rows: { n: number }[] }).rows?.[0];
+    pulso.online_agora = row?.n ?? 0;
   } catch {
     avisos.push("metrica online_agora indisponivel");
   }
 
-  // ── acessos_hoje — users distintos com login hoje (SP) ──
+  // ── acessos_hoje — users distintos com login hoje (SP).
+  //    Tracking próprio: audit_logs action='login' (gravado em todo acesso
+  //    autenticado com dedup de 30min — src/lib/audit.ts). ──
   try {
     const [r] = await db
       .select({ n: sql<number>`count(distinct ${auditLogs.userId})::int` })
@@ -65,36 +93,54 @@ export async function GET(req: NextRequest) {
     avisos.push("metrica acessos_hoje indisponivel");
   }
 
-  // ── vendas_hoje — operações criadas hoje (SP) ──
+  // ── novos_cadastros_hoje + cadastros_por_nivel — users criados hoje (SP)
+  //    quebrados por role real do schema (user_role enum) ──
   try {
-    const [r] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(operacoes)
+    const rows = await db
+      .select({
+        role: users.role,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(users)
       .where(
-        sql`(${operacoes.createdAt} at time zone 'America/Sao_Paulo')::date
+        sql`(${users.createdAt} at time zone 'America/Sao_Paulo')::date
           = (now() at time zone 'America/Sao_Paulo')::date`,
-      );
-    pulso.vendas_hoje = r?.n ?? 0;
+      )
+      .groupBy(users.role);
+    const porNivel: Record<string, number> = {};
+    let total = 0;
+    for (const r of rows) {
+      porNivel[r.role] = r.n;
+      total += r.n;
+    }
+    pulso.novos_cadastros_hoje = total;
+    pulso.cadastros_por_nivel = porNivel;
   } catch {
-    avisos.push("metrica vendas_hoje indisponivel");
+    avisos.push("metrica novos_cadastros_hoje indisponivel");
   }
 
-  // ── transacionado_hoje_centavos — soma do valor antecipado (valor_comissao)
-  //    das operações criadas hoje (SP) ──
+  // ── vendas_hoje + transacionado_hoje_centavos — operações EFETIVADAS hoje:
+  //    aprovado_em hoje (SP) e status pós-aprovação. Valor = SUM(valor_presente),
+  //    o "valor antecipado" canônico do dashboard admin (VP calculado com
+  //    taxa_fundo_snapshot congelada na aprovação). ──
   try {
     const [r] = await db
       .select({
+        n: sql<number>`count(*)::int`,
         total: sql<
           string | number
-        >`coalesce(round(sum(${operacoes.valorComissao}) * 100), 0)::bigint`,
+        >`coalesce(round(sum(${operacoes.valorPresente}) * 100), 0)::bigint`,
       })
       .from(operacoes)
       .where(
-        sql`(${operacoes.createdAt} at time zone 'America/Sao_Paulo')::date
-          = (now() at time zone 'America/Sao_Paulo')::date`,
+        sql`(${operacoes.aprovadoEm} at time zone 'America/Sao_Paulo')::date
+            = (now() at time zone 'America/Sao_Paulo')::date
+          and ${operacoes.status} in ('pre_aprovada','analise_final','enviada_para_assinatura','enviada_para_pagamento','realizada')`,
       );
+    pulso.vendas_hoje = r?.n ?? 0;
     pulso.transacionado_hoje_centavos = Number(r?.total ?? 0);
   } catch {
+    avisos.push("metrica vendas_hoje indisponivel");
     avisos.push("metrica transacionado_hoje_centavos indisponivel");
   }
 
@@ -114,13 +160,53 @@ export async function GET(req: NextRequest) {
     avisos.push("metrica chamados_abertos indisponivel");
   }
 
-  // ── tarefas_pendentes — operações aguardando ação do time ──
+  // ── tarefas_pendentes — pendências operacionais esperando alguém:
+  //    fila do admin + mesa de decisão do fundo + contratos aguardando
+  //    assinatura + faturas do fundo pendentes/vencidas ──
   try {
-    const [r] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(operacoes)
-      .where(inArray(operacoes.status, ["aguardando_aprovacao", "analise_final"]));
-    pulso.tarefas_pendentes = r?.n ?? 0;
+    const res = await db.execute(sql`
+      SELECT
+        (SELECT COUNT(*) FROM operacoes
+          WHERE status IN ('aguardando_aprovacao','analise_final'))::int AS fila_admin,
+        (SELECT COUNT(*) FROM operacoes
+          WHERE fundo_aprovacao = 'pendente'
+            AND status IN ('pre_aprovada','analise_final','enviada_para_assinatura'))::int AS mesa_fundo,
+        (SELECT COUNT(*) FROM contratos
+          WHERE status IN ('enviado_assinatura','parcialmente_assinado'))::int AS assinaturas,
+        (SELECT COUNT(*) FROM faturas_fundo
+          WHERE status IN ('pendente','parcial','vencida'))::int AS faturas
+    `);
+    const row = (
+      res as unknown as {
+        rows: {
+          fila_admin: number;
+          mesa_fundo: number;
+          assinaturas: number;
+          faturas: number;
+        }[];
+      }
+    ).rows?.[0];
+    if (row) {
+      pulso.tarefas_pendentes =
+        row.fila_admin + row.mesa_fundo + row.assinaturas + row.faturas;
+      if (row.mesa_fundo > 0) {
+        avisos.push(
+          `${row.mesa_fundo} operação(ões) na mesa de decisão do fundo`,
+        );
+      }
+      if (row.assinaturas > 0) {
+        avisos.push(
+          `${row.assinaturas} contrato(s) aguardando assinatura`,
+        );
+      }
+      if (row.faturas > 0) {
+        avisos.push(
+          `${row.faturas} fatura(s) do fundo pendente(s)/vencida(s)`,
+        );
+      }
+    } else {
+      avisos.push("metrica tarefas_pendentes indisponivel");
+    }
   } catch {
     avisos.push("metrica tarefas_pendentes indisponivel");
   }
