@@ -19,6 +19,7 @@ const HIDE_PREFIXES = [
   "/notificacoes",
   "/entrar",
   "/cadastre-se",
+  "/manutencao",
 ];
 
 function shouldHide(pathname: string | null) {
