@@ -124,13 +124,13 @@ export default function ApresentacaoImobiliariaPage() {
         <ApresentacaoFeature
           onDark
           titulo="Nova operação — IA preenche pra você"
-          desc="Solta o PDF do contrato. Claude Haiku lê e preenche comprador, unidade, valor, parcelas, datas. Você só revisa e envia."
+          desc="Solta o PDF do contrato. A IA lê e preenche comprador, unidade, valor, parcelas, datas. Você só revisa e envia."
           bullets={[
             "OCR funciona com escaneamentos de qualidade baixa",
             "Campos validados automaticamente (CPF, datas, valores)",
             "Você sempre confere antes — IA não envia sozinha",
           ]}
-          hint="modelo: claude-haiku-4-5 · fail-open se key indisponível"
+          hint="OCR com IA · fail-open se indisponível"
           mockup={<MockupNovaOperacao />}
         />
         <ApresentacaoFeature

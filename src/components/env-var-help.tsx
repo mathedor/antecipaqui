@@ -253,7 +253,7 @@ const TUTORIALS: Record<EnvKey, Tutorial> = {
   },
   anthropicApiKey: {
     envName: "ANTHROPIC_API_KEY",
-    service: "Claude (OCR de documentos + extração)",
+    service: "OCR de documentos + extração (IA)",
     why: "Sem isso, validação automática de documentos (RG, CPF, comprovante) e extração de contratos do corretor não funciona — admin precisa validar manualmente.",
     steps: [
       {
@@ -427,7 +427,7 @@ const SERVICE_LABEL: Record<EnvKey, string> = {
   zapsignToken: "ZapSign (ZAPSIGN_API_TOKEN)",
   siteUrl: "Site URL (NEXT_PUBLIC_SITE_URL)",
   cronSecret: "Crons (CRON_SECRET)",
-  anthropicApiKey: "Claude OCR (ANTHROPIC_API_KEY)",
+  anthropicApiKey: "OCR IA (ANTHROPIC_API_KEY)",
   antecipaquiCnpj: "CNPJ da cessionária (ANTECIPAQUI_CNPJ)",
   antecipaquiSignerName: "Assinante AQ — nome (ANTECIPAQUI_SIGNER_NAME)",
   antecipaquiSignerEmail: "Assinante AQ — email (ANTECIPAQUI_SIGNER_EMAIL)",

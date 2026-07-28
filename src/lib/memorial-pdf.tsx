@@ -1191,12 +1191,12 @@ valor_atualizado = valor + multa + juros_mora`}
         <Text style={styles.h2}>Importar contrato (OCR)</Text>
         <Text style={styles.p}>
           Em <Mono>/painel/operacoes/importar</Mono>: upload do PDF/foto do
-          contrato → Claude Haiku 4.5 vision extrai valor da venda, comissão,
+          contrato → IA (vision) extrai valor da venda, comissão,
           data, nº parcelas, razão social e CNPJ. Preview com nível de
           confiança. Botão &ldquo;Aplicar ao form&rdquo; injeta no draft e
           redireciona pro form de cadastro.
         </Text>
-        <Screenshot shots={shots} nome="corretor-importar" caption="Importar contrato via OCR Claude vision" />
+        <Screenshot shots={shots} nome="corretor-importar" caption="Importar contrato via OCR com IA" />
 
         <Text style={styles.h2}>Coleta de comprador</Text>
         <Text style={styles.p}>
@@ -1398,7 +1398,7 @@ vencida_grave = atraso > dias_grave (default 30 dias)`}
           <Row2 l="Twilio" r="SMS pontual" />
           <Row2 l="BrasilAPI" r="Lookup CNPJ Receita Federal, cache 1h" alt />
           <Row2 l="ViaCEP" r="Auto-fill de endereço pelo CEP" />
-          <Row2 l="Anthropic Claude" r="Haiku 4.5 vision — validação + OCR contratos" alt />
+          <Row2 l="Motor de IA (vision)" r="Validação de documentos + OCR de contratos" alt />
           <Row2 l="qrserver.com" r="Geração de QR code (coleta de comprador)" />
         </View>
       </PageWrapper>

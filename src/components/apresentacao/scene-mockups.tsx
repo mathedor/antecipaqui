@@ -739,7 +739,7 @@ export function MockupNovaOperacao() {
         <div className="rounded-lg bg-emerald-50 border border-success/30 p-2.5 mb-2 animate-slide-in-bottom" style={{ animationDelay: "1.4s" }}>
           <div className="flex items-center gap-2 text-[10px]">
             <span className="size-2 rounded-full bg-success animate-dot-ping" />
-            <span className="font-bold text-success">campos validados pelo Claude Haiku</span>
+            <span className="font-bold text-success">campos validados pela IA</span>
           </div>
           <div className="text-[10px] text-slate-600 mt-1">você só confere e clica enviar</div>
         </div>
