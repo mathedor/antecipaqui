@@ -85,6 +85,7 @@ export function SiteFooter() {
             </span>
           </span>
           <span className="font-mono">CNPJ XX.XXX.XXX/0001-XX · operação financeira regulada</span>
+          <span>Desenvolvido por: <a href="https://diretoriow.com.br" target="_blank" rel="noopener noreferrer" className="hover:text-fg transition-colors">Diretório Web</a></span>
         </div>
       </div>
     </footer>
