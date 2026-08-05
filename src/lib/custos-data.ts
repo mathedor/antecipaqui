@@ -46,6 +46,67 @@ export type ContaFixa = {
 
 export const CONTAS_FIXAS: ContaFixa[] = [
   {
+    id: "servidor-principal",
+    titulo: "Servidor principal",
+    valor: 1809.6,
+    obs: "máquina que roda a plataforma em produção",
+  },
+  {
+    id: "backup-primario",
+    titulo: "Backup primário",
+    valor: 486.0,
+    obs: "cópia diária de todos os dados e documentos",
+  },
+  {
+    id: "backup-secundario",
+    titulo: "Backup secundário",
+    valor: 486.0,
+    obs: "segunda cópia, em local separado do backup primário",
+  },
+  {
+    id: "proxies",
+    titulo: "Proxies (4 ativas)",
+    valor: 414.2,
+    obs: "4 × USD 19 · consultas externas (CNPJ, CEP, mapas)",
+  },
+  {
+    id: "firewall",
+    titulo: "Firewall hot blind",
+    valor: 648.55,
+    obs: "USD 119 · proteção da aplicação contra ataques",
+  },
+  {
+    id: "vps-agentes",
+    titulo: "VPS de agentes",
+    valor: 590.0,
+    obs: "robôs de cobrança, recaps e monitoramento",
+  },
+  {
+    id: "vps-cicero",
+    titulo: "VPS do Cícero",
+    valor: 590.0,
+    obs: "máquina dedicada ao atendente com inteligência artificial",
+  },
+  {
+    id: "servidor-demo",
+    titulo: "Servidor de demonstração",
+    valor: 388.0,
+    obs: "ambiente de apresentação, separado da produção",
+  },
+  {
+    id: "cloud-arquivos",
+    titulo: "Cloud de arquivos da operação",
+    valor: 485.05,
+    obs: "USD 89 · contratos, comprovantes e documentos de cadastro",
+  },
+  {
+    id: "d4sign",
+    titulo: "Assinatura D4Sign",
+    valor: 49.0,
+    obs: "plano básico · a confirmar",
+    estimado: true,
+  },
+  {
     id: "vercel",
     titulo: "Hospedagem (Vercel)",
     valor: 109.0,
@@ -60,14 +121,8 @@ export const CONTAS_FIXAS: ContaFixa[] = [
     estimado: true,
   },
   {
-    id: "backup",
-    titulo: "Backup",
-    valor: 440.0,
-    obs: "cópia diária de todos os dados e documentos",
-  },
-  {
     id: "email",
-    titulo: "E-mail transacional (Resend)",
+    titulo: "E-mail (Resend)",
     valor: 109.0,
     obs: "USD 20 · avisos, recaps e notificações",
     estimado: true,
@@ -80,30 +135,11 @@ export const CONTAS_FIXAS: ContaFixa[] = [
     estimado: true,
   },
   {
-    id: "firewall",
-    titulo: "Firewall",
-    valor: 125.35,
-    obs: "USD 23 · proteção da aplicação",
-  },
-  {
-    id: "proxies",
-    titulo: "Proxies",
-    valor: 103.55,
-    obs: "USD 19 · consultas externas (CNPJ, CEP, mapas)",
-  },
-  {
-    id: "vps-agentes",
-    titulo: "VPS de agentes",
-    valor: 590.0,
-    obs: "robôs de cobrança, recaps e monitoramento",
-  },
-  {
     id: "ia",
-    titulo: "Inteligência artificial em produção",
+    titulo: "I.A. em produção (Cícero)",
     valor: 250.0,
-    obs: "Cícero (atendente) + leitura automática de documentos",
+    obs: "atendente e leitura automática de documentos",
     estimado: true,
-    desde: "2026-07",
   },
 ];
 
@@ -123,16 +159,55 @@ export const TIERS: Record<
   X: { tokens: 16_500_000, valor: 599.5, label: "Megasprint" },
 };
 
+/**
+ * Taxa de conversão entre valor e processamento, derivada dos próprios tiers:
+ * 163,50 / 4,4 M = 327,00 / 8,8 M = R$ 37,16 por milhão de tokens.
+ * Usada para converter entregas fechadas (com valor cheio) em tokens.
+ */
+export const REAIS_POR_MILHAO = 37.16;
+
+/**
+ * Uma entrega tem OU um tier (pacote padrão), OU valor e tokens explícitos
+ * — o caso de entregas grandes fechadas por valor.
+ */
 export type DevEntry = {
   /** dd/mm */
   data: string;
   titulo: string;
   desc: string;
-  tier: Tier;
+  tier?: Tier;
+  /** Valor fechado, quando a entrega não se encaixa num tier. */
+  valor?: number;
+  /** Tokens equivalentes, quando a entrega não se encaixa num tier. */
+  tokens?: number;
 };
+
+/** Valor de uma entrega — do tier ou do valor fechado. */
+export function valorEntrega(e: DevEntry): number {
+  return e.tier ? TIERS[e.tier].valor : (e.valor ?? 0);
+}
+
+/** Tokens de uma entrega — do tier ou dos tokens informados. */
+export function tokensEntrega(e: DevEntry): number {
+  return e.tier ? TIERS[e.tier].tokens : (e.tokens ?? 0);
+}
+
+/** Rótulo do pacote da entrega (tier) ou "Entrega fechada". */
+export function labelEntrega(e: DevEntry): string {
+  return e.tier ? TIERS[e.tier].label : "Entrega fechada";
+}
 
 /** Chave = mês YYYY-MM. Do mês da entrega da v1 até o mês corrente. */
 export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
+  "2026-04": [
+    {
+      data: "30/04",
+      titulo: "Rebuild do front-end",
+      desc: "Reconstrução completa da interface do sistema: todas as telas, a navegação e a identidade visual foram refeitas do zero, com o padrão que a plataforma usa hoje.",
+      valor: 36554.0,
+      tokens: 983_700_000,
+    },
+  ],
   "2026-05": [
     {
       data: "12/05",
@@ -492,7 +567,11 @@ export const APIS_SERVICOS: {
    HELPERS
    ============================================================= */
 
-export const MES_INICIAL = SETUP.mes;
+/**
+ * Primeiro mês do relatório. A infraestrutura do Antecipaqui já rodava antes
+ * do go-live da v1 — o dono conta as contas fixas a partir de fevereiro/2026.
+ */
+export const MES_INICIAL = "2026-02";
 
 const MESES_PT = [
   "janeiro",

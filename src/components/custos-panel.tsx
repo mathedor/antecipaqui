@@ -8,11 +8,13 @@ import {
   DESENVOLVIMENTO,
   SETUP,
   STORAGE_KEY,
-  TIERS,
   contasDoMes,
   formatTokens,
+  labelEntrega,
   labelMes,
   listarMeses,
+  tokensEntrega,
+  valorEntrega,
   type ContaFixa,
   type DevEntry,
 } from "@/lib/custos-data";
@@ -470,7 +472,7 @@ export function CustosPanel({ mesCorrente }: { mesCorrente: string }) {
   const devDoMes = (mes: string): DevEntry[] => DESENVOLVIMENTO[mes] ?? [];
   const devId = (mes: string, i: number) => `dev:${mes}#${i}`;
   const devValor = (mes: string, i: number, e: DevEntry) =>
-    estado.overrides[devId(mes, i)] ?? TIERS[e.tier].valor;
+    estado.overrides[devId(mes, i)] ?? valorEntrega(e);
 
   /* ---------- totais ---------- */
 
@@ -500,7 +502,7 @@ export function CustosPanel({ mesCorrente }: { mesCorrente: string }) {
 
   const totalDev = meses.reduce((a, m) => a + (totalDevPorMes[m] ?? 0), 0);
   const totalTokens = meses.reduce(
-    (a, m) => a + devDoMes(m).reduce((x, e) => x + TIERS[e.tier].tokens, 0),
+    (a, m) => a + devDoMes(m).reduce((x, e) => x + tokensEntrega(e), 0),
     0,
   );
   const qtdDev = meses.reduce((a, m) => a + devDoMes(m).length, 0);
@@ -722,7 +724,7 @@ export function CustosPanel({ mesCorrente }: { mesCorrente: string }) {
                   const pct = total > 0 ? (pago / total) * 100 : 100;
                   const tudoPago = ids.every((id) => estado.pagos[id]);
                   const tokensMes = entradas.reduce(
-                    (a, e) => a + TIERS[e.tier].tokens,
+                    (a, e) => a + tokensEntrega(e),
                     0,
                   );
                   return (
@@ -782,9 +784,9 @@ export function CustosPanel({ mesCorrente }: { mesCorrente: string }) {
                             chip={
                               <span
                                 className="inline-flex items-center rounded-full border border-border bg-bg px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-fg-muted"
-                                title={TIERS[e.tier].label}
+                                title={labelEntrega(e)}
                               >
-                                {formatTokens(TIERS[e.tier].tokens)}
+                                {formatTokens(tokensEntrega(e))}
                               </span>
                             }
                             valor={devValor(mes, i, e)}
