@@ -2,7 +2,7 @@
 
 import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import {
   compradorColetaTokens,

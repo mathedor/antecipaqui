@@ -14,6 +14,7 @@ import {
 } from "@/lib/actions/chat";
 import { closeTicketAction } from "@/lib/actions/tickets";
 import { useFeedback } from "@/components/feedback-provider";
+import { agoraMs } from "@/lib/agora";
 
 type Message = {
   id: string;
@@ -117,6 +118,7 @@ export function ChatThread({
   );
   const formRef = useRef<HTMLFormElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [agora] = useState(() => agoraMs());
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>(
     [],
@@ -223,9 +225,11 @@ export function ChatThread({
   const ativos = participantes.filter((p) => !p.leftAt);
   const inativos = participantes.filter((p) => !!p.leftAt);
 
-  // Cutucão liberado se ≥12h parado, não finalizado, não arquivado
+  // Cutucão liberado se ≥12h parado, não finalizado, não arquivado.
+  // O "agora" é fotografado uma vez na montagem: ler o relógio no corpo do
+  // render é impuro e faz servidor e cliente divergirem na hidratação.
   const hoursIdle = ticketUpdatedAt
-    ? (Date.now() -
+    ? (agora -
         (typeof ticketUpdatedAt === "string"
           ? new Date(ticketUpdatedAt).getTime()
           : ticketUpdatedAt.getTime())) /

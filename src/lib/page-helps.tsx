@@ -83,91 +83,91 @@ function OperacaoStatusFlow() {
    ============================================================= */
 
 // Lista mestre das chaves — fonte de verdade pra typesafety.
-const PAGE_HELP_KEYS = [
+// União de tipos em vez de array `as const`: o array só servia pra derivar
+// o tipo e ia parar no bundle como ~70 strings mortas.
+export type PageHelpKey =
   // corretor / imobiliária
-  "painel-atendimentos",
-  "painel-operacoes-corretor",
-  "painel-operacoes-nova",
-  "painel-coleta-comprador",
-  "painel-forecast-corretor",
-  "painel-relatorio-corretor",
-  "painel-convites",
-  "painel-equipe-imob",
-  "painel-filiais",
-  "painel-perfil",
-  "painel-suporte",
+  | "painel-atendimentos"
+  | "painel-operacoes-corretor"
+  | "painel-operacoes-nova"
+  | "painel-coleta-comprador"
+  | "painel-forecast-corretor"
+  | "painel-relatorio-corretor"
+  | "painel-convites"
+  | "painel-equipe-imob"
+  | "painel-filiais"
+  | "painel-perfil"
+  | "painel-suporte"
   // construtora
-  "painel-operacoes-construtora",
-  "painel-atendimentos-parceiros",
-  "painel-duplicatas",
-  "painel-extrato-construtora",
-  "painel-risco-construtora",
-  "painel-score-construtora",
-  "painel-cashback",
-  "painel-documentos",
-  "painel-equipe-construtora",
-  "painel-empreendimentos",
-  "painel-pendencias-construtora",
-  "painel-forecast-construtora",
+  | "painel-operacoes-construtora"
+  | "painel-atendimentos-parceiros"
+  | "painel-duplicatas"
+  | "painel-extrato-construtora"
+  | "painel-risco-construtora"
+  | "painel-score-construtora"
+  | "painel-cashback"
+  | "painel-documentos"
+  | "painel-equipe-construtora"
+  | "painel-empreendimentos"
+  | "painel-pendencias-construtora"
+  | "painel-forecast-construtora"
   // fundo
-  "painel-aprovar",
-  "painel-pendencias-decisao",
-  "painel-operacoes-fundo",
-  "painel-daily",
-  "painel-recebimentos",
-  "painel-faturas-fundo",
-  "painel-recaps",
-  "painel-forecast-fundo",
-  "painel-risco-fundo",
-  "painel-parceiros",
-  "painel-comerciais-fundo",
-  "painel-regras",
-  "painel-api",
-  "painel-webhooks",
+  | "painel-aprovar"
+  | "painel-pendencias-decisao"
+  | "painel-operacoes-fundo"
+  | "painel-daily"
+  | "painel-recebimentos"
+  | "painel-faturas-fundo"
+  | "painel-recaps"
+  | "painel-forecast-fundo"
+  | "painel-risco-fundo"
+  | "painel-parceiros"
+  | "painel-comerciais-fundo"
+  | "painel-regras"
+  | "painel-api"
+  | "painel-webhooks"
   // comercial
-  "painel-prospects",
-  "painel-prospeccao",
-  "painel-cadastrar-imob",
-  "painel-convidar",
-  "painel-daily-comercial",
-  "painel-operacoes-comercial",
-  "painel-comissoes",
-  "painel-comissoes-holerite",
-  "painel-relatorios-comercial",
-  "painel-templates",
+  | "painel-prospects"
+  | "painel-prospeccao"
+  | "painel-cadastrar-imob"
+  | "painel-convidar"
+  | "painel-daily-comercial"
+  | "painel-operacoes-comercial"
+  | "painel-comissoes"
+  | "painel-comissoes-holerite"
+  | "painel-relatorios-comercial"
+  | "painel-templates"
   // admin
-  "admin-dashboard",
-  "admin-decidir",
-  "admin-pendencias",
-  "admin-operacoes",
-  "admin-fundos",
-  "admin-fundos-novo",
-  "admin-fundo-detalhe",
-  "admin-cadastrar-comercial",
-  "admin-comerciais",
-  "admin-construtoras",
-  "admin-cadastrar-construtora",
-  "admin-usuarios",
-  "admin-cadastrar-imobiliaria",
-  "admin-usuarios-admins",
-  "admin-visao",
-  "admin-tickets",
-  "admin-mural",
-  "admin-relatorios",
-  "admin-relatorios-logs",
-  "admin-configuracoes",
-  "admin-entregabilidade",
-  "admin-custos",
-  "admin-risco-global",
-  "admin-credito",
-  "admin-convites",
-  "admin-webhooks",
-  "admin-backups",
-  "admin-faturas",
-  "admin-interno-invoice",
-] as const;
+  | "admin-dashboard"
+  | "admin-decidir"
+  | "admin-pendencias"
+  | "admin-operacoes"
+  | "admin-fundos"
+  | "admin-fundos-novo"
+  | "admin-fundo-detalhe"
+  | "admin-cadastrar-comercial"
+  | "admin-comerciais"
+  | "admin-construtoras"
+  | "admin-cadastrar-construtora"
+  | "admin-usuarios"
+  | "admin-cadastrar-imobiliaria"
+  | "admin-usuarios-admins"
+  | "admin-visao"
+  | "admin-tickets"
+  | "admin-mural"
+  | "admin-relatorios"
+  | "admin-relatorios-logs"
+  | "admin-configuracoes"
+  | "admin-entregabilidade"
+  | "admin-custos"
+  | "admin-risco-global"
+  | "admin-credito"
+  | "admin-convites"
+  | "admin-webhooks"
+  | "admin-backups"
+  | "admin-faturas"
+  | "admin-interno-invoice";
 
-export type PageHelpKey = (typeof PAGE_HELP_KEYS)[number];
 
 export const PAGE_HELPS: Record<PageHelpKey, PageHelpEntry> = {
   /* ============= CORRETOR / IMOBILIÁRIA ============= */

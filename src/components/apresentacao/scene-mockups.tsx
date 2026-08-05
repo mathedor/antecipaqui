@@ -8,6 +8,7 @@
 
 import type { ReactNode } from "react";
 import { MobileFrame, DesktopFrame } from "./mockup-frame";
+import { variacaoEstavel } from "@/lib/agora";
 
 /* ===================================================================
    COMUM
@@ -114,7 +115,7 @@ export function MockupPipelineKanban() {
           ))}
         </div>
         {/* Card animado movendo */}
-        <div className="mt-3 text-[10px] text-fg-muted italic">cards movem do funil em direção a 'fechado' ✓</div>
+        <div className="mt-3 text-[10px] text-fg-muted italic">cards movem do funil em direção a ‘fechado’ ✓</div>
       </div>
     </DesktopFrame>
   );
@@ -1293,7 +1294,9 @@ export function MockupRecebimentos() {
         <div className="text-[10px] font-bold uppercase text-slate-500 font-mono mb-2">próximos 14 dias</div>
         <div className="grid grid-cols-7 gap-1">
           {dias.map((d, i) => {
-            const v = Math.floor(Math.random() * 50 + 5);
+            // Determinístico: mockup só precisa de variação visual, e
+            // Math.random no render diverge entre servidor e cliente.
+            const v = Math.floor(variacaoEstavel(i) * 50 + 5);
             const intensity = v / 55;
             return (
               <div key={i} className="aspect-square rounded relative overflow-hidden animate-badge-pop" style={{ animationDelay: `${0.6 + i * 0.05}s` }}>

@@ -6,7 +6,6 @@ const COLOR_FG = "#0f172a";
 const COLOR_FG_DIM = "#94a3b8";
 const COLOR_BORDER = "#e2e8f0";
 const COLOR_SUCCESS = "#15803d";
-const COLOR_WARN = "#b45309";
 const COLOR_DANGER = "#b91c1c";
 
 const styles = StyleSheet.create({

@@ -57,7 +57,7 @@ export default async function HistoricoPage() {
             <span className="text-gradient-blue">histórico de visões</span>
           </h1>
           <p className="mt-2 text-fg-muted max-w-2xl">
-            Toda vez que você abriu "ver como" alguém, com duração e quantas
+            Toda vez que você abriu “ver como” alguém, com duração e quantas
             ações foram executadas. Tudo auditado pra compliance.
           </p>
         </div>
@@ -83,7 +83,7 @@ export default async function HistoricoPage() {
           <div className="text-4xl mb-3">👁</div>
           <h2 className="text-xl font-bold">Sem histórico ainda</h2>
           <p className="mt-2 text-fg-muted">
-            Vá em "Visualizar como" e impersone alguém pra começar.
+            Vá em “Visualizar como” e impersone alguém pra começar.
           </p>
         </div>
       ) : (

@@ -11,7 +11,6 @@ import type { BorderosBatchResult } from "@/lib/borderos-batch";
 const COLOR_ACCENT = "#1c6dd0";
 const COLOR_ACCENT_SOFT = "#e6efff";
 const COLOR_FG = "#0f172a";
-const COLOR_FG_MUTED = "#475569";
 const COLOR_FG_DIM = "#94a3b8";
 const COLOR_BORDER = "#e2e8f0";
 const COLOR_SUCCESS = "#15803d";

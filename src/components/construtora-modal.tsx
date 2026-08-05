@@ -102,7 +102,6 @@ export function ConstrutoraModal({
       }
     }
     // onCnpjChange é recriada a cada render; rodar só quando abrir/prefill mudam.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialCnpj, initialNome]);
 
   return (

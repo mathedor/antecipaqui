@@ -27,7 +27,7 @@ export default async function ComercialTemplatesPage() {
         </h1>
         <p className="mt-2 text-fg-muted max-w-2xl">
           Salve mensagens próprias que vão substituir os textos padrão do{" "}
-          <strong>Foco do Dia</strong>. Marque um template como "default" pra
+          <strong>Foco do Dia</strong>. Marque um template como “default” pra
           ele virar a mensagem oficial daquele tipo de ação. Use variáveis
           como <code>{"{nome}"}</code>, <code>{"{empresa}"}</code>,{" "}
           <code>{"{dias_inativa}"}</code>, <code>{"{numero_op}"}</code>,{" "}

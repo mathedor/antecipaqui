@@ -20,7 +20,6 @@ import { NovaOperacaoForm } from "@/components/nova-operacao-form";
 import { FundoCadastrarOperacaoForm } from "@/components/fundo-cadastrar-operacao-form";
 import { ImportarContratoForm } from "@/components/importar-contrato-form";
 import { PainelShell } from "@/components/painel-shell";
-import { painelRole } from "@/lib/painel-role";
 import { PageHelp } from "@/components/page-help";
 
 export const metadata = {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { gerarTokenColetaComprador } from "@/lib/actions/corretor-velocidade";
 import { useFeedback } from "@/components/feedback-provider";
+import { agoraMs } from "@/lib/agora";
 
 type TokenRow = {
   id: string;
@@ -29,6 +30,8 @@ function fmtDT(d: Date | string | null) {
 export function ColetaCompradorManager({ tokens }: { tokens: TokenRow[] }) {
   const router = useRouter();
   const { alertSuccess, alertError } = useFeedback();
+  // Foto do relógio na montagem — ver comentário em @/lib/agora.
+  const [agora] = useState(() => agoraMs());
   const [newLink, setNewLink] = useState<{
     url: string;
     expiresAt: Date | string;
@@ -128,8 +131,7 @@ export function ColetaCompradorManager({ tokens }: { tokens: TokenRow[] }) {
         ) : (
           <ul className="space-y-2">
             {tokens.map((t) => {
-              const expirou =
-                new Date(t.expiresAt).getTime() < Date.now();
+              const expirou = new Date(t.expiresAt).getTime() < agora;
               const url =
                 typeof window !== "undefined"
                   ? `${window.location.origin}/coleta-comprador/${t.token}`

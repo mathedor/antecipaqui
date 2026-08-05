@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { custosOperacao, fundoCustosPadrao } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";

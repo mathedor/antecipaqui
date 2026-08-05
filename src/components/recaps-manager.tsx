@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { RecapDados, RecapPeriodo } from "@/lib/recaps";
 import { gerarRecapAction } from "@/lib/actions/recaps";
 import { useFeedback } from "@/components/feedback-provider";
+import { agoraMs } from "@/lib/agora";
 
 type Recap = {
   id: string;
@@ -72,8 +73,9 @@ export function RecapsManager({
   const [from, setFrom] = useState(filtros.from ?? "");
   const [to, setTo] = useState(filtros.to ?? "");
   const [genPeriodo, setGenPeriodo] = useState<RecapPeriodo>("diario");
-  const [genData, setGenData] = useState(
-    new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  // Lazy: a data de ontem é calculada uma vez, fora do corpo do render.
+  const [genData, setGenData] = useState(() =>
+    new Date(agoraMs() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
   );
   const [gerando, setGerando] = useState(false);
 

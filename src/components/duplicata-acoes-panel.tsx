@@ -246,7 +246,7 @@ function AnteciparForm({
   vencimento: string;
 }) {
   const router = useRouter();
-  const { alertSuccess, alertError } = useFeedback();
+  const { alertSuccess } = useFeedback();
   const [state, action, pending] = useActionState<
     SolicitarAntecipacaoState,
     FormData
@@ -329,7 +329,7 @@ function RenegociarForm({
   vencimento: string;
 }) {
   const router = useRouter();
-  const { alertSuccess, alertError } = useFeedback();
+  const { alertSuccess } = useFeedback();
   const [state, action, pending] = useActionState<
     SolicitarRenegociacaoState,
     FormData

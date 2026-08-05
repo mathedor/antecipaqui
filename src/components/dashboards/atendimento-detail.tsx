@@ -51,7 +51,6 @@ export function AtendimentoDetail({
     cnpj: string;
   }>;
 }) {
-  const router = useRouter();
   const a = atendimento;
   const isOwnerAtend = a.corretorUserId === currentUserId;
 

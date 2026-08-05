@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db } from "@/db";
 import {
   construtoras,

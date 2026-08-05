@@ -519,7 +519,7 @@ export function ProjecoesCenarios({ proj }: { proj: ProjecaoComercial }) {
       </div>
       <p className="text-[11px] text-fg-muted mt-3">
         Cálculos baseados na sua média de comissão dos últimos 180d. Os
-        cenários se somam ao "se manter".
+        cenários se somam ao “se manter”.
       </p>
     </section>
   );

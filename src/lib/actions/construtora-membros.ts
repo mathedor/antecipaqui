@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { construtoraMembros, construtoras, users } from "@/db/schema";

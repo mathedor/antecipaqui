@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { operacaoNotasInternas, users } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";

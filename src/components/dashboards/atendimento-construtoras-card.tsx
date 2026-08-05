@@ -282,7 +282,7 @@ function SolicitarOpiniaoModal({
         <h3 className="text-lg font-bold">Solicitar opinião</h3>
         <p className="text-xs text-fg-muted">
           A construtora vai receber notificação destacada e email. Atendimento
-          fica marcado como "aguardando opinião".
+          fica marcado como “aguardando opinião”.
         </p>
         <div>
           <label className="text-[10px] uppercase tracking-wider font-mono text-fg-dim block mb-1">
