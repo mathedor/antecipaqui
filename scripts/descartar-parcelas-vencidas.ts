@@ -10,8 +10,8 @@
  *  - apaga as parcelas com vencimento < hoje
  *  - recalcula numero_parcelas, valor_comissao (= soma do que sobrou),
  *    valor_presente e deságio com a taxa da própria operação
- *  - guarda no motivo_pendencia o que foi descartado, pra não perder o
- *    histórico do que o contrato dizia
+ *  - NÃO deixa rastro: por decisão do dono, parcela vencida não fica
+ *    registrada nem como nota de histórico
  *
  * NUNCA toca em operação já operada (enviada_para_pagamento/realizada):
  * ali a parcela vencida é atraso real e tem que continuar existindo.
@@ -65,7 +65,28 @@ function valorPresente(
   }, 0);
 }
 
+/** Remove a nota de ajuste que versões anteriores deste script gravavam.
+ *  Decisão do dono: parcela vencida não fica registrada nem no histórico. */
+async function limparNotaAntiga() {
+  // A nota sempre foi anexada no FIM do motivo, então basta truncar no
+  // marcador. (Regex aqui seria frágil: dentro de template literal o TS
+  // come as barras invertidas e o padrão chega quebrado no Postgres.)
+  const r = await db.execute(sql`
+    UPDATE operacoes
+       SET motivo_pendencia = NULLIF(
+             btrim(left(motivo_pendencia, position('[ajuste' in motivo_pendencia) - 1)),
+             ''
+           )
+     WHERE position('[ajuste' in motivo_pendencia) > 0
+    RETURNING id
+  `);
+  const n = (Array.isArray(r) ? r : ((r as { rows: unknown[] }).rows ?? [])).length;
+  if (n > 0) console.log(`🧹 nota de ajuste removida de ${n} operação(ões)\n`);
+}
+
 async function main() {
+  if (APLICAR) await limparNotaAntiga();
+
   const res = await db.execute(sql`
     SELECT o.id::text AS operacao_id, o.numero, o.status,
            o.taxa_mensal::float AS taxa_mensal,
@@ -136,21 +157,14 @@ async function main() {
       ficam.map((f) => ({ valor: f.valor, vencimento: f.vencimento })),
       op.taxa_mensal,
     );
-    const nota =
-      `\n\n[ajuste ${new Date().toLocaleDateString("pt-BR")}] Parcelas já vencidas foram ` +
-      `descartadas do cronograma porque não são antecipáveis: ` +
-      vencidas
-        .map((v) => `${brl(v.valor)} venc ${v.vencimento.split("-").reverse().join("/")}`)
-        .join("; ") +
-      `. O contrato segue valendo integralmente; aqui fica só o que está a vencer.`;
-
+    // Sem rastro: parcela vencida não entra nem como nota de histórico.
+    // Por decisão do dono, a operação registra só o que é antecipável.
     await db.execute(sql`
       UPDATE operacoes
          SET numero_parcelas = ${ficam.length},
              valor_comissao = ${somaNova.toFixed(2)},
              valor_presente = ${vp.toFixed(2)},
              desagio = ${(somaNova - vp).toFixed(2)},
-             motivo_pendencia = COALESCE(motivo_pendencia, '') || ${nota},
              updated_at = now()
        WHERE id = ${opId}::uuid
     `);
