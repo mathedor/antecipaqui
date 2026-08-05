@@ -233,9 +233,22 @@ export function NovaOperacaoForm({
      oferece finalizar deixando o envio pendente — em vez de o usuário
      olhar pro botão desabilitado e desistir.
      --------------------------------------------------------------- */
+  // Só se antecipa parcela A VENCER — a que já venceu pertence ao contrato
+  // da construtora, mas não há o que comprar.
+  const hojeISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const parcelasVencidas = parcelas.filter(
+    (p) => p.vencimento && p.vencimento < hojeISO,
+  ).length;
+
   const faltamDocs = !docContratoVenda || !docContratoComissao;
+  // Não oferece finalizar quando o bloqueio não é (só) documento: com
+  // parcela vencida no cronograma a própria ação recusaria.
   const restoPreenchido =
-    !!construtoraId && parcelas.length > 0 && !!valorComissao && !!valorVenda;
+    !!construtoraId &&
+    parcelas.length > 0 &&
+    parcelasVencidas === 0 &&
+    !!valorComissao &&
+    !!valorVenda;
 
   useEffect(() => {
     if (!restoPreenchido || !faltamDocs || jaOfereceu.current || pending) return;
@@ -668,9 +681,14 @@ export function NovaOperacaoForm({
                     </span>
                     <input
                       type="date"
+                      min={hojeISO}
                       value={p.vencimento}
                       onChange={(e) => updateParcela(i, "vencimento", e.target.value)}
-                      className="col-span-6 h-10 rounded-lg bg-bg border border-border px-3 text-sm text-fg focus:border-accent outline-none transition-colors"
+                      className={`col-span-6 h-10 rounded-lg bg-bg border px-3 text-sm text-fg outline-none transition-colors ${
+                        p.vencimento && p.vencimento < hojeISO
+                          ? "border-danger focus:border-danger"
+                          : "border-border focus:border-accent"
+                      }`}
                     />
                     <div className="col-span-5 relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted text-xs font-mono pointer-events-none">
@@ -694,6 +712,16 @@ export function NovaOperacaoForm({
                   </li>
                 ))}
               </ul>
+            )}
+            {parcelasVencidas > 0 && (
+              <p className="mt-3 rounded-xl border border-danger/40 bg-red-50 px-3 py-2 text-xs text-danger">
+                {parcelasVencidas === 1
+                  ? "Há uma parcela com vencimento já passado."
+                  : `Há ${parcelasVencidas} parcelas com vencimento já passado.`}{" "}
+                Só dá pra antecipar o que ainda está a vencer — tire essas do
+                cronograma e informe na comissão apenas o valor que falta
+                receber.
+              </p>
             )}
             <input type="hidden" name="parcelas" value={JSON.stringify(parcelas)} />
           </Section>
@@ -750,6 +778,7 @@ export function NovaOperacaoForm({
             disabled={
               pending ||
               parcelas.length === 0 ||
+              parcelasVencidas > 0 ||
               !construtoraId ||
               !docContratoVenda ||
               !docContratoComissao

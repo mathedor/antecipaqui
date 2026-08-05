@@ -306,9 +306,25 @@ export async function createOperacaoAction(
     vencimento: String(p.vencimento ?? ""),
   }));
 
-  // Valida que nenhuma parcela passa de 120 dias do hoje
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
+
+  // Só se antecipa parcela A VENCER. Parcela que já venceu pertence ao
+  // contrato da construtora, mas não é antecipável — não há o que comprar.
+  const jaVencidas = parcelas.filter(
+    (p) => new Date(p.vencimento + "T00:00:00") < hoje,
+  );
+  if (jaVencidas.length > 0) {
+    const datas = jaVencidas
+      .map((p) => new Date(p.vencimento + "T00:00:00").toLocaleDateString("pt-BR"))
+      .join(", ");
+    return {
+      ok: false,
+      error: `Só dá pra antecipar parcela a vencer. ${jaVencidas.length === 1 ? "A parcela de" : "As parcelas de"} ${datas} já venceu${jaVencidas.length === 1 ? "" : "ram"} — remova do cronograma e informe na comissão só o que ainda está por vencer.`,
+    };
+  }
+
+  // Valida que nenhuma parcela passa de 120 dias do hoje
   const limite120 = new Date(hoje);
   limite120.setDate(limite120.getDate() + 120);
   const passa120 = parcelas.some((p) => {

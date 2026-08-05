@@ -116,8 +116,18 @@ export async function finalizarOperacaoPendente(
     return { ok: false, error: "Há parcela sem data de vencimento" };
 
   // Mesma regra de negócio do fluxo normal: só o anexo é relaxado aqui.
-  const limite120 = new Date();
-  limite120.setHours(0, 0, 0, 0);
+  const inicioHoje = new Date();
+  inicioHoje.setHours(0, 0, 0, 0);
+
+  // Só se antecipa parcela a vencer.
+  if (parcelas.some((p) => new Date(p.vencimento + "T00:00:00") < inicioHoje))
+    return {
+      ok: false,
+      error:
+        "Há parcela com vencimento já passado. Só dá pra antecipar parcela a vencer — deixe no cronograma apenas o que ainda está por vencer.",
+    };
+
+  const limite120 = new Date(inicioHoje);
   limite120.setDate(limite120.getDate() + 120);
   if (
     parcelas.some((p) => new Date(p.vencimento + "T00:00:00") > limite120)
