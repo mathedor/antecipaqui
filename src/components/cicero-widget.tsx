@@ -3,12 +3,22 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { perguntarCicero } from "@/lib/actions/cicero";
+import { getCiceroConselho, type CiceroConselho } from "@/lib/actions/cicero-conselhos";
+import { CiceroRosto } from "@/components/cicero-rosto";
+import {
+  aceitarPropostaCicero,
+  CICERO_EVENTO_ABRIR,
+  type CiceroChamado,
+  type CiceroProposta,
+} from "@/lib/cicero-eventos";
 
 type Msg = {
   de: "user" | "cicero";
   texto: string;
   links?: { label: string; href: string }[];
   respostas?: string[];
+  /** Proposta acionável — o Cícero oferece resolver algo por você. */
+  proposta?: CiceroProposta;
 };
 
 const SUGESTOES: Record<string, string[]> = {
@@ -55,8 +65,36 @@ export function CiceroWidget({ nome, role }: { nome: string; role: string }) {
   const [texto, setTexto] = useState("");
   const [conversaId, setConversaId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [conselho, setConselho] = useState<CiceroConselho | null>(null);
   const fimRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Conselho proativo: carrega ao abrir a primeira vez, com dados reais.
+  useEffect(() => {
+    if (!aberto || conselho) return;
+    let vivo = true;
+    getCiceroConselho()
+      .then((c) => {
+        if (vivo) setConselho(c);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [aberto, conselho]);
+
+  // Qualquer tela pode chamar o Cícero pra oferecer ajuda (ex: cadastro
+  // travado por documento). Ele abre sozinho já falando.
+  useEffect(() => {
+    function aoChamar(e: Event) {
+      const { texto, proposta, respostas } = (e as CustomEvent<CiceroChamado>)
+        .detail;
+      setAberto(true);
+      setMsgs((m) => [...m, { de: "cicero", texto, proposta, respostas }]);
+    }
+    window.addEventListener(CICERO_EVENTO_ABRIR, aoChamar);
+    return () => window.removeEventListener(CICERO_EVENTO_ABRIR, aoChamar);
+  }, []);
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -108,7 +146,10 @@ export function CiceroWidget({ nome, role }: { nome: string; role: string }) {
             <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
           </svg>
         ) : (
-          <span className="text-[22px] md:text-[24px]">👔</span>
+          <>
+            <CiceroRosto size={34} tom="escuro" className="md:hidden" />
+            <CiceroRosto size={40} tom="escuro" className="hidden md:block" />
+          </>
         )}
       </button>
 
@@ -117,8 +158,8 @@ export function CiceroWidget({ nome, role }: { nome: string; role: string }) {
         <div className="fixed z-[59] right-4 bottom-36 md:right-6 md:bottom-[168px] w-[min(92vw,400px)] h-[min(64dvh,560px)] bg-bg-elev border border-border rounded-2xl flex flex-col overflow-hidden shadow-2xl shadow-black/20 print:hidden">
           {/* header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-bg-dark shrink-0">
-            <div className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[18px]">
-              👔
+            <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20 shrink-0">
+              <CiceroRosto size={36} tom="escuro" />
             </div>
             <div className="flex-1">
               <div className="font-bold text-[14px] text-white">Cícero</div>
@@ -133,10 +174,58 @@ export function CiceroWidget({ nome, role }: { nome: string; role: string }) {
             {msgs.length === 0 && (
               <div className="flex flex-col gap-3">
                 <div className="bg-bg-card border border-border rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[13px] text-fg max-w-[88%]">
-                  Opa, {nome.split(" ")[0]}! 👔 Sou o Cícero, o atendente de peso da
+                  Opa, {nome.split(" ")[0]}! Sou o Cícero, o atendente de peso da
                   Antecipaqui. Pergunta das suas operações, vencimentos ou me pede um
-                  cálculo — eu resolvo com dados reais. Exemplos:
+                  cálculo — eu resolvo com dados reais.
                 </div>
+
+                {/* Conselho proativo — o Cícero puxa o assunto */}
+                {conselho && (
+                  <div className="rounded-2xl border border-accent/35 bg-accent-soft px-3.5 py-3">
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-accent mb-1.5">
+                      Cícero sugere
+                    </div>
+                    {conselho.destaque && (
+                      <div className="mb-1.5">
+                        <div className="text-[19px] font-bold leading-none text-fg">
+                          {conselho.destaque}
+                        </div>
+                        {conselho.legendaDestaque && (
+                          <div className="text-[10.5px] text-fg-muted mt-0.5">
+                            {conselho.legendaDestaque}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-[12.5px] leading-relaxed text-fg">
+                      {conselho.texto}
+                    </p>
+                    {conselho.cta && (
+                      <Link
+                        href={conselho.cta.href}
+                        onClick={() => setAberto(false)}
+                        className="mt-2.5 inline-flex items-center gap-1 text-[12px] font-semibold px-3 py-1.5 rounded-full bg-accent text-white hover:bg-accent-dark transition-colors"
+                      >
+                        {conselho.cta.label} →
+                      </Link>
+                    )}
+                    {conselho.perguntas.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2.5">
+                        {conselho.perguntas.map((q) => (
+                          <button
+                            key={q}
+                            onClick={() => enviar(q)}
+                            className="text-[11px] px-2.5 py-1 rounded-full border border-accent/40 bg-bg-elev text-accent hover:bg-accent/10 transition-colors text-left"
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="text-[11px] text-fg-muted">Ou pergunta direto:</div>
                 <div className="flex flex-wrap gap-1.5">
                   {sugestoes.map((s) => (
                     <button
@@ -165,6 +254,35 @@ export function CiceroWidget({ nome, role }: { nome: string; role: string }) {
                 >
                   {m.texto.replace(/\*\*/g, "")}
                 </div>
+                {m.proposta && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => {
+                        aceitarPropostaCicero(m.proposta!.tipo);
+                        setMsgs((ms) => [
+                          ...ms,
+                          { de: "user", texto: m.proposta!.aceitar },
+                          {
+                            de: "cicero",
+                            texto:
+                              "Fechado, tô finalizando o cadastro e deixando o envio pendente. Já já te falo o número da operação.",
+                          },
+                        ]);
+                      }}
+                      className="text-[12px] font-semibold px-3 py-1.5 rounded-full bg-accent text-white hover:bg-accent-dark transition-colors"
+                    >
+                      {m.proposta.aceitar}
+                    </button>
+                    {m.proposta.recusar && (
+                      <button
+                        onClick={() => setAberto(false)}
+                        className="text-[12px] px-3 py-1.5 rounded-full border border-border text-fg-muted hover:text-fg transition-colors"
+                      >
+                        {m.proposta.recusar}
+                      </button>
+                    )}
+                  </div>
+                )}
                 {m.links && m.links.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {m.links.map((l) => (

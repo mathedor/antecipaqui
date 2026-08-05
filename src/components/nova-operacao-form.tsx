@@ -1,7 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  abrirCicero,
+  CICERO_EVENTO_ACEITAR,
+} from "@/lib/cicero-eventos";
+import { finalizarOperacaoPendente } from "@/lib/actions/operacao-pendente";
 import {
   createOperacaoAction,
   type CreateOperacaoState,
@@ -110,6 +115,11 @@ export function NovaOperacaoForm({
     FormData
   >(createOperacaoAction, null);
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [salvandoPendente, setSalvandoPendente] = useState(false);
+  // Evita o Cícero pular em cima do usuário mais de uma vez por sessão de
+  // preenchimento — ele oferece, não insiste.
+  const jaOfereceu = useRef(false);
   const { alertSuccess, alertError } = useFeedback();
 
   // Tenta restaurar draft do localStorage quando não há preset
@@ -207,6 +217,74 @@ export function NovaOperacaoForm({
   const [docContratoVenda, setDocContratoVenda] = useState<UploadedBlob | null>(null);
   const [docContratoComissao, setDocContratoComissao] = useState<UploadedBlob | null>(null);
   const [docNotaFiscal, setDocNotaFiscal] = useState<UploadedBlob | null>(null);
+  /* ---------------------------------------------------------------
+     Cícero proativo: quando o cadastro está pronto mas trava porque
+     falta (ou a IA recusou) um contrato obrigatório, ele abre sozinho e
+     oferece finalizar deixando o envio pendente — em vez de o usuário
+     olhar pro botão desabilitado e desistir.
+     --------------------------------------------------------------- */
+  const faltamDocs = !docContratoVenda || !docContratoComissao;
+  const restoPreenchido =
+    !!construtoraId && parcelas.length > 0 && !!valorComissao && !!valorVenda;
+
+  useEffect(() => {
+    if (!restoPreenchido || !faltamDocs || jaOfereceu.current || pending) return;
+    const faltando = [
+      !docContratoVenda ? "Contrato de compra e venda" : null,
+      !docContratoComissao ? "Contrato de comissionamento" : null,
+    ].filter((x): x is string => !!x);
+
+    // Espera o usuário parar de mexer — não pula no meio da digitação.
+    const t = setTimeout(() => {
+      if (jaOfereceu.current) return;
+      jaOfereceu.current = true;
+      abrirCicero({
+        texto:
+          `Vi que o cadastro já está completo, só falta ${faltando.length > 1 ? "anexar os contratos" : `anexar o ${faltando[0].toLowerCase()}`}. ` +
+          `Quer que eu finalize o cadastro e deixe esse envio pendente? Você me manda o arquivo depois e a operação já entra na fila — assim não perde a venda de vista.`,
+        proposta: {
+          tipo: "finalizar_operacao_pendente",
+          aceitar: "Pode finalizar, mando depois",
+          recusar: "Vou anexar agora",
+          faltando,
+        },
+      });
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [
+    restoPreenchido,
+    faltamDocs,
+    docContratoVenda,
+    docContratoComissao,
+    pending,
+  ]);
+
+  // O widget só transporta o "sim" — quem tem o FormData é este formulário.
+  useEffect(() => {
+    async function aoAceitar() {
+      const form = formRef.current;
+      if (!form || salvandoPendente) return;
+      setSalvandoPendente(true);
+      try {
+        const r = await finalizarOperacaoPendente(new FormData(form));
+        if (!r.ok) {
+          await alertError(r.error, "Não consegui finalizar");
+          return;
+        }
+        localStorage.removeItem(draftKey);
+        await alertSuccess(
+          `Operação ${r.numero} cadastrada. Ficou pendente: ${r.faltando.join(", ")}. Abra a operação e anexe quando puder.`,
+          "Cícero finalizou pra você",
+        );
+        router.push(`/painel/operacoes/${r.operacaoId}`);
+      } finally {
+        setSalvandoPendente(false);
+      }
+    }
+    window.addEventListener(CICERO_EVENTO_ACEITAR, aoAceitar);
+    return () => window.removeEventListener(CICERO_EVENTO_ACEITAR, aoAceitar);
+  }, [salvandoPendente, alertError, alertSuccess, router, draftKey]);
+
   const [docComprovanteEntrada, setDocComprovanteEntrada] =
     useState<UploadedBlob | null>(null);
 
@@ -318,7 +396,7 @@ export function NovaOperacaoForm({
 
   return (
     <>
-      <form action={action} className="grid lg:grid-cols-12 gap-6">
+      <form ref={formRef} action={action} className="grid lg:grid-cols-12 gap-6">
         {/* Coluna principal — inputs */}
         <div className="lg:col-span-7 space-y-6">
           {state && !state.ok && (

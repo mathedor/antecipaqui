@@ -58,7 +58,11 @@ export type CiceroCtx = {
   hoje: string; // YYYY-MM-DD (America/Sao_Paulo)
   fundo: Fundo | null;
   construtoraIds: string[];
+  /** Unidade de lotação do user. */
   imobiliariaId: string | null;
+  /** Grupo econômico: matriz + filiais que o user enxerga. Quando o user é
+   *  de uma imobiliária sem filiais, tem 1 item só. */
+  imobiliariaIds: string[];
   imobCanSeeAll: boolean;
   comercialId: string | null;
 };
@@ -142,8 +146,10 @@ function opsWhere(ctx: CiceroCtx): SQL | undefined {
     eq(operacoes.corretorUserId, user.id),
     eq(operacoes.corretorAtendenteUserId, user.id),
   ];
-  if (ctx.imobiliariaId && ctx.imobCanSeeAll) {
-    conds.push(eq(operacoes.imobiliariaId, ctx.imobiliariaId));
+  if (ctx.imobCanSeeAll && ctx.imobiliariaIds.length > 0) {
+    // Grupo econômico: inclui as filiais, senão o dono da matriz não veria
+    // as operações originadas pelas outras unidades.
+    conds.push(inArray(operacoes.imobiliariaId, ctx.imobiliariaIds));
   }
   return or(...conds)!;
 }
@@ -159,6 +165,7 @@ export async function buildCiceroCtx(user: User): Promise<CiceroCtx> {
     fundo: null,
     construtoraIds: [],
     imobiliariaId: null,
+    imobiliariaIds: [],
     imobCanSeeAll: false,
     comercialId: null,
   };
@@ -188,10 +195,13 @@ export async function buildCiceroCtx(user: User): Promise<CiceroCtx> {
       .limit(1);
     ctx.comercialId = c?.id ?? null;
   } else if (user.role === "corretor" || user.role === "imobiliaria") {
+    // Owner de grupo é dono da matriz E das filiais — prioriza a matriz,
+    // senão o .limit(1) pega uma filial aleatória.
     const [own] = await db
-      .select({ id: imobiliarias.id })
+      .select({ id: imobiliarias.id, matrizId: imobiliarias.matrizId })
       .from(imobiliarias)
       .where(eq(imobiliarias.ownerUserId, user.id))
+      .orderBy(sql`(${imobiliarias.matrizId} IS NOT NULL)`)
       .limit(1);
     if (own) {
       ctx.imobiliariaId = own.id;
@@ -213,6 +223,28 @@ export async function buildCiceroCtx(user: User): Promise<CiceroCtx> {
       if (m) {
         ctx.imobiliariaId = m.imobiliariaId;
         ctx.imobCanSeeAll = ["owner", "gerente", "financeiro"].includes(m.roleInterna);
+      }
+    }
+
+    // Resolve o grupo: quem enxerga tudo e está na matriz vê matriz+filiais;
+    // quem está lotado numa filial vê só a dele.
+    if (ctx.imobiliariaId) {
+      const [u] = await db
+        .select({ matrizId: imobiliarias.matrizId })
+        .from(imobiliarias)
+        .where(eq(imobiliarias.id, ctx.imobiliariaId))
+        .limit(1);
+      const ehMatriz = u ? u.matrizId === null : false;
+      if (ctx.imobCanSeeAll && ehMatriz) {
+        const grupo = await db
+          .select({ id: imobiliarias.id })
+          .from(imobiliarias)
+          .where(
+            sql`${imobiliarias.id} = ${ctx.imobiliariaId}::uuid OR ${imobiliarias.matrizId} = ${ctx.imobiliariaId}::uuid`,
+          );
+        ctx.imobiliariaIds = grupo.map((g) => g.id);
+      } else {
+        ctx.imobiliariaIds = [ctx.imobiliariaId];
       }
     }
   }
@@ -1268,9 +1300,32 @@ function systemPrompt(ctx: CiceroCtx): string {
     `- Ações que disparam email/alteram dados: SEMPRE mostre a prévia e peça confirmação explícita antes de executar (confirmar=true só depois do usuário confirmar).`,
     `- Nunca exponha dados de outros usuários/fundos/construtoras — as ferramentas já limitam seu acesso; não tente contornar.`,
     `- Se a pergunta fugir da plataforma (papo aleatório), responda com bom humor em 1 frase e volte pro assunto Antecipaqui.`,
+    ``,
+    `POSTURA CONSULTIVA — você não é só um consultor de dados, é um consultor de negócio. Depois de responder o que foi perguntado, quando fizer sentido, feche com UMA sugestão curta que ajude o usuário a fazer mais negócio. Nunca force: se o usuário está resolvendo um problema, resolva primeiro. No máximo uma sugestão por resposta, e nunca repita a mesma na mesma conversa.`,
+    conselhoDoRole(ctx.user.role),
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/** Ângulo comercial de cada papel — definido pelo dono da plataforma. */
+function conselhoDoRole(role: User["role"]): string {
+  switch (role) {
+    case "imobiliaria":
+    case "corretor":
+      return [
+        `Ângulo com imobiliária/corretor: "mais vale um na mão do que vários a prazo". Mostre o custo de esperar — comissão parcelada é dinheiro parado que não gira, não paga equipe e não vira nova venda. Incentive antecipar e trabalhar com o próprio capital. Quando ele citar uma venda fechada ou comissão a prazo, ofereça calcular o líquido na hora.`,
+        `Se houver operação parada por documento, ofereça finalizar o cadastro deixando o documento pendente — ele envia depois e a operação já entra na fila.`,
+      ].join("\n");
+    case "construtora":
+      return `Ângulo com construtora: "proteja seu fluxo de caixa". Incentive parcelar o comissionamento no prazo que cabe na obra, com a Antecipaqui pagando o corretor à vista — a construtora preserva o caixa e o corretor não fica esperando, o que faz ele vender mais o produto dela. Quando ela reclamar de caixa ou de prazo, essa é a saída a oferecer.`;
+    case "fundo":
+      return `Ângulo com fundo: postura ativa de originação. Além de responder, incentive a gerar demanda — campanha de e-mail marketing pras imobiliárias parceiras, notificação push de "antecipe hoje", conteúdo mostrando quanto o corretor leva líquido, e agilidade na mesa (fundo que decide rápido recebe mais fila). Se ele pedir, ESCREVA o texto da campanha/e-mail pronto pra usar.`;
+    case "admin":
+      return `Ângulo com admin: crescimento da plataforma. Incentive campanhas de reativação (imobiliária parada há 30+ dias), e-mail marketing segmentado, push de oportunidade, conteúdo e ideias de novos negócios. Aponte gargalos que travam receita (operações paradas por documento, fundo lento). Se ele pedir, ESCREVA o texto da campanha pronto.`;
+    case "comercial":
+      return `Ângulo com comercial: ativação de carteira. Incentive reativar parceiro parado com uma simulação concreta (número convence mais que discurso) e lembre que cada imobiliária ativada vira comissão recorrente. Se ele pedir, escreva a mensagem de abordagem.`;
+  }
 }
 
 export async function ciceroResponde(
