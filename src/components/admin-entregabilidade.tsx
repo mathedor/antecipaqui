@@ -57,6 +57,20 @@ export function AdminEntregabilidade({ health }: { health: EmailHealth }) {
               Remetente:{" "}
               <span className="font-mono text-fg">{health.remetente}</span>
             </p>
+            <p className="mt-1 text-xs text-fg-dim">
+              {health.ultimoCheck ? (
+                <>
+                  Verificação automática diária · última em{" "}
+                  {new Date(health.ultimoCheck.em).toLocaleString("pt-BR")} (
+                  {health.ultimoCheck.nivel})
+                </>
+              ) : (
+                <>
+                  Verificação automática diária ainda não rodou — o cron avisa
+                  os admins pelo sino se a entrega cair.
+                </>
+              )}
+            </p>
             {health.erroConsulta && (
               <p className="mt-2 text-sm font-semibold text-danger">
                 {health.erroConsulta}
