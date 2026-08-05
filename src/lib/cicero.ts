@@ -560,7 +560,7 @@ const prepararCadastro: CiceroTool = {
       valor_comissao: { type: "number", description: "Valor da comissão a antecipar (R$)." },
       numero_parcelas: {
         type: "integer",
-        description: "Quantidade de parcelas (1 a 4, vencimentos em até 120 dias).",
+        description: "Quantidade de parcelas (1 a 4, mensais, sempre a vencer).",
       },
     },
     required: ["valor_comissao"],
@@ -592,7 +592,7 @@ const prepararCadastro: CiceroTool = {
         `Comissão: ${formatBRL(valorComissao)} em ${nParcelas} parcela(s) (30 em 30 dias)`,
         `Estimativa de líquido a ${(taxa * 100).toFixed(0)}% a.m.: ~${formatBRL(vp)} (deságio ~${formatBRL(valorComissao - vp)})`,
         ``,
-        `Regras: máx. 4 parcelas, vencendo em até 120 dias, e a soma das parcelas deve bater com a comissão.`,
+        `Regras: máx. 4 parcelas, todas a vencer (parcela já vencida não é antecipável), e a soma das parcelas deve bater com a comissão. Parcela que vence além de 120 dias pode ser cadastrada — fica registrada e vira oportunidade quando entrar no prazo.`,
         `Pra concluir, preencha o formulário e anexe o contrato de compra e venda + contrato de comissionamento:`,
       ]
         .filter(Boolean)

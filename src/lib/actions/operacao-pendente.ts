@@ -101,7 +101,7 @@ export async function finalizarOperacaoPendente(
   if (!Array.isArray(brutas) || brutas.length === 0)
     return { ok: false, error: "Informe ao menos uma parcela da comissão" };
   if (brutas.length > 4)
-    return { ok: false, error: "Limite máximo de 4 parcelas (120 dias)" };
+    return { ok: false, error: "Limite máximo de 4 parcelas" };
 
   // O form serializa valor como string mascarada BR ("33.333,33") — Number()
   // devolveria NaN. Mesma normalização do cadastro normal.
@@ -127,15 +127,9 @@ export async function finalizarOperacaoPendente(
         "Há parcela com vencimento já passado. Só dá pra antecipar parcela a vencer — deixe no cronograma apenas o que ainda está por vencer.",
     };
 
-  const limite120 = new Date(inicioHoje);
-  limite120.setDate(limite120.getDate() + 120);
-  if (
-    parcelas.some((p) => new Date(p.vencimento + "T00:00:00") > limite120)
-  )
-    return {
-      ok: false,
-      error: "Parcelas devem vencer dentro de 120 dias da data de hoje",
-    };
+  // Parcela longa NÃO bloqueia: fica registrada como futura. Serve de
+  // prospect — quando entrar na janela de operação, o cliente é cutucado
+  // pra antecipar. O que não entra é parcela já vencida (acima).
 
   const soma = parcelas.reduce((s, p) => s + p.valor, 0);
   if (Math.abs(soma - valorComissao) > 0.5) {

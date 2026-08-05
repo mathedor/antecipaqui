@@ -543,14 +543,11 @@ export async function completarConviteAction(
   const valorParcela = valorComissao / numero;
   const start = new Date(pending.dataPrimeiraParcela + "T00:00:00");
 
-  // Limita 4 parcelas / 120 dias
   if (numero > 4)
-    return { ok: false, error: "Limite máximo de 4 parcelas (120 dias)" };
+    return { ok: false, error: "Limite máximo de 4 parcelas" };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const limite120 = new Date(today);
-  limite120.setDate(limite120.getDate() + 120);
 
   const parcelasArr = Array.from({ length: numero }, (_, i) => {
     const v = new Date(start);
@@ -562,10 +559,13 @@ export async function completarConviteAction(
     };
   });
 
-  if (parcelasArr.some((p) => new Date(p.vencimento + "T00:00:00") > limite120))
+  // Parcela a vencer é o que importa: já vencida não é antecipável, e
+  // parcela longa fica registrada como prospect (não bloqueia).
+  if (parcelasArr.some((p) => new Date(p.vencimento + "T00:00:00") < today))
     return {
       ok: false,
-      error: "Parcelas devem vencer dentro de 120 dias da data de hoje",
+      error:
+        "Há parcela com vencimento já passado. Só dá pra antecipar parcela a vencer.",
     };
 
   // Fidelização: se a construtora está fidelizada a um fundo, vincula

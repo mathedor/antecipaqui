@@ -297,7 +297,7 @@ export async function createOperacaoAction(
   if (!Array.isArray(parcelasRaw) || parcelasRaw.length === 0)
     return { ok: false, error: "Adicione pelo menos uma parcela" };
   if (parcelasRaw.length > 4)
-    return { ok: false, error: "Limite máximo de 4 parcelas (120 dias)" };
+    return { ok: false, error: "Limite máximo de 4 parcelas" };
 
   // Normaliza valor (aceita string mascarada BR ou número) e vencimento
   const parcelas: ParcelaInput[] = parcelasRaw.map((p) => ({
@@ -324,18 +324,9 @@ export async function createOperacaoAction(
     };
   }
 
-  // Valida que nenhuma parcela passa de 120 dias do hoje
-  const limite120 = new Date(hoje);
-  limite120.setDate(limite120.getDate() + 120);
-  const passa120 = parcelas.some((p) => {
-    const v = new Date(p.vencimento + "T00:00:00");
-    return v > limite120;
-  });
-  if (passa120)
-    return {
-      ok: false,
-      error: "Parcelas devem vencer dentro de 120 dias da data de hoje",
-    };
+  // Parcela longa NÃO bloqueia: fica registrada como futura. Serve de
+  // prospect — quando entrar na janela de operação, o cliente é cutucado
+  // pra antecipar. O que não entra é parcela já vencida (acima).
 
   const totalParcelas = parcelas.reduce((s, p) => s + Number(p.valor || 0), 0);
   if (Math.abs(totalParcelas - valorComissao) > 0.5) {

@@ -240,6 +240,18 @@ export function NovaOperacaoForm({
     (p) => p.vencimento && p.vencimento < hojeISO,
   ).length;
 
+  // Parcela que vence além da janela de 120 dias NÃO impede o cadastro:
+  // fica registrada e vira prospect — quando entra na janela, a gente
+  // avisa o cliente pra antecipar.
+  const limite120ISO = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 120);
+    return d.toISOString().slice(0, 10);
+  }, []);
+  const parcelasFuturas = parcelas.filter(
+    (p) => p.vencimento && p.vencimento > limite120ISO,
+  ).length;
+
   const faltamDocs = !docContratoVenda || !docContratoComissao;
   // Não oferece finalizar quando o bloqueio não é (só) documento: com
   // parcela vencida no cronograma a própria ação recusaria.
@@ -666,7 +678,7 @@ export function NovaOperacaoForm({
                 />
               </div>
               <span className="text-xs text-fg-dim font-mono pb-3">
-                limite de 120 dias · até 4 parcelas mensais
+                até 4 parcelas mensais · só parcela a vencer
               </span>
             </div>
             {parcelas.length > 0 && (
@@ -687,7 +699,9 @@ export function NovaOperacaoForm({
                       className={`col-span-6 h-10 rounded-lg bg-bg border px-3 text-sm text-fg outline-none transition-colors ${
                         p.vencimento && p.vencimento < hojeISO
                           ? "border-danger focus:border-danger"
-                          : "border-border focus:border-accent"
+                          : p.vencimento && p.vencimento > limite120ISO
+                            ? "border-warn focus:border-warn"
+                            : "border-border focus:border-accent"
                       }`}
                     />
                     <div className="col-span-5 relative">
@@ -721,6 +735,15 @@ export function NovaOperacaoForm({
                 Só dá pra antecipar o que ainda está a vencer — tire essas do
                 cronograma e informe na comissão apenas o valor que falta
                 receber.
+              </p>
+            )}
+            {parcelasVencidas === 0 && parcelasFuturas > 0 && (
+              <p className="mt-3 rounded-xl border border-warn/40 bg-yellow-50 px-3 py-2 text-xs text-fg">
+                {parcelasFuturas === 1
+                  ? "Uma parcela vence daqui a mais de 120 dias."
+                  : `${parcelasFuturas} parcelas vencem daqui a mais de 120 dias.`}{" "}
+                Pode cadastrar normalmente — elas ficam registradas e a gente
+                te avisa quando entrarem no prazo de antecipação.
               </p>
             )}
             <input type="hidden" name="parcelas" value={JSON.stringify(parcelas)} />
