@@ -8,9 +8,10 @@
  * Versionamento: bump CACHE_VERSION quando quebrar layout/assets.
  */
 
-// v2: ícones regerados a partir do logotipo oficial — o bump limpa o cache
-// antigo, senão quem já tem o PWA instalado continua com o ícone anterior.
-const CACHE_VERSION = "v2";
+// v3: ícones reenquadrados (só o símbolo, igual ao favicon). O bump limpa o
+// cache antigo — sem ele, quem já tem o PWA instalado continua com o ícone
+// anterior, que é exatamente a reclamação que originou a mudança.
+const CACHE_VERSION = "v3";
 const STATIC_CACHE = `antecipaqui-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `antecipaqui-pages-${CACHE_VERSION}`;
 

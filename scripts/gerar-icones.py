@@ -9,9 +9,10 @@ um chevron branco genérico — que não era a marca e ficava ruim no PWA
 de desktop.
 
 Escalas por destino:
-  - ícones "any" (favicon/PWA/Apple): símbolo em ~72% do canvas
-  - ícone maskable: ~56%, respeitando a safe zone circular exigida
-    pelo Android (o launcher recorta as bordas)
+  - ícones "any" (favicon/PWA/Apple): símbolo em 86% do canvas — só o
+    símbolo, sem moldura nem respiro sobrando, igual ao favicon
+  - ícone maskable: 68%, o máximo que cabe na safe zone circular do
+    Android (o launcher recorta as bordas)
 
 Pra rodar:
     python3 scripts/gerar-icones.py
@@ -59,16 +60,6 @@ def compor(simbolo: Image.Image, lado: int, escala: float, raio_pct: float) -> I
     fundo = Image.new("RGBA", (lado, lado), FUNDO)
     tile.paste(fundo, (0, 0), forma)
 
-    # Fio de contorno: sem ele o tile branco some em dock/aba de fundo claro.
-    if raio_pct > 0 and lado >= 32:
-        contorno = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
-        ImageDraw.Draw(contorno).rounded_rectangle(
-            (0, 0, lado - 1, lado - 1),
-            radius=int(lado * raio_pct),
-            outline=(214, 219, 226, 255),
-            width=max(1, lado // 128),
-        )
-        tile.alpha_composite(contorno)
 
     largura = int(lado * escala)
     altura = max(1, round(largura * simbolo.height / simbolo.width))
@@ -83,11 +74,15 @@ def main() -> None:
 
     saidas = [
         # (caminho, lado, escala do símbolo, raio do canto em % do lado)
-        ("public/icon-192.png", 192, 0.72, 0.22),
-        ("public/icon-512.png", 512, 0.72, 0.22),
-        ("public/icon-maskable.png", 512, 0.56, 0.0),
-        ("src/app/icon.png", 512, 0.72, 0.22),
-        ("src/app/apple-icon.png", 180, 0.76, 0.0),
+        ("public/icon-192.png", 192, 0.86, 0.22),
+        ("public/icon-512.png", 512, 0.86, 0.22),
+        # Maskable é recortado num círculo de 80% do diâmetro pelo launcher
+        # Android. Medido: em 0,68 o ponto mais distante do símbolo fica a
+        # 201px de um raio seguro de 205px — cabe, com margem pequena.
+        # Não subir mais que isso sem medir de novo.
+        ("public/icon-maskable.png", 512, 0.68, 0.0),
+        ("src/app/icon.png", 512, 0.86, 0.22),
+        ("src/app/apple-icon.png", 180, 0.86, 0.0),
     ]
     for rel, lado, escala, raio in saidas:
         destino = RAIZ / rel
