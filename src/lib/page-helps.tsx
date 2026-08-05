@@ -155,6 +155,7 @@ const PAGE_HELP_KEYS = [
   "admin-relatorios",
   "admin-relatorios-logs",
   "admin-configuracoes",
+  "admin-custos",
   "admin-risco-global",
   "admin-credito",
   "admin-convites",
@@ -1314,6 +1315,27 @@ export const PAGE_HELPS: Record<PageHelpKey, PageHelpEntry> = {
     dicas: [
       "Mudança aqui IMPACTA sistema inteiro — coordene com time",
       "Spread mínimo previne aprovações de margem ruim",
+    ],
+    tourId: "admin",
+  },
+  "admin-custos": {
+    titulo: "Custos & Desenvolvimento",
+    resumo:
+      "Quanto a plataforma custou (investimento inicial), quanto custa manter todo mês e tudo que foi entregue depois do lançamento.",
+    oQueFaz: [
+      "Setup inicial: o valor contratado do projeto, já pago, fora do custo mensal",
+      "Custos mensais: um card por mês com as contas fixas (hospedagem, banco, backup, e-mail, WhatsApp, firewall, proxies, VPS e IA)",
+      "Desenvolvimento pós-entrega: uma linha por entrega, com data, descrição e valor",
+      "APIs & serviços: o que é cobrado por uso (assinatura digital, login, armazenamento, mapas)",
+    ],
+    comoUsar: [
+      "Clique no ✓ de cada conta para marcar como paga, ou use 'Marcar mês como pago'",
+      "Clique no valor para ajustar quando a fatura vier diferente do estimado",
+      "Use 'Registrar custo' para lançar uma despesa nova, avulsa ou recorrente",
+    ],
+    dicas: [
+      "O chip 'estimado' indica conta em dólar ou média — confirme na fatura real",
+      "As marcações ficam salvas neste navegador, não no banco de dados",
     ],
     tourId: "admin",
   },

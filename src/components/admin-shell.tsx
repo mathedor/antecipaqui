@@ -31,6 +31,7 @@ const navFull: AdminNavItem[] = [
       "/admin/mural",
       "/admin/interno",
       "/admin/configuracoes",
+      "/admin/custos",
       "/admin/faturas",
       "/admin/credito",
     ],
@@ -44,6 +45,7 @@ const navFull: AdminNavItem[] = [
       { href: "/admin/webhooks", label: "Webhooks" },
       { href: "/admin/backups", label: "Backups & exports" },
       { href: "/admin/configuracoes", label: "Configurações" },
+      { href: "/admin/custos", label: "Custos & Desenvolvimento" },
     ],
   },
   {
@@ -157,6 +159,11 @@ const mobileFullMenu: { section: string; items: MobileNavItem[] }[] = [
       { href: "/admin/interno/invoice", label: "Invoice", icon: "money" },
       { href: "/admin/faturas", label: "Faturas dos fundos", icon: "money" },
       { href: "/admin/configuracoes", label: "Configurações", icon: "config" },
+      {
+        href: "/admin/custos",
+        label: "Custos & Desenvolvimento",
+        icon: "money",
+      },
     ],
   },
   {
