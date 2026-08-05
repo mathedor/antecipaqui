@@ -6,6 +6,7 @@ import {
   addMembroImob,
   type AddMembroResult,
   type MembroLista,
+  moveMembroUnidade,
   removeMembro,
   updateMembroRole,
 } from "@/lib/actions/imobiliaria-membros";
@@ -34,14 +35,30 @@ const ROLE_COLOR: Record<ImobInternalRole, string> = {
   financeiro: "bg-green-600 text-white",
 };
 
+export type UnidadeOpcao = { id: string; label: string };
+
 export function EquipeImobManager({
   membros,
   canManage,
+  unidades = [],
 }: {
   membros: MembroLista[];
   canManage: boolean;
+  /** Unidades do grupo (matriz + filiais). Com 0 ou 1, o seletor some. */
+  unidades?: UnidadeOpcao[];
 }) {
   const [showForm, setShowForm] = useState(false);
+  const temGrupo = unidades.length > 1;
+
+  // Com filiais, agrupa a lista por unidade — fica claro quem cuida de quê.
+  const grupos = temGrupo
+    ? unidades
+        .map((u) => ({
+          unidade: u,
+          membros: membros.filter((m) => m.imobiliariaId === u.id),
+        }))
+        .filter((g) => g.membros.length > 0)
+    : [{ unidade: null, membros }];
 
   return (
     <>
@@ -57,11 +74,25 @@ export function EquipeImobManager({
         </div>
       )}
 
-      <ul className="space-y-2">
-        {membros.map((m) => (
-          <MembroRow key={m.userId} m={m} canManage={canManage} />
+      <div className="space-y-6">
+        {grupos.map((g) => (
+          <section key={g.unidade?.id ?? "todos"}>
+            {g.unidade && (
+              <div className="eyebrow mb-2">{g.unidade.label}</div>
+            )}
+            <ul className="space-y-2">
+              {g.membros.map((m) => (
+                <MembroRow
+                  key={`${m.userId}-${m.imobiliariaId}`}
+                  m={m}
+                  canManage={canManage}
+                  unidades={temGrupo ? unidades : []}
+                />
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
 
       {membros.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border-strong bg-bg-card p-10 text-center text-fg-muted">
@@ -70,7 +101,10 @@ export function EquipeImobManager({
       )}
 
       {showForm && (
-        <ConvidarModal onClose={() => setShowForm(false)} />
+        <ConvidarModal
+          unidades={temGrupo ? unidades : []}
+          onClose={() => setShowForm(false)}
+        />
       )}
     </>
   );
@@ -79,13 +113,16 @@ export function EquipeImobManager({
 function MembroRow({
   m,
   canManage,
+  unidades,
 }: {
   m: MembroLista;
   canManage: boolean;
+  unidades: UnidadeOpcao[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editingRole, setEditingRole] = useState(false);
+  const [editingUnidade, setEditingUnidade] = useState(false);
 
   return (
     <li className="rounded-2xl border border-border bg-bg-elev p-4 md:p-5">
@@ -106,6 +143,11 @@ function MembroRow({
             {m.email}
             {m.telefone && ` · ${m.telefone}`}
           </div>
+          {unidades.length > 1 && (
+            <div className="text-[11px] text-fg-muted mt-0.5">
+              lotação: <strong className="text-fg">{m.unidadeNome}</strong>
+            </div>
+          )}
           {m.addedAt && (
             <div className="text-[10px] text-fg-dim font-mono mt-1">
               adicionado em{" "}
@@ -147,6 +189,38 @@ function MembroRow({
                   cancelar
                 </button>
               </>
+            ) : editingUnidade ? (
+              <>
+                <select
+                  defaultValue={m.imobiliariaId}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    startTransition(async () => {
+                      await moveMembroUnidade({
+                        membroId: m.id!,
+                        imobiliariaId: v,
+                      });
+                      router.refresh();
+                      setEditingUnidade(false);
+                    });
+                  }}
+                  disabled={pending}
+                  className="h-8 px-2 rounded-lg border border-border bg-bg text-xs max-w-[200px]"
+                >
+                  {unidades.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setEditingUnidade(false)}
+                  className="text-xs px-2 py-1 rounded border border-border text-fg-muted hover:text-fg"
+                >
+                  cancelar
+                </button>
+              </>
             ) : (
               <>
                 <button
@@ -156,6 +230,15 @@ function MembroRow({
                 >
                   trocar role
                 </button>
+                {unidades.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingUnidade(true)}
+                    className="text-xs px-2.5 py-1 rounded-lg border border-border bg-bg-card hover:border-accent hover:text-accent"
+                  >
+                    trocar unidade
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -180,7 +263,13 @@ function MembroRow({
   );
 }
 
-function ConvidarModal({ onClose }: { onClose: () => void }) {
+function ConvidarModal({
+  onClose,
+  unidades,
+}: {
+  onClose: () => void;
+  unidades: UnidadeOpcao[];
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<AddMembroResult | null>(null);
@@ -190,6 +279,7 @@ function ConvidarModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [role, setRole] = useState<ImobInternalRole>("corretor");
+  const [unidadeId, setUnidadeId] = useState(unidades[0]?.id ?? "");
 
   if (result?.ok) {
     return (
@@ -289,6 +379,25 @@ function ConvidarModal({ onClose }: { onClose: () => void }) {
           </select>
           <p className="text-[11px] text-fg-muted mt-1">{ROLE_DESC[role]}</p>
         </Field>
+        {unidades.length > 1 && (
+          <Field label="Unidade (matriz ou filial) *">
+            <select
+              value={unidadeId}
+              onChange={(e) => setUnidadeId(e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-border bg-bg text-sm"
+            >
+              {unidades.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-fg-muted mt-1">
+              Quem é lotado numa filial enxerga só as operações e atendimentos
+              daquela unidade.
+            </p>
+          </Field>
+        )}
         {error && (
           <p className="text-xs text-danger font-semibold">{error}</p>
         )}
@@ -314,6 +423,7 @@ function ConvidarModal({ onClose }: { onClose: () => void }) {
                   email,
                   telefone,
                   roleInterna: role,
+                  imobiliariaId: unidadeId || undefined,
                 });
                 if (!r.ok) setError(r.error ?? "Erro");
                 else setResult(r);

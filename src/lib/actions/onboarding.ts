@@ -127,6 +127,10 @@ export async function saveCompanyDataAction(
   const creci = String(formData.get("creci") || "").trim() || null;
   const emailEmpresa = String(formData.get("email") || "").trim() || null;
 
+  // Grupo econômico: quando marcado, mandamos o user direto pra tela de
+  // cadastro das filiais depois de salvar a matriz.
+  const possuiFiliais = String(formData.get("possuiFiliais") || "") === "1";
+
   // Dados bancários (apenas pra corretor/imobiliária — usados no contrato)
   const bancoNome = String(formData.get("bancoNome") || "").trim() || null;
   const bancoCodigo = String(formData.get("bancoCodigo") || "").trim() || null;
@@ -204,6 +208,8 @@ export async function saveCompanyDataAction(
           bancoCodigo,
           bancoAgencia,
           bancoConta,
+          possuiFiliais,
+          apelido: existing[0].apelido ?? "Matriz",
           updatedAt: new Date(),
         })
         .where(eq(imobiliarias.id, existing[0].id));
@@ -226,6 +232,8 @@ export async function saveCompanyDataAction(
           bancoCodigo,
           bancoAgencia,
           bancoConta,
+          possuiFiliais,
+          apelido: "Matriz",
         })
         .returning({ id: imobiliarias.id });
       imobiliariaId = created.id;
@@ -310,5 +318,8 @@ export async function saveCompanyDataAction(
   }
 
   revalidatePath("/painel");
-  return { ok: true, redirectTo: "/painel" };
+  // Com filiais declaradas, o próximo passo natural é cadastrá-las.
+  const destino =
+    possuiFiliais && imobiliariaId ? "/painel/filiais" : "/painel";
+  return { ok: true, redirectTo: destino };
 }

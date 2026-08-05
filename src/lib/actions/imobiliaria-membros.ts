@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
@@ -11,38 +11,128 @@ import {
 import { requireActiveUser } from "@/lib/auth-user";
 import {
   capabilitiesFor,
+  temEscopoDeGrupo,
+  unidadeLabel,
   type ImobInternalRole,
   type ImobMembership,
+  type ImobUnidade,
 } from "@/lib/imobiliaria-perms";
 
 /* ============================================================
    RESOLVER membership do user atual
    ============================================================ */
 
+/** Carrega as unidades do grupo econômico a partir do ID da matriz.
+ *  Retorna a matriz primeiro, depois as filiais em ordem alfabética. */
+async function listUnidadesDoGrupo(matrizId: string): Promise<ImobUnidade[]> {
+  const rows = await db
+    .select({
+      id: imobiliarias.id,
+      razaoSocial: imobiliarias.razaoSocial,
+      nomeFantasia: imobiliarias.nomeFantasia,
+      apelido: imobiliarias.apelido,
+      cnpj: imobiliarias.cnpj,
+      cidade: imobiliarias.cidade,
+      uf: imobiliarias.uf,
+      matrizId: imobiliarias.matrizId,
+      operaEmNomeDaMatriz: imobiliarias.operaEmNomeDaMatriz,
+      isActive: imobiliarias.isActive,
+    })
+    .from(imobiliarias)
+    .where(
+      sql`${imobiliarias.id} = ${matrizId}::uuid OR ${imobiliarias.matrizId} = ${matrizId}::uuid`,
+    )
+    .orderBy(asc(imobiliarias.matrizId), asc(imobiliarias.razaoSocial));
+
+  return rows.map((r) => ({
+    id: r.id,
+    razaoSocial: r.razaoSocial,
+    nomeFantasia: r.nomeFantasia,
+    apelido: r.apelido,
+    cnpj: r.cnpj,
+    cidade: r.cidade,
+    uf: r.uf,
+    isMatriz: r.matrizId === null,
+    operaEmNomeDaMatriz: r.operaEmNomeDaMatriz,
+    isActive: r.isActive,
+  }));
+}
+
+/** Monta o bloco de grupo econômico do membership a partir da unidade de
+ *  lotação do user e do role interno dele. */
+async function buildGrupo(args: {
+  unidadeId: string;
+  unidadeMatrizId: string | null;
+  role: ImobInternalRole;
+}): Promise<
+  Pick<
+    ImobMembership,
+    "matrizId" | "isMatriz" | "possuiFiliais" | "unidades" | "scopeImobIds"
+  >
+> {
+  const isMatriz = args.unidadeMatrizId === null;
+  const matrizId = args.unidadeMatrizId ?? args.unidadeId;
+
+  // Quem é da matriz (owner/gerente/financeiro) enxerga o grupo todo.
+  // Todo o resto enxerga só a própria unidade de lotação.
+  const escopoGrupo = temEscopoDeGrupo(args.role, isMatriz);
+
+  const todas = escopoGrupo
+    ? await listUnidadesDoGrupo(matrizId)
+    : await listUnidadesDoGrupo(matrizId).then((us) =>
+        us.filter((u) => u.id === args.unidadeId),
+      );
+
+  const [matrizRow] = await db
+    .select({ possuiFiliais: imobiliarias.possuiFiliais })
+    .from(imobiliarias)
+    .where(eq(imobiliarias.id, matrizId))
+    .limit(1);
+
+  return {
+    matrizId,
+    isMatriz,
+    possuiFiliais: matrizRow?.possuiFiliais ?? false,
+    unidades: todas,
+    scopeImobIds: todas.map((u) => u.id),
+  };
+}
+
 /** Resolve qual imobiliária + role interno o user logado tem.
  *  Procura primeiro como owner; se não, como membro ativo.
- *  Retorna null se user não está vinculado a nenhuma imob. */
+ *  Retorna null se user não está vinculado a nenhuma imob.
+ *
+ *  Num grupo econômico o owner é dono da matriz E das filiais (o cadastro
+ *  é um só) — por isso a busca de owner prioriza a MATRIZ (matriz_id NULL). */
 export async function getCurrentImobMembership(): Promise<
   ImobMembership | null
 > {
   const user = await requireActiveUser();
   if (user.role !== "imobiliaria" && user.role !== "corretor") return null;
 
-  // 1) Owner check
+  // 1) Owner check — matriz primeiro (nulls first em asc no Postgres seria
+  //    last, então ordenamos por um flag explícito).
   const [owned] = await db
     .select({
       id: imobiliarias.id,
       razaoSocial: imobiliarias.razaoSocial,
+      matrizId: imobiliarias.matrizId,
     })
     .from(imobiliarias)
     .where(eq(imobiliarias.ownerUserId, user.id))
+    .orderBy(sql`(${imobiliarias.matrizId} IS NOT NULL)`)
     .limit(1);
   if (owned) {
     return {
       imobiliariaId: owned.id,
       imobiliariaRazaoSocial: owned.razaoSocial,
       roleInterna: "owner",
-      ...capabilitiesFor("owner"),
+      ...(await buildGrupo({
+        unidadeId: owned.id,
+        unidadeMatrizId: owned.matrizId,
+        role: "owner",
+      })),
+      ...capabilitiesFor("owner", { isMatriz: owned.matrizId === null }),
     };
   }
 
@@ -52,6 +142,7 @@ export async function getCurrentImobMembership(): Promise<
       imobiliariaId: imobiliariaMembros.imobiliariaId,
       roleInterna: imobiliariaMembros.roleInterna,
       razaoSocial: imobiliarias.razaoSocial,
+      matrizId: imobiliarias.matrizId,
     })
     .from(imobiliariaMembros)
     .innerJoin(
@@ -71,7 +162,12 @@ export async function getCurrentImobMembership(): Promise<
       imobiliariaId: mem.imobiliariaId,
       imobiliariaRazaoSocial: mem.razaoSocial,
       roleInterna: role,
-      ...capabilitiesFor(role),
+      ...(await buildGrupo({
+        unidadeId: mem.imobiliariaId,
+        unidadeMatrizId: mem.matrizId,
+        role,
+      })),
+      ...capabilitiesFor(role, { isMatriz: mem.matrizId === null }),
     };
   }
 
@@ -91,19 +187,27 @@ export type MembroLista = {
   roleInterna: ImobInternalRole;
   isOwner: boolean;
   addedAt: string | null;
+  /** Unidade de lotação — matriz ou filial do grupo. */
+  imobiliariaId: string;
+  unidadeNome: string;
 };
 
 export async function listMembrosDaImob(): Promise<MembroLista[]> {
   const me = await getCurrentImobMembership();
   if (!me) throw new Error("Sem vínculo com imobiliária");
 
-  // Owner via imobiliarias.ownerUserId
+  const nomeDaUnidade = (id: string) => {
+    const u = me.unidades.find((x) => x.id === id);
+    return u ? unidadeLabel(u) : "—";
+  };
+
+  // Owner via imobiliarias.ownerUserId (sempre lotado na matriz do grupo)
   const [imob] = await db
     .select({
       ownerUserId: imobiliarias.ownerUserId,
     })
     .from(imobiliarias)
-    .where(eq(imobiliarias.id, me.imobiliariaId))
+    .where(eq(imobiliarias.id, me.matrizId))
     .limit(1);
 
   const result: MembroLista[] = [];
@@ -129,11 +233,13 @@ export async function listMembrosDaImob(): Promise<MembroLista[]> {
         roleInterna: "owner",
         isOwner: true,
         addedAt: null,
+        imobiliariaId: me.matrizId,
+        unidadeNome: nomeDaUnidade(me.matrizId),
       });
     }
   }
 
-  // Membros ativos
+  // Membros ativos de TODAS as unidades no escopo do user
   const memb = await db
     .select({
       id: imobiliariaMembros.id,
@@ -143,12 +249,13 @@ export async function listMembrosDaImob(): Promise<MembroLista[]> {
       telefone: users.telefone,
       roleInterna: imobiliariaMembros.roleInterna,
       addedAt: imobiliariaMembros.createdAt,
+      imobiliariaId: imobiliariaMembros.imobiliariaId,
     })
     .from(imobiliariaMembros)
     .leftJoin(users, eq(users.id, imobiliariaMembros.userId))
     .where(
       and(
-        eq(imobiliariaMembros.imobiliariaId, me.imobiliariaId),
+        inArray(imobiliariaMembros.imobiliariaId, me.scopeImobIds),
         isNull(imobiliariaMembros.removedAt),
       ),
     )
@@ -164,6 +271,8 @@ export async function listMembrosDaImob(): Promise<MembroLista[]> {
       roleInterna: m.roleInterna as ImobInternalRole,
       isOwner: false,
       addedAt: m.addedAt.toISOString(),
+      imobiliariaId: m.imobiliariaId,
+      unidadeNome: nomeDaUnidade(m.imobiliariaId),
     });
   }
 
@@ -221,6 +330,8 @@ export async function addMembroImob(input: {
   nome: string;
   telefone?: string;
   roleInterna: ImobInternalRole;
+  /** Unidade de lotação (matriz ou filial). Default = unidade do convidante. */
+  imobiliariaId?: string;
 }): Promise<AddMembroResult> {
   const me = await getCurrentImobMembership();
   if (!me) return { ok: false, error: "Sem vínculo com imobiliária" };
@@ -228,6 +339,12 @@ export async function addMembroImob(input: {
     return { ok: false, error: "Apenas o owner pode gerenciar membros" };
   if (input.roleInterna === "owner")
     return { ok: false, error: "Role owner é exclusivo do dono da imob" };
+
+  // Unidade de lotação — precisa estar no escopo de quem convida.
+  const unidadeId = input.imobiliariaId?.trim() || me.imobiliariaId;
+  if (!me.scopeImobIds.includes(unidadeId))
+    return { ok: false, error: "Unidade fora do seu grupo" };
+  const unidade = me.unidades.find((u) => u.id === unidadeId);
 
   const email = input.email.trim().toLowerCase();
   if (!email || !email.includes("@"))
@@ -318,7 +435,7 @@ export async function addMembroImob(input: {
     .from(imobiliariaMembros)
     .where(
       and(
-        eq(imobiliariaMembros.imobiliariaId, me.imobiliariaId),
+        eq(imobiliariaMembros.imobiliariaId, unidadeId),
         eq(imobiliariaMembros.userId, userId),
       ),
     )
@@ -341,7 +458,7 @@ export async function addMembroImob(input: {
     const [created] = await db
       .insert(imobiliariaMembros)
       .values({
-        imobiliariaId: me.imobiliariaId,
+        imobiliariaId: unidadeId,
         userId,
         email,
         nome: input.nome.trim(),
@@ -359,9 +476,13 @@ export async function addMembroImob(input: {
   const loginUrl = `${siteUrl}/entrar`;
   const tel = (input.telefone || "").replace(/\D/g, "");
   const telWa = tel.startsWith("55") ? tel : `55${tel}`;
+  const nomeUnidade =
+    unidade?.nomeFantasia?.trim() ||
+    unidade?.razaoSocial ||
+    me.imobiliariaRazaoSocial;
   const msg = reaproveitouUser
-    ? `Oi ${input.nome.split(" ")[0]}! Adicionei você na equipe da ${me.imobiliariaRazaoSocial} no Antecipaqui. Entra em ${loginUrl} com seu email habitual e já vai ter acesso aos atendimentos.`
-    : `Oi ${input.nome.split(" ")[0]}! Te adicionei na equipe da ${me.imobiliariaRazaoSocial} no Antecipaqui. Acesse ${loginUrl} com:\n\n📧 ${email}\n🔑 ${senhaTemp}\n\nNo primeiro login, troque a senha pelo perfil. Bem-vindo(a) ao time!`;
+    ? `Oi ${input.nome.split(" ")[0]}! Adicionei você na equipe da ${nomeUnidade} no Antecipaqui. Entra em ${loginUrl} com seu email habitual e já vai ter acesso aos atendimentos.`
+    : `Oi ${input.nome.split(" ")[0]}! Te adicionei na equipe da ${nomeUnidade} no Antecipaqui. Acesse ${loginUrl} com:\n\n📧 ${email}\n🔑 ${senhaTemp}\n\nNo primeiro login, troque a senha pelo perfil. Bem-vindo(a) ao time!`;
   const whatsappLink = tel
     ? `https://wa.me/${telWa}?text=${encodeURIComponent(msg)}`
     : undefined;
@@ -396,7 +517,31 @@ export async function updateMembroRole(input: {
     .where(
       and(
         eq(imobiliariaMembros.id, input.membroId),
-        eq(imobiliariaMembros.imobiliariaId, me.imobiliariaId),
+        inArray(imobiliariaMembros.imobiliariaId, me.scopeImobIds),
+      ),
+    );
+  revalidatePath("/painel/equipe");
+  return { ok: true };
+}
+
+/** Transfere um membro de unidade (ex: corretor da matriz vai cuidar de uma
+ *  filial). Só quem enxerga as duas pontas pode mover. */
+export async function moveMembroUnidade(input: {
+  membroId: string;
+  imobiliariaId: string;
+}) {
+  const me = await getCurrentImobMembership();
+  if (!me || !me.canManageMembros) throw new Error("Sem permissão");
+  if (!me.scopeImobIds.includes(input.imobiliariaId))
+    throw new Error("Unidade fora do seu grupo");
+
+  await db
+    .update(imobiliariaMembros)
+    .set({ imobiliariaId: input.imobiliariaId })
+    .where(
+      and(
+        eq(imobiliariaMembros.id, input.membroId),
+        inArray(imobiliariaMembros.imobiliariaId, me.scopeImobIds),
       ),
     );
   revalidatePath("/painel/equipe");
@@ -413,7 +558,7 @@ export async function removeMembro(membroId: string) {
     .where(
       and(
         eq(imobiliariaMembros.id, membroId),
-        eq(imobiliariaMembros.imobiliariaId, me.imobiliariaId),
+        inArray(imobiliariaMembros.imobiliariaId, me.scopeImobIds),
       ),
     );
   revalidatePath("/painel/equipe");
@@ -431,13 +576,18 @@ export async function listCorretoresDoTime(): Promise<
   const me = await getCurrentImobMembership();
   if (!me) return [];
 
+  // Escopo do grupo: quem é da matriz vê corretores de todas as unidades.
+  const ids = sql.join(
+    me.scopeImobIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
   const rows = await db.execute(sql`
-    SELECT u.id, COALESCE(u.nome, u.email) AS nome, u.email
+    SELECT DISTINCT u.id, COALESCE(u.nome, u.email) AS nome, u.email
     FROM users u
-    WHERE u.id = (SELECT owner_user_id FROM imobiliarias WHERE id = ${me.imobiliariaId}::uuid)
+    WHERE u.id = (SELECT owner_user_id FROM imobiliarias WHERE id = ${me.matrizId}::uuid)
       OR u.id IN (
         SELECT user_id FROM imobiliaria_membros
-        WHERE imobiliaria_id = ${me.imobiliariaId}::uuid
+        WHERE imobiliaria_id IN (${ids})
           AND removed_at IS NULL
       )
     ORDER BY nome ASC

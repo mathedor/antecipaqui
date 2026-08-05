@@ -44,6 +44,14 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
         { href: "/painel/convites", label: "Convites" },
       ],
     },
+    {
+      label: "Gestão",
+      submenu: [
+        { href: "/painel/equipe", label: "Equipe" },
+        { href: "/painel/filiais", label: "Matriz e filiais" },
+        { href: "/painel/perfil", label: "Meus dados" },
+      ],
+    },
     { href: "/painel/suporte", label: "Chats" },
   ],
   imobiliaria: [
@@ -62,6 +70,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
       label: "Gestão",
       submenu: [
         { href: "/painel/equipe", label: "Equipe" },
+        { href: "/painel/filiais", label: "Matriz e filiais" },
         { href: "/painel/perfil", label: "Meus dados" },
       ],
     },
@@ -448,6 +457,8 @@ export async function PainelShell({
   // Solo = sem nenhum vinculo. Owner = canManageMembros.
   let isImobMembro = false;
   let imobNome = "";
+  /** Links removidos do nav por permissão (complementa `allowedHrefs`). */
+  const hiddenHrefs = new Set<string>();
   if (role === "comercial") {
     const me = await getCurrentDbUser();
     const tcs =
@@ -473,6 +484,9 @@ export async function PainelShell({
     isImobOwner = mem?.canManageMembros ?? false;
     isImobMembro = !!mem && mem.roleInterna !== "owner";
     imobNome = mem?.imobiliariaRazaoSocial ?? "";
+    // "Matriz e filiais" é alteração cadastral do grupo — só o responsável
+    // pela matriz vê o item no menu.
+    if (!mem?.canManageFiliais) hiddenHrefs.add("/painel/filiais");
     if (isImobMembro) {
       corretorEquipeTourAutoOpen = !tcs["corretor-equipe"];
     } else {
@@ -480,19 +494,20 @@ export async function PainelShell({
     }
   }
   const navAll = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.corretor;
-  const nav = allowedHrefs
-    ? navAll.flatMap<NavItem>((item) => {
-        if (item.submenu) {
-          const filtered = item.submenu.filter((s) =>
-            allowedHrefs.has(s.href),
-          );
-          return filtered.length > 0
-            ? [{ label: item.label, submenu: filtered }]
-            : [];
-        }
-        return allowedHrefs.has(item.href) ? [item] : [];
-      })
-    : navAll;
+  const visivel = (href: string) =>
+    !hiddenHrefs.has(href) && (!allowedHrefs || allowedHrefs.has(href));
+  const nav =
+    allowedHrefs || hiddenHrefs.size > 0
+      ? navAll.flatMap<NavItem>((item) => {
+          if (item.submenu) {
+            const filtered = item.submenu.filter((s) => visivel(s.href));
+            return filtered.length > 0
+              ? [{ label: item.label, submenu: filtered }]
+              : [];
+          }
+          return visivel(item.href) ? [item] : [];
+        })
+      : navAll;
   const homeHref = role === "admin" ? "/admin" : "/painel";
   const userLabel = userName ?? ROLE_LABEL[role];
   const roleLabel = ROLE_LABEL[role];

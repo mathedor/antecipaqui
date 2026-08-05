@@ -21,8 +21,19 @@ type Construtora = {
   cnpj: string;
 };
 
+type Unidade = {
+  id: string;
+  label: string;
+  cnpj: string;
+  isMatriz: boolean;
+  operaEmNomeDaMatriz: boolean;
+};
+
 type Props = {
   construtoras: Construtora[];
+  /** Unidades do grupo (matriz + filiais) que o user pode usar como origem.
+   *  Com 0 ou 1 item o seletor nem aparece — o fluxo fica igual ao de antes. */
+  unidades?: Unidade[];
   /** Taxa mensal sugerida vinda do admin (default 0.06) */
   taxaMensalSugerida?: number;
   /** Valores pré-preenchidos quando "duplicando" uma op existente. */
@@ -83,10 +94,17 @@ function monthsBetween(from: Date, to: Date) {
 
 export function NovaOperacaoForm({
   construtoras,
+  unidades = [],
   taxaMensalSugerida = 0.06,
   preset = null,
 }: Props) {
   const TAXA_MENSAL = taxaMensalSugerida;
+  // Só faz sentido escolher unidade quando o grupo tem filiais cadastradas.
+  const temGrupo = unidades.length > 1;
+  const [unidadeId, setUnidadeId] = useState(
+    unidades.find((u) => u.isMatriz)?.id ?? unidades[0]?.id ?? "",
+  );
+  const unidadeSel = unidades.find((u) => u.id === unidadeId) ?? null;
   const [state, action, pending] = useActionState<
     CreateOperacaoState,
     FormData
@@ -307,6 +325,56 @@ export function NovaOperacaoForm({
             <div className="rounded-xl border border-danger/40 bg-red-50 text-danger p-4 text-sm">
               {state.error}
             </div>
+          )}
+
+          {/* Unidade do grupo (matriz / filial) — só quando há filiais */}
+          {temGrupo && (
+            <Section
+              title="00. Unidade"
+              subtitle="De qual empresa do grupo é esta operação"
+            >
+              <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
+                Matriz ou filial
+              </label>
+              <select
+                name="imobiliariaId"
+                value={unidadeId}
+                onChange={(e) => setUnidadeId(e.target.value)}
+                required
+                className="w-full h-12 rounded-xl bg-bg border border-border-strong px-4 text-fg focus:border-accent outline-none transition-colors appearance-none"
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5L6 6.5L11 1.5' stroke='%235a6571' stroke-width='1.5' fill='none'/></svg>\")",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 16px center",
+                }}
+              >
+                {unidades.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.label}
+                  </option>
+                ))}
+              </select>
+              {unidadeSel && (
+                <p className="mt-2 text-xs text-fg-muted">
+                  {unidadeSel.operaEmNomeDaMatriz ? (
+                    <>
+                      Esta filial opera <strong>em nome da matriz</strong> — o
+                      contrato de cessão sai no CNPJ e na conta da matriz.
+                    </>
+                  ) : (
+                    <>
+                      O contrato de cessão sai no CNPJ{" "}
+                      <strong className="font-mono">{unidadeSel.cnpj}</strong> e
+                      na conta bancária desta unidade.
+                    </>
+                  )}
+                </p>
+              )}
+            </Section>
+          )}
+          {!temGrupo && unidades[0] && (
+            <input type="hidden" name="imobiliariaId" value={unidades[0].id} />
           )}
 
           {/* Construtora */}

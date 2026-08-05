@@ -151,6 +151,27 @@ export const imobiliarias = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     /** Comercial responsável pelo cadastro/relacionamento. */
     comercialId: uuid("comercial_id"),
+    /** GRUPO ECONÔMICO — quando preenchido, esta row é uma FILIAL e aponta
+     *  pra matriz do grupo. NULL = matriz (ou imobiliária independente).
+     *  Só um nível: filial nunca tem filial (validado em runtime).
+     *  FK declarada no migration (auto-referência não pode ser inline aqui). */
+    matrizId: uuid("matriz_id"),
+    /** Marcado pela matriz no cadastro/alteração cadastral. Habilita a
+     *  aba de filiais e o seletor de unidade na nova operação. */
+    possuiFiliais: boolean("possui_filiais").notNull().default(false),
+    /** Nome interno da unidade — "Matriz", "Filial Balneário Camboriú".
+     *  Só pra leitura humana nos seletores/relatórios. */
+    apelido: text("apelido"),
+    /** Quando TRUE, a filial opera sob o CNPJ da matriz: o contrato de
+     *  cessão sai com razão social, CNPJ e dados bancários da MATRIZ, e a
+     *  filial fica registrada apenas como unidade originadora.
+     *  FALSE (default) = filial opera com o CNPJ e a conta dela. */
+    operaEmNomeDaMatriz: boolean("opera_em_nome_da_matriz")
+      .notNull()
+      .default(false),
+    /** Unidade desativada não aparece no seletor de nova operação, mas o
+     *  histórico de operações dela continua visível. */
+    isActive: boolean("is_active").notNull().default(true),
     razaoSocial: text("razao_social").notNull(),
     nomeFantasia: text("nome_fantasia"),
     cnpj: text("cnpj").notNull(),
@@ -172,7 +193,11 @@ export const imobiliarias = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("imobiliarias_cnpj_idx").on(t.cnpj)],
+  (t) => [
+    uniqueIndex("imobiliarias_cnpj_idx").on(t.cnpj),
+    index("imobiliarias_matriz_idx").on(t.matrizId),
+    index("imobiliarias_owner_idx").on(t.ownerUserId),
+  ],
 );
 
 /* =========================================

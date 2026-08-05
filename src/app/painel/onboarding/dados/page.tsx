@@ -127,6 +127,7 @@ export default async function OnboardingDadosPage() {
               role={user.role as "corretor" | "imobiliaria" | "construtora"}
               initialValues={initialValues}
               initialDocs={initialDocs}
+              initialPossuiFiliais={imobExist?.possuiFiliais ?? false}
             />
           </div>
         </div>

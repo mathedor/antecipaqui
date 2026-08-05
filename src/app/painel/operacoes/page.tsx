@@ -155,16 +155,23 @@ export default async function OperacoesPage({ searchParams }: Search) {
     if (membership) {
       const rows = await getOperacoesByImobiliariaScoped({
         imobiliariaId: membership.imobiliariaId,
+        imobiliariaIds: membership.scopeImobIds,
         userId: user.id,
         canSeeAll: membership.canSeeAllOps,
       });
+      // Com grupo econômico, a lista mistura matriz + filiais — marca de
+      // qual unidade veio cada operação.
+      const mostraUnidade = membership.unidades.length > 1;
       allOps = rows.map((r) => ({
         id: r.id,
         numero: r.numero,
         status: r.status,
         valorComissao: r.valorComissao,
         valorPresente: r.valorPresente,
-        counterpartyLabel: r.construtoraNome,
+        counterpartyLabel:
+          mostraUnidade && r.unidadeNome
+            ? `${r.construtoraNome} · ${r.unidadeNome}`
+            : r.construtoraNome,
         createdAt: r.createdAt,
       }));
     } else {

@@ -98,6 +98,30 @@ export function AdminCadastrarImobForm() {
       </Card>
 
       <Card
+        title="Estrutura da empresa"
+        subtitle="Grupos com mais de uma unidade ficam sob um cadastro só — a matriz administra e cada filial entra com o CNPJ dela."
+      >
+        <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-border bg-bg-card p-4 hover:border-border-strong transition-colors">
+          <input
+            type="checkbox"
+            name="possuiFiliais"
+            value="1"
+            className="mt-0.5 size-4 accent-[var(--accent)]"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-fg">
+              Esta empresa possui filiais
+            </span>
+            <span className="block text-xs text-fg-muted mt-0.5">
+              Habilita a aba &quot;Matriz e filiais&quot; no painel do
+              responsável, onde ele cadastra cada unidade. Na nova operação
+              aparece o seletor de matriz/filial.
+            </span>
+          </span>
+        </label>
+      </Card>
+
+      <Card
         title="Dados bancários (opcional)"
         subtitle="Usados na cessão de comissão (cláusula 3ª do contrato). Podem ser preenchidos depois."
       >

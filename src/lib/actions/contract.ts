@@ -9,7 +9,6 @@ import { db } from "@/db";
 import {
   contratos,
   fundos,
-  imobiliarias,
   construtoras,
   operacoes,
   parcelasComissao,
@@ -17,6 +16,7 @@ import {
   type ContratoSigner,
 } from "@/db/schema";
 import { ContractDocument, type ContractData } from "@/lib/contract-pdf";
+import { resolveImobCedente } from "@/lib/imobiliaria-cedente";
 import {
   createZapsignDocument,
   getAntecipaquiSigner,
@@ -73,11 +73,7 @@ export async function generateContractForOperacao(
   if (!cedenteUser) throw new Error("Cedente não encontrado");
 
   // Imobiliária do cedente (pra dados completos + bancários)
-  const [imob] = await db
-    .select()
-    .from(imobiliarias)
-    .where(eq(imobiliarias.ownerUserId, op.corretorUserId))
-    .limit(1);
+  const { cedente: imob } = await resolveImobCedente(op);
 
   const [construtora] = await db
     .select()
@@ -214,11 +210,7 @@ export async function sendContratoToZapsign(
     .limit(1);
   if (!cedenteUser) throw new Error("Cedente não encontrado");
 
-  const [imob] = await db
-    .select()
-    .from(imobiliarias)
-    .where(eq(imobiliarias.ownerUserId, op.corretorUserId))
-    .limit(1);
+  const { cedente: imob } = await resolveImobCedente(op);
 
   const [construtora] = await db
     .select()
@@ -391,11 +383,7 @@ export async function dispatchOperacaoToFundo(
     .from(users)
     .where(eq(users.id, op.corretorUserId))
     .limit(1);
-  const [imob] = await db
-    .select()
-    .from(imobiliarias)
-    .where(eq(imobiliarias.ownerUserId, op.corretorUserId))
-    .limit(1);
+  const { cedente: imob } = await resolveImobCedente(op);
   const [construtora] = await db
     .select()
     .from(construtoras)

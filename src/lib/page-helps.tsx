@@ -93,6 +93,7 @@ const PAGE_HELP_KEYS = [
   "painel-relatorio-corretor",
   "painel-convites",
   "painel-equipe-imob",
+  "painel-filiais",
   "painel-perfil",
   "painel-suporte",
   // construtora
@@ -340,6 +341,30 @@ export const PAGE_HELPS: Record<PageHelpKey, PageHelpEntry> = {
       "Corretor (membro) só vê os atendimentos próprios e ops onde é atendente",
       "Gerente vê tudo mas não pode editar config nem gerenciar equipe",
       "Financeiro foca em extrato + comissões, sem CRM",
+    ],
+    tourId: "corretor",
+  },
+  "painel-filiais": {
+    titulo: "Matriz e filiais",
+    resumo:
+      "Quando a sua empresa tem mais de uma unidade, tudo fica sob um cadastro só. Aqui você diz que possui filiais, cadastra cada uma com o CNPJ dela e escolhe se ela opera sozinha ou em nome da matriz.",
+    oQueFaz: [
+      "Liga/desliga a flag 'esta empresa possui filiais'",
+      "Cadastra cada filial com CNPJ, endereço, CRECI e conta bancária próprios",
+      "Define, por filial, se o contrato de cessão sai no CNPJ dela ou no da matriz",
+      "Desativa filial sem apagar histórico — ela só some do seletor de nova operação",
+    ],
+    comoUsar: [
+      "Marque 'Sim' em 'esta empresa possui filiais'",
+      "Clique 'Cadastrar filial' e preencha os dados daquele CNPJ",
+      "Escolha o modo: CNPJ próprio (precisa de conta bancária) ou em nome da matriz",
+      "Em Equipe, convide um responsável e escolha a unidade dele",
+      "Ao criar uma operação, selecione de qual unidade ela é",
+    ],
+    dicas: [
+      "Só o responsável pela matriz cadastra e edita filiais — é alteração cadastral do grupo",
+      "Filial com CNPJ próprio recebe na conta dela; em nome da matriz, o dinheiro cai na conta da matriz",
+      "Quem é da matriz (owner, gerente, financeiro) enxerga o consolidado do grupo; quem é lotado numa filial vê só a dele",
     ],
     tourId: "corretor",
   },

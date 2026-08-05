@@ -6,12 +6,12 @@ import {
   construtoras,
   custosOperacao,
   fundos,
-  imobiliarias,
   operacaoCompradores,
   operacoes,
   parcelasComissao,
   users,
 } from "@/db/schema";
+import { resolveImobCedente } from "@/lib/imobiliaria-cedente";
 import { getCurrentDbUser } from "@/lib/auth-user";
 
 export type BorderoParcela = {
@@ -115,15 +115,9 @@ export async function getBorderoData(
     .where(eq(users.id, op.corretorUserId))
     .limit(1);
 
-  let imobiliaria: typeof imobiliarias.$inferSelect | null = null;
-  if (op.imobiliariaId) {
-    const [im] = await db
-      .select()
-      .from(imobiliarias)
-      .where(eq(imobiliarias.id, op.imobiliariaId))
-      .limit(1);
-    imobiliaria = im ?? null;
-  }
+  // Cedente do borderô = mesma regra do contrato: a unidade que originou a
+  // operação, ou a matriz quando a filial opera em nome dela.
+  const { cedente: imobiliaria } = await resolveImobCedente(op);
 
   const [constru] = await db
     .select()

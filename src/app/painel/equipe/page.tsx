@@ -13,6 +13,7 @@ import {
   getCurrentImobMembership,
   listMembrosDaImob,
 } from "@/lib/actions/imobiliaria-membros";
+import { unidadeLabel } from "@/lib/imobiliaria-perms";
 
 export const metadata = { title: "Equipe" };
 export const dynamic = "force-dynamic";
@@ -48,6 +49,10 @@ export default async function EquipePage() {
         <EquipeImobManager
           membros={membros}
           canManage={me.canManageMembros}
+          unidades={me.unidades.map((u) => ({
+            id: u.id,
+            label: unidadeLabel(u),
+          }))}
         />
       </PainelShell>
     );

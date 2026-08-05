@@ -191,6 +191,41 @@ Equipe Antecipaqui`,
 
 type ParcelaInput = { valor: number; vencimento: string };
 
+/**
+ * Resolve de qual unidade (matriz ou filial) sai a operação.
+ *
+ * - `unidadeId` vazio → vínculo padrão do user. Owner de grupo cai na
+ *   matriz; membro de filial cai na filial dele.
+ * - `unidadeId` preenchido → só aceita se estiver no escopo do user.
+ *
+ * Retorna "fora_do_grupo" quando o ID informado não pertence ao escopo —
+ * o caller transforma em erro de validação.
+ */
+async function resolveImobiliariaDaOperacao(
+  userId: string,
+  unidadeId: string,
+): Promise<{ id: string } | null | "fora_do_grupo"> {
+  const { getCurrentImobMembership } = await import(
+    "@/lib/actions/imobiliaria-membros"
+  );
+  const me = await getCurrentImobMembership();
+
+  if (!me) {
+    // Sem vínculo resolvido (ex: role fora de corretor/imobiliária) —
+    // mantém o comportamento legado de buscar a imob que o user é dono.
+    const [own] = await db
+      .select({ id: imobiliarias.id })
+      .from(imobiliarias)
+      .where(eq(imobiliarias.ownerUserId, userId))
+      .limit(1);
+    return own ?? null;
+  }
+
+  if (!unidadeId) return { id: me.imobiliariaId };
+  if (!me.scopeImobIds.includes(unidadeId)) return "fora_do_grupo";
+  return { id: unidadeId };
+}
+
 export type CreateOperacaoState =
   | { ok: false; error: string }
   | { ok: true; operacaoId: string; numero: string }
@@ -312,14 +347,15 @@ export async function createOperacaoAction(
   if (!docContratoComissaoUrl)
     return { ok: false, error: "Anexe o contrato de comissionamento" };
 
-  // Imobiliária do user (se for corretor / imobiliária)
-  const imob = (
-    await db
-      .select()
-      .from(imobiliarias)
-      .where(eq(imobiliarias.ownerUserId, user.id))
-      .limit(1)
-  )[0];
+  // Unidade originadora da operação (matriz ou filial do grupo).
+  // O form manda `imobiliariaId` quando o grupo tem mais de uma unidade;
+  // sem isso, cai no vínculo padrão do user.
+  const imob = await resolveImobiliariaDaOperacao(
+    user.id,
+    String(formData.get("imobiliariaId") || "").trim(),
+  );
+  if (imob === "fora_do_grupo")
+    return { ok: false, error: "Unidade selecionada não pertence ao seu grupo" };
 
   // Fidelização: se a construtora está fidelizada a um fundo, vincula
   // automaticamente esse fundo + adota a taxa-base dele em vez da global.
@@ -584,11 +620,23 @@ export async function getOperacoesByCorretor(corretorUserId: string) {
  *  - Caso contrário (corretor membro): retorna só onde user é corretor ou
  *    é corretor_atendente. */
 export async function getOperacoesByImobiliariaScoped(args: {
+  /** Unidade de lotação — mantido por compatibilidade. */
   imobiliariaId: string;
+  /** Unidades do grupo que o user enxerga. Quando ausente, usa só
+   *  `imobiliariaId` (comportamento anterior ao grupo econômico). */
+  imobiliariaIds?: string[];
   userId: string;
   canSeeAll: boolean;
 }) {
-  const baseWhere = eq(operacoes.imobiliariaId, args.imobiliariaId);
+  const ids =
+    args.imobiliariaIds && args.imobiliariaIds.length > 0
+      ? args.imobiliariaIds
+      : [args.imobiliariaId];
+
+  const baseWhere =
+    ids.length === 1
+      ? eq(operacoes.imobiliariaId, ids[0])
+      : inArray(operacoes.imobiliariaId, ids);
   const where = args.canSeeAll
     ? baseWhere
     : and(
@@ -610,6 +658,11 @@ export async function getOperacoesByImobiliariaScoped(args: {
       construtoraNome: construtoras.razaoSocial,
       empreendimentoId: operacoes.empreendimentoId,
       corretorAtendenteUserId: operacoes.corretorAtendenteUserId,
+      imobiliariaId: operacoes.imobiliariaId,
+      unidadeNome: sql<string | null>`(
+        SELECT COALESCE(i.apelido, i.nome_fantasia, i.razao_social)
+        FROM imobiliarias i WHERE i.id = ${operacoes.imobiliariaId}
+      )`,
     })
     .from(operacoes)
     .leftJoin(construtoras, eq(operacoes.construtoraId, construtoras.id))

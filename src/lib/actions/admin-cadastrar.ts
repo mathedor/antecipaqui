@@ -72,6 +72,9 @@ export async function cadastrarImobiliariaAction(
     String(formData.get("bancoAgencia") || "").trim() || null;
   const bancoConta = String(formData.get("bancoConta") || "").trim() || null;
 
+  // Grupo econômico — matriz que tem filiais sob o mesmo cadastro.
+  const possuiFiliais = String(formData.get("possuiFiliais") || "") === "1";
+
   // Validações
   if (!razaoSocial) return { ok: false, error: "Razão social é obrigatória" };
   if (!isValidCNPJ(cnpj)) return { ok: false, error: "CNPJ inválido" };
@@ -179,6 +182,8 @@ export async function cadastrarImobiliariaAction(
       bancoCodigo,
       bancoAgencia,
       bancoConta,
+      possuiFiliais,
+      apelido: "Matriz",
     })
     .returning({ id: imobiliarias.id });
 

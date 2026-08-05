@@ -39,6 +39,8 @@ type Props = {
   role: "corretor" | "imobiliaria" | "construtora";
   initialValues?: Partial<InitialValues>;
   initialDocs?: InitialDocs;
+  /** Flag de grupo econômico já salva (o user pode voltar a esta tela). */
+  initialPossuiFiliais?: boolean;
 };
 
 const EMPTY_VALUES: InitialValues = {
@@ -63,6 +65,7 @@ export function OnboardingForm({
   role,
   initialValues,
   initialDocs,
+  initialPossuiFiliais = false,
 }: Props) {
   const [state, action, pending] = useActionState<SaveCompanyState, FormData>(
     saveCompanyDataAction,
@@ -258,6 +261,34 @@ export function OnboardingForm({
           placeholder="contato@suaempresa.com.br"
           defaultValue={init.email}
         />
+      )}
+
+      {/* Grupo econômico — abre o cadastro de filiais logo após salvar */}
+      {!isConstrutora && (
+        <div className="border-t border-border pt-5">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-dim mb-3">
+            estrutura da empresa
+          </div>
+          <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-border bg-bg-card p-4 hover:border-border-strong transition-colors">
+            <input
+              type="checkbox"
+              name="possuiFiliais"
+              value="1"
+              defaultChecked={initialPossuiFiliais}
+              className="mt-0.5 size-4 accent-[var(--accent)]"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-fg">
+                Esta empresa possui filiais
+              </span>
+              <span className="block text-xs text-fg-muted mt-0.5">
+                Marque se você tem outras unidades com CNPJ próprio. Ao salvar,
+                abrimos a tela para cadastrar cada uma — todas ficam sob este
+                mesmo cadastro e você escolhe a unidade na hora de antecipar.
+              </span>
+            </span>
+          </label>
+        </div>
       )}
 
       {/* Dados bancários — só pra corretor/imobiliária (recebe a antecipação) */}

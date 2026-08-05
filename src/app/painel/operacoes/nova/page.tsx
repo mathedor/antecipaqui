@@ -15,6 +15,7 @@ import {
   listConstrutorasForComercialSelector,
 } from "@/lib/actions/comercial-cadastrar";
 import { getCurrentFundo } from "@/lib/actions/fundos";
+import { listUnidadesOperaveis } from "@/lib/actions/imobiliaria-filiais";
 import { NovaOperacaoForm } from "@/components/nova-operacao-form";
 import { FundoCadastrarOperacaoForm } from "@/components/fundo-cadastrar-operacao-form";
 import { ImportarContratoForm } from "@/components/importar-contrato-form";
@@ -127,9 +128,10 @@ export default async function NovaOperacaoPage({ searchParams }: Search) {
       docsFaltando.push("Comprovante de endereço");
   }
 
-  const [construtoras, taxaMensalSugerida] = await Promise.all([
+  const [construtoras, taxaMensalSugerida, unidades] = await Promise.all([
     listConstrutorasForSelect(),
     getTaxaMensal(),
+    listUnidadesOperaveis(),
   ]);
 
   // Se "from" param presente, carrega a op base pra replicar
@@ -266,6 +268,7 @@ export default async function NovaOperacaoPage({ searchParams }: Search) {
               </p>
               <NovaOperacaoForm
                 construtoras={construtoras}
+                unidades={unidades}
                 taxaMensalSugerida={taxaMensalSugerida}
                 preset={preset}
               />
