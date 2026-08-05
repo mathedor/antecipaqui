@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/dashboards";
 import { formatBRL, formatBRLcompact } from "@/lib/format";
 import type { User } from "@/db/schema";
+import { CiceroSugereCard } from "@/components/cicero-sugere-card";
 
 const STATUS_LABEL: Record<string, { label: string; tone: string }> = {
   pendente: { label: "Onboarding pendente", tone: "warn" },
@@ -66,6 +67,7 @@ export async function ConstrutoraDashboard({ user }: { user: User }) {
   return (
     <PainelShell role="construtora" userName={user.nome} active="/painel">
       <MuralOverlay messages={muralMsgs} />
+      <CiceroSugereCard />
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <div>
           <div className="eyebrow mb-2">painel · construtora</div>

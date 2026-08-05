@@ -21,6 +21,7 @@ import {
 import { SimuladorAntecipacao } from "@/components/simulador-antecipacao";
 import { formatBRL, formatBRLcompact } from "@/lib/format";
 import type { User } from "@/db/schema";
+import { CiceroSugereCard } from "@/components/cicero-sugere-card";
 
 const ROLE_LABEL: Record<string, string> = {
   corretor: "Imobiliária / Corretor",
@@ -107,6 +108,7 @@ export async function CorretorDashboard({ user }: { user: User }) {
   return (
     <PainelShell role={role} userName={user.nome} active="/painel">
       <MuralOverlay messages={muralMsgs} />
+      <CiceroSugereCard />
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <div>
           <div className="eyebrow mb-2">painel</div>

@@ -20,6 +20,7 @@ import {
   getAdminSourcing,
 } from "@/lib/actions/dashboards";
 import { PageHelp } from "@/components/page-help";
+import { CiceroSugereCard } from "@/components/cicero-sugere-card";
 
 export const metadata = {
   title: "Admin · Dashboard",
@@ -51,6 +52,7 @@ export default async function AdminPage() {
 
   return (
     <AdminShell active="/admin" userName={admin.nome}>
+      <CiceroSugereCard />
       <div className="mb-6">
         <div className="eyebrow mb-2">painel administrativo</div>
         <h1 className="text-display-md">

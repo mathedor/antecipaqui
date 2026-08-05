@@ -28,6 +28,7 @@ import { getComercialConquistas } from "@/lib/actions/comercial-conquistas";
 import { ConquistasGrid } from "@/components/dashboards/comercial-conquistas";
 import { formatBRL, formatBRLcompact } from "@/lib/format";
 import type { User } from "@/db/schema";
+import { CiceroSugereCard } from "@/components/cicero-sugere-card";
 
 export async function ComercialDashboard({ user }: { user: User }) {
   const comercial = await getCurrentComercial();
@@ -84,6 +85,7 @@ export async function ComercialDashboard({ user }: { user: User }) {
 
   return (
     <PainelShell role="comercial" userName={user.nome} active="/painel">
+      <CiceroSugereCard />
       <div className="mb-6">
         <div className="eyebrow mb-2">painel comercial</div>
         <h1 className="text-display-md">

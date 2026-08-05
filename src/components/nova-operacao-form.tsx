@@ -97,6 +97,38 @@ function monthsBetween(from: Date, to: Date) {
   return years * 12 + months + dayFrac;
 }
 
+const DRAFT_KEY = "nova-operacao-draft-v1";
+
+type DraftOperacao = {
+  construtoraId?: string;
+  construtoraNome?: string;
+  construtoraCnpj?: string;
+  valorVenda?: string;
+  valorComissao?: string;
+  valorEntrada?: string;
+  dataVenda?: string;
+  numParcelas?: number;
+  savedAt?: number;
+};
+
+/** Lê o rascunho salvo e descarta o que passou de 24h. Fica fora do
+ *  componente porque depende do relógio — não pode rodar em memo de render. */
+function lerDraft(): DraftOperacao | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as DraftOperacao;
+    if (d.savedAt && Date.now() - d.savedAt > 24 * 3600 * 1000) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    return d;
+  } catch {
+    return null;
+  }
+}
+
 export function NovaOperacaoForm({
   construtoras,
   unidades = [],
@@ -122,34 +154,12 @@ export function NovaOperacaoForm({
   const jaOfereceu = useRef(false);
   const { alertSuccess, alertError } = useFeedback();
 
-  // Tenta restaurar draft do localStorage quando não há preset
-  const draftKey = "nova-operacao-draft-v1";
-  const draftRestore = useMemo(() => {
-    if (typeof window === "undefined" || preset) return null;
-    try {
-      const raw = localStorage.getItem(draftKey);
-      if (!raw) return null;
-      const d = JSON.parse(raw) as {
-        construtoraId?: string;
-        construtoraNome?: string;
-        construtoraCnpj?: string;
-        valorVenda?: string;
-        valorComissao?: string;
-        valorEntrada?: string;
-        dataVenda?: string;
-        numParcelas?: number;
-        savedAt?: number;
-      };
-      // expira em 24h
-      if (d.savedAt && Date.now() - d.savedAt > 24 * 3600 * 1000) {
-        localStorage.removeItem(draftKey);
-        return null;
-      }
-      return d;
-    } catch {
-      return null;
-    }
-  }, [preset]);
+  // Tenta restaurar draft do localStorage quando não há preset.
+  // A leitura mora FORA do render (lerDraft usa Date.now pra expirar em 24h,
+  // e função impura em useMemo quebra a regra de pureza do React Compiler).
+  const [draftRestore] = useState<DraftOperacao | null>(() =>
+    preset ? null : lerDraft(),
+  );
 
   // Casa a construtora extraída por OCR (nome/CNPJ no draft) com uma já
   // cadastrada: primeiro por CNPJ (só dígitos), depois por nome.
@@ -271,7 +281,7 @@ export function NovaOperacaoForm({
           await alertError(r.error, "Não consegui finalizar");
           return;
         }
-        localStorage.removeItem(draftKey);
+        localStorage.removeItem(DRAFT_KEY);
         await alertSuccess(
           `Operação ${r.numero} cadastrada. Ficou pendente: ${r.faltando.join(", ")}. Abra a operação e anexe quando puder.`,
           "Cícero finalizou pra você",
@@ -283,7 +293,7 @@ export function NovaOperacaoForm({
     }
     window.addEventListener(CICERO_EVENTO_ACEITAR, aoAceitar);
     return () => window.removeEventListener(CICERO_EVENTO_ACEITAR, aoAceitar);
-  }, [salvandoPendente, alertError, alertSuccess, router, draftKey]);
+  }, [salvandoPendente, alertError, alertSuccess, router]);
 
   const [docComprovanteEntrada, setDocComprovanteEntrada] =
     useState<UploadedBlob | null>(null);
@@ -303,7 +313,7 @@ export function NovaOperacaoForm({
     if (state?.ok) {
       // Limpa draft após sucesso
       try {
-        localStorage.removeItem(draftKey);
+        localStorage.removeItem(DRAFT_KEY);
       } catch {
         /* ignora */
       }
@@ -320,7 +330,7 @@ export function NovaOperacaoForm({
     const handle = setTimeout(() => {
       try {
         localStorage.setItem(
-          draftKey,
+          DRAFT_KEY,
           JSON.stringify({
             construtoraId,
             valorVenda,
