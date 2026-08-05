@@ -4,7 +4,6 @@ import { OperacaoStatusBadge } from "@/components/operacao-status-badge";
 import { CalendarList } from "@/components/dashboards/calendar-list";
 import { getFundoDashboard } from "@/lib/actions/fundos";
 import { getFundoRisco } from "@/lib/actions/fundo-risco";
-import { getOpsAguardandoFundo } from "@/lib/actions/fundo-mesa";
 import { getFundoBenchmark } from "@/lib/actions/fundo-benchmark";
 import {
   getFundoCalendario,
@@ -16,10 +15,12 @@ import type { User } from "@/db/schema";
 import { CiceroSugereCard } from "@/components/cicero-sugere-card";
 
 export async function FundoDashboard({ user }: { user: User }) {
-  const [data, risco, pendentes, benchmark] = await Promise.all([
+  // A mesa é lida de getFundoMesaMetrics (mesa.pendentesQtd etc). A chamada
+  // a getOpsAguardandoFundo estava aqui sem uso — era uma query pesada
+  // rodando à toa em todo carregamento do painel.
+  const [data, risco, benchmark] = await Promise.all([
     getFundoDashboard(),
     getFundoRisco(),
-    getOpsAguardandoFundo(),
     getFundoBenchmark(),
   ]);
 
