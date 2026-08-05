@@ -2,6 +2,15 @@
 
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+/** Só conta como inadimplência a parcela de operação EFETIVAMENTE operada
+ *  (dinheiro já desembolsado). Operação em cadastro, aguardando decisão ou
+ *  com documento pendente não gerou crédito nosso — a parcela pode estar
+ *  vencida no contrato da construtora, mas não é atraso PRA GENTE.
+ *  Mesmo critério que o cron de cobrança usa pra marcar parcela vencida
+ *  (src/app/api/cron/cobranca-parcelas/route.ts) e que invoice/caixa usam
+ *  pra reconhecer volume operado. */
+const OPS_OPERADAS = sql`o.status IN ('enviada_para_pagamento', 'realizada')`;
+
 import { requireAdmin } from "@/lib/auth-user";
 
 function extractRows<T>(result: unknown): T[] {
@@ -300,7 +309,7 @@ export async function getIndicesData(filters?: {
       OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE)
     )
     AND p.vencimento >= date_trunc('month', NOW()) - INTERVAL '11 months'
-    AND o.status NOT IN ('rascunho', 'recusada', 'cancelada') ${
+    AND ${OPS_OPERADAS} ${
       fundoId === "_no_fundo_"
         ? sql` AND o.fundo_id IS NULL`
         : fundoId
@@ -342,7 +351,7 @@ export async function getIndicesData(filters?: {
       OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE)
     )
     AND p.vencimento >= CURRENT_DATE - make_interval(days => ${dias}::int)
-    AND o.status NOT IN ('rascunho', 'recusada', 'cancelada')
+    AND ${OPS_OPERADAS}
     GROUP BY f.id, nome
     ORDER BY valor_inadimplente DESC
   `);
@@ -365,7 +374,7 @@ export async function getIndicesData(filters?: {
       p.status = 'vencida'
       OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE)
     )
-    AND o.status NOT IN ('rascunho', 'recusada', 'cancelada') ${
+    AND ${OPS_OPERADAS} ${
       fundoId === "_no_fundo_"
         ? sql` AND o.fundo_id IS NULL`
         : fundoId
@@ -413,7 +422,7 @@ export async function getInadimplentes(filters?: {
   const fundoId = filters?.fundoId?.trim() || undefined;
   const conds: ReturnType<typeof sql>[] = [
     sql`(p.status = 'vencida' OR (p.status = 'a_vencer' AND p.vencimento < CURRENT_DATE))`,
-    sql`o.status NOT IN ('rascunho', 'recusada', 'cancelada')`,
+    OPS_OPERADAS,
   ];
   if (fundoId === "_no_fundo_") conds.push(sql`o.fundo_id IS NULL`);
   else if (fundoId) conds.push(sql`o.fundo_id = ${fundoId}::uuid`);

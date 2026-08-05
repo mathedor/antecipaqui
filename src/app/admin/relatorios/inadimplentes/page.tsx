@@ -62,7 +62,9 @@ export default async function InadimplentesPage({ searchParams }: Search) {
           <span className="text-gradient-blue">Parcelas</span> em atraso
         </h1>
         <p className="mt-2 text-fg-muted">
-          {rows.length} parcela(s) vencidas ou com vencimento já passado.
+          {rows.length} parcela(s) em atraso. Conta só operação que já foi
+          efetivamente operada — se o dinheiro ainda não saiu, a parcela pode
+          estar vencida no contrato da construtora, mas não é atraso nosso.
         </p>
       </div>
 
