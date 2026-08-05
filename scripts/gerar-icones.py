@@ -25,6 +25,14 @@ RAIZ = pathlib.Path(__file__).resolve().parent.parent
 LOGO = RAIZ / "public" / "brand" / "logo.png"
 FUNDO = (255, 255, 255, 255)
 
+# Os ícones do manifest são gravados com o número da versão no nome.
+# Motivo: o Chrome decide se atualiza o ícone de um app já instalado
+# comparando as URLs do manifest — trocar os bytes de /icon-192.png não
+# adianta nada, ele mantém o bitmap antigo no atalho pra sempre. Trocar o
+# nome muda a URL, o Chrome vê diferença e reemite o ícone.
+# Ao mexer no desenho: sobe VERSAO_PWA aqui, no manifest.ts e no sw.js.
+VERSAO_PWA = "v2"
+
 # Faixa vertical do símbolo dentro do lockup (acima da tipografia).
 FAIXA_SIMBOLO = (95, 488)
 
@@ -72,15 +80,22 @@ def main() -> None:
     simbolo = carregar_simbolo()
     print(f"símbolo recortado: {simbolo.width}x{simbolo.height}")
 
+    v = VERSAO_PWA
     saidas = [
         # (caminho, lado, escala do símbolo, raio do canto em % do lado)
-        ("public/icon-192.png", 192, 0.86, 0.22),
-        ("public/icon-512.png", 512, 0.86, 0.22),
+        (f"public/icon-192-{v}.png", 192, 0.86, 0.22),
+        (f"public/icon-512-{v}.png", 512, 0.86, 0.22),
         # Maskable é recortado num círculo de 80% do diâmetro pelo launcher
         # Android. Medido: em 0,68 o ponto mais distante do símbolo fica a
         # 201px de um raio seguro de 205px — cabe, com margem pequena.
         # Não subir mais que isso sem medir de novo.
+        (f"public/icon-maskable-{v}.png", 512, 0.68, 0.0),
+        # Nomes sem versão: ninguém mais aponta pra eles no manifest, mas
+        # instalações antigas ainda pedem — servir o desenho novo evita 404.
+        ("public/icon-192.png", 192, 0.86, 0.22),
+        ("public/icon-512.png", 512, 0.86, 0.22),
         ("public/icon-maskable.png", 512, 0.68, 0.0),
+        # Esses o Next versiona sozinho por hash de conteúdo (?icon.<hash>).
         ("src/app/icon.png", 512, 0.86, 0.22),
         ("src/app/apple-icon.png", 180, 0.86, 0.0),
     ]

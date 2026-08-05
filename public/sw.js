@@ -8,15 +8,17 @@
  * Versionamento: bump CACHE_VERSION quando quebrar layout/assets.
  */
 
-// v3: ícones reenquadrados (só o símbolo, igual ao favicon). O bump limpa o
-// cache antigo — sem ele, quem já tem o PWA instalado continua com o ícone
-// anterior, que é exatamente a reclamação que originou a mudança.
-const CACHE_VERSION = "v3";
+// v4: ícones do manifest passaram a ter versão no nome (icon-192-v2.png).
+// O v3 trocou o desenho mantendo o mesmo nome de arquivo e o atalho instalado
+// continuou com o ícone velho: o Chrome compara as URLs do manifest, não os
+// bytes, então "mesmo nome" pra ele é "nada mudou". Limpar cache de SW nunca
+// resolveu isso — o ícone do atalho não passa pelo service worker.
+const CACHE_VERSION = "v4";
 const STATIC_CACHE = `antecipaqui-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `antecipaqui-pages-${CACHE_VERSION}`;
 
 const OFFLINE_URL = "/offline.html";
-const PRECACHE = [OFFLINE_URL, "/icon-192.png", "/icon-512.png"];
+const PRECACHE = [OFFLINE_URL, "/icon-192-v2.png", "/icon-512-v2.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
