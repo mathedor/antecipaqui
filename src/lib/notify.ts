@@ -77,6 +77,7 @@ export async function notify(args: NotifyArgs) {
   if (args.email && !isImpersonating) {
     try {
       const r = await sendEmail({
+        contexto: "notificacoes",
         to: args.email.to,
         subject: args.email.subject,
         body: args.email.body,

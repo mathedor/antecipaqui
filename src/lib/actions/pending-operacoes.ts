@@ -273,6 +273,7 @@ export async function createPendingOperacoesAction(
     // Email convite (best-effort)
     const inviteUrl = `${baseUrl}/cadastre-se?invite=${inviteToken}`;
     await sendEmail({
+      contexto: "pending-operacoes",
       to: corretorEmail,
       subject: `Antecipaqui · ${c.razaoSocial} cadastrou uma operação pra você`,
       body: `Olá${corretorNome ? ` ${corretorNome.split(" ")[0]}` : ""}!

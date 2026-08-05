@@ -350,6 +350,7 @@ async function notifyAdminsAboutBlockedAttempt(blockedUser: User) {
     });
     // Email best-effort — fallback log se RESEND_API_KEY ausente
     await sendEmail({
+      contexto: "acesso-bloqueado",
       to: admin.email,
       subject: `Antecipaqui · Tentativa de acesso bloqueado`,
       body: `${body}\n\nAcesse /admin/usuarios/${blockedUser.id} pra revisar.`,

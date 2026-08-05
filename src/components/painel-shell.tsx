@@ -104,6 +104,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/admin/mural", label: "Mural" },
     { href: "/admin/relatorios", label: "Relatórios" },
     { href: "/admin/configuracoes", label: "Configurações" },
+    { href: "/admin/entregabilidade", label: "Entrega de e-mail" },
   ],
   fundo: [
     { href: "/painel/aprovar", label: "Aprovar" },
@@ -337,6 +338,7 @@ const MOBILE_FULLMENU: Record<
       section: "configurações",
       items: [
         { href: "/admin/configuracoes", label: "Parâmetros", icon: "config" },
+        { href: "/admin/entregabilidade", label: "Entrega de e-mail", icon: "doc" },
       ],
     },
   ],

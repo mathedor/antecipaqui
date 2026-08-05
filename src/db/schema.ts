@@ -1612,6 +1612,36 @@ export type RepositorioFile = typeof repositorioFiles.$inferSelect;
    SYSTEM SETTINGS — configurações administrativas (key/value)
    ========================================= */
 
+/* =========================================
+   FALHAS DE E-MAIL — toda vez que o envio não sai, fica registrado aqui.
+   Antes isso só ia pro console: o domínio ficou meses sem verificação no
+   Resend e ninguém percebeu, porque `sendEmail` engolia o erro.
+   ========================================= */
+
+export const emailFalhas = pgTable(
+  "email_falhas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    destinatario: text("destinatario").notNull(),
+    assunto: text("assunto").notNull(),
+    /** Mensagem crua do provedor (ou "sem RESEND_API_KEY"). */
+    erro: text("erro").notNull(),
+    /** De onde partiu o envio — ajuda a achar o fluxo afetado. */
+    contexto: text("contexto"),
+    /** Marcado quando o admin dá o problema por resolvido. */
+    resolvidoEm: timestamp("resolvido_em", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("email_falhas_created_idx").on(t.createdAt),
+    index("email_falhas_abertas_idx").on(t.resolvidoEm, t.createdAt),
+  ],
+);
+
+export type EmailFalha = typeof emailFalhas.$inferSelect;
+
 export const systemSettings = pgTable("system_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

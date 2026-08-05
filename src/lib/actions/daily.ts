@@ -390,7 +390,7 @@ Em caso de dúvida, responda este email.
 
 Equipe Antecipaqui`;
       try {
-        await sendEmail({ to: c.email, subject, body });
+        await sendEmail({ to: c.email, subject, body, contexto: "daily" });
         enviadosCompradores += 1;
       } catch (e) {
         console.error("[daily/notificar-comprador]", c.email, e);
@@ -424,6 +424,7 @@ Em caso de dúvida, responda este email.
 Equipe Antecipaqui`;
     try {
       await sendEmail({
+        contexto: "daily",
         to: r.construtora_email,
         subject,
         body,
@@ -452,6 +453,7 @@ Acesse: ${SITE_URL}/painel/operacoes
 Equipe Antecipaqui`;
     try {
       await sendEmail({
+        contexto: "daily",
         to: r.corretor_email,
         subject,
         body,

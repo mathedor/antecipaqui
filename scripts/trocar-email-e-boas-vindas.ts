@@ -19,6 +19,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { users } from "../src/db/schema";
 import { sendEmail } from "../src/lib/email";
+// (fluxo crítico — se não entregar, o cliente fica sem a credencial)
 
 const EMAIL_ANTIGO = "chinasso.corretor@gmail.com";
 const EMAIL_NOVO = "financeiro@imoveisdeprimeira.com";
@@ -248,6 +249,7 @@ async function main() {
   );
 
   const r = await sendEmail({
+    contexto: "boas-vindas",
     to: EMAIL_NOVO,
     subject: "Bem-vindo à Antecipaqui — seus dados de acesso",
     body: corpoTexto(unidades, totalOps, comissao),

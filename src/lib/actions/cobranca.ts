@@ -137,6 +137,7 @@ Equipe Antecipaqui`,
     // Sem owner — manda só email direto pro endereço comercial
     const { sendEmail } = await import("@/lib/email");
     await sendEmail({
+      contexto: "cobranca",
       to: ownerEmail,
       subject: `Antecipaqui · ${c.razaoSocial} — documentação pendente`,
       body: `Olá!

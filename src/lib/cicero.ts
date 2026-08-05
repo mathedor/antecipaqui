@@ -976,6 +976,7 @@ const dispararCobranca: CiceroTool = {
       for (const d of a.destinatarios) {
         try {
           await sendEmail({
+            contexto: "cicero",
             to: d.email,
             subject: `Parcela em atraso — operação ${r.opNumero} (${formatBRL(a.va.valorAtualizado)})`,
             body: corpo,

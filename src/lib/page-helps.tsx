@@ -156,6 +156,7 @@ const PAGE_HELP_KEYS = [
   "admin-relatorios",
   "admin-relatorios-logs",
   "admin-configuracoes",
+  "admin-entregabilidade",
   "admin-custos",
   "admin-risco-global",
   "admin-credito",
@@ -1326,6 +1327,28 @@ export const PAGE_HELPS: Record<PageHelpKey, PageHelpEntry> = {
       "Metadata tem contexto extra (use 'expandir' pra ver)",
     ],
     tourId: "admin",
+  },
+  "admin-entregabilidade": {
+    titulo: "Entrega de e-mail",
+    resumo:
+      "Mostra se o domínio remetente está verificado no provedor e lista todo e-mail que não saiu. Se o domínio cair, a plataforma para de entregar e-mail e você descobre aqui, não pelo cliente reclamando.",
+    oQueFaz: [
+      "Status do domínio remetente direto no provedor (Resend)",
+      "Lista os registros de DNS exigidos e quais ainda faltam",
+      "Registra cada envio que falhou: destinatário, assunto, erro e de qual fluxo veio",
+      "Botão pra pedir revalidação do domínio depois de publicar o DNS",
+    ],
+    comoUsar: [
+      "Se o topo estiver vermelho, ninguém está recebendo e-mail",
+      "Olhe a tabela de DNS e publique os registros que não estiverem 'verified'",
+      "Clique 'Revalidar domínio' e recarregue em ~1 minuto — a verificação é assíncrona",
+      "Depois de resolver, marque as falhas como resolvidas pra limpar a lista",
+    ],
+    dicas: [
+      "Falha em aberto = e-mail que o destinatário nunca recebeu; reenvie o que for crítico",
+      "O DNS fica onde o domínio está hospedado (no nosso caso, Vercel)",
+      "Sem RESEND_API_KEY em produção, todo envio entra direto como falha",
+    ],
   },
   "admin-configuracoes": {
     titulo: "Configurações",

@@ -162,6 +162,7 @@ export async function createConstrutoraAction(
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.antecipaqui.digital";
   const cadastroLink = `${baseUrl}/cadastre-se`;
   await sendEmail({
+    contexto: "operacoes",
     to: email,
     subject: `Antecipaqui · ${razaoSocial} foi cadastrada na nossa plataforma`,
     body: `Olá! Tudo bem?
