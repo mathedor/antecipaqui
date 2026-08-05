@@ -46,8 +46,8 @@ type Unidade = {
   nomeFantasia: string | null;
   cnpj: string;
   telefone: string | null;
-  cep: string;
-  endereco: string;
+  cep: string | null;
+  endereco: string | null;
   cidade: string;
   uf: string;
   /** Só nas filiais: contrato sai no CNPJ da matriz em vez do próprio. */
@@ -108,6 +108,22 @@ const FILIAIS: Unidade[] = [
       { arquivo: "Cartão CNPJ A. Verde.pdf", tipo: "cartao_cnpj" },
       { arquivo: "cartão A. Verde.pdf", tipo: "comprovante_endereco" },
     ],
+  },
+  {
+    // Unidade descoberta pelos contratos de corretagem do SOLAIA — o dono
+    // ainda não enviou cartão CNPJ, contrato social nem comprovante de
+    // endereço. Cadastrada porque as operações do SOLAIA saem por ela.
+    apelido: "Filial Consultoria",
+    razaoSocial: "IMOVEIS DE PRIMEIRA CONSULTORIA IMOBILIARIA LTDA",
+    nomeFantasia: null,
+    cnpj: "19594298000133",
+    telefone: null,
+    cep: null,
+    endereco: null,
+    cidade: "Curitiba",
+    uf: "PR",
+    operaEmNomeDaMatriz: false,
+    documentos: [],
   },
   {
     apelido: "Filial Batel",
