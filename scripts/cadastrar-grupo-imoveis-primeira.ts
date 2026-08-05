@@ -136,6 +136,19 @@ const FILIAIS: Unidade[] = [
    ============================================================ */
 
 async function garantirOwner(): Promise<string> {
+  // Se a matriz já existe, o dono dela manda — o responsável real pode já
+  // ter sido vinculado por `vincular-responsavel-grupo.ts`, e rodar este
+  // script de novo (pra uma filial nova) não pode reverter isso.
+  const [matrizExistente] = await db
+    .select({ ownerUserId: imobiliarias.ownerUserId })
+    .from(imobiliarias)
+    .where(eq(imobiliarias.cnpj, MATRIZ.cnpj))
+    .limit(1);
+  if (matrizExistente) {
+    console.log(`  · owner do grupo mantido (${matrizExistente.ownerUserId})`);
+    return matrizExistente.ownerUserId;
+  }
+
   const [existente] = await db
     .select({ id: users.id })
     .from(users)
