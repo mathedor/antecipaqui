@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<title>Antecipaqui · Carrosséis panorâmicos — imobiliárias & corretores</title>
+<link rel="stylesheet" href="ig.css"/>
+<style>
+/* elementos contínuos da campanha imob */
+.arc{position:absolute;z-index:1;pointer-events:none}
+.fr-c{position:relative;z-index:4;display:flex;flex-direction:column;height:100%}
+.fr-c .pgnum{top:-26px;right:0}
+.seam .foot{z-index:6}
+/* estação (caminho da operação) — losango, não círculo */
+.stn{width:112px;height:112px;transform:rotate(45deg);border-radius:22px;background:var(--ink);border:6px solid var(--a);display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(63,143,232,.4)}
+.stn > div{transform:rotate(-45deg);width:58px;height:58px}
+.stn svg{width:100%;height:100%;stroke:var(--a-soft);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ IMOB-01 · MANIFESTO (5 quadros · 24 parcelas viram 1 PIX) ═══════════ -->
+<section class="board seam" data-post="imob-01-manifesto">
+  <svg class="arc" style="left:0;top:0" width="5400" height="1350" viewBox="0 0 5400 1350">
+    <path d="M -20 1150 H 4428" fill="none" stroke="rgba(142,194,247,.30)" stroke-width="4" stroke-dasharray="2 22" stroke-linecap="round"/>
+    <g fill="none" stroke="rgba(142,194,247,.55)" stroke-width="3">
+      <circle cx="150" cy="1150" r="11"/><circle cx="336" cy="1150" r="11"/><circle cx="522" cy="1150" r="11"/><circle cx="708" cy="1150" r="11"/><circle cx="894" cy="1150" r="11"/><circle cx="1080" cy="1150" r="11"/><circle cx="1266" cy="1150" r="11"/><circle cx="1452" cy="1150" r="11"/><circle cx="1638" cy="1150" r="11"/><circle cx="1824" cy="1150" r="11"/><circle cx="2010" cy="1150" r="11"/><circle cx="2196" cy="1150" r="11"/><circle cx="2382" cy="1150" r="11"/><circle cx="2568" cy="1150" r="11"/><circle cx="2754" cy="1150" r="11"/><circle cx="2940" cy="1150" r="11"/><circle cx="3126" cy="1150" r="11"/><circle cx="3312" cy="1150" r="11"/><circle cx="3498" cy="1150" r="11"/><circle cx="3684" cy="1150" r="11"/><circle cx="3870" cy="1150" r="11"/><circle cx="4056" cy="1150" r="11"/><circle cx="4242" cy="1150" r="11"/><circle cx="4428" cy="1150" r="11"/>
+    </g>
+    <g font-family="Sora,Inter,sans-serif" font-size="22" font-weight="700" fill="rgba(142,194,247,.45)" text-anchor="middle">
+      <text x="150" y="1210">1x</text><text x="2196" y="1210">12x</text><text x="4428" y="1210">24x</text>
+    </g>
+    <path d="M 4428 1150 C 4700 1150, 4950 960, 5060 770 C 5110 685, 5132 660, 5146 648" fill="none" stroke="#3f8fe8" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="5150" cy="560" r="84" fill="rgba(63,143,232,.16)" stroke="#3f8fe8" stroke-width="5"/>
+    <text x="5150" y="582" text-anchor="middle" font-family="Sora,Inter,sans-serif" font-weight="800" font-size="54" fill="#8ec2f7">R$</text>
+    <g stroke="#8ec2f7" stroke-width="4" stroke-linecap="round" opacity=".8">
+      <line x1="5150" y1="440" x2="5150" y2="404"/><line x1="5150" y1="680" x2="5150" y2="716"/>
+      <line x1="5030" y1="560" x2="4994" y2="560"/><line x1="5270" y1="560" x2="5306" y2="560"/>
+      <line x1="5064" y1="474" x2="5040" y2="450"/><line x1="5236" y1="474" x2="5260" y2="450"/>
+      <line x1="5064" y1="646" x2="5040" y2="670"/><line x1="5236" y1="646" x2="5260" y2="670"/>
+    </g>
+  </svg>
+
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c">
+      <div class="wordmark" style="font-size:58px"><span class="am">A</span>antecipa<b>qui</b></div>
+      <div class="kick" style="margin-top:46px">Imobiliárias · corretores · lançamentos</div>
+      <h1 class="xl" style="margin-top:30px">A venda parcelou em&nbsp;24x.<br/><span class="l">A comissão cai hoje.</span></h1>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">arrasta →</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">2/5</div>
+      <div class="kick">O jeito antigo de receber</div>
+      <h1 style="font-size:84px">Você fechou a venda.<br/><span class="l">A construtora parcelou você.</span></h1>
+      <p class="kid" style="max-width:18em">Comissão de <b>R$ 48.000</b> pingando em <b>24 vezes de R$ 2.000</b> — enquanto aluguel, cartão e tráfego vencem agora.</p>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">3/5</div>
+      <div class="kick">O jeito Antecipaqui</div>
+      <h1 style="font-size:84px">Cadastra em minutos.<br/><span class="l">Recebe à vista.</span></h1>
+      <p class="kid" style="max-width:18em">Contrato de venda + contrato de comissão, análise rápida, assinatura digital no celular — e o dinheiro <b>na conta via PIX</b>.</p>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">4/5</div>
+      <div class="kick">Transparência de verdade</div>
+      <h1 style="font-size:84px">O deságio aparece<br/><span class="l">antes do seu sim.</span></h1>
+      <p class="kid" style="max-width:18em">A simulação mostra o líquido aberto na tela. <b>Sem surpresa, sem letra miúda</b> — você decide com o número na mão.</p>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c" style="justify-content:center;align-items:flex-start">
+      <div class="pgnum">5/5</div>
+      <div class="wordmark" style="font-size:52px"><span class="am">A</span>antecipa<b>qui</b></div>
+      <h1 style="font-size:88px;margin-top:40px">Sua comissão.<br/><span class="l">No seu tempo.</span></h1>
+      <p class="kid" style="max-width:15em">Parcelas que vencem em até <b>150 dias</b> viram dinheiro à vista.</p>
+      <div class="cta" style="margin-top:44px">antecipaqui.digital →</div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="hd">link na bio</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ IMOB-02 · DORES (5 quadros · saldo caindo, virada azul) ═══════════ -->
+<section class="board seam" data-post="imob-02-boleto-chegou-primeiro">
+  <svg class="arc" style="left:0;top:0" width="5400" height="1350" viewBox="0 0 5400 1350">
+    <path d="M -20 880 C 500 910, 1100 970, 1700 1030 C 2400 1100, 3100 1160, 3700 1195 C 3950 1208, 4180 1216, 4360 1216" fill="none" stroke="rgba(251,113,133,.5)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 4360 1216 C 4650 1216, 4900 1100, 5080 940 C 5220 815, 5330 690, 5420 600" fill="none" stroke="#3f8fe8" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="4360" cy="1216" r="13" fill="#3f8fe8"/>
+    <g fill="none" stroke="rgba(251,113,133,.55)" stroke-width="3">
+      <g transform="translate(660 830) rotate(-6)"><rect width="46" height="58" rx="5"/><line x1="9" y1="14" x2="37" y2="14"/><line x1="9" y1="26" x2="37" y2="26"/><line x1="9" y1="38" x2="26" y2="38"/></g>
+      <g transform="translate(1790 950) rotate(5)"><rect width="46" height="58" rx="5"/><line x1="9" y1="14" x2="37" y2="14"/><line x1="9" y1="26" x2="37" y2="26"/><line x1="9" y1="38" x2="26" y2="38"/></g>
+      <g transform="translate(2960 1070) rotate(-4)"><rect width="46" height="58" rx="5"/><line x1="9" y1="14" x2="37" y2="14"/><line x1="9" y1="26" x2="37" y2="26"/><line x1="9" y1="38" x2="26" y2="38"/></g>
+    </g>
+  </svg>
+
+  <div class="frame">
+    <div class="glow b"></div>
+    <div class="fr-c">
+      <div class="kick">Corretor, cena conhecida</div>
+      <h1 class="xl">Vendeu.<br/>Comemorou.<br/><span class="l">O boleto chegou primeiro.</span></h1>
+      <p class="lead" style="font-size:36px">A comissão existe — mas parcelada, ela vive no futuro. <b>Suas contas vivem no presente.</b></p>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">arrasta →</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">2/5</div>
+      <div class="bigno">01</div>
+      <h2 style="font-size:70px">A comissão vem <span class="l">fatiada.</span></h2>
+      <p class="kid" style="max-width:18em">A venda foi de R$ 800 mil. Sua comissão, R$ 48.000 — picada em <b>24 parcelas de R$ 2.000</b>. Dois anos pra receber o que você já ganhou.</p>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">3/5</div>
+      <div class="bigno">02</div>
+      <h2 style="font-size:70px">As contas não esperam <span class="l">a construtora.</span></h2>
+      <p class="kid" style="max-width:18em;margin-bottom:34px">Aluguel dia 05, escola dia 10, cartão dia 15. A parcela da comissão? <b>Dia 30 — do mês que vem.</b></p>
+      <div class="rows" style="max-width:820px">
+        <div class="r"><b>Aluguel do escritório</b><span>dia 05</span><span class="st no">vence antes</span></div>
+        <div class="r"><b>Cartão</b><span>dia 15</span><span class="st no">vence antes</span></div>
+        <div class="r"><b>Parcela da comissão</b><span>dia 30</span><span class="st wa">mês que vem</span></div>
+      </div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">4/5</div>
+      <div class="bigno">03</div>
+      <h2 style="font-size:70px">Capital parado trava <span class="l">a próxima venda.</span></h2>
+      <p class="kid" style="max-width:18em">Sem caixa, você corta o anúncio, adia o tráfego, segura a gasolina do plantão. <b>Comissão parada é venda que não acontece.</b></p>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c" style="justify-content:center">
+      <div class="pgnum">5/5</div>
+      <div class="kick">A virada</div>
+      <h1 style="font-size:84px;margin-top:30px">Existe esperar.<br/><span class="l">E existe Antecipaqui.</span></h1>
+      <p class="kid" style="max-width:17em">As parcelas de até 150 dias viram <b>PIX à vista</b> — e a fila de receber deixa de ser sua.</p>
+      <div class="cta" style="margin-top:40px;align-self:flex-start">antecipaqui.digital →</div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="hd">link na bio</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ IMOB-03 · DA VENDA AO PIX (6 quadros · trilho com estações-losango) ═══════════ -->
+<section class="board seam" data-post="imob-03-da-venda-ao-pix">
+  <svg class="arc" style="left:0;top:0" width="6480" height="1350" viewBox="0 0 6480 1350">
+    <path d="M -20 1080 H 6160" fill="none" stroke="rgba(63,143,232,.5)" stroke-width="8"/>
+    <path d="M 6160 1080 l -48 -32 M 6160 1080 l -48 32" fill="none" stroke="#8ec2f7" stroke-width="8" stroke-linecap="round"/>
+    <g fill="#081222" stroke="#3f8fe8" stroke-width="6">
+      <rect x="1596" y="1056" width="48" height="48" transform="rotate(45 1620 1080)"/>
+      <rect x="2676" y="1056" width="48" height="48" transform="rotate(45 2700 1080)"/>
+      <rect x="3756" y="1056" width="48" height="48" transform="rotate(45 3780 1080)"/>
+      <rect x="4836" y="1056" width="48" height="48" transform="rotate(45 4860 1080)"/>
+    </g>
+    <circle cx="440" cy="1080" r="14" fill="#3f8fe8"/>
+  </svg>
+
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c">
+      <div class="kick">Como funciona</div>
+      <h1 style="font-size:86px">Da venda assinada ao PIX na conta: <span class="l">4 estações.</span></h1>
+      <p class="lead" style="font-size:36px">Tudo digital, tudo acompanhado na tela. <b>Arrasta que a gente te leva.</b></p>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">arrasta →</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">2/6</div>
+      <div class="kick">Estação 1 · Cadastro</div>
+      <h2 style="font-size:64px">Dois documentos.<br/><span class="l">Minutos.</span></h2>
+      <p class="kid" style="max-width:18em">Contrato de venda + contrato de comissão. Você anexa, <b>o resto a plataforma organiza</b>.</p>
+      <div class="pills"><span class="pill ac">Contrato de venda</span><span class="pill">Contrato de comissão</span></div>
+      <div style="position:absolute;bottom:210px;left:484px;z-index:5"><div class="stn"><div><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div></div></div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">3/6</div>
+      <div class="kick">Estação 2 · Análise</div>
+      <h2 style="font-size:64px">Análise rápida,<br/><span class="l">status na tela.</span></h2>
+      <p class="kid" style="max-width:18em">A operação entra em análise e você acompanha em tempo real — com <b>notificação a cada avanço</b>.</p>
+      <div style="position:absolute;bottom:210px;left:484px;z-index:5"><div class="stn"><div><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5 20 20"/></svg></div></div></div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">4/6</div>
+      <div class="kick">Estação 3 · Contrato</div>
+      <h2 style="font-size:64px">Assinatura digital,<br/><span class="l">no celular.</span></h2>
+      <p class="kid" style="max-width:18em">Nada de cartório, impressora ou motoboy. O contrato de cessão chega no seu celular e <b>você assina do plantão</b>.</p>
+      <div style="position:absolute;bottom:210px;left:484px;z-index:5"><div class="stn"><div><svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16l-1 4z"/><path d="M13 7l3 3"/></svg></div></div></div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">5/6</div>
+      <div class="kick">Estação 4 · Pagamento</div>
+      <h2 style="font-size:64px">Dinheiro à vista,<br/><span class="l">PIX ou TED.</span></h2>
+      <p class="kid" style="max-width:18em;margin-bottom:32px">Cinco parcelas de R$ 2.000 viram isto — <b>hoje</b>:</p>
+      <div class="grid3">
+        <div class="kpi"><div class="l">Bruto antecipado</div><div class="v" style="font-size:40px">R$ 10.000</div></div>
+        <div class="kpi"><div class="l">Deságio aberto</div><div class="v" style="font-size:40px">− R$ 780</div></div>
+        <div class="kpi hi"><div class="l">Líquido na conta</div><div class="v" style="font-size:40px">R$ 9.220</div></div>
+      </div>
+      <div style="position:absolute;bottom:210px;left:484px;z-index:5"><div class="stn"><div><svg viewBox="0 0 24 24"><path d="M13 2 5 13h5l-1 9 8-11h-5l1-9z"/></svg></div></div></div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c" style="justify-content:center">
+      <div class="pgnum">6/6</div>
+      <div class="wordmark" style="font-size:52px"><span class="am">A</span>antecipa<b>qui</b></div>
+      <h1 style="font-size:88px;margin-top:40px">Próxima estação:<br/><span class="l">sua conta.</span></h1>
+      <div class="cta" style="margin-top:40px;align-self:flex-start">antecipaqui.digital →</div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="hd">link na bio</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ IMOB-04 · CÍCERO (5 quadros · pulso de conversa contínuo) ═══════════ -->
+<section class="board seam" data-post="imob-04-cicero">
+  <svg class="arc" style="left:0;top:0" width="5400" height="1350" viewBox="0 0 5400 1350">
+    <path d="M -20 1150 H 460 q 40 -60 80 0 q 40 60 80 0 H 1500 q 40 -110 80 0 q 40 110 80 0 q 40 -70 80 0 H 2580 q 40 -120 80 0 q 40 120 80 0 q 40 -80 80 0 H 3660 q 40 -100 80 0 q 40 100 80 0 q 40 -60 80 0 H 4780 q 40 -70 80 0 q 40 70 80 0 H 5420"
+      fill="none" stroke="rgba(142,194,247,.45)" stroke-width="4" stroke-linecap="round"/>
+    <path d="M -20 1170 H 480 q 40 -40 80 0 q 40 40 80 0 H 1520 q 40 -70 80 0 q 40 70 80 0 q 40 -50 80 0 H 2600 q 40 -80 80 0 q 40 80 80 0 q 40 -50 80 0 H 3680 q 40 -60 80 0 q 40 60 80 0 q 40 -40 80 0 H 4800 q 40 -50 80 0 q 40 50 80 0 H 5420"
+      fill="none" stroke="rgba(63,143,232,.22)" stroke-width="4" stroke-linecap="round"/>
+  </svg>
+
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c">
+      <div class="kick">A inteligência da plataforma</div>
+      <h1 style="font-size:92px">Conheça o <span class="l">Cícero.</span></h1>
+      <p class="lead" style="font-size:36px">A IA da Antecipaqui calcula sua antecipação <b>no chat</b> — e responde o que o financês esconde.</p>
+      <div class="li" style="margin-top:44px;max-width:600px"><div class="av">C</div><div class="g"><b style="font-size:28px">Cícero</b><small style="font-size:22px">IA da Antecipaqui</small></div><span class="st ok">online</span></div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">arrasta →</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c" style="justify-content:center">
+      <div class="pgnum">2/5</div>
+      <div class="kick" style="margin-bottom:40px">Pede o número</div>
+      <div class="bub me">calcula 100 mil em 30/60/90</div>
+      <div class="bub sv">Fechado: 3 parcelas de <b>R$ 33.333</b>.<br/>Deságio aberto: R$ 5.200.<br/>Líquido hoje: <b class="g">R$ 94.800</b> via PIX.</div>
+      <div class="bub me">isso é empréstimo?</div>
+      <div class="bub sv">Não — é <b>cessão</b>: você vende parcelas que já são suas e recebe à vista. Sem dívida nova.</div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c" style="justify-content:center">
+      <div class="pgnum">3/5</div>
+      <div class="kick" style="margin-bottom:40px">Tira a dúvida na hora</div>
+      <div class="bub me">minha parcela de 180 dias entra?</div>
+      <div class="bub sv">A janela é de <b>150 dias</b>, até 5 parcelas. A de 180 fica registrada — <b>eu te aviso</b> quando ela entrar.</div>
+      <div class="bub me">e quem cobra a construtora depois?</div>
+      <div class="bub sv">O fundo. Depois da cessão, <b>a fila é dele</b> — você já recebeu.</div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">4/5</div>
+      <div class="kick">Sempre com o número aberto</div>
+      <h2 style="font-size:60px">Simulação transparente,<br/><span class="l">direto na conversa.</span></h2>
+      <p class="kid" style="max-width:18em;margin-bottom:32px">O líquido aparece antes de qualquer decisão — <b>igualzinho vai cair na conta</b>.</p>
+      <div class="card"><div class="h">Simulação · 5 parcelas de R$ 2.000 <span class="tag">gerada pelo Cícero</span></div>
+        <div class="rows">
+          <div class="r" style="grid-template-columns:1.8fr 1fr"><b>Bruto antecipado</b><span>R$ 10.000</span></div>
+          <div class="r" style="grid-template-columns:1.8fr 1fr"><b>Deságio aberto</b><span style="color:var(--red)">− R$ 780</span></div>
+          <div class="r" style="grid-template-columns:1.8fr 1fr;background:rgba(52,211,153,.08)"><b style="color:var(--grn)">Líquido hoje via PIX</b><span style="color:var(--grn)"><b>R$ 9.220</b></span></div>
+        </div>
+      </div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c" style="justify-content:center">
+      <div class="pgnum">5/5</div>
+      <div class="wordmark" style="font-size:52px"><span class="am">A</span>antecipa<b>qui</b></div>
+      <h1 style="font-size:82px;margin-top:40px">Pergunta pro Cícero.<br/><span class="l">Ele devolve o líquido.</span></h1>
+      <p class="kid" style="max-width:17em">Sem call, sem planilha — a simulação é livre e <b>o número é aberto</b>.</p>
+      <div class="cta" style="margin-top:40px;align-self:flex-start">antecipaqui.digital →</div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="hd">link na bio</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ IMOB-05 · IMOBILIÁRIA (5 quadros · planta baixa contínua) ═══════════ -->
+<section class="board seam" data-post="imob-05-imobiliaria-no-controle">
+  <svg class="arc" style="left:0;top:0" width="5400" height="1350" viewBox="0 0 5400 1350">
+    <g fill="none" stroke="rgba(142,194,247,.20)" stroke-width="2.5">
+      <rect x="80" y="980" width="480" height="260"/>
+      <line x1="320" y1="980" x2="320" y2="1120"/>
+      <path d="M320 1120 a70 70 0 0 1 70 70"/>
+      <rect x="620" y="1040" width="360" height="200"/>
+      <path d="M980 1080 h240 v160 h-240"/>
+      <rect x="1300" y="960" width="520" height="280"/>
+      <line x1="1560" y1="1240" x2="1560" y2="1090"/>
+      <path d="M1560 1090 a80 80 0 0 0 -80 -80"/>
+      <rect x="1900" y="1030" width="300" height="210"/>
+      <rect x="2260" y="980" width="460" height="260"/>
+      <path d="M2490 980 v120 a60 60 0 0 1 -60 60"/>
+      <rect x="2800" y="1050" width="380" height="190"/>
+      <rect x="3240" y="960" width="540" height="280"/>
+      <line x1="3510" y1="960" x2="3510" y2="1140"/>
+      <path d="M3510 1140 a64 64 0 0 0 64 64"/>
+      <rect x="3860" y="1030" width="320" height="210"/>
+      <rect x="4240" y="980" width="480" height="260"/>
+      <line x1="4480" y1="1240" x2="4480" y2="1080"/>
+      <rect x="4780" y="1050" width="360" height="190"/>
+      <rect x="5200" y="990" width="360" height="250"/>
+    </g>
+    <g stroke="rgba(142,194,247,.28)" stroke-width="2" stroke-dasharray="10 12">
+      <line x1="80" y1="932" x2="560" y2="932"/>
+      <line x1="1300" y1="922" x2="1820" y2="922"/>
+      <line x1="3240" y1="922" x2="3780" y2="922"/>
+      <line x1="4240" y1="932" x2="4720" y2="932"/>
+    </g>
+    <g stroke="rgba(142,194,247,.28)" stroke-width="2">
+      <line x1="80" y1="920" x2="80" y2="944"/><line x1="560" y1="920" x2="560" y2="944"/>
+      <line x1="1300" y1="910" x2="1300" y2="934"/><line x1="1820" y1="910" x2="1820" y2="934"/>
+      <line x1="3240" y1="910" x2="3240" y2="934"/><line x1="3780" y1="910" x2="3780" y2="934"/>
+      <line x1="4240" y1="920" x2="4240" y2="944"/><line x1="4720" y1="920" x2="4720" y2="944"/>
+    </g>
+    <g font-family="Sora,Inter,sans-serif" font-size="21" letter-spacing="3" fill="rgba(142,194,247,.34)">
+      <text x="170" y="1115">SUITE 01</text><text x="1420" y="1105">LIVING</text><text x="2380" y="1115">TORRE B</text><text x="3380" y="1105">APT 1204</text><text x="4360" y="1115">VARANDA</text>
+    </g>
+  </svg>
+
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c">
+      <div class="kick">Pra imobiliária e house de lançamento</div>
+      <h1 style="font-size:86px">Sua carteira de comissões, <span class="l">sob controle.</span></h1>
+      <p class="lead" style="font-size:36px">Operações em lote, OCR de contrato e o painel de <b>todos os corretores</b> num lugar só.</p>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">arrasta →</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">2/5</div>
+      <div class="kick">Operações em lote</div>
+      <h2 style="font-size:60px">Antecipe pela equipe <span class="l">inteira de uma vez.</span></h2>
+      <div class="rows" style="margin-top:30px;max-width:860px">
+        <div class="r hd"><span>Corretor</span><span>Operação</span><span>Status</span></div>
+        <div class="r"><b>Ana P.</b><span>R$ 12.400</span><span class="st ok">aprovada</span></div>
+        <div class="r"><b>Bruno C.</b><span>R$ 8.750</span><span class="st ok">aprovada</span></div>
+        <div class="r"><b>Carla M.</b><span>R$ 21.300</span><span class="st bl">em análise</span></div>
+        <div class="r" style="background:rgba(63,143,232,.07)"><b style="color:var(--a-soft)">+ 9 operações no lote</b><span>R$ 137.550</span><span class="st bl">na fila</span></div>
+      </div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">3/5</div>
+      <div class="kick">Importar contrato</div>
+      <h2 style="font-size:60px">O OCR lê o contrato.<br/><span class="l">O formulário se preenche.</span></h2>
+      <p class="kid" style="max-width:18em">Suba o PDF: valor, partes e cronograma de parcelas entram sozinhos no cadastro. <b>Você só confere e confirma.</b></p>
+      <div class="pills"><span class="pill ac">PDF do contrato</span><span class="pill">Leitura automática</span><span class="pill">Cadastro pronto</span></div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="fr-c">
+      <div class="pgnum">4/5</div>
+      <div class="kick">Painel da carteira</div>
+      <h2 style="font-size:60px">Quem antecipou, quanto <span class="l">e quando caiu.</span></h2>
+      <p class="kid" style="max-width:18em;margin-bottom:32px">Relatórios da carteira por corretor, por período e por status — <b>sem planilha paralela</b>.</p>
+      <div class="grid3">
+        <div class="kpi"><div class="l">Corretores ativos</div><div class="v" style="font-size:44px">18</div></div>
+        <div class="kpi"><div class="l">Operações no mês</div><div class="v" style="font-size:44px">34</div></div>
+        <div class="kpi hi"><div class="l">Antecipado no mês</div><div class="v" style="font-size:44px">R$ 412k</div></div>
+      </div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="swipe">→</span></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="glow a"></div>
+    <div class="fr-c" style="justify-content:center">
+      <div class="pgnum">5/5</div>
+      <div class="wordmark" style="font-size:52px"><span class="am">A</span>antecipa<b>qui</b></div>
+      <h1 style="font-size:84px;margin-top:40px">Corretor com caixa <span class="l">vende mais.</span></h1>
+      <p class="kid" style="max-width:17em">Imobiliária que resolve a comissão do time <b>segura os melhores</b>.</p>
+      <div class="cta" style="margin-top:40px;align-self:flex-start">antecipaqui.digital →</div>
+      <div class="foot"><span class="hd">@antecipaqui</span><span class="hd">link na bio</span></div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

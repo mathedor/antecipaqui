@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="robots" content="noindex"/>
+<title>Antecipaqui · Campanhas Instagram — aprovação</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32"/>
+<link rel="icon" type="image/svg+xml" href="/icon.svg"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --a:#3f8fe8; --a-soft:#8ec2f7; --a-deep:#0d4e9e; --a-vivid:#1c6dd0;
+  --ink:#081222; --panel:#0d1a30; --panel2:#122239;
+  --line:rgba(142,194,247,.10); --line2:rgba(142,194,247,.18);
+  --tx:#f2f6fb; --mut:#93a4bc; --mut2:#5c6d85;
+  --grn:#34d399; --red:#fb7185; --amber:#fbbf24; --org:#fb923c;
+  --sans:'Inter',system-ui,sans-serif; --disp:'Sora','Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--tx);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+
+/* ── topbar ── */
+#top{position:sticky;top:0;z-index:50;background:rgba(8,18,34,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+#top .in{max-width:500px;margin:0 auto;padding:12px 16px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.amark{display:inline-flex;width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;font-size:15px;flex:none;box-shadow:0 0 18px rgba(28,109,208,.5)}
+.wordmark{font-family:var(--disp);font-weight:800;font-size:20px;letter-spacing:-.03em;display:inline-flex;align-items:center;gap:9px}
+.wordmark b{color:var(--a-soft);font-weight:700}
+#top .sub{font-family:var(--disp);font-size:11px;color:var(--mut);margin-top:1px}
+#counter{margin-left:auto;font-family:var(--disp);font-weight:700;font-size:12px;color:var(--a-soft);background:rgba(63,143,232,.12);border:1px solid rgba(63,143,232,.35);border-radius:20px;padding:6px 12px;white-space:nowrap}
+/* abas */
+#tabs{max-width:500px;margin:0 auto;display:flex;gap:4px;padding:10px 12px 0}
+#tabs button{flex:1;font-family:var(--disp);font-weight:700;font-size:12.5px;padding:10px 4px 12px;background:none;border:0;border-bottom:2.5px solid transparent;color:var(--mut);cursor:pointer;transition:.15s}
+#tabs button.on{color:var(--a-soft);border-color:var(--a)}
+#tabs button .n{display:block;font-size:10px;font-weight:600;color:var(--mut2);margin-top:2px}
+#tabs button.on .n{color:var(--mut)}
+
+.wrap{max-width:500px;margin:0 auto;padding:0 0 80px}
+
+/* ── intro ── */
+#intro{padding:22px 16px 8px}
+#intro h1{font-family:var(--disp);font-weight:800;font-size:24px;letter-spacing:-.02em;line-height:1.15}
+#intro h1 span{color:var(--a-soft)}
+#intro p{font-size:13.5px;color:var(--mut);line-height:1.55;margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{font-family:var(--disp);font-size:11px;font-weight:700;border-radius:20px;padding:5px 11px;border:1px solid var(--line2);color:var(--mut)}
+.chip.c1{color:var(--a-soft);border-color:rgba(63,143,232,.45);background:rgba(63,143,232,.08)}
+.chip.c2{color:var(--amber);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.08)}
+.chip.c3{color:var(--grn);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
+
+/* ── stories row ── */
+#hl{display:flex;gap:14px;overflow-x:auto;padding:16px;scrollbar-width:none}
+#hl::-webkit-scrollbar{display:none}
+.hlitem{display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;cursor:pointer;background:none;border:0;color:var(--tx)}
+.hlring{width:72px;height:72px;border-radius:50%;padding:3px;background:conic-gradient(var(--a),#34d399,var(--a))}
+.hlring.seen{background:var(--line2)}
+.hlring img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:top;border:3px solid var(--ink)}
+.hlitem small{font-size:10.5px;color:var(--mut);font-family:var(--disp);max-width:74px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.week{display:flex;align-items:center;gap:12px;padding:22px 16px 10px;font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--a-soft)}
+.week::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* ── post card ── */
+.post{border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:14px;background:var(--ink)}
+.phead{display:flex;align-items:center;gap:10px;padding:10px 14px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--ink);border:2px solid var(--a);display:flex;align-items:center;justify-content:center;flex:none}
+.avatar .amark{width:18px;height:18px;border-radius:5px;font-size:10px;box-shadow:none}
+.phead .u{font-weight:700;font-size:13.5px}
+.phead .s{font-size:11px;color:var(--mut)}
+.phead .camp{margin-left:auto;font-family:var(--disp);font-size:10px;font-weight:700;border-radius:14px;padding:4px 9px;border:1px solid var(--line2);color:var(--mut);white-space:nowrap}
+.camp.c1{color:var(--a-soft);border-color:rgba(63,143,232,.45)}
+.camp.c2{color:var(--amber);border-color:rgba(251,191,36,.4)}
+.camp.c3{color:var(--grn);border-color:rgba(52,211,153,.4)}
+
+.media{position:relative}
+.strip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.strip img{width:100%;flex:none;scroll-snap-align:start;aspect-ratio:4/5;object-fit:cover}
+.cnt{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.65);border-radius:14px;font-size:12px;font-weight:600;padding:4px 10px;z-index:3}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);border:0;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center;color:#111}
+.nav.prev{left:10px}.nav.next{right:10px}
+.nav svg{width:14px;height:14px}
+@media (hover:none){.nav{display:none}}
+.dots{display:flex;justify-content:center;gap:4px;padding:10px 0 0}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--mut2);transition:.2s}
+.dots i.on{background:var(--a-soft)}
+
+.acts{display:flex;align-items:center;gap:16px;padding:10px 14px 0}
+.acts svg{width:24px;height:24px;stroke:var(--tx);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.acts .save{margin-left:auto}
+.likes{padding:8px 14px 0;font-size:13px;font-weight:700}
+.cap{padding:6px 14px 2px;font-size:13.5px;line-height:1.5;color:#e3e9f2;white-space:pre-line}
+.cap b{font-weight:700}
+.cap.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tags{padding:2px 14px 4px;font-size:12.5px;color:var(--a-soft)}
+
+/* aprovação */
+.apr{display:flex;gap:8px;padding:12px 14px 14px;align-items:center}
+.apr button{flex:1;font-family:var(--disp);font-weight:700;font-size:13px;padding:11px 0;border-radius:12px;border:1.5px solid var(--line2);background:var(--panel2);color:var(--mut);cursor:pointer;transition:.15s}
+.apr button.ok.on{background:rgba(52,211,153,.15);border-color:var(--grn);color:var(--grn)}
+.apr button.rv.on{background:rgba(251,191,36,.15);border-color:var(--amber);color:var(--amber)}
+.apr button.dlb{flex:none;padding:11px 14px;color:var(--a-soft);border-color:rgba(63,143,232,.4);background:rgba(63,143,232,.08)}
+.apr button.dlb.busy{opacity:.55;pointer-events:none}
+#btnAll{margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:var(--disp);font-weight:700;font-size:13px;padding:13px;border-radius:14px;cursor:pointer;
+  background:var(--panel2);border:1.5px solid rgba(63,143,232,.4);color:var(--a-soft)}
+#vdl{background:none;border:0;color:#fff;cursor:pointer;margin-left:auto}
+#vdl svg{width:24px;height:24px;stroke:#fff;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── stories grid ── */
+#stsec{padding:6px 16px}
+.stgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stcard img{aspect-ratio:9/16;object-fit:cover;width:100%;cursor:pointer}
+.stcard .b{padding:10px}
+.stcard .n{font-family:var(--disp);font-weight:700;font-size:12.5px}
+.stcard .d{font-size:11px;color:var(--mut);margin:2px 0 8px}
+.stcard .apr{padding:0}
+.stcard .apr button{font-size:11.5px;padding:8px 0}
+
+/* ── resumo ── */
+#resumo{margin:26px 16px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px}
+#resumo h2{font-family:var(--disp);font-weight:700;font-size:18px}
+#resumo .row{display:flex;justify-content:space-between;font-size:13px;padding:9px 0;border-bottom:1px solid var(--line)}
+#resumo .row:last-child{border:0}
+#resumo .n{font-family:var(--disp);font-weight:800}
+#resList{font-size:12.5px;color:var(--mut);line-height:1.7;margin-top:10px}
+#resList b{color:var(--a-soft)}
+.btn-clear{margin-top:12px;width:100%;font-family:var(--disp);font-weight:700;font-size:12px;padding:10px;border-radius:10px;border:1px solid var(--line2);background:none;color:var(--mut);cursor:pointer}
+
+/* ── story viewer ── */
+#viewer{position:fixed;inset:0;z-index:100;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center}
+#viewer.open{display:flex}
+#vstage{position:relative;height:100%;max-height:100dvh;aspect-ratio:9/16;max-width:100vw}
+#vstage img{width:100%;height:100%;object-fit:contain}
+#vbars{position:absolute;top:calc(env(safe-area-inset-top) + 10px);left:10px;right:10px;display:flex;gap:4px;z-index:5}
+#vbars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.3);overflow:hidden;position:relative}
+#vbars i::after{content:"";position:absolute;inset:0;background:#fff;transform:scaleX(0);transform-origin:left}
+#vbars i.done::after{transform:scaleX(1)}
+#vbars i.run::after{animation:fill 6s linear forwards}
+@keyframes fill{to{transform:scaleX(1)}}
+#vhead{position:absolute;top:calc(env(safe-area-inset-top) + 24px);left:14px;right:14px;display:flex;align-items:center;gap:10px;z-index:5}
+#vhead .u{font-weight:700;font-size:13px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+#vclose{margin-left:auto;background:none;border:0;color:#fff;cursor:pointer}
+#vclose svg{width:26px;height:26px;stroke:#fff;stroke-width:2;fill:none;stroke-linecap:round}
+.vtap{position:absolute;top:0;bottom:0;width:38%;z-index:4}
+.vtap.l{left:0}.vtap.r{right:0;width:62%}
+
+/* ── plano de mídia ── */
+#btnPlan{margin-top:16px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:var(--disp);font-weight:700;font-size:15px;padding:15px;border-radius:14px;border:0;cursor:pointer;
+  background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;box-shadow:0 10px 34px -10px rgba(28,109,208,.6)}
+#plan{position:fixed;inset:0;z-index:90;background:var(--ink);display:none;overflow-y:auto;overscroll-behavior:contain}
+#plan.open{display:block}
+#plan .phbar{position:sticky;top:0;z-index:5;background:rgba(8,18,34,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+#plan .phbar .in{max-width:560px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:10px}
+#plan .phbar .t{font-family:var(--disp);font-weight:700;font-size:16px}
+#plan .phbar .s{font-size:11px;color:var(--mut)}
+#plan .phbar button{margin-left:auto;background:var(--panel2);border:1px solid var(--line2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+#plan .phbar svg{width:18px;height:18px;stroke:var(--tx);stroke-width:2;fill:none;stroke-linecap:round}
+.pwrap{max-width:560px;margin:0 auto;padding:20px 16px 70px}
+.psec{margin-bottom:26px}
+.psec h2{font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:-.01em;margin-bottom:4px}
+.psec h2 span{color:var(--a-soft)}
+.psec>p{font-size:13.5px;color:var(--mut);line-height:1.55;margin-bottom:12px}
+.psec>p b{color:var(--tx)}
+.funil{display:flex;flex-direction:column;gap:0;margin-top:10px}
+.fstep{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 16px}
+.fstep .no{font-family:var(--disp);font-weight:700;font-size:20px;color:var(--a-soft);width:26px;text-align:center;flex:none}
+.fstep .g b{display:block;font-size:14px}
+.fstep .g small{font-size:12px;color:var(--mut)}
+.farrow{text-align:center;color:var(--a-soft);font-size:16px;line-height:1.6}
+.ccard{border:1px solid var(--line2);border-radius:18px;overflow:hidden;margin-bottom:14px;background:var(--panel)}
+.ccard .ch{padding:14px 16px;display:flex;align-items:baseline;gap:10px}
+.ccard .ch .cn{font-family:var(--disp);font-weight:700;font-size:17px}
+.ccard .ch .cp{margin-left:auto;font-family:var(--disp);font-weight:700;font-size:15px}
+.ccard.k1{border-color:rgba(63,143,232,.4)} .ccard.k1 .ch{background:rgba(63,143,232,.1)} .ccard.k1 .cn,.ccard.k1 .cp{color:var(--a-soft)}
+.ccard.k2{border-color:rgba(251,191,36,.4)} .ccard.k2 .ch{background:rgba(251,191,36,.08)} .ccard.k2 .cn,.ccard.k2 .cp{color:var(--amber)}
+.ccard.k3{border-color:rgba(52,211,153,.4)} .ccard.k3 .ch{background:rgba(52,211,153,.08)} .ccard.k3 .cn,.ccard.k3 .cp{color:var(--grn)}
+.ccard .cb{padding:14px 16px}
+.ccard .cb .li2{display:flex;gap:8px;font-size:13px;line-height:1.5;color:#e3e9f2;margin-bottom:8px}
+.ccard .cb .li2 b{color:var(--tx)}
+.ccard .cb .li2::before{content:"›";color:var(--a-soft);font-weight:800;flex:none}
+.thumbs{display:flex;gap:8px;margin-top:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.thumbs::-webkit-scrollbar{display:none}
+.thumbs img{width:74px;aspect-ratio:4/5;object-fit:cover;object-position:top;border-radius:10px;border:1px solid var(--line2);flex:none}
+.ptbl{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--panel);border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.ptbl th{font-family:var(--disp);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);text-align:left;padding:10px 12px;background:#091426;border-bottom:1px solid var(--line)}
+.ptbl td{padding:10px 12px;border-bottom:1px solid var(--line)}
+.ptbl tr:last-child td{border-bottom:0}
+.ptbl td:last-child,.ptbl th:last-child{text-align:right}
+.ptbl b{color:var(--a-soft)}
+.ptbl .g{color:var(--grn);font-weight:700}
+.crono{display:flex;flex-direction:column;gap:10px}
+.cwk{display:flex;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 16px}
+.cwk .wn{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--a-soft);flex:none;width:64px}
+.cwk .g b{display:block;font-size:13.5px}
+.cwk .g small{font-size:12px;color:var(--mut);line-height:1.5}
+.pfoot{margin-top:6px;font-size:12px;color:var(--mut2);line-height:1.6}
+.pcta{display:block;text-align:center;margin-top:20px;font-family:var(--disp);font-weight:700;font-size:15px;padding:15px;border-radius:14px;border:0;width:100%;cursor:pointer;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff}
+
+@media (min-width:760px){
+  body{background:#060e1d}
+  .post{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+}
+</style>
+</head>
+<body>
+
+<header id="top">
+  <div class="in">
+    <div>
+      <div class="wordmark"><span class="amark">A</span>antecipa<b>qui</b></div>
+      <div class="sub">Campanhas Instagram · aprovação</div>
+    </div>
+    <div id="counter">0/81</div>
+  </div>
+  <nav id="tabs">
+    <button data-tab="imob" class="on">Imobiliárias<span class="n">antecipar operações</span></button>
+    <button data-tab="constr">Construtoras<span class="n">parceria de caixa</span></button>
+    <button data-tab="com">Comerciais<span class="n">recrutamento</span></button>
+  </nav>
+</header>
+
+<div class="wrap">
+
+<section id="intro"></section>
+
+<div class="week" style="padding-top:14px">Stories · toque para assistir</div>
+<div id="hl"></div>
+
+<main id="feed"></main>
+
+<div class="week">Stories · aprovação</div>
+<section id="stsec"><div class="stgrid" id="stgrid"></div></section>
+
+<section id="resumo">
+  <h2>Resumo da aprovação</h2>
+  <div class="row"><span>✅ Aprovadas (todas as abas)</span><span class="n" id="nOk" style="color:var(--grn)">0</span></div>
+  <div class="row"><span>🔁 Para rever</span><span class="n" id="nRv" style="color:var(--amber)">0</span></div>
+  <div class="row"><span>⏳ Sem decisão</span><span class="n" id="nPd" style="color:var(--mut)">81</span></div>
+  <div id="resList"></div>
+  <button class="btn-clear" onclick="if(confirm('Limpar todas as decisões?')){localStorage.removeItem(KEY);state={};renderState()}">limpar decisões</button>
+</section>
+
+<p style="text-align:center;font-size:11px;color:var(--mut2);font-family:var(--disp);padding:10px 16px 30px">
+  Antecipaqui · a comissão cai hoje — kit completo em marketing/ · plano de mídia: trafego-pago.md
+</p>
+</div>
+
+<!-- plano de mídia -->
+<div id="plan">
+  <div class="phbar"><div class="in">
+    <div>
+      <div class="t">Como serão as campanhas 📣</div>
+      <div class="s">Meta Ads (Instagram + Facebook) · 3 vertentes, 3 funis</div>
+    </div>
+    <button onclick="closePlan()" aria-label="fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div></div>
+  <div class="pwrap">
+
+    <section class="psec">
+      <h2>A lógica, em uma linha</h2>
+      <p>A Antecipaqui ganha quando uma operação roda. O tráfego compra <b>três públicos diferentes</b> — cada um com funil, meta e verba próprios:</p>
+      <div class="funil">
+        <div class="fstep"><span class="no">V1</span><div class="g"><b>Imobiliárias & corretores — 50% da verba</b><small>motor de receita: anúncio → calculadora → cadastro → 1ª operação</small></div></div>
+        <div class="farrow">+</div>
+        <div class="fstep"><span class="no">V2</span><div class="g"><b>Construtoras — 30%</b><small>alavanca estratégica: 1 parceria traz dezenas de corretores juntos · meta = reunião marcada</small></div></div>
+        <div class="farrow">+</div>
+        <div class="fstep" style="border-color:rgba(52,211,153,.45)"><span class="no" style="color:var(--grn)">V3</span><div class="g"><b style="color:var(--grn)">Comerciais — 20%</b><small>força de distribuição: cada representante multiplica V1 e V2 na região dele</small></div></div>
+      </div>
+    </section>
+
+    <section class="psec">
+      <h2>As <span>3 vertentes</span></h2>
+      <div class="ccard k1">
+        <div class="ch"><span class="cn">V1 · Imobiliárias</span><span class="cp">50%</span></div>
+        <div class="cb">
+          <div class="li2"><span><b>Quem vê:</b> corretores e gestores de imobiliária (CRECI, lançamentos, lookalike quando houver base)</span></div>
+          <div class="li2"><span><b>O que sente:</b> "a venda parcelou em 24x, a comissão cai hoje" — janela de 150 dias, deságio aberto, Cícero</span></div>
+          <div class="li2"><span><b>Metas:</b> clique R$ 1–3 · cadastro R$ 30–80 · <b>1ª operação ≤ R$ 300</b></span></div>
+          <div class="thumbs" data-th="imob-01-manifesto,imob-02-boleto-chegou-primeiro,imob-14-numero-150,imob-19-cicero-chat,imob-22-cta-direto"></div>
+        </div>
+      </div>
+      <div class="ccard k2">
+        <div class="ch"><span class="cn">V2 · Construtoras</span><span class="cp">30%</span></div>
+        <div class="cb">
+          <div class="li2"><span><b>Quem vê:</b> diretoria, financeiro e comercial de construtoras e incorporadoras (público pequeno e caro — normal)</span></div>
+          <div class="li2"><span><b>O que sente:</b> parcele em até 24x, o corretor recebe à vista assim mesmo — nada a mais no boleto, só muda o favorecido</span></div>
+          <div class="li2"><span><b>Metas:</b> lead qualificado (reunião) R$ 150–400 · a leitura é custo por REUNIÃO, não por clique</span></div>
+          <div class="thumbs" data-th="constr-01-manifesto,constr-02-dilema,constr-13-headline,constr-18-painel-mockup,constr-22-cta"></div>
+        </div>
+      </div>
+      <div class="ccard k3">
+        <div class="ch"><span class="cn">V3 · Comerciais</span><span class="cp">20%</span></div>
+        <div class="cb">
+          <div class="li2"><span><b>Quem vê:</b> vendedores, representantes e corretores que querem renda recorrente na região deles</span></div>
+          <div class="li2"><span><b>O que sente:</b> "vende uma vez, recebe sempre" — carteira própria, painel com metas e ranking, material pronto</span></div>
+          <div class="li2"><span><b>Metas:</b> candidato R$ 20–60 · representante ATIVO (1ª conta na carteira) ≤ R$ 500</span></div>
+          <div class="thumbs" data-th="com-01-manifesto,com-02-recorrencia,com-13-headline,com-19-rede,com-22-cta"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="psec">
+      <h2>Quanto vamos investir</h2>
+      <p>Começamos pequeno, provamos a conta, e só então escalamos:</p>
+      <table class="ptbl">
+        <tr><th>Fase</th><th>Quando</th><th>Verba</th></tr>
+        <tr><td><b>Validação</b></td><td>semanas 1–4</td><td>R$ 60/dia · <b>R$ 1.800/mês</b></td></tr>
+        <tr><td>Tração</td><td>mês 2–3</td><td>R$ 120/dia · R$ 3.600/mês</td></tr>
+        <tr><td>Escala</td><td>metas provadas</td><td>R$ 240+/dia · re-alocando pro funil vencedor</td></tr>
+      </table>
+    </section>
+
+    <section class="psec">
+      <h2>Cronograma das 4 semanas</h2>
+      <div class="crono">
+        <div class="cwk"><span class="wn">SEM 1</span><div class="g"><b>Aquecer e medir</b><small>perfil @antecipaqui com orgânico no ar (calendários nos legendas-*.md) · Pixel + CAPI validados · liga V1-topo e V3-topo e não mexe por 5 dias</small></div></div>
+        <div class="cwk"><span class="wn">SEM 2</span><div class="g"><b>Ligar o B2B</b><small>liga V2 (construtoras) · corta o pior criativo de V1 · stories rodando como reels</small></div></div>
+        <div class="cwk"><span class="wn">SEM 3</span><div class="g"><b>Ligar a conversão</b><small>público morno pronto → liga remarketing e conversão das três vertentes · teste A/B em V1: "150 dias de janela" × "a comissão cai hoje"</small></div></div>
+        <div class="cwk"><span class="wn">SEM 4</span><div class="g"><b>Ler e decidir</b><small>V1 fez operação ≤ R$ 300? dobra e cria lookalike · V2 marcou ≥ 2 reuniões? mantém · V3 trouxe representante ativo? expande por região</small></div></div>
+      </div>
+      <p class="pfoot" style="margin-top:14px">Regras: nunca editar campanha em aprendizado · 1 variável por teste · criativo renovado a cada 3–4 semanas (gaveta pronta em cada vertente) · resposta a DM/WhatsApp em &lt; 1h nos dias de anúncio · relatório semanal por vertente: gasto → leads → operações/reuniões/representantes.</p>
+      <button class="pcta" onclick="closePlan()">Voltar e aprovar as peças ✓</button>
+    </section>
+
+  </div>
+</div>
+
+<!-- story viewer -->
+<div id="viewer">
+  <div id="vstage">
+    <div id="vbars"></div>
+    <div id="vhead">
+      <div class="avatar" style="width:30px;height:30px"><span class="amark" style="width:16px;height:16px;font-size:9px"></span></div>
+      <span class="u">antecipaqui</span>
+      <button id="vdl" aria-label="baixar" onclick="dlPost(curStories()[vi].id,1,null)"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg></button>
+      <button id="vclose" aria-label="fechar" style="margin-left:6px"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <img id="vimg" src="" alt="story"/>
+    <div class="vtap l"></div><div class="vtap r"></div>
+  </div>
+</div>
+
+<script>
+const IMG = '/campanhas/img/';
+
+/* ═══════ dados das 3 campanhas ═══════ */
+const CAMPS = {
+imob: {
+ titulo:'27 peças pra <span>imobiliárias e corretores.</span>',
+ desc:'A vertente que traz operação: a dor da comissão parcelada, a janela nova de 150 dias e o caminho até o PIX. Deslize como no Instagram e aprove.',
+ posts:[
+  {w:'Semana 1 · Apresentação', id:'imob-01-manifesto', n:5, camp:'c1', likes:'antecipaqui e outras 248 pessoas',
+   cap:`A venda parcelou em 24x. A comissão cai hoje. 💙\nVocê fechou a venda — mas a construtora parcelou VOCÊ. Na Antecipaqui, as parcelas que vencem em até 150 dias viram PIX à vista: cadastro em minutos, contrato digital no celular e o deságio aberto na tela antes de qualquer sim.\nSua comissão, no seu tempo. Link na bio. 🔗`,
+   tags:'#corretordeimoveis #comissaoimobiliaria #mercadoimobiliario #creci'},
+  {id:'imob-13-vendeu-entao-recebe', n:1, camp:'c3', likes:'201 curtidas',
+   cap:`Vendeu? Então recebe. Comissão parcelada em 24x vira PIX à vista, com deságio aberto na tela — até 150 dias, até 5 parcelas. 💙`,
+   tags:'#corretordeimoveis #antecipacao #comissao'},
+  {id:'imob-02-boleto-chegou-primeiro', n:5, camp:'c1', likes:'antecipaqui e outras 334 pessoas',
+   cap:`Vendeu. Comemorou. O boleto chegou primeiro. 🎬\nComissão de R$ 48 mil picada em 24x de R$ 2.000: dois anos pra receber o que você já ganhou — enquanto aluguel, escola e cartão vencem esse mês. E capital parado trava a próxima venda.\nExiste esperar. E existe Antecipaqui. Arrasta pra ver a virada. →`,
+   tags:'#vidadecorretor #plantaodevendas #imobiliaria'},
+  {w:'Semana 2 · Como funciona', id:'imob-03-da-venda-ao-pix', n:6, camp:'c2', likes:'antecipaqui e outras 259 pessoas',
+   cap:`Da venda assinada ao PIX na conta: 4 estações. 🚉\nCadastro (dois documentos, minutos) → análise rápida → contrato digital assinado no celular → dinheiro à vista via PIX ou TED. Tudo acompanhado na tela, com notificação a cada avanço.\nSalva esse post pra quando a próxima comissão parcelar. 📌`,
+   tags:'#antecipacaoderecebiveis #corretor #comofunciona'},
+  {id:'imob-14-numero-150', n:1, camp:'c1', likes:'188 curtidas',
+   cap:`150 dias de janela, até 5 parcelas à vista. E a mais longa não é rejeitada: fica registrada e a plataforma avisa quando entrar. 🗓️`,
+   tags:'#150dias #antecipacao #comissaoimobiliaria'},
+  {id:'imob-06-simulacao-transparente', n:5, camp:'c2', likes:'214 curtidas',
+   cap:`Deságio na tela. Antes do sim. 👀\nNada de "depois a gente te fala": a simulação mostra bruto, deságio e líquido abertos — o que você vê é o que cai. Gostou, avança. Não gostou, fecha a aba. Simular é livre e não compromete nada.`,
+   tags:'#transparencia #simulacao #corretordeimoveis'},
+  {w:'Semana 3 · Confiança', id:'imob-04-cicero', n:5, camp:'c2', likes:'antecipaqui e outras 276 pessoas',
+   cap:`"Calcula 100 mil em 30/60/90." — e o Cícero devolve o líquido na hora. 🤖\nA IA da Antecipaqui simula sua antecipação no chat, com o deságio aberto, e ainda responde o que o financês esconde: não é empréstimo, é cessão — você vende parcelas que já são suas e sai da fila.\nPergunta pro Cícero. Link na bio.`,
+   tags:'#ia #cicero #fintech #simulacao'},
+  {id:'imob-12-mito-vs-fato', n:5, camp:'c2', likes:'243 curtidas',
+   cap:`"É empréstimo." "A taxa aparece depois." "É burocracia de banco." ❌\nMito, mito e mito: é cessão de parcelas que já são suas, o deságio aparece aberto na simulação e o processo inteiro cabe no celular. Arrasta pro papo reto. →`,
+   tags:'#mitoefato #antecipacao #cessao'},
+  {id:'imob-09-voce-sai-da-fila', n:4, camp:'c2', likes:'177 curtidas',
+   cap:`Depois da cessão, quem espera a construtora é o fundo. Você já recebeu. 💙\nPlanilha de parcelas, e-mail pro financeiro, "sobe pra semana que vem" — isso deixa de existir na sua rotina. Cobrar não é o seu trabalho. Vender é.`,
+   tags:'#corretordeimoveis #rotinadecorretor #vendas'},
+  {w:'Semana 4 · Conversão', id:'imob-20-esperar-x-antecipar', n:1, camp:'c3', likes:'196 curtidas',
+   cap:`Esperar × antecipar: R$ 0 hoje ou R$ 9.220 hoje. Os dois caminhos existem — só um paga o tráfego de amanhã. 📊`,
+   tags:'#antecipacao #corretor #decisao'},
+  {id:'imob-05-imobiliaria-no-controle', n:5, camp:'c2', likes:'antecipaqui e outras 222 pessoas',
+   cap:`Pra imobiliária: a carteira de comissões do time inteiro, sob controle. 🏢\nOperações em lote (a equipe toda de uma vez), OCR que lê o contrato e preenche o cadastro sozinho, painel por corretor e relatórios sem planilha paralela.\nCorretor com caixa vende mais — e imobiliária que resolve a comissão do time segura os melhores.`,
+   tags:'#imobiliaria #gestaoimobiliaria #equipedevendas'},
+  {id:'imob-21-simular-nao-custa', n:1, camp:'c3', likes:'209 curtidas',
+   cap:`Simular não custa. Não simular, sim. Cadastra, vê o líquido aberto na tela e decide — não gostou, fecha a aba. 🖱️`,
+   tags:'#simulacao #antecipacao #linknabio'},
+  {w:'Gaveta · Semanas 5–8', id:'imob-07-janela-150-dias', n:4, camp:'c2', likes:'163 curtidas',
+   cap:`A janela agora é de 150 dias — até 5 parcelas mensais à vista. 🗓️\nE a parcela mais longa? Não é rejeitada: fica registrada na plataforma e você recebe o aviso no dia em que ela entrar na janela. Nenhuma comissão fica pra trás.`,
+   tags:'#150dias #5parcelas #antecipacao'},
+  {id:'imob-08-assinatura-sem-cartorio', n:4, camp:'org', likes:'151 curtidas',
+   cap:`Cartório? Seu polegar resolve. ✍️\nO contrato de cessão chega no seu celular: você lê, assina do plantão e a operação segue direto pro pagamento. Sem imprimir, sem reconhecer firma, sem motoboy.`,
+   tags:'#assinaturadigital #semburocracia #corretor'},
+  {id:'imob-10-lote-imobiliaria', n:5, camp:'org', likes:'142 curtidas',
+   cap:`20 corretores. Uma operação. 📦\nSelecione as operações, revise o consolidado e envie tudo de uma vez — com OCR lendo os contratos e preenchendo os cadastros sozinho. A carteira inteira do time, num painel só.`,
+   tags:'#imobiliaria #operacoesemlote #gestao'},
+  {id:'imob-11-status-tempo-real', n:4, camp:'org', likes:'137 curtidas',
+   cap:`"Cadê minha operação?" — na tela. 📲\nAnálise, aprovação, contrato e pagamento com hora marcada, e uma notificação a cada avanço. Do cadastro ao PIX, você vê tudo. Sem F5, sem ligar pra ninguém.`,
+   tags:'#statusemtemporeal #transparencia #app'},
+  {id:'imob-15-quote-corretora', n:1, camp:'c1', likes:'antecipaqui e outras 318 pessoas',
+   cap:`"A venda foi minha. A espera não precisava ser." — se essa frase doeu, o link tá na bio. 💬`,
+   tags:'#vidadecorretor #corretoradeimoveis #frases'},
+  {id:'imob-16-antes-depois', n:1, camp:'c3', likes:'174 curtidas',
+   cap:`O mesmo contrato, dois finais: R$ 2.000 por mês até 2028 — ou R$ 9.220 hoje, via PIX, com a fila indo pro fundo. Deságio aberto antes de decidir. ⚖️`,
+   tags:'#antesedepois #antecipacao #comissao'},
+  {id:'imob-17-checklist-operar', n:1, camp:'c3', likes:'158 curtidas',
+   cap:`O que você precisa pra operar: contrato de venda, contrato de comissão e uma chave PIX. Cadastro em minutos, o resto a plataforma faz. ✅`,
+   tags:'#checklist #comecehoje #antecipaqui'},
+  {id:'imob-18-pix-caindo', n:1, camp:'org', likes:'229 curtidas',
+   cap:`Aquele som de PIX caindo. 🔔 Assinou o contrato de cessão? O dinheiro é à vista — PIX ou TED, direto na sua conta.`,
+   tags:'#pix #avista #corretordeimoveis'},
+  {id:'imob-19-cicero-chat', n:1, camp:'c2', likes:'182 curtidas',
+   cap:`"Calcula 100 mil em 30/60/90." Líquido na hora, deságio aberto, simulação fechada no chat. O Cícero atende agora. 🤖`,
+   tags:'#cicero #ia #simulacao'},
+  {id:'imob-22-cta-direto', n:1, camp:'c3', likes:'antecipaqui e outras 265 pessoas',
+   cap:`A venda parcelou em 24x. A comissão cai hoje. antecipaqui.digital — link na bio. 💙`,
+   tags:'#antecipaqui #comissaoimobiliaria #linknabio'},
+ ],
+ stories:[
+  {id:'imob-23-story-comissao-parada', n:'Enquete de dor', d:'Sua comissão tá parada? A/B/C — usar sticker de enquete', camp:'c1'},
+  {id:'imob-24-story-150-dias', n:'150 dias', d:'Número gigante — awareness da janela nova · destaque "Como funciona"', camp:'c1'},
+  {id:'imob-25-story-simule-agora', n:'Simule agora', d:'Passo a passo → link direto · semana de conversão', camp:'c3'},
+  {id:'imob-26-story-cicero', n:'Cícero responde', d:'Conversa real com a IA · retarget dos carrosséis', camp:'c2'},
+  {id:'imob-27-story-cta-final', n:'CTA final', d:'Headline canônica + link · fixar como fechamento', camp:'c3'},
+ ]},
+constr: {
+ titulo:'27 peças pra <span>construtoras parceiras.</span>',
+ desc:'A vertente da parceria de fluxo de caixa: parcele as comissões em até 24x, o corretor recebe à vista com a gente — nada a mais no boleto, só muda o favorecido.',
+ posts:[
+  {w:'Semana 1 · Abrir a conversa', id:'constr-01-manifesto', n:5, camp:'c1', likes:'antecipaqui e outras 197 pessoas',
+   cap:`Comissão à vista pro corretor. Sem sair do caixa da obra. 🏗️\nA briga entre pagar à vista (e drenar a obra) ou parcelar (e esfriar o estande) acabou: você parcela em até 24x, o corretor antecipa com a Antecipaqui e recebe à vista assim mesmo. O deságio é dele — pra você, mesmas parcelas, mesmas datas, só muda o favorecido.\nSeja uma construtora parceira. Link na bio. 🔗`,
+   tags:'#construtora #incorporadora #fluxodecaixa #vgv'},
+  {id:'constr-13-headline', n:1, camp:'c1', likes:'164 curtidas',
+   cap:`A obra fica com o caixa. O corretor fica com o à vista. 🏗️ É esse o acordo — e quem assina embaixo é a Antecipaqui. Parceria de fluxo de caixa pra construtoras que vendem rápido. Link na bio.`,
+   tags:'#construtora #lancamentoimobiliario #parceria'},
+  {id:'constr-02-dilema', n:5, camp:'c1', likes:'antecipaqui e outras 231 pessoas',
+   cap:`R$ 576 mil saindo do caixa no mês do lançamento — ou 24 meses de corretor desmotivado? 🎬\nToda mesa de lançamento conhece esse dilema. A terceira via: parcele a comissão e deixe o corretor receber à vista antecipando com a gente. Caixa intacto, time em chamas, custo zero pra construtora.\nArrasta pra ver os três caminhos. →`,
+   tags:'#incorporacao #gestaofinanceira #obra'},
+  {id:'constr-15-quote-financeiro', n:1, camp:'c1', likes:'149 curtidas',
+   cap:`"Parcelamos tudo em 24x e nenhum corretor reclamou. Pelo contrário: pediram pra vender o próximo lançamento." É o tipo de frase que a gente quer ouvir do seu financeiro também. ☕ (persona ilustrativa)`,
+   tags:'#financeiro #construtora #depoimento'},
+  {w:'Semana 2 · A mecânica', id:'constr-03-como-funciona', n:6, camp:'c2', likes:'antecipaqui e outras 208 pessoas',
+   cap:`A parceria inteira em 4 marcos — como uma obra bem tocada. 📐\n1️⃣ Você parcela como sempre (até 24x) · 2️⃣ o corretor pede a antecipação das parcelas de até 150 dias e você confirma a cessão em 1 clique · 3️⃣ ele recebe à vista · 4️⃣ você paga as mesmas parcelas, nas mesmas datas — só muda o favorecido.\nSalva esse post pra mostrar pro financeiro. 📌`,
+   tags:'#comofunciona #construtora #cessao'},
+  {id:'constr-06-nada-a-mais-no-boleto', n:4, camp:'c2', likes:'186 curtidas',
+   cap:`A dúvida nº 1 do financeiro: "vamos pagar a mais?" — Não. 🧾\nMesmas parcelas, mesmas datas, mesmo valor. A única linha que muda no contas a pagar é o favorecido: o fundo em vez do corretor. O deságio é escolha dele, que prefere receber hoje a esperar 90–150 dias.\nBenefício de à vista, boleto de parcelado.`,
+   tags:'#contasapagar #financeiro #semcustoextra'},
+  {id:'constr-14-24x', n:1, camp:'c2', likes:'171 curtidas',
+   cap:`24x sem atrito. A comissão diluída no fluxo da obra, o corretor recebendo à vista com a Antecipaqui — e o deságio por conta dele. O parcelamento deixou de ser uma má notícia no estande. 💙`,
+   tags:'#24x #fluxodecaixa #construtora'},
+  {id:'constr-07-cessao-1-clique', n:4, camp:'c2', likes:'157 curtidas',
+   cap:`Burocracia não é obra nossa. 🖱️\nO pedido de antecipação do corretor chega pronto no seu painel: parcelas, valor, novo favorecido. Você confirma em 1 clique e as duplicatas se atualizam na hora — com trilha completa de quem confirmou, quando e o quê.\nMenos assinatura, mais obra em pé.`,
+   tags:'#cessao #1clique #semburocracia'},
+  {id:'constr-09-caixa-da-obra', n:4, camp:'c2', likes:'178 curtidas',
+   cap:`O mesmo total de comissão — sem o soco no mês do lançamento. 🫁\nDiluir em 24x protege o cronograma físico-financeiro. E com a Antecipaqui na mesa, parcelar deixou de custar a motivação do time: o corretor recebe à vista antecipando por conta dele.\nConcreto no prazo, caixa no lugar.`,
+   tags:'#cronograma #obra #caixaprotegido'},
+  {id:'constr-16-antes-depois', n:1, camp:'c2', likes:'166 curtidas',
+   cap:`A mesma comissão de R$ 48 mil, dois filmes: saindo inteira no mês da venda × diluída em 24x de R$ 2.000 com o corretor pago à vista. O segundo filme tem final feliz pros dois lados. 🎞️`,
+   tags:'#antesedepois #comissao #construtora'},
+  {w:'Semana 3 · A prova', id:'constr-04-painel-financeiro', n:5, camp:'c2', likes:'antecipaqui e outras 189 pessoas',
+   cap:`O contas a pagar agradece. 🗂️\nDuplicatas organizadas por mês e por fundo, extrato completo por empreendimento, histórico de pagamento construindo seu score de boa pagadora. Comissão parcelada sem virar planilha paralela.\nArrasta pra ver o painel por dentro. →`,
+   tags:'#painel #duplicatas #gestaofinanceira'},
+  {id:'constr-10-duplicatas-sem-planilha', n:4, camp:'c2', likes:'152 curtidas',
+   cap:`Se a gestão das comissões da sua incorporadora mora numa planilha, esse post é um resgate. 🛟\nNo painel da Antecipaqui: o que vence esse mês, pra qual fundo pagar, o que já foi quitado — cedidas e não cedidas lado a lado, com filtro por obra e por período.\nOrganização não é luxo. É estrutura.`,
+   tags:'#planilhanunca #organizacao #incorporadora'},
+  {id:'constr-18-painel-mockup', n:1, camp:'c2', likes:'161 curtidas',
+   cap:`O painel da construtora por dentro: a pagar do mês, score de pagamento, cashback acumulado e cada duplicata com favorecido e status. O financeiro para de caçar informação. 🖥️`,
+   tags:'#painel #construtora #financeiro'},
+  {id:'constr-08-score-cashback', n:5, camp:'c2', likes:'193 curtidas',
+   cap:`142 de 145 parcelas em dia = score de boa pagadora + cashback no bolso. 💙\nConstrutora parceira acumula reputação dentro da plataforma — e recebe cashback sobre o volume que os corretores anteciparam (ex.: R$ 1.870 sobre R$ 187 mil num semestre). Pagar bem sempre valeu. Agora rende.`,
+   tags:'#score #cashback #construtoraparceira'},
+  {id:'constr-19-cashback', n:1, camp:'c2', likes:'175 curtidas',
+   cap:`R$ 1.870 de volta num semestre — sobre R$ 187 mil que os corretores anteciparam, pagando exatamente o que você já ia pagar. Construtora parceira tem troco. 💙 (exemplo ilustrativo)`,
+   tags:'#cashback #parceria #construtora'},
+  {id:'constr-12-mito-fato', n:5, camp:'c2', likes:'antecipaqui e outras 204 pessoas',
+   cap:`"Vamos pagar a mais." "Vai virar burocracia." "É empréstimo empurrado no corretor." — Mito, mito e mito. ⚖️\nMesmas parcelas e datas (só muda o favorecido), cessão em 1 clique, e a antecipação é escolha 100% do corretor sobre um valor que já é dele.\nSalva e leva pra reunião de diretoria. 📌`,
+   tags:'#mitoefato #diretoria #construtora'},
+  {w:'Semana 4 · Fechar', id:'constr-05-forca-de-vendas', n:4, camp:'c3', likes:'antecipaqui e outras 216 pessoas',
+   cap:`Corretor compara lançamentos como você compara terrenos. 📊\nQuando receber não depende de esperar 24 meses, o seu estande vira prioridade na agenda dele — plantão cheio, tabela defendida, indicação chegando. E o custo disso pra você é zero: o deságio da antecipação é do corretor.\nForça de vendas motivada, sem mexer no orçamento. Link na bio.`,
+   tags:'#forcadevendas #estande #lancamento'},
+  {id:'constr-11-corretor-parceiro', n:4, camp:'c3', likes:'147 curtidas',
+   cap:`Vender é motivação composta. 🔁\nCorretor pago rápido vende mais e prioriza os lançamentos da construtora parceira. Seu papel: apresentar a Antecipaqui pro time e confirmar as cessões em 1 clique. O resto — antecipação, fundo, pagamento — é problema nosso.`,
+   tags:'#vendas #corretorparceiro #construtora'},
+  {id:'constr-17-checklist', n:1, camp:'c3', likes:'139 curtidas',
+   cap:`Virar construtora parceira cabe num checklist de 5 itens: cadastro, parcelamento em contrato, apresentação pro time, cessão em 1 clique, painel + cashback. Sem análise de crédito pra você, sem custo extra. ✅`,
+   tags:'#checklist #parceria #construtora'},
+  {id:'constr-20-comparativo', n:1, camp:'c3', likes:'168 curtidas',
+   cap:`À vista, 24x sozinho ou 24x com Antecipaqui? Só um caminho protege a obra E o time ao mesmo tempo — e o custo extra dele, pra você, é zero. Compare as colunas. ⚖️`,
+   tags:'#comparativo #fluxodecaixa #decisao'},
+  {id:'constr-21-convite', n:1, camp:'c3', likes:'155 curtidas',
+   cap:`Vamos desenhar isso pro seu próximo lançamento? Uma conversa com financeiro e comercial na mesma mesa: saímos com o parcelamento desenhado e o time sabendo que recebe à vista. Chama a gente. 🤝`,
+   tags:'#vamosconversar #lancamento #parceria'},
+  {id:'constr-22-cta', n:1, camp:'c3', likes:'antecipaqui e outras 187 pessoas',
+   cap:`Seja uma construtora parceira da Antecipaqui: comissão em até 24x, caixa da obra protegido, corretor à vista e cashback sobre o volume operado. antecipaqui.digital — link na bio. 🚀`,
+   tags:'#antecipaqui #construtoraparceira #linknabio'},
+ ],
+ stories:[
+  {id:'constr-23-story-pergunta', n:'A pergunta', d:'Sua comissão à vista tá saindo do caixa da obra? + enquete sim/não', camp:'c1'},
+  {id:'constr-24-story-dado', n:'O dado', d:'24x no seu fluxo, à vista na conta do corretor · link "ver como funciona"', camp:'c2'},
+  {id:'constr-25-story-painel', n:'Painel em 1 clique', d:'Pedido de cessão + confirmar — responde "mas dá trabalho?"', camp:'c2'},
+  {id:'constr-26-story-time', n:'Efeito no time', d:'3 cartas: prioridade, mais vendas, custo zero', camp:'c3'},
+  {id:'constr-27-story-cta', n:'Vamos conversar', d:'Fechamento de semana + link sticker VAMOS CONVERSAR', camp:'c3'},
+ ]},
+com: {
+ titulo:'27 peças pra <span>recrutar comerciais.</span>',
+ desc:'A vertente que monta a força de distribuição: representantes com carteira própria, comissão recorrente, painel com metas e ranking — e material pronto pra vender.',
+ posts:[
+  {w:'Semana 1 · Chamada', id:'com-01-manifesto', n:5, camp:'c1', likes:'antecipaqui e outras 241 pessoas',
+   cap:`Você conhece todo mundo do mercado imobiliário da sua cidade? Isso vale dinheiro — todo mês. 💼\nA Antecipaqui antecipa comissão imobiliária, e está recrutando representantes comerciais: você apresenta a plataforma pras imobiliárias e construtoras da sua região, elas viram a sua carteira — e você ganha comissão recorrente em toda operação que ela fizer.\nPainel próprio, material pronto, link com o seu nome. Link na bio. 🔗`,
+   tags:'#representantecomercial #vendas #rendarecorrente #oportunidade'},
+  {id:'com-13-headline', n:1, camp:'c1', likes:'212 curtidas',
+   cap:`Vende uma vez. Recebe sempre. Comissão recorrente sobre toda operação da sua carteira de imobiliárias e construtoras — enquanto ela operar. 💙`,
+   tags:'#rendarecorrente #vendas #representante'},
+  {id:'com-05-produto', n:5, camp:'c1', likes:'antecipaqui e outras 198 pessoas',
+   cap:`Todo mercado imobiliário do Brasil tem a mesma dor: comissão vendida hoje, presa numa janela de parcelas que pode levar até 150 dias. 🏗️\nA Antecipaqui paga o corretor à vista e a construtora mantém o fluxo dela. Dor universal + solução simples = o produto mais fácil de apresentar que você vai encontrar.\nRepresentantes: link na bio.`,
+   tags:'#vendasb2b #produto #mercadoimobiliario'},
+  {w:'Semana 2 · Recorrência', id:'com-02-recorrencia', n:5, camp:'c2', likes:'antecipaqui e outras 267 pessoas',
+   cap:`Tem comissão que morre no dia do pagamento. E tem comissão que continua nascendo. 📈\nNa venda única, todo dia 1º o contador volta pro zero. Na Antecipaqui, a carteira que você montou ontem continua pagando enquanto você abre a de amanhã — cliente novo soma, não substitui.\nArrasta pra ver a pilha crescer. →`,
+   tags:'#rendarecorrente #comissao #carreiraemvendas'},
+  {id:'com-16-unica-vs-recorrente', n:1, camp:'c2', likes:'179 curtidas',
+   cap:`Comissão que zera × comissão que soma: na venda única o cliente antigo não paga mais nada; na Antecipaqui a carteira de ontem segue pagando enquanto você abre a de amanhã. ⚖️`,
+   tags:'#recorrencia #vendas #comparativo'},
+  {id:'com-06-carteira', n:5, camp:'c2', likes:'171 curtidas',
+   cap:`Cliente que você trouxe é seu — no sistema, não no aperto de mão. 🤝\nToda imobiliária ou construtora que você cadastrar ou indicar fica vinculada a você, e seu link de indicação tem cookie de origem de 60 dias: o cliente clicou hoje e fechou semanas depois? A atribuição continua sua.`,
+   tags:'#carteirapropria #atribuicao #representante'},
+  {w:'Semana 3 · Ferramentas', id:'com-04-painel', n:5, camp:'c2', likes:'antecipaqui e outras 224 pessoas',
+   cap:`Representante sem ferramenta vira vendedor de planilha. Aqui não. 🖥️\nO painel exclusivo do comercial mostra comissões a receber, metas calculadas automaticamente (sem configurar nada), ranking entre comerciais, conquistas, relatórios, prospects e follow-ups.\nArrasta e repara na barra de meta enchendo quadro a quadro. →`,
+   tags:'#painel #ferramentas #vendas'},
+  {id:'com-18-painel', n:1, camp:'c2', likes:'166 curtidas',
+   cap:`O escritório cabe no bolso: comissões, meta automática, ranking e follow-ups no celular, entre uma visita e outra. 📱`,
+   tags:'#mobile #painel #representante'},
+  {id:'com-09-material', n:4, camp:'c2', likes:'158 curtidas',
+   cap:`Você não monta a apresentação. Você apresenta. 🎬\nDeck pronto pra cada perfil de cliente (imobiliária, construtora, fundo) e vídeos de 60 segundos pra mostrar na mesa do café. Seu trabalho é a conversa — o argumento já vem montado.`,
+   tags:'#materialdevenda #apresentacao #vendasb2b'},
+  {id:'com-03-um-dia', n:5, camp:'c2', likes:'187 curtidas',
+   cap:`09h: o painel já sabe quem visitar. 11h: apresentação pronta, é apertar o play. Semanas depois: a carteira opera e a comissão cai. ☕\nEsse é o dia de um representante Antecipaqui — no ritmo dele, do celular ou do desktop.\nQuer viver essa rotina na sua cidade? Link na bio.`,
+   tags:'#umdiade #rotina #trabalhoflexivel'},
+  {w:'Semana 4 · Conversão', id:'com-10-perfil', n:5, camp:'c3', likes:'antecipaqui e outras 203 pessoas',
+   cap:`A vaga não pede diploma. Pede rede. 🌐\nCorretor ou ex-corretor, quem vive de venda B2B, quem conhece a cidade inteira: se você se viu em algum desses, a vaga te viu também.`,
+   tags:'#vaga #perfil #networking'},
+  {id:'com-17-checklist', n:1, camp:'c3', likes:'173 curtidas',
+   cap:`Conhece o mercado imobiliário da região? Gosta de rua e relacionamento? Quer renda que acumula? Marcou 3 ou mais: a vaga tem a sua cara. ✅`,
+   tags:'#checklist #vaga #vendas'},
+  {id:'com-12-mitos', n:5, camp:'c3', likes:'antecipaqui e outras 236 pessoas',
+   cap:`"É pirâmide?" Não — é representação comercial de uma fintech. Sua renda vem das operações da sua carteira, não de recrutar gente. 💬\n"Preciso largar meu trabalho?" Não: agenda flexível, celular ou desktop. "Preciso entender de finanças?" O material explica por você.\nRespostas honestas no carrossel. Ficou outra? Comenta aqui.`,
+   tags:'#paporeto #mitoefato #representante'},
+  {id:'com-07-metas', n:4, camp:'c3', likes:'148 curtidas',
+   cap:`Meta sem planilha: o sistema olha o seu ritmo e calcula a meta do mês sozinho. 🎯\nZero configuração. Você foca no cliente; o painel cuida do resto — e meta batida vira conquista no seu histórico.`,
+   tags:'#metas #automatico #vendas'},
+  {id:'com-11-comecar', n:5, camp:'c3', likes:'169 curtidas',
+   cap:`Do zero à primeira apresentação em 3 passos: cadastre-se, apresente, acompanhe. 🚀\nVocê recebe painel, link de indicação e material completo — e a comissão recorrente aparece no painel operação a operação. O passo 1 leva minutos.`,
+   tags:'#comecar #3passos #representante'},
+  {id:'com-20-convite', n:1, camp:'c3', likes:'161 curtidas',
+   cap:`Falta um representante na sua cidade. O mercado daí já tem a dor (comissão parcelada presa); falta quem apresente a solução — e fique com a carteira. 📍`,
+   tags:'#suacidade #vaga #expansao'},
+  {w:'Gaveta · manutenção', id:'com-08-ranking', n:4, camp:'org', likes:'144 curtidas',
+   cap:`Trabalhar sozinho não é jogar sozinho. 🏆\nRanking entre comerciais, conquistas desbloqueadas e relatórios de desempenho: o jogo fica visível, e a sua evolução também.`,
+   tags:'#ranking #conquistas #gamificacao'},
+  {id:'com-14-numero', n:1, camp:'org', likes:'137 curtidas',
+   cap:`Uma apresentação. Comissão em toda operação. O cliente que você trouxe segue operando na plataforma — e cada operação gera a sua parte, mês após mês. 1️⃣`,
+   tags:'#recorrencia #comissao #vendas'},
+  {id:'com-15-quote', n:1, camp:'c1', likes:'antecipaqui e outras 258 pessoas',
+   cap:`"Eu já conhecia todo mundo do mercado. Faltava alguém me pagar por isso." — se essa frase te descreve, a bio tem o caminho. 💬`,
+   tags:'#frases #networking #representante'},
+  {id:'com-19-rede', n:1, camp:'org', likes:'152 curtidas',
+   cap:`Sua carteira, desenhada: 8 imobiliárias e 3 construtoras vinculadas a você — cada operação delas gera a sua comissão. 🕸️`,
+   tags:'#carteira #rede #representante'},
+  {id:'com-21-vagas', n:1, camp:'c1', likes:'176 curtidas',
+   cap:`Expansão nacional: Sul, Sudeste, Centro-Oeste, Nordeste e Norte com vagas abertas, capitais e interior. Onde tem mercado imobiliário, tem espaço. 🗺️`,
+   tags:'#vagas #expansao #brasil'},
+  {id:'com-22-cta', n:1, camp:'c3', likes:'antecipaqui e outras 194 pessoas',
+   cap:`Bora montar a sua carteira? Painel próprio, material pronto, comissão recorrente. antecipaqui.digital — link na bio. 🚀`,
+   tags:'#antecipaqui #representante #linknabio'},
+ ],
+ stories:[
+  {id:'com-23-story-pergunta', n:'A pergunta', d:'Conhece todo mundo do mercado? + enquete real por cima', camp:'c1'},
+  {id:'com-24-story-recorrencia', n:'A pilha', d:'Conceito-chave: comissão que empilha mês a mês · remarketing', camp:'c2'},
+  {id:'com-25-story-painel', n:'O painel', d:'Prova de produto · usar em sequência com o da pilha', camp:'c2'},
+  {id:'com-26-story-depoimento', n:'Depoimento', d:'"A venda de março ainda me paga" (persona)', camp:'c2'},
+  {id:'com-27-story-cta', n:'Começar agora', d:'3 passos + link sticker COMEÇAR AGORA', camp:'c3'},
+ ]},
+};
+const CAMPL = {c1:'topo · atrair', c2:'meio · provar', c3:'fundo · converter', org:'orgânico'};
+const TABL = {imob:'Imobiliárias', constr:'Construtoras', com:'Comerciais'};
+
+let TAB = location.hash.replace('#','') in CAMPS ? location.hash.replace('#','') : 'imob';
+const NAMES = {};
+Object.values(CAMPS).forEach(c=>{
+  c.posts.forEach(p=>NAMES[p.id]=p.id.replace(/^\w+-\d+-/,'').replace(/-/g,' '));
+  c.stories.forEach(s=>NAMES[s.id]=s.n);
+});
+const ALL = Object.values(CAMPS).flatMap(c=>[...c.posts.map(p=>({id:p.id,n:p.n})), ...c.stories.map(s=>({id:s.id,n:1}))]);
+const TOTAL = ALL.length;
+
+const KEY='aq-aprovacao-v1';
+let state = JSON.parse(localStorage.getItem(KEY)||'{}');
+const save = ()=>localStorage.setItem(KEY, JSON.stringify(state));
+
+const ic = {
+ heart:'<svg viewBox="0 0 24 24"><path d="M12 20.5C7 16.6 3.5 13.3 3.5 9.6 3.5 7 5.6 5 8.1 5c1.6 0 3 .8 3.9 2.1C12.9 5.8 14.3 5 15.9 5c2.5 0 4.6 2 4.6 4.6 0 3.7-3.5 7-8.5 10.9z"/></svg>',
+ cmt:'<svg viewBox="0 0 24 24"><path d="M21 11.7c0 4.4-4 7.9-9 7.9-1 0-2-.1-2.9-.4L4 20.6l1.5-3.7C4 15.6 3 13.7 3 11.7 3 7.3 7 3.8 12 3.8s9 3.5 9 7.9z"/></svg>',
+ send:'<svg viewBox="0 0 24 24"><path d="M21 3L10 13.5M21 3l-7 18-4-7.5L2.5 10z"/></svg>',
+ book:'<svg viewBox="0 0 24 24"><path d="M6 3.5h12V21l-6-4.4L6 21z"/></svg>',
+ chL:'<svg viewBox="0 0 24 24"><path d="M14.5 5.5 8 12l6.5 6.5" stroke="#111" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ chR:'<svg viewBox="0 0 24 24"><path d="M9.5 5.5 16 12l-6.5 6.5" stroke="#111" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+
+const curStories = ()=>CAMPS[TAB].stories;
+
+function postHTML(p){
+  const imgs = Array.from({length:p.n},(_,i)=>`<img loading="lazy" src="${IMG}${p.id}/${String(i+1).padStart(2,'0')}.png" alt="${p.id} ${i+1}"/>`).join('');
+  const multi = p.n>1;
+  return `${p.w?`<div class="week">${p.w}</div>`:''}
+  <article class="post" data-id="${p.id}">
+    <div class="phead">
+      <div class="avatar"><span class="amark" style="width:18px;height:18px;font-size:10px">A</span></div>
+      <div><div class="u">antecipaqui</div><div class="s">${p.camp==='org'?'A comissão cai hoje':'Patrocinado'}</div></div>
+      <span class="camp ${p.camp}">${CAMPL[p.camp]}</span>
+    </div>
+    <div class="media">
+      <div class="strip">${imgs}</div>
+      ${multi?`<span class="cnt">1/${p.n}</span>
+      <button class="nav prev" style="display:none">${ic.chL}</button>
+      <button class="nav next">${ic.chR}</button>`:''}
+    </div>
+    ${multi?`<div class="dots">${'<i></i>'.repeat(p.n)}</div>`:''}
+    <div class="acts">${ic.heart}${ic.cmt}${ic.send}<span class="save">${ic.book}</span></div>
+    <div class="likes">Curtido por ${p.likes}</div>
+    <div class="cap clamp"><b>antecipaqui</b> ${p.cap}</div>
+    <div class="tags">${p.tags}</div>
+    <div class="apr">
+      <button class="ok">✓ Aprovar</button>
+      <button class="rv">Rever</button>
+      <button class="dlb" title="Baixar imagens" onclick="dlPost('${p.id}',${p.n},this)">⬇${multi?' '+p.n:''}</button>
+    </div>
+  </article>`;
+}
+
+function renderTab(){
+  const c = CAMPS[TAB];
+  const nPngs = c.posts.reduce((s,p)=>s+p.n,0)+c.stories.length;
+  document.getElementById('intro').innerHTML = `
+    <h1>${c.titulo}</h1>
+    <p>${c.desc} Tudo abaixo é <b style="color:var(--tx)">exatamente</b> o que vai ao ar. A etiqueta em cada peça mostra o papel dela no funil. Marque <b style="color:var(--grn)">Aprovar</b> ou <b style="color:var(--amber)">Rever</b> — a decisão fica salva neste aparelho.</p>
+    <div class="chips">
+      <span class="chip c1">topo — atrair</span>
+      <span class="chip c2">meio — provar</span>
+      <span class="chip c3">fundo — converter</span>
+      <span class="chip">orgânico</span>
+    </div>
+    <button id="btnPlan" onclick="openPlan()">
+      <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M8 5.5v13l10-6.5z"/></svg>
+      Ver o plano das 3 campanhas
+    </button>
+    <button id="btnAll" onclick="dlTab(this)">⬇ Baixar as 27 peças desta aba (${nPngs} PNGs)</button>`;
+
+  document.getElementById('feed').innerHTML = c.posts.map(postHTML).join('');
+
+  document.getElementById('stgrid').innerHTML = c.stories.map((s,i)=>`
+    <div class="stcard" data-id="${s.id}">
+      <img loading="lazy" src="${IMG}${s.id}/01.png" alt="${s.n}" onclick="openStory(${i})"/>
+      <div class="b">
+        <div class="n">${s.n}</div>
+        <div class="d">${s.d} · <span style="color:var(--a-soft)">${CAMPL[s.camp]}</span></div>
+        <div class="apr"><button class="ok">✓ Aprovar</button><button class="rv">Rever</button><button class="dlb" title="Baixar story" onclick="dlPost('${s.id}',1,this)">⬇</button></div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('hl').innerHTML = c.stories.map((s,i)=>`
+    <button class="hlitem" onclick="openStory(${i})">
+      <span class="hlring" id="hr${i}"><img src="${IMG}${s.id}/01.png" alt="${s.n}"/></span>
+      <small>${s.n}</small>
+    </button>`).join('');
+
+  document.getElementById('vbars').innerHTML='<i></i>'.repeat(c.stories.length);
+
+  /* carrosséis */
+  document.querySelectorAll('.post').forEach(post=>{
+    const strip = post.querySelector('.strip');
+    const cnt = post.querySelector('.cnt');
+    const dots = post.querySelectorAll('.dots i');
+    const prev = post.querySelector('.prev'), next = post.querySelector('.next');
+    if(!cnt) return;
+    const n = strip.children.length;
+    const idx = ()=>Math.round(strip.scrollLeft/strip.clientWidth);
+    const paint = ()=>{const i=idx();cnt.textContent=`${i+1}/${n}`;dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+      if(prev){prev.style.display=i===0?'none':'flex';next.style.display=i===n-1?'none':'flex'}};
+    strip.addEventListener('scroll',()=>requestAnimationFrame(paint),{passive:true});
+    prev&&prev.addEventListener('click',()=>strip.scrollBy({left:-strip.clientWidth,behavior:'smooth'}));
+    next&&next.addEventListener('click',()=>strip.scrollBy({left:strip.clientWidth,behavior:'smooth'}));
+    paint();
+  });
+  document.querySelectorAll('.cap').forEach(cp=>cp.addEventListener('click',()=>cp.classList.toggle('clamp')));
+  document.querySelectorAll('[data-id]').forEach(el=>{
+    const id=el.dataset.id;
+    el.querySelector('.ok').addEventListener('click',()=>{state[id]=state[id]==='ok'?undefined:'ok';renderState()});
+    el.querySelector('.rv').addEventListener('click',()=>{state[id]=state[id]==='rv'?undefined:'rv';renderState()});
+  });
+  renderState();
+}
+
+function renderState(){
+  let ok=0,rv=0;
+  document.querySelectorAll('[data-id]').forEach(el=>{
+    const st=state[el.dataset.id];
+    el.querySelector('.ok').classList.toggle('on',st==='ok');
+    el.querySelector('.rv').classList.toggle('on',st==='rv');
+  });
+  Object.values(state).forEach(v=>{if(v==='ok')ok++;if(v==='rv')rv++});
+  document.getElementById('counter').textContent=`${ok}/${TOTAL} ✓`;
+  document.getElementById('nOk').textContent=ok;
+  document.getElementById('nRv').textContent=rv;
+  document.getElementById('nPd').textContent=TOTAL-ok-rv;
+  const rvIds=Object.keys(state).filter(k=>state[k]==='rv');
+  document.getElementById('resList').innerHTML = rvIds.length
+    ? `<b>Para rever:</b> ${rvIds.map(i=>NAMES[i]||i).join(' · ')}`
+    : (ok===TOTAL?'<b>🎉 Tudo aprovado — bora subir!</b>':'');
+  save();
+}
+
+/* abas */
+document.querySelectorAll('#tabs button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    TAB=b.dataset.tab;
+    document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+    history.replaceState(null,'','#'+TAB);
+    window.scrollTo({top:0});
+    renderTab();
+  });
+  b.classList.toggle('on',b.dataset.tab===TAB);
+});
+
+/* download */
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+async function dlFile(url,name){
+  try{
+    const blob = await (await fetch(url)).blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  }catch(e){ window.open(url,'_blank') }
+}
+async function dlPost(id,n,btn){
+  if(btn){btn.classList.add('busy');var orig=btn.textContent}
+  for(let i=1;i<=n;i++){
+    const f = String(i).padStart(2,'0');
+    if(btn&&n>1)btn.textContent=`⬇ ${i}/${n}`;
+    await dlFile(`${IMG}${id}/${f}.png`, `antecipaqui-${id}-${f}.png`);
+    if(i<n) await sleep(450);
+  }
+  if(btn){btn.textContent='✓ salvo';btn.classList.remove('busy');setTimeout(()=>btn.textContent=orig,2200)}
+}
+async function dlTab(btn){
+  const c=CAMPS[TAB];
+  const all=[...c.posts.map(p=>({id:p.id,n:p.n})), ...c.stories.map(s=>({id:s.id,n:1}))];
+  const total=all.reduce((s,p)=>s+p.n,0); let done=0;
+  const orig=btn.textContent; btn.disabled=true;
+  for(const p of all){
+    for(let i=1;i<=p.n;i++){
+      const f=String(i).padStart(2,'0');
+      await dlFile(`${IMG}${p.id}/${f}.png`, `antecipaqui-${p.id}-${f}.png`);
+      done++; btn.textContent=`⬇ Baixando… ${done}/${total}`;
+      await sleep(350);
+    }
+  }
+  btn.textContent='✓ Tudo salvo — confira a pasta Downloads';
+  setTimeout(()=>{btn.textContent=orig;btn.disabled=false},4000);
+}
+
+/* plano de mídia */
+const plan=document.getElementById('plan');
+document.querySelectorAll('.thumbs[data-th]').forEach(t=>{
+  t.innerHTML=t.dataset.th.split(',').map(id=>`<img loading="lazy" src="${IMG}${id}/01.png" alt="${id}"/>`).join('');
+});
+function openPlan(){plan.classList.add('open');document.body.style.overflow='hidden';plan.scrollTop=0}
+function closePlan(){plan.classList.remove('open');document.body.style.overflow=''}
+
+/* story viewer */
+let vi=0, vtimer=null;
+const viewer=document.getElementById('viewer'), vimg=document.getElementById('vimg'), vbars=document.getElementById('vbars');
+function openStory(i){vi=i;viewer.classList.add('open');document.body.style.overflow='hidden';show()}
+function show(){
+  vimg.src=`${IMG}${curStories()[vi].id}/01.png`;
+  const hr=document.getElementById('hr'+vi); hr&&hr.classList.add('seen');
+  [...vbars.children].forEach((b,k)=>{b.className=k<vi?'done':(k===vi?'run':'');
+    if(k===vi){b.style.animation='none';void b.offsetWidth;b.style.animation=''}});
+  clearTimeout(vtimer);vtimer=setTimeout(nextS,6000);
+}
+function nextS(){vi<curStories().length-1?(vi++,show()):closeS()}
+function prevS(){vi>0?(vi--,show()):closeS()}
+function closeS(){viewer.classList.remove('open');document.body.style.overflow='';clearTimeout(vtimer)}
+document.querySelector('.vtap.l').addEventListener('click',prevS);
+document.querySelector('.vtap.r').addEventListener('click',nextS);
+document.getElementById('vclose').addEventListener('click',closeS);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&plan.classList.contains('open')){closePlan();return}
+  if(!viewer.classList.contains('open'))return;
+  if(e.key==='Escape')closeS();if(e.key==='ArrowRight')nextS();if(e.key==='ArrowLeft')prevS();
+});
+
+renderTab();
+</script>
+</body>
+</html>

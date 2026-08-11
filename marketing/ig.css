@@ -1,0 +1,122 @@
+/* Antecipaqui · kit de artes Instagram — identidade do deck */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --a:#3f8fe8; --a-soft:#8ec2f7; --a-deep:#0d4e9e; --a-vivid:#1c6dd0;
+  --ink:#081222; --panel:#0d1a30; --panel2:#122239;
+  --line:rgba(142,194,247,.10); --line2:rgba(142,194,247,.18);
+  --tx:#f2f6fb; --mut:#93a4bc; --mut2:#5c6d85;
+  --grn:#34d399; --red:#fb7185; --amber:#fbbf24; --org:#fb923c; --teal:#2dd4bf;
+  --sans:'Inter',system-ui,sans-serif; --disp:'Sora','Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b1830;font-family:var(--sans);color:var(--tx);-webkit-font-smoothing:antialiased}
+
+/* ── artboards ── */
+.board{position:relative;display:flex;width:max-content;margin:40px;background:var(--ink);overflow:hidden}
+.frame{position:relative;width:1080px;height:1350px;flex:none;padding:90px 84px 150px;display:flex;flex-direction:column;overflow:hidden}
+.story .frame{height:1920px;padding:150px 84px 210px}
+.single .frame{overflow:hidden}
+.board:not(.seam) .frame{background:var(--ink)}
+/* grade pontilhada como no deck */
+.frame::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:60px 60px;mask-image:radial-gradient(ellipse 90% 80% at 70% 28%,#000 20%,transparent 80%)}
+.seam .frame::before{display:none}
+.seam::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;z-index:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:60px 60px}
+.glow{position:absolute;border-radius:50%;filter:blur(120px);opacity:.22;pointer-events:none}
+.glow.a{width:700px;height:700px;background:var(--a-vivid);top:-240px;right:-200px}
+.glow.b{width:560px;height:560px;background:#0f766e;bottom:-260px;left:-200px;opacity:.16}
+
+/* ── tipografia ── */
+.kick{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:.22em;text-transform:uppercase;color:var(--a-soft);display:flex;align-items:center;gap:20px}
+.kick::before{content:"";width:46px;height:4px;background:var(--a);border-radius:3px}
+.kick.c{justify-content:center}
+.kick.c::after{content:"";width:46px;height:4px;background:var(--a);border-radius:3px}
+h1{font-family:var(--disp);font-weight:800;font-size:92px;line-height:1.02;letter-spacing:-.025em;margin:34px 0 26px}
+h1.xl{font-size:110px}
+h1 .l,h2 .l{color:var(--a-soft)}
+h2{font-family:var(--disp);font-weight:800;font-size:64px;line-height:1.05;letter-spacing:-.02em;margin:30px 0 22px}
+.lead{font-size:33px;color:var(--mut);line-height:1.5;max-width:20em}
+.lead b{color:var(--tx);font-weight:700}
+.kid{font-size:34px;line-height:1.55;color:#e3e9f2}
+.kid b{color:var(--a-soft);font-weight:700}
+.em{background:linear-gradient(transparent 62%,rgba(63,143,232,.34) 0);padding:0 4px}
+
+/* ── marca / rodapé ── */
+.wordmark{font-family:var(--disp);font-weight:800;letter-spacing:-.03em;display:inline-flex;align-items:center;font-size:44px}
+.wordmark .am{display:inline-flex;width:1.12em;height:1.12em;border-radius:.26em;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;align-items:center;justify-content:center;margin-right:14px;font-size:.85em;font-weight:800;box-shadow:0 0 44px rgba(28,109,208,.55);flex:none}
+.wordmark b{color:var(--a-soft);font-weight:700}
+.foot{position:absolute;left:84px;right:84px;bottom:64px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+.foot .hd{font-family:var(--disp);font-size:24px;color:var(--mut2);font-weight:600}
+.swipe{font-family:var(--disp);font-weight:800;font-size:26px;color:var(--a-soft);display:flex;align-items:center;gap:12px}
+.pgnum{position:absolute;top:64px;right:84px;font-family:var(--disp);font-weight:700;font-size:26px;color:var(--mut2);z-index:5}
+
+/* ── pills / badges ── */
+.pills{display:flex;flex-wrap:wrap;gap:16px;margin-top:34px}
+.pill{font-family:var(--disp);font-size:26px;font-weight:600;color:var(--tx);background:var(--panel2);border:1.5px solid var(--line2);border-radius:44px;padding:14px 28px}
+.pill.ac{background:rgba(63,143,232,.14);border-color:rgba(63,143,232,.5);color:var(--a-soft)}
+.st{font-family:var(--sans);font-size:21px;font-weight:700;padding:8px 18px;border-radius:40px;display:inline-block}
+.st.ok{background:rgba(52,211,153,.15);color:var(--grn)}
+.st.wa{background:rgba(251,191,36,.15);color:var(--amber)}
+.st.no{background:rgba(251,113,133,.15);color:var(--red)}
+.st.bl{background:rgba(63,143,232,.16);color:var(--a-soft)}
+.cta{display:inline-block;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;font-family:var(--disp);font-weight:800;font-size:36px;padding:28px 58px;border-radius:999px;box-shadow:0 24px 70px -16px rgba(28,109,208,.6)}
+
+/* ── mockups ── */
+.kpi{background:var(--panel2);border:1.5px solid var(--line);border-radius:22px;padding:26px 28px}
+.kpi .l{font-size:21px;color:var(--mut);letter-spacing:.04em;text-transform:uppercase;font-family:var(--disp)}
+.kpi .v{font-family:var(--disp);font-weight:800;font-size:48px;margin-top:8px;letter-spacing:-.01em}
+.kpi .dl{font-size:22px;margin-top:6px;color:var(--grn);font-weight:600}
+.kpi .dl.dn{color:var(--red)}
+.kpi.hi{background:linear-gradient(160deg,rgba(63,143,232,.16),rgba(63,143,232,.02));border-color:rgba(63,143,232,.4)}
+.kpi.hi .v{color:var(--a-soft)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:var(--panel2);border:1.5px solid var(--line);border-radius:22px;padding:28px}
+.card .h{font-family:var(--disp);font-size:24px;font-weight:600;color:var(--mut);margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:14px}
+.card .h .tag{font-size:19px;color:var(--a-soft);background:rgba(63,143,232,.13);border-radius:9px;padding:5px 14px;white-space:nowrap}
+.rows{display:flex;flex-direction:column;gap:2px;background:var(--line);border:1.5px solid var(--line);border-radius:18px;overflow:hidden}
+.rows .r{display:grid;grid-template-columns:1.6fr 1fr .9fr;gap:14px;padding:20px 24px;background:var(--panel2);font-size:24px;align-items:center}
+.rows .r.hd{background:#091426;color:var(--mut);font-family:var(--disp);font-size:19px;letter-spacing:.05em;text-transform:uppercase}
+.rows .r b{font-weight:600}
+.bars{display:flex;align-items:flex-end;gap:16px;height:200px}
+.bars .b{flex:1;background:linear-gradient(180deg,var(--a),rgba(63,143,232,.18));border-radius:9px 9px 0 0;min-height:10px}
+.lbls{display:flex;gap:16px;margin-top:14px}
+.lbls span{flex:1;text-align:center;font-size:18px;color:var(--mut2);font-family:var(--disp)}
+.progressbar{height:14px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:10px}
+.progressbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--a),var(--a-deep))}
+.list{display:flex;flex-direction:column;gap:14px}
+.li{display:flex;align-items:center;gap:18px;background:var(--panel2);border:1.5px solid var(--line);border-radius:18px;padding:18px 22px;font-size:24px}
+.li .av{width:56px;height:56px;border-radius:14px;background:linear-gradient(140deg,var(--a-vivid),var(--a-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:24px;font-family:var(--disp);flex:none}
+.li .g{flex:1;min-width:0}
+.li .g b{display:block;font-weight:600}
+.li .g small{color:var(--mut);font-size:20px}
+
+/* phone mock */
+.phone{width:520px;background:var(--panel);border:14px solid #122239;border-radius:64px;overflow:hidden;box-shadow:0 60px 130px -40px rgba(0,0,0,.85);position:relative}
+.phone .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:170px;height:34px;background:#122239;border-radius:20px;z-index:5}
+.phone .scr{padding:70px 26px 34px;min-height:820px}
+/* browser mock */
+.browser{background:var(--panel);border:1.5px solid var(--line2);border-radius:26px;overflow:hidden;box-shadow:0 60px 130px -40px rgba(0,0,0,.8)}
+.browser .top{display:flex;align-items:center;gap:12px;padding:18px 24px;background:#091426;border-bottom:1.5px solid var(--line)}
+.browser .top i{width:18px;height:18px;border-radius:50%;background:#20304a;display:inline-block}
+.browser .top .url{margin-left:16px;flex:1;background:#0f1e36;border:1.5px solid var(--line);border-radius:12px;padding:10px 20px;font-size:21px;color:var(--mut);font-family:var(--disp)}
+.browser .top .url b{color:var(--a-soft)}
+.browser .body{padding:30px}
+
+/* chat (Cícero) */
+.bub{border-radius:24px;padding:20px 26px;font-size:27px;line-height:1.45;max-width:82%;margin-bottom:16px;position:relative;z-index:3}
+.bub.me{background:rgba(63,143,232,.15);border:1.5px solid rgba(63,143,232,.35);border-radius:24px 24px 6px 24px;margin-left:auto}
+.bub.sv{background:var(--panel2);border:1.5px solid var(--line);border-radius:24px 24px 24px 6px}
+.bub b{color:var(--a-soft)}
+.bub .g{color:var(--grn)}
+
+/* números gigantes de capítulo */
+.bigno{font-family:var(--disp);font-weight:800;font-size:200px;line-height:1;color:transparent;-webkit-text-stroke:3px var(--a);opacity:.9}
+
+/* ícones desenhados (stroke) — nunca emoji nas artes */
+.ic-s{width:64px;height:64px;flex:none}
+.ic-s svg{width:100%;height:100%;stroke:var(--a-soft);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
