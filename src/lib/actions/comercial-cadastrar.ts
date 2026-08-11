@@ -120,8 +120,8 @@ export async function comercialCadastrarOperacaoAction(
   }
   if (!Array.isArray(parcelasRaw) || parcelasRaw.length === 0)
     return { ok: false, error: "Adicione pelo menos uma parcela" };
-  if (parcelasRaw.length > 4)
-    return { ok: false, error: "Limite de 4 parcelas" };
+  if (parcelasRaw.length > 5)
+    return { ok: false, error: "Limite de 5 parcelas" };
 
   const parcelas = parcelasRaw.map((p) => ({
     valor:

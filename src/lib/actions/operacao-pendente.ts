@@ -100,8 +100,8 @@ export async function finalizarOperacaoPendente(
   }
   if (!Array.isArray(brutas) || brutas.length === 0)
     return { ok: false, error: "Informe ao menos uma parcela da comissão" };
-  if (brutas.length > 4)
-    return { ok: false, error: "Limite máximo de 4 parcelas" };
+  if (brutas.length > 5)
+    return { ok: false, error: "Limite máximo de 5 parcelas" };
 
   // O form serializa valor como string mascarada BR ("33.333,33") — Number()
   // devolveria NaN. Mesma normalização do cadastro normal.

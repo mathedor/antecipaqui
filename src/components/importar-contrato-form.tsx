@@ -109,9 +109,9 @@ export function ImportarContratoForm() {
       draft.valorComissao = numberToMask(comissao);
 
     if (result.dataVenda) draft.dataVenda = result.dataVenda;
-    // Parcelas DA COMISSÃO: o produto aceita no máx 4 (limite de 120 dias).
+    // Parcelas DA COMISSÃO: o produto aceita no máx 5 (limite de 150 dias).
     if (result.numeroParcelas)
-      draft.numParcelas = Math.min(Math.max(result.numeroParcelas, 1), 4);
+      draft.numParcelas = Math.min(Math.max(result.numeroParcelas, 1), 5);
     // Construtora: leva nome/CNPJ pro form casar com as já cadastradas
     // (ou abrir o cadastro já preenchido se for nova).
     if (result.construtoraNome) draft.construtoraNome = result.construtoraNome;

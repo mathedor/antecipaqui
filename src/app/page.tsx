@@ -29,7 +29,7 @@ const perfis: Perfil[] = [
   {
     num: "01",
     title: "Imobiliária / Corretor",
-    body: "Vendeu? Recebe a comissão hoje. Antecipa até 4 parcelas (120 dias). Cadastra a operação, envia os contratos e recebe o valor presente direto na sua conta.",
+    body: "Vendeu? Recebe a comissão hoje. Antecipa até 5 parcelas (150 dias). Cadastra a operação, envia os contratos e recebe o valor presente direto na sua conta.",
     cta: "É meu caso",
     signup: true,
     accent: true,
@@ -130,7 +130,7 @@ export default async function Home() {
             </span>
             <span className="block text-display-xl-half text-fg-muted mt-3">
               <TextReveal delayMs={500}>
-                Mesmo que parcelada em até 4x (120 dias).
+                Mesmo que parcelada em até 5x (150 dias).
               </TextReveal>
             </span>
           </h1>

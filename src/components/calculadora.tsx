@@ -114,7 +114,7 @@ export function Calculadora({
               id="parcelas"
               type="range"
               min={1}
-              max={4}
+              max={5}
               step={1}
               value={parcelas}
               onChange={(e) => setParcelas(Number(e.target.value))}
@@ -122,7 +122,7 @@ export function Calculadora({
             />
             <div className="flex justify-between mt-2 text-[10px] font-mono text-fg-dim uppercase tracking-wider">
               <span>1x</span>
-              <span>4x · 120 dias</span>
+              <span>5x · 150 dias</span>
             </div>
           </div>
         </div>

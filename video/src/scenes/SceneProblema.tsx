@@ -5,7 +5,7 @@ import { Noise } from "../components/Noise";
 import { Sticker } from "../components/Sticker";
 
 const ITENS = [
-  { num: "120", label: "dias parado" },
+  { num: "150", label: "dias parado" },
   { num: "❌", label: "banco recusa" },
   { num: "🚫", label: "pede avalista" },
 ];

@@ -240,16 +240,16 @@ export function NovaOperacaoForm({
     (p) => p.vencimento && p.vencimento < hojeISO,
   ).length;
 
-  // Parcela que vence além da janela de 120 dias NÃO impede o cadastro:
+  // Parcela que vence além da janela de 150 dias NÃO impede o cadastro:
   // fica registrada e vira prospect — quando entra na janela, a gente
   // avisa o cliente pra antecipar.
-  const limite120ISO = useMemo(() => {
+  const limite150ISO = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 120);
+    d.setDate(d.getDate() + 150);
     return d.toISOString().slice(0, 10);
   }, []);
   const parcelasFuturas = parcelas.filter(
-    (p) => p.vencimento && p.vencimento > limite120ISO,
+    (p) => p.vencimento && p.vencimento > limite150ISO,
   ).length;
 
   const faltamDocs = !docContratoVenda || !docContratoComissao;
@@ -663,22 +663,22 @@ export function NovaOperacaoForm({
             <div className="flex items-end gap-3 mb-5">
               <div>
                 <label className="block text-[11px] uppercase tracking-[0.18em] text-fg-dim mb-2 font-mono">
-                  Número de parcelas (máx 4)
+                  Número de parcelas (máx 5)
                 </label>
                 <input
                   type="number"
                   min={1}
-                  max={4}
+                  max={5}
                   value={numParcelas}
                   onChange={(e) => {
                     const v = parseInt(e.target.value) || 1;
-                    setNumParcelas(Math.min(Math.max(v, 1), 4));
+                    setNumParcelas(Math.min(Math.max(v, 1), 5));
                   }}
                   className="w-32 h-12 rounded-xl bg-bg border border-border-strong px-4 text-fg focus:border-accent outline-none transition-colors tabular"
                 />
               </div>
               <span className="text-xs text-fg-dim font-mono pb-3">
-                até 4 parcelas mensais · só parcela a vencer
+                até 5 parcelas mensais · só parcela a vencer
               </span>
             </div>
             {parcelas.length > 0 && (
@@ -699,7 +699,7 @@ export function NovaOperacaoForm({
                       className={`col-span-6 h-10 rounded-lg bg-bg border px-3 text-sm text-fg outline-none transition-colors ${
                         p.vencimento && p.vencimento < hojeISO
                           ? "border-danger focus:border-danger"
-                          : p.vencimento && p.vencimento > limite120ISO
+                          : p.vencimento && p.vencimento > limite150ISO
                             ? "border-warn focus:border-warn"
                             : "border-border focus:border-accent"
                       }`}
@@ -740,8 +740,8 @@ export function NovaOperacaoForm({
             {parcelasVencidas === 0 && parcelasFuturas > 0 && (
               <p className="mt-3 rounded-xl border border-warn/40 bg-yellow-50 px-3 py-2 text-xs text-fg">
                 {parcelasFuturas === 1
-                  ? "Uma parcela vence daqui a mais de 120 dias."
-                  : `${parcelasFuturas} parcelas vencem daqui a mais de 120 dias.`}{" "}
+                  ? "Uma parcela vence daqui a mais de 150 dias."
+                  : `${parcelasFuturas} parcelas vencem daqui a mais de 150 dias.`}{" "}
                 Pode cadastrar normalmente — elas ficam registradas e a gente
                 te avisa quando entrarem no prazo de antecipação.
               </p>

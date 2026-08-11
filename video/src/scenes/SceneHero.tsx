@@ -128,7 +128,7 @@ export function SceneHero() {
 
       {/* Stickers — chamadas grudando no canto */}
       <Sticker
-        text="120 dias?"
+        text="150 dias?"
         emoji="⏳"
         appearAt={50}
         position="top-right"

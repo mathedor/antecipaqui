@@ -204,11 +204,11 @@ export async function createPendingOperacoesAction(
       };
 
     const numeroParcelas = parseInt(l.numeroParcelas, 10);
-    if (!Number.isFinite(numeroParcelas) || numeroParcelas < 1 || numeroParcelas > 4)
+    if (!Number.isFinite(numeroParcelas) || numeroParcelas < 1 || numeroParcelas > 5)
       return {
         ok: false,
         linhaIndex: i,
-        error: `Linha ${i + 1}: parcelas devem ser entre 1 e 4`,
+        error: `Linha ${i + 1}: parcelas devem ser entre 1 e 5`,
       };
 
     const dp = String(l.dataPrimeiraParcela ?? "").trim();
@@ -543,8 +543,8 @@ export async function completarConviteAction(
   const valorParcela = valorComissao / numero;
   const start = new Date(pending.dataPrimeiraParcela + "T00:00:00");
 
-  if (numero > 4)
-    return { ok: false, error: "Limite máximo de 4 parcelas" };
+  if (numero > 5)
+    return { ok: false, error: "Limite máximo de 5 parcelas" };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
