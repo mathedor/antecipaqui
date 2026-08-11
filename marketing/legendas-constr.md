@@ -3,7 +3,7 @@
 > 27 peças em `marketing/out/constr-*` — 5 carrosséis panorâmicos (quadros que se emendam), 7 carrosséis de módulo, 10 posts únicos, 5 stories.
 > Formato feed: 1080×1350 (4:5) · Stories: 1080×1920.
 > **Como postar os panorâmicos:** subir os quadros na ordem (01.png, 02.png…) — o Instagram corta o carrossel exatamente onde as imagens se emendam.
-> Objetivo da campanha: construtoras e incorporadoras adotarem a Antecipaqui como **parceira de fluxo de caixa** — parcelando as comissões em até 24x e apresentando a plataforma pros corretores receberem à vista.
+> Objetivo da campanha: construtoras e incorporadoras adotarem a Antecipaqui como **parceira de fluxo de caixa** — parcelando as comissões em até 5x (150 dias) e apresentando a plataforma pros corretores receberem à vista.
 
 Hashtags base (usar 8–12 por post, variando):
 `#construtora #incorporadora #construcaocivil #mercadoimobiliario #lancamentoimobiliario #corretordeimoveis #imobiliaria #vgv #fluxodecaixa #gestaofinanceira #obra #imoveis #incorporacao #comissaoimobiliaria`
@@ -16,13 +16,13 @@ Hashtags base (usar 8–12 por post, variando):
 **Legenda:**
 Comissão à vista pro corretor. Sem sair do caixa da obra. 🏗️
 
-A briga entre pagar à vista (e drenar a obra) ou parcelar (e esfriar o estande) acabou: você parcela em até 24x, o corretor antecipa com a Antecipaqui e recebe à vista assim mesmo. O deságio é dele — pra você, mesmas parcelas, mesmas datas, só muda o favorecido.
+A briga entre pagar à vista (e drenar a obra) ou parcelar (e esfriar o estande) acabou: você parcela em até 5x, o corretor antecipa com a Antecipaqui e recebe à vista assim mesmo. O deságio é dele — pra você, mesmas parcelas, mesmas datas, só muda o favorecido.
 
 Seja uma construtora parceira. Link na bio. 🔗
 
 ### constr-02-dilema — Pagar à vista ou proteger a obra? (5 quadros)
 **Legenda:**
-R$ 576 mil saindo do caixa no mês do lançamento — ou 24 meses de corretor desmotivado? 🎬
+R$ 576 mil saindo do caixa no mês do lançamento — ou 5, 6 meses de corretor esperando? 🎬
 
 Toda mesa de lançamento conhece esse dilema. A terceira via: parcele a comissão e deixe o corretor receber à vista antecipando com a gente. Caixa intacto, time em chamas, custo zero pra construtora.
 
@@ -32,7 +32,7 @@ Arrasta pra ver os três caminhos. →
 **Legenda:**
 A parceria inteira em 4 marcos — como uma obra bem tocada. 📐
 
-1️⃣ Você parcela como sempre (até 24x) · 2️⃣ o corretor pede a antecipação das parcelas de até 150 dias e você confirma a cessão em 1 clique · 3️⃣ ele recebe à vista · 4️⃣ você paga as mesmas parcelas, nas mesmas datas — só muda o favorecido.
+1️⃣ Você parcela como sempre (em até 5x / 150 dias) · 2️⃣ o corretor pede a antecipação das parcelas de até 150 dias e você confirma a cessão em 1 clique · 3️⃣ ele recebe à vista · 4️⃣ você paga as mesmas parcelas, nas mesmas datas — só muda o favorecido.
 
 Salva esse post pra mostrar pro financeiro. 📌
 
@@ -48,7 +48,7 @@ Arrasta pra ver o painel por dentro. →
 **Legenda:**
 Corretor compara lançamentos como você compara terrenos. 📊
 
-Quando receber não depende de esperar 24 meses, o seu estande vira prioridade na agenda dele — plantão cheio, tabela defendida, indicação chegando. E o custo disso pra você é zero: o deságio da antecipação é do corretor.
+Pra que esperar 5, 6 meses se dá pra receber hoje? Quando o pagamento não depende da espera, o seu estande vira prioridade na agenda dele — plantão cheio, tabela defendida, indicação chegando. E o custo disso pra você é zero: o deságio da antecipação é do corretor.
 
 Força de vendas motivada, sem mexer no orçamento. Link na bio.
 
@@ -82,7 +82,7 @@ Construtora parceira acumula reputação dentro da plataforma — e recebe cashb
 **Legenda:**
 O mesmo total de comissão — sem o soco no mês do lançamento. 🫁
 
-Diluir em 24x protege o cronograma físico-financeiro. E com a Antecipaqui na mesa, parcelar deixou de custar a motivação do time: o corretor recebe à vista antecipando por conta dele.
+Diluir em 5x (R$ 115.200/mês em vez do soco de R$ 576 mil) protege o cronograma físico-financeiro. E com a Antecipaqui na mesa, parcelar deixou de custar a motivação do time: o corretor recebe à vista antecipando por conta dele.
 
 Concreto no prazo, caixa no lugar.
 
@@ -115,22 +115,22 @@ Salva e leva pra reunião de diretoria. 📌
 | Post | Legenda |
 |---|---|
 | **constr-13-headline** | A obra fica com o caixa. O corretor fica com o à vista. 🏗️ É esse o acordo — e quem assina embaixo é a Antecipaqui. Parceria de fluxo de caixa pra construtoras que vendem rápido. Link na bio. |
-| **constr-14-24x** | 24x sem atrito. A comissão diluída no fluxo da obra, o corretor recebendo à vista com a Antecipaqui — e o deságio por conta dele. O parcelamento deixou de ser uma má notícia no estande. |
-| **constr-15-quote-financeiro** | "Parcelamos tudo em 24x e nenhum corretor reclamou. Pelo contrário: pediram pra vender o próximo lançamento." É o tipo de frase que a gente quer ouvir do seu financeiro também. ☕ (persona ilustrativa) |
-| **constr-16-antes-depois** | A mesma comissão de R$ 48 mil, dois filmes: saindo inteira no mês da venda × diluída em 24x de R$ 2.000 com o corretor pago à vista. O segundo filme tem final feliz pros dois lados. 🎞️ |
+| **constr-14-5x** | 5x sem atrito. A comissão diluída no fluxo da obra, o corretor recebendo à vista com a Antecipaqui — e o deságio por conta dele. O parcelamento deixou de ser uma má notícia no estande. |
+| **constr-15-quote-financeiro** | "Parcelamos tudo em 5x e nenhum corretor reclamou. Pelo contrário: pediram pra vender o próximo lançamento." É o tipo de frase que a gente quer ouvir do seu financeiro também. ☕ (persona ilustrativa) |
+| **constr-16-antes-depois** | A mesma comissão de R$ 48 mil, dois filmes: saindo inteira no mês da venda × diluída em 5x de R$ 9.600 com o corretor pago à vista. O segundo filme tem final feliz pros dois lados. 🎞️ |
 | **constr-17-checklist** | Virar construtora parceira cabe num checklist de 5 itens: cadastro, parcelamento em contrato, apresentação pro time, cessão em 1 clique, painel + cashback. Sem análise de crédito pra você, sem custo extra. ✅ |
 | **constr-18-painel-mockup** | O painel da construtora por dentro: a pagar do mês, score de pagamento, cashback acumulado e cada duplicata com favorecido e status. O financeiro para de caçar informação. 🖥️ |
 | **constr-19-cashback** | R$ 1.870 de volta num semestre — sobre R$ 187 mil que os corretores anteciparam, pagando exatamente o que você já ia pagar. Construtora parceira tem troco. 💙 (exemplo ilustrativo) |
-| **constr-20-comparativo** | À vista, 24x sozinho ou 24x com Antecipaqui? Só um caminho protege a obra E o time ao mesmo tempo — e o custo extra dele, pra você, é zero. Compare as colunas. ⚖️ |
+| **constr-20-comparativo** | À vista, 5x sozinho ou 5x com Antecipaqui? Só um caminho protege a obra E o time ao mesmo tempo — e o custo extra dele, pra você, é zero. Compare as colunas. ⚖️ |
 | **constr-21-convite** | Vamos desenhar isso pro seu próximo lançamento? Uma conversa com financeiro e comercial na mesma mesa: saímos com o parcelamento desenhado e o time sabendo que recebe à vista. Chama a gente. 🤝 |
-| **constr-22-cta** | Seja uma construtora parceira da Antecipaqui: comissão em até 24x, caixa da obra protegido, corretor à vista e cashback sobre o volume operado. antecipaqui.digital — link na bio. 🚀 |
+| **constr-22-cta** | Seja uma construtora parceira da Antecipaqui: comissão em até 5x (150 dias), caixa da obra protegido, corretor à vista e cashback sobre o volume operado. antecipaqui.digital — link na bio. 🚀 |
 
 ## Stories (usar com link sticker → antecipaqui.digital)
 
 | Story | Uso |
 |---|---|
 | **constr-23-story-pergunta** | Abertura de semana — pergunta direta "sua comissão à vista tá saindo do caixa da obra?" + sticker de enquete (sim/não) pra medir a dor. |
-| **constr-24-story-dado** | O dado da campanha: 24x no seu fluxo, à vista na conta do corretor — com a conta da unidade de R$ 48 mil. Link sticker "ver como funciona". |
+| **constr-24-story-dado** | O dado da campanha: 5x no seu fluxo, à vista na conta do corretor — com a conta da unidade de R$ 48 mil. Link sticker "ver como funciona". |
 | **constr-25-story-painel** | Demo do painel no celular: pedido de cessão + botão de confirmar em 1 clique. Bom pra responder "mas dá trabalho?". |
 | **constr-26-story-time** | O efeito comercial em 3 cartas: prioridade, mais vendas, custo zero. Repostar quando um carrossel de vendas estiver no ar. |
 | **constr-27-story-cta** | Fechamento de semana: "vamos desenhar isso pro seu próximo lançamento?" + link sticker VAMOS CONVERSAR. |
@@ -155,7 +155,7 @@ Salva e leva pra reunião de diretoria. 📌
 |---|---|---|
 | Seg | constr-03-como-funciona | carrossel panorâmico |
 | Ter | constr-06-nada-a-mais-no-boleto | carrossel |
-| Qua | constr-14-24x | single |
+| Qua | constr-14-5x | single |
 | Qui | constr-07-cessao-1-clique | carrossel |
 | Qui | constr-24-story-dado | story |
 | Sex | constr-09-caixa-da-obra | carrossel |

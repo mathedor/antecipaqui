@@ -11,9 +11,9 @@ Hashtags base (usar 8–12 por post, variando):
 
 ## Carrosséis panorâmicos (emendados)
 
-### imob-01-manifesto — A venda parcelou em 24x. A comissão cai hoje. (5 quadros)
+### imob-01-manifesto — Pra que esperar 5, 6 meses? A comissão cai hoje. (5 quadros)
 **Legenda:**
-A venda parcelou em 24x. A comissão cai hoje. 💙
+Pra que esperar 5, 6 meses se você pode receber hoje? 💙
 
 Você fechou a venda — mas a construtora parcelou VOCÊ. Na Antecipaqui, as parcelas que vencem em até 150 dias viram PIX à vista: cadastro em minutos, contrato digital no celular e o deságio aberto na tela antes de qualquer sim.
 
@@ -23,7 +23,7 @@ Sua comissão, no seu tempo. Link na bio. 🔗
 **Legenda:**
 Vendeu. Comemorou. O boleto chegou primeiro. 🎬
 
-Comissão de R$ 48 mil picada em 24x de R$ 2.000: dois anos pra receber o que você já ganhou — enquanto aluguel, escola e cartão vencem esse mês. E capital parado trava a próxima venda.
+Comissão de R$ 48 mil picada em 5x de R$ 9.600: cinco, seis meses esperando o que você já ganhou — enquanto aluguel, escola e cartão vencem esse mês. E capital parado trava a próxima venda.
 
 Existe esperar. E existe Antecipaqui. Arrasta pra ver a virada. →
 
@@ -103,16 +103,16 @@ Mito, mito e mito: é cessão de parcelas que já são suas, o deságio aparece 
 
 | Post | Legenda curta |
 |---|---|
-| **imob-13-vendeu-entao-recebe** | Vendeu? Então recebe. Comissão parcelada em 24x vira PIX à vista, com deságio aberto na tela — até 150 dias, até 5 parcelas. 💙 |
+| **imob-13-vendeu-entao-recebe** | Vendeu? Então recebe. Pra que esperar 5, 6 meses? Comissão parcelada vira PIX à vista, com deságio aberto na tela. 💙 |
 | **imob-14-numero-150** | 150 dias de janela, até 5 parcelas à vista. E a mais longa não é rejeitada: fica registrada e a plataforma avisa quando entrar. 🗓️ |
 | **imob-15-quote-corretora** | "A venda foi minha. A espera não precisava ser." — se essa frase doeu, o link tá na bio. 💬 |
-| **imob-16-antes-depois** | O mesmo contrato, dois finais: R$ 2.000 por mês até 2028 — ou R$ 9.220 hoje, via PIX, com a fila indo pro fundo. Deságio aberto antes de decidir. ⚖️ |
+| **imob-16-antes-depois** | O mesmo contrato, dois finais: R$ 9.600 pingando por 5 meses — ou R$ 44.260 hoje, via PIX, com a fila indo pro fundo. Deságio aberto antes de decidir. ⚖️ |
 | **imob-17-checklist-operar** | O que você precisa pra operar: contrato de venda, contrato de comissão e uma chave PIX. Cadastro em minutos, o resto a plataforma faz. ✅ |
 | **imob-18-pix-caindo** | Aquele som de PIX caindo. 🔔 Assinou o contrato de cessão? O dinheiro é à vista — PIX ou TED, direto na sua conta. |
 | **imob-19-cicero-chat** | "Calcula 100 mil em 30/60/90." Líquido na hora, deságio aberto, simulação fechada no chat. O Cícero atende agora. 🤖 |
-| **imob-20-esperar-x-antecipar** | Esperar × antecipar: R$ 0 hoje ou R$ 9.220 hoje. Os dois caminhos existem — só um paga o tráfego de amanhã. 📊 |
+| **imob-20-esperar-x-antecipar** | Esperar × antecipar: R$ 0 hoje ou R$ 44.260 hoje. Os dois caminhos existem — só um paga o tráfego de amanhã. 📊 |
 | **imob-21-simular-nao-custa** | Simular não custa. Não simular, sim. Cadastra, vê o líquido aberto na tela e decide — não gostou, fecha a aba. 🖱️ |
-| **imob-22-cta-direto** | A venda parcelou em 24x. A comissão cai hoje. antecipaqui.digital — link na bio. 💙 |
+| **imob-22-cta-direto** | Pra que esperar 5, 6 meses? A comissão cai hoje. antecipaqui.digital — link na bio. 💙 |
 
 ## Stories (usar com link sticker → antecipaqui.digital)
 
@@ -141,5 +141,5 @@ Sobram na gaveta pra semanas 5–8: imob-07-janela-150-dias, imob-08-assinatura-
 - Postar 8h–9h ou 18h–19h (corretor decide antes do plantão ou na volta dele).
 - Todo carrossel termina em CTA → link na bio (antecipaqui.digital).
 - Fixar imob-01-manifesto, imob-03-da-venda-ao-pix e imob-14-numero-150 no topo do perfil.
-- Bio: "💙 Antecipaqui · A venda parcelou em 24x. A comissão cai hoje. · até 150 dias, até 5x, PIX à vista 👇" + link.
+- Bio: "💙 Antecipaqui · Pra que esperar 5, 6 meses? A comissão cai hoje. · até 150 dias, até 5x, PIX à vista 👇" + link.
 - Nunca citar percentual de taxa em post nem em resposta de comentário — sempre "deságio aberto na simulação".

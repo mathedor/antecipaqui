@@ -348,7 +348,7 @@ S({level:'cicero', n:'Tudo registrado', title:['Auditoria de ','cada conversa'],
 
 /* ========================= 02 IMOBILIÁRIA & CORRETOR ========================= */
 S({type:'intro', level:'imob', no:'02', who:'Para quem vende imóvel', title:'Imobiliária & Corretor',
-  desc:'A venda parcelou a comissão em 24 vezes — mas a conta do corretor vence esse mês. Aqui ele cadastra a operação, assina digital e recebe a comissão à vista. O resto (cobrança, parcelas, risco) vira problema da plataforma.',
+  desc:'A comissão parcelada leva 5, 6 meses pra cair — mas a conta do corretor vence esse mês. Aqui ele cadastra a operação, assina digital e recebe a comissão à vista. O resto (cobrança, parcelas, risco) vira problema da plataforma.',
   idx:['Nova operação & simulação','Link de Dados do comprador','Da venda ao PIX','Contrato digital','Acompanhamento de operações','Projeção & relatórios','Equipe, convites & chats']});
 
 S({level:'imob', n:'Nova operação & simulação', title:['Simule e veja ','o dinheiro na tela'],
@@ -374,11 +374,11 @@ S({level:'imob', n:'Da venda ao PIX', title:['O caminho do dinheiro, ','sem mist
   kid:'O fluxo inteiro é rastreado: cadastro → análise → aprovação → contrato → <b>pagamento à vista</b>. Depois disso, quem paga as parcelas é a construtora, direto pro fundo — <span class="em">o corretor já saiu da fila</span>.',
   pills:['Status em tempo real','Notificação a cada avanço','Pagamento após assinatura','Parcelas viram problema do fundo'],
   mock:`<div class="flow" style="max-width:430px">
-    <div class="ef"><span class="n">1</span><span><b>Cadastro</b> — comissão de R$ 48.000 em 24x</span></div>
+    <div class="ef"><span class="n">1</span><span><b>Cadastro</b> — comissão de R$ 48.000 em 5x de R$ 9.600</span></div>
     <div class="ef"><span class="n">2</span><span><b>Análise & aprovação</b> — plataforma + fundo avaliam</span></div>
     <div class="ef"><span class="n">3</span><span><b>Contrato digital</b> — todos assinam do celular</span></div>
     <div class="ef hi"><span class="n" style="background:var(--grn);color:#04291c">✓</span><span><b style="color:var(--grn)">R$ 33.406 na conta</b> — a comissão virou dinheiro à vista</span></div>
-    <div class="ef" style="border-style:dashed"><span class="n">∞</span><span>Construtora paga as 24 parcelas <b>direto ao fundo</b> — sem você na cadeia</span></div>
+    <div class="ef" style="border-style:dashed"><span class="n">∞</span><span>Construtora paga as parcelas <b>direto ao fundo</b> — sem você na cadeia</span></div>
   </div>`});
 
 S({level:'imob', n:'Contrato digital', title:['Assinou do celular, ','valeu no cartório'],
@@ -387,7 +387,7 @@ S({level:'imob', n:'Contrato digital', title:['Assinou do celular, ','valeu no c
   mock:`<div class="contractmk">
     <h5>📄 Contrato de Cessão de Crédito — Op. #482</h5>
     <div class="ln" style="width:92%"></div><div class="ln" style="width:98%"></div><div class="ln" style="width:85%"></div><div class="ln" style="width:95%"></div><div class="ln" style="width:60%"></div>
-    <div style="margin:10px 0 4px;font-weight:700;font-size:9px;color:#4a5a70">CEDENTE · Rafael Corretor — R$ 48.000 (24x)</div>
+    <div style="margin:10px 0 4px;font-weight:700;font-size:9px;color:#4a5a70">CEDENTE · Rafael Corretor — R$ 48.000 (5x)</div>
     <div class="ln" style="width:88%"></div><div class="ln" style="width:70%"></div>
     <div class="sig"><div><div class="as">Rafael M.</div><div style="font-size:8px;color:#7d8a9c">assinado · 14:32</div></div><span style="background:#dcfce7;color:#15803d;border-radius:99px;padding:3px 10px;font-size:8.5px;font-weight:800">✓ 3 de 3 assinaturas</span></div>
   </div>`});
@@ -507,7 +507,7 @@ S({level:'fundo', n:'Regras de auto-aprovação', title:['O óbvio se aprova ','
   mock: appShell(FUNDO_NAV,'Regras',`
     <div class="rows">
       <div class="r hd" style="grid-template-columns:2fr 1fr .8fr"><span>Regra</span><span>Acionou</span><span>Status</span></div>
-      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Taxa ≥ 5,5% · até 24x · até R$ 50k</b><span>31 ops</span><span class="st ok">ativa</span></div>
+      <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Taxa ≥ 5,5% · até 5x · até R$ 50k</b><span>31 ops</span><span class="st ok">ativa</span></div>
       <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Score ≥ 85 · construtoras A</b><span>18 ops</span><span class="st ok">ativa</span></div>
       <div class="r" style="grid-template-columns:2fr 1fr .8fr"><b>Piloto casas de alto padrão</b><span>2 ops</span><span class="st wa">pausada</span></div>
     </div>
@@ -655,7 +655,7 @@ S({level:'admin', n:'Motor financeiro', title:['Cada centavo com ','dono definid
   mock:`<div class="browser"><div class="top"><i></i><i></i><i></i><div class="url">motor/<b>resultado-da-operacao</b></div></div>
     <div class="body">
       <div class="flow">
-        <div class="ef"><span class="n">📥</span><span>Juros da op. #482: <b>R$ 14.594</b> (6% a.m. sobre 24x)</span></div>
+        <div class="ef"><span class="n">📥</span><span>Juros da op. #482: <b>R$ 3.740</b> (deságio sobre 5x)</span></div>
         <div class="ef"><span class="n">🏦</span><span>Custo do capital (fundo 2,4%): <b>R$ 5.838</b></span></div>
         <div class="ef"><span class="n">⚖️</span><span>Spread: <b>R$ 8.756</b> → dividido 50/50</span></div>
         <div class="ef hi"><span class="n" style="background:var(--grn);color:#04291c">AQ</span><span><b style="color:var(--grn)">Plataforma: custos + R$ 4.378</b> · Fundo: capital + R$ 4.378</span></div>
@@ -706,7 +706,7 @@ SLIDES.forEach((s,i)=>{
       <div style="position:relative;z-index:3">
         <div class="wordmark"><span class="am">A</span>antecipa<b>qui</b></div>
         <div class="kick">Antecipação de comissão imobiliária</div>
-        <h1 class="big">A venda parcelou em 24x.<br/><span class="l">A comissão cai hoje.</span></h1>
+        <h1 class="big">Pra que esperar 5, 6 meses?<br/><span class="l">A comissão cai hoje.</span></h1>
         <div class="sub">A plataforma que transforma comissão parcelada em dinheiro à vista — conectando corretores, construtoras e fundos num fluxo só: análise, contrato digital, pagamento e cobrança automatizada.</div>
       </div>
       <div class="meta">
@@ -718,7 +718,7 @@ SLIDES.forEach((s,i)=>{
     el.innerHTML=`<div class="glow a"></div>
       <div style="position:relative;z-index:2;width:100%;max-width:1300px;margin:0 auto">
         <div class="kick">Por que a Antecipaqui</div>
-        <h2 class="sec">O corretor vendeu, mas o dinheiro<br/>só chega em <span style="color:var(--a-soft)">2 anos</span>. A gente conserta isso.</h2>
+        <h2 class="sec">O corretor vendeu, mas o dinheiro<br/>só chega em <span style="color:var(--a-soft)">5, 6 meses</span>. A gente conserta isso.</h2>
         <p class="lead">Comissão imobiliária parcelada é um crédito bom preso num fluxo ruim. A Antecipaqui é a <b style="color:var(--tx)">tecnologia que destrava</b> — o capital é dos fundos, a esteira é nossa. E em cada painel, o <b style="color:var(--tx)">Cícero 👔</b>: atendente de IA que responde com dados reais.</p>
         <div class="vg">
           <div class="v"><div class="ic">🏠</div><h3>Pro corretor & imobiliária</h3><p>Comissão à vista com taxa transparente, contrato digital e zero cobrança pra fazer depois. Vendeu, recebeu, foi vender de novo.</p></div>
@@ -761,7 +761,7 @@ SLIDES.forEach((s,i)=>{
         <div class="revgrid">
           <div class="rev"><div class="ic">⚖️</div><h4>Spread dividido</h4><p>Diferença entre a taxa da operação (ex. <b>6% a.m.</b>) e o custo do capital (ex. <b>2,4% a.m.</b>) — dividida meio a meio com o fundo.</p></div>
           <div class="rev"><div class="ic">🧾</div><h4>Custos da operação</h4><p>Tarifas de contrato, assinatura e serviços da esteira: <b>100% receita da plataforma</b>, cobradas dentro da operação.</p></div>
-          <div class="rev"><div class="ic">🔁</div><h4>Receita recorrente</h4><p>O invoice pro fundo é <b>proporcional ao que foi pago</b> — cada parcela quitada gera repasse. Operação de 24x = 24 meses de receita.</p></div>
+          <div class="rev"><div class="ic">🔁</div><h4>Receita recorrente</h4><p>O invoice pro fundo é <b>proporcional ao que foi pago</b> — cada parcela quitada gera repasse. Operação de 5x = repasse mês a mês até a última parcela.</p></div>
           <div class="rev"><div class="ic">🛡️</div><h4>Sem risco de crédito</h4><p>Quem compra o recebível é o fundo. A plataforma não empresta — <b>escala sem consumir capital</b>.</p></div>
           <div class="rev"><div class="ic">📈</div><h4>Originação composta</h4><p>Comerciais com carteira vitalícia + imobiliárias operando recorrente = volume que cresce sem mídia paga.</p></div>
           <div class="rev"><div class="ic">🔌</div><h4>Plataforma multi-fundo</h4><p>Cada fundo novo pluga com seu modo operacional e suas regras — <b>a mesma esteira atende N fundos</b> concorrendo pelas operações.</p></div>

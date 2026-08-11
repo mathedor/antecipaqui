@@ -23,7 +23,7 @@ A Antecipaqui ganha quando uma operação roda (custos da operação + metade do
 **Funil:** anúncio → antecipaqui.digital (calculadora na primeira dobra) → cadastro/KYC → 1ª operação.
 
 - **Quem vê:** corretores de imóveis e donos/gestores de imobiliária (interesses: CRECI, lançamentos, mercado imobiliário; cargos; lookalike quando houver base).
-- **O que sente:** a dor da comissão parcelada — "a venda parcelou em 24x, a comissão cai hoje". Janela de 150 dias / 5 parcelas.
+- **O que sente:** a dor da comissão parcelada — "pra que esperar 5, 6 meses? a comissão cai hoje". Janela de 150 dias / 5 parcelas.
 - **Estrutura:** C1 topo (dores + manifesto, 40% da verba da vertente) → C2 remarketing produto (simulação transparente, Cícero, assinatura digital, 30%) → C3 conversão (simule agora / cadastro, 30%).
 - **Metas de validação:** clique a R$ 1–3 · cadastro a R$ 30–80 · **1ª operação a ≤ R$ 300**. Uma operação média já paga semanas de anúncio.
 - **Evento de conversão:** cadastro concluído (pixel) + operação criada (CAPI).
@@ -33,7 +33,7 @@ A Antecipaqui ganha quando uma operação roda (custos da operação + metade do
 **Funil:** anúncio → landing /apresentacao/construtora → botão "vamos conversar" (WhatsApp/formulário) → reunião → parceria ativa.
 
 - **Quem vê:** diretores, financeiro e comercial de construtoras e incorporadoras (cargos + interesses de incorporação; público pequeno e caro — normal).
-- **O que sente:** proteção de fluxo de caixa — "parcele as comissões em até 24x e o corretor ainda recebe à vista; você não desembolsa nada a mais, só muda o favorecido". Score, cashback, painel de duplicatas.
+- **O que sente:** proteção de fluxo de caixa — "parcele as comissões em até 5x (150 dias) e o corretor ainda recebe à vista; você não desembolsa nada a mais, só muda o favorecido". Score, cashback, painel de duplicatas.
 - **Estrutura:** C1 awareness com os panorâmicos do dilema (60%) → C2 remarketing com prova (painel, cessão em 1 clique, mito×fato) + objetivo mensagem/lead (40%).
 - **Metas de validação:** lead qualificado (reunião marcada) a **R$ 150–400**. 1 construtora parceira ≈ carteira inteira de corretores operando — LTV paga o trimestre.
 - **Obs.:** volume baixo é esperado; a leitura é custo por REUNIÃO, não por clique. Fase 2: LinkedIn Ads nos mesmos cargos.

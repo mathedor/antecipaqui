@@ -23,7 +23,7 @@ Extraia:
    - A comissão tipicamente é 3% a 6% do valor da venda. Se um suposto "valor de comissão" ficar maior que o valor da venda ou perto dele, você pegou o campo errado.
    - Pode retornar os dois (valor e percentual). Se só houver um, deixe o outro null. NÃO invente.
 
-3. numeroParcelas: em quantas parcelas a COMISSÃO será paga AO CORRETOR. NÃO é o parcelamento do financiamento/venda do imóvel (que pode ser 24x, 60x). A comissão costuma ser à vista ou em poucas parcelas — quase sempre de 1 a 4. Se não estiver claro o parcelamento da comissão, use 1.
+3. numeroParcelas: em quantas parcelas a COMISSÃO será paga AO CORRETOR. NÃO é o parcelamento do financiamento/venda do imóvel (que pode ser 24x, 60x). A comissão costuma ser à vista ou em poucas parcelas — quase sempre de 1 a 5. Se não estiver claro o parcelamento da comissão, use 1.
 
 4. dataVenda (YYYY-MM-DD): data de assinatura/celebração do contrato.
 
