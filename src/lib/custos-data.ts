@@ -509,6 +509,18 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       desc: "Esta página: quanto o projeto custou, quanto custa manter por mês e tudo que foi entregue desde a v1, mês a mês.",
       tier: "M",
     },
+    {
+      data: "11/08",
+      titulo: "Prazo de antecipação: de 120 para 150 dias",
+      desc: "O prazo máximo de uma operação subiu de 120 para 150 dias — dá pra parcelar em até 5 meses em vez de 4. Ajustado em todo o sistema: formulários de cadastro, as travas que conferem o prazo no servidor, o Cícero, a calculadora do site, a página de captação e os vídeos de apresentação da imobiliária e do comercial, que foram regravados com o novo prazo.",
+      tier: "M",
+    },
+    {
+      data: "11/08",
+      titulo: "Kit de marketing para redes sociais — 3 campanhas",
+      desc: "81 peças prontas pra postar no Instagram, divididas em três campanhas: uma para imobiliárias, uma para construtoras parceiras e uma para recrutar comerciais — cada uma com legendas, hashtags e calendário de postagem de 4 semanas, mais o plano de tráfego pago das três frentes. Central de aprovação nova na apresentação (antecipaqui-apresentacao.vercel.app/campanhas), com uma aba por campanha, aprovação peça a peça e download em lote.",
+      tier: "G",
+    },
   ],
 };
 
