@@ -521,6 +521,12 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       desc: "81 peças prontas pra postar no Instagram, divididas em três campanhas: uma para imobiliárias, uma para construtoras parceiras e uma para recrutar comerciais — cada uma com legendas, hashtags e calendário de postagem de 4 semanas, mais o plano de tráfego pago das três frentes. Central de aprovação nova na apresentação (antecipaqui-apresentacao.vercel.app/campanhas), com uma aba por campanha, aprovação peça a peça e download em lote.",
       tier: "G",
     },
+    {
+      data: "13/08",
+      titulo: "Manual do Comercial e entrada de novos comerciais",
+      desc: "Apresentação nova só para o time comercial (antecipaqui-comercial.vercel.app): 16 telas explicando a plataforma de ponta a ponta — o problema dos 150 dias, como o dinheiro anda, a conta de uma operação real, as objeções que aparecem na rua e o método de trabalho da semana. Duas telas são o coração: o kit de apresentação, onde o comercial escolhe se vai apresentar para uma imobiliária ou para uma construtora e já abre a apresentação certa, e a tela de entrada no time. Junto veio o cadastro público de comercial (antecipaqui.digital/quero-ser-comercial): o candidato preenche a ficha, o administrador recebe aviso na hora e aprova ou recusa numa fila nova dentro do painel — aprovou, o acesso dele já nasce liberado no perfil de comercial.",
+      tier: "G",
+    },
   ],
 };
 
