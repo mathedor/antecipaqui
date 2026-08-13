@@ -23,21 +23,55 @@ export default function PublicApiDocsPage() {
         <h1 className="text-display-md mt-3 mb-2">
           API <span className="text-gradient-blue">do fundo</span>
         </h1>
-        <p className="text-fg-muted max-w-2xl">
-          REST API pra fundos parceiros consultarem operações, parcelas e
-          tomarem decisões. Spec OpenAPI 3.1 em{" "}
+        <p className="text-fg-muted max-w-2xl mb-6">
+          Documentação para fundos parceiros. Spec OpenAPI 3.1 em{" "}
           <Link
             href="/api/openapi"
             className="text-accent hover:underline font-mono text-xs"
           >
             /api/openapi
           </Link>
-          . Gere sua API key em{" "}
-          <Link href="/painel/api" className="text-accent hover:underline">
-            /painel/api
-          </Link>{" "}
-          (apenas usuários com role fundo).
+          . São duas partes independentes — use a que corresponde ao seu
+          modelo de operação.
         </p>
+
+        <div className="grid md:grid-cols-2 gap-4 max-w-4xl">
+          <div className="rounded-2xl border border-border bg-bg-elev p-5">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-dim">
+              parte 1 · você consulta
+            </span>
+            <h2 className="text-base font-semibold mt-2 mb-1">
+              API de operações e parcelas
+            </h2>
+            <p className="text-sm text-fg-muted">
+              Para o fundo que acompanha e decide pelo painel: listar
+              operações, ver detalhe, consultar parcelas e aprovar ou recusar.
+              Autenticação por Bearer token — gere a chave em{" "}
+              <Link href="/painel/api" className="text-accent hover:underline">
+                /painel/api
+              </Link>{" "}
+              (usuários com perfil de fundo).
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-accent/40 bg-accent-soft p-5">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-dim">
+              parte 2 · você nos avisa
+            </span>
+            <h2 className="text-base font-semibold mt-2 mb-1">
+              Webhooks de integração
+            </h2>
+            <p className="text-sm text-fg-muted">
+              Para o fundo que opera em sistema próprio: a operação nasce no
+              Antecipaqui, roda no seu sistema e volta traduzida para o
+              cliente. Três endereços — resultado do cadastro, mudança de
+              status e duplicatas emitidas. Autenticação por assinatura
+              HMAC-SHA256 do corpo, sem token. A URL de cada endereço, com o
+              identificador do seu fundo, é entregue junto com o segredo
+              compartilhado.
+            </p>
+          </div>
+        </div>
       </div>
 
       <link
