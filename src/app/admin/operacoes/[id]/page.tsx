@@ -15,6 +15,7 @@ import { getContratoForOperacao } from "@/lib/actions/contract";
 import { listFundosForSelector } from "@/lib/actions/fundos";
 import { listCustosOperacao } from "@/lib/actions/custos";
 import { toBlobProxyHref } from "@/lib/blob-url";
+import { OperaAbaOperacao } from "@/components/opera-aba-operacao";
 
 export const metadata = {
   title: "Admin · Detalhe da operação",
@@ -720,6 +721,9 @@ export default async function AdminOperacaoDetail({ params }: Params) {
 
       {/* === Cronograma de parcelas full-width com encargos + ações === */}
       <ParcelasOperacaoFullSection op={op} />
+
+      {/* === Integração com fundo (OPERA CAPITAL) — some se não houver === */}
+      <OperaAbaOperacao operacaoId={op.id} />
     </AdminShell>
   );
 }

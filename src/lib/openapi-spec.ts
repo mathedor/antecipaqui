@@ -23,12 +23,26 @@ export function buildOpenApiSpec() {
     },
     servers: [
       { url: `${baseUrl}/api/external`, description: "Produção" },
+      {
+        url: baseUrl,
+        description:
+          "Raiz do site — use este servidor para os endpoints de Webhooks de integração",
+      },
     ],
     security: [{ BearerApiKey: [] }],
     tags: [
       { name: "Fundo", description: "Dados do fundo autenticado" },
       { name: "Operações", description: "Listagem, detalhe e decisão" },
       { name: "Parcelas", description: "Parcelas de comissão" },
+      {
+        name: "Webhooks de integração",
+        description:
+          "Endereços que o FUNDO chama quando opera com sistema próprio (ex.: OPERA CAPITAL / QPROF). " +
+          "Não usam Bearer token: são autenticados pela assinatura HMAC-SHA256 do corpo, com o segredo " +
+          "compartilhado gerado no painel do fundo. O cabeçalho da assinatura é configurável por fundo " +
+          "(padrão: x-opera-signature, formato sha256=<hex>). " +
+          "Selecione o servidor da raiz do site para montar a URL completa.",
+      },
     ],
     paths: {
       "/fundo/me": {
@@ -257,6 +271,100 @@ export function buildOpenApiSpec() {
           },
         },
       },
+
+      /* ─── Webhooks que o fundo integrado chama (OPERA CAPITAL / QPROF) ───
+         Documentados aqui para que o fundo cadastre os endereços do lado
+         deles. Autenticação é por assinatura HMAC, não por Bearer. */
+      "/api/opera/webhook/cadastro/{fundoId}": {
+        post: {
+          tags: ["Webhooks de integração"],
+          summary: "Peça 03 · Resultado da análise cadastral do cliente",
+          description:
+            "Chamado pelo fundo quando termina a análise cadastral de um cliente que enviamos. " +
+            "É o portão da integração: nenhuma operação é enviada antes da aprovação. " +
+            "Reprovação exige motivo — ele é repassado ao cliente. " +
+            "Idempotente: o mesmo `eventoId` entregue várias vezes produz um efeito só.",
+          security: [],
+          parameters: [
+            { $ref: "#/components/parameters/FundoIdPath" },
+            { $ref: "#/components/parameters/AssinaturaHeader" },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/WebhookCadastro" },
+              },
+            },
+          },
+          responses: {
+            "200": { $ref: "#/components/responses/WebhookOk" },
+            "401": { $ref: "#/components/responses/AssinaturaInvalida" },
+            "409": { $ref: "#/components/responses/IntegracaoInativa" },
+            "422": { $ref: "#/components/responses/NaoLocalizado" },
+          },
+        },
+      },
+      "/api/opera/webhook/status/{fundoId}": {
+        post: {
+          tags: ["Webhooks de integração"],
+          summary: "Peça 05 · Mudança de status da operação",
+          description:
+            "Chamado a cada mudança na esteira do fundo. Cada evento aceito atualiza a esteira " +
+            "que o cliente vê, registra na linha do tempo da operação e notifica todos os envolvidos. " +
+            "Quando o status for de assinatura, envie o link em `linkAssinatura` — ele vai direto " +
+            "para o cedente. Status fora do catálogo é registrado e sinalizado, sem alterar a esteira. " +
+            "Eventos fora de ordem não retrocedem o estado: a data do evento manda.",
+          security: [],
+          parameters: [
+            { $ref: "#/components/parameters/FundoIdPath" },
+            { $ref: "#/components/parameters/AssinaturaHeader" },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/WebhookStatus" },
+              },
+            },
+          },
+          responses: {
+            "200": { $ref: "#/components/responses/WebhookOk" },
+            "401": { $ref: "#/components/responses/AssinaturaInvalida" },
+            "409": { $ref: "#/components/responses/IntegracaoInativa" },
+            "422": { $ref: "#/components/responses/NaoLocalizado" },
+          },
+        },
+      },
+      "/api/opera/webhook/duplicatas/{fundoId}": {
+        post: {
+          tags: ["Webhooks de integração"],
+          summary: "Peça 06 · Duplicatas emitidas da operação paga",
+          description:
+            "Chamado depois do pagamento, com os títulos da operação. Cada duplicata é casada com a " +
+            "parcela de mesmo vencimento e publicada nos painéis da construtora e da imobiliária. " +
+            "Pode ser chamado de novo com os mesmos números para atualizar valores ou links.",
+          security: [],
+          parameters: [
+            { $ref: "#/components/parameters/FundoIdPath" },
+            { $ref: "#/components/parameters/AssinaturaHeader" },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/WebhookDuplicatas" },
+              },
+            },
+          },
+          responses: {
+            "200": { $ref: "#/components/responses/WebhookOk" },
+            "401": { $ref: "#/components/responses/AssinaturaInvalida" },
+            "409": { $ref: "#/components/responses/IntegracaoInativa" },
+            "422": { $ref: "#/components/responses/NaoLocalizado" },
+          },
+        },
+      },
     },
     components: {
       securitySchemes: {
@@ -293,8 +401,186 @@ export function buildOpenApiSpec() {
             },
           },
         },
+        WebhookOk: {
+          description:
+            "Evento aceito e processado. `duplicado: true` significa que já tínhamos esse evento — nada foi refeito.",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  ok: { type: "boolean" },
+                  detalhe: { type: "string" },
+                  duplicado: { type: "boolean" },
+                },
+              },
+            },
+          },
+        },
+        AssinaturaInvalida: {
+          description:
+            "Assinatura HMAC ausente ou incorreta. O corpo recebido fica registrado para auditoria.",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Error" },
+            },
+          },
+        },
+        IntegracaoInativa: {
+          description:
+            "O fundo existe, mas está sem integração ativa ou sem segredo de assinatura configurado.",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Error" },
+            },
+          },
+        },
+        NaoLocalizado: {
+          description:
+            "Não encontramos a operação ou o cadastro pelos identificadores enviados. " +
+            "Não reenvie o mesmo corpo: confira os identificadores.",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  ok: { type: "boolean", example: false },
+                  detalhe: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+      },
+      parameters: {
+        FundoIdPath: {
+          in: "path",
+          name: "fundoId",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+          description:
+            "Identificador do fundo no Antecipaqui. Já vem embutido na URL entregue ao fundo.",
+        },
+        AssinaturaHeader: {
+          in: "header",
+          name: "x-opera-signature",
+          required: true,
+          schema: { type: "string" },
+          example: "sha256=9f86d081884c7d659a2feaa0c55ad015a3bf4f1b…",
+          description:
+            "HMAC-SHA256 do corpo cru da requisição, usando o segredo compartilhado. " +
+            "O nome do cabeçalho e o formato (hex ou base64, com ou sem prefixo) são " +
+            "configuráveis por fundo no contrato de integração.",
+        },
       },
       schemas: {
+        WebhookCadastro: {
+          type: "object",
+          description:
+            "Identifique o cadastro por `protocolo`, `clienteId` ou `cnpj` — o primeiro que casar vale.",
+          properties: {
+            eventoId: {
+              type: "string",
+              description:
+                "Identificador do evento no seu sistema. Usado para idempotência; se não vier, usamos o hash do corpo.",
+              example: "evt_9f2c",
+            },
+            protocolo: { type: "string", example: "PROTO-9988" },
+            clienteId: { type: "string", example: "CLI-4471" },
+            cnpj: { type: "string", example: "12345678000190" },
+            situacao: {
+              type: "string",
+              enum: ["aprovado", "reprovado"],
+              example: "reprovado",
+            },
+            motivo: {
+              type: "string",
+              description: "Obrigatório quando reprovado — é o que o cliente lê.",
+              example: "Contrato social sem a última alteração registrada",
+            },
+            dataEvento: { type: "string", format: "date-time" },
+          },
+          required: ["situacao"],
+        },
+        WebhookStatus: {
+          type: "object",
+          description:
+            "Identifique a operação por `operacaoId` (o seu) ou `referenciaExterna` (o nosso, enviado no cadastro da operação).",
+          properties: {
+            eventoId: { type: "string", example: "evt_a71b" },
+            operacaoId: { type: "string", example: "OPERA-1234" },
+            referenciaExterna: {
+              type: "string",
+              format: "uuid",
+              description: "O identificador que mandamos no envio da operação.",
+            },
+            status: {
+              type: "string",
+              description: "Estado da operação na sua esteira.",
+              enum: [
+                "aguardando aprovação",
+                "reprovado",
+                "preparando documentação",
+                "aguardando confirmação do cedente",
+                "enviado para assinatura",
+                "aguardando pagamento",
+                "pago",
+              ],
+              example: "enviado para assinatura",
+            },
+            observacao: {
+              type: "string",
+              description: "Texto livre — aparece para o cliente e no painel.",
+            },
+            linkAssinatura: {
+              type: "string",
+              format: "uri",
+              description:
+                "Envie quando o status for de assinatura. Vai direto para o cedente, por painel, e-mail e SMS.",
+            },
+            dataEvento: {
+              type: "string",
+              format: "date-time",
+              description:
+                "Momento em que o status mudou. É o que ordena os eventos — evento mais antigo que o último aplicado é ignorado.",
+            },
+          },
+          required: ["status"],
+        },
+        WebhookDuplicatas: {
+          type: "object",
+          properties: {
+            eventoId: { type: "string", example: "evt_c30d" },
+            operacaoId: { type: "string", example: "OPERA-1234" },
+            referenciaExterna: { type: "string", format: "uuid" },
+            duplicatas: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  numero: { type: "string", example: "0001" },
+                  valor: { type: "number", example: 12500.0 },
+                  vencimento: {
+                    type: "string",
+                    format: "date",
+                    example: "2026-09-10",
+                  },
+                  sacado: { type: "string", example: "Construtora Exemplo Ltda" },
+                  sacadoDocumento: { type: "string", example: "12345678000190" },
+                  linhaDigitavel: { type: "string" },
+                  codigoBarras: { type: "string" },
+                  link: {
+                    type: "string",
+                    format: "uri",
+                    description: "Link do arquivo. Guardamos uma cópia nossa.",
+                  },
+                },
+                required: ["numero", "valor", "vencimento"],
+              },
+            },
+          },
+          required: ["duplicatas"],
+        },
         Error: {
           type: "object",
           properties: { error: { type: "string" } },

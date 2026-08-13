@@ -769,6 +769,28 @@ export async function changeOperacaoStatusAction(input: ChangeStatusInput) {
       break;
   }
 
+  // ─── Fundos com integração ponta a ponta (OPERA CAPITAL) ───
+  // A partir da análise final, quem toca a esteira é o fundo. Colocamos a
+  // consulta de cadastro na fila; daí em diante o motor em lib/opera assume
+  // e o cliente acompanha tudo traduzido no painel de sempre.
+  const fundoDaOperacao =
+    (updates.fundoId as string | undefined) ?? op.fundoId ?? null;
+  if (input.newStatus === "analise_final" && fundoDaOperacao) {
+    const [fundoIntegrado] = await db
+      .select({ tipo: fundos.integracaoTipo })
+      .from(fundos)
+      .where(eq(fundos.id, fundoDaOperacao))
+      .limit(1);
+    if (fundoIntegrado && fundoIntegrado.tipo !== "nenhuma") {
+      const { iniciarIntegracaoDaOperacao } = await import(
+        "@/lib/opera/agentes"
+      );
+      await iniciarIntegracaoDaOperacao(op.id).catch((e) =>
+        console.error("[opera] início da integração falhou:", e),
+      );
+    }
+  }
+
   revalidatePath("/admin");
   revalidatePath(`/admin/operacoes/${op.id}`);
   revalidatePath("/admin/operacoes");

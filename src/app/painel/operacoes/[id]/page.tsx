@@ -17,6 +17,7 @@ import { WhatsappShareButton } from "@/components/whatsapp-share-button";
 import { formatBRL, formatPercent } from "@/lib/format";
 import { toBlobProxyHref } from "@/lib/blob-url";
 import { painelRole } from "@/lib/painel-role";
+import { OperaDuplicatasCliente } from "@/components/opera-duplicatas-cliente";
 
 export const metadata = {
   title: "Borderô da operação",
@@ -535,6 +536,9 @@ export default async function OperacaoDetailPage({ params }: Params) {
           </p>
         </footer>
       </article>
+
+      {/* Duplicatas emitidas pelo fundo — some quando não houver */}
+      <OperaDuplicatasCliente operacaoId={op.id} />
 
       <style>{`
         @media print {

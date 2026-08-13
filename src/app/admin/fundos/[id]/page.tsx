@@ -99,6 +99,15 @@ export default async function AdminFundoDetail({ params }: Params) {
             nome={fundo.contatoResponsavel ?? fundo.razaoSocial}
           />
           <Link
+            href={`/admin/fundos/${id}/integracao`}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"
+          >
+            Integração
+            {fundo.integracaoTipo !== "nenhuma" && (
+              <span className="chip chip-accent text-[10px]">ativa</span>
+            )}
+          </Link>
+          <Link
             href={`/admin/fundos/${id}/editar`}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-bg-elev text-fg hover:border-accent hover:text-accent font-medium text-sm transition-colors"
           >

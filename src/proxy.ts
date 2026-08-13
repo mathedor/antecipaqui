@@ -35,6 +35,7 @@ function passaLivre(pathname: string): boolean {
     pathname.startsWith("/api/cobranca/webhook") ||
     pathname.startsWith("/api/contrato-assinatura/webhook") ||
     pathname.startsWith("/api/zapsign/webhook") ||
+    pathname.startsWith("/api/opera/webhook") ||
     pathname.startsWith("/api/cron") ||
     pathname.startsWith("/_next") ||
     pathname === "/manutencao" ||

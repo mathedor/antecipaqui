@@ -20,6 +20,7 @@ import {
   index,
   uniqueIndex,
   boolean,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -154,10 +155,15 @@ export const imobiliarias = pgTable(
     /** GRUPO ECONÔMICO — quando preenchido, esta row é uma FILIAL e aponta
      *  pra matriz do grupo. NULL = matriz (ou imobiliária independente).
      *  Só um nível: filial nunca tem filial (validado em runtime).
-     *  FK declarada no migration (auto-referência não pode ser inline aqui). */
-    matrizId: uuid("matriz_id"),
+     *  A auto-referência precisa do tipo explícito (AnyPgColumn) — sem ela
+     *  declarada aqui, `drizzle-kit push` derruba a constraint do banco. */
+    matrizId: uuid("matriz_id").references((): AnyPgColumn => imobiliarias.id, {
+      onDelete: "set null",
+    }),
     /** Marcado pela matriz no cadastro/alteração cadastral. Habilita a
-     *  aba de filiais e o seletor de unidade na nova operação. */
+     *  aba de filiais e o seletor de unidade na nova operação.
+     *  (a FK de matriz_id é auto-referência — declarada logo acima com
+     *   AnyPgColumn pra sobreviver a `drizzle-kit push`) */
     possuiFiliais: boolean("possui_filiais").notNull().default(false),
     /** Nome interno da unidade — "Matriz", "Filial Balneário Camboriú".
      *  Só pra leitura humana nos seletores/relatórios. */
@@ -451,6 +457,34 @@ export const fundos = pgTable(
      *  'fundo'. Quando 'fundo', o COMO o fundo nos repassa segue boletosModo
      *  (api/cnab/manual). */
     cobrancaGeradaPor: text("cobranca_gerada_por").notNull().default("antecipa"),
+    /* === Integração ponta a ponta com o sistema do fundo ===
+     *  Alguns fundos não recebem a operação por e-mail/painel: eles têm API
+     *  própria e a operação inteira (cadastro do cliente, envio, esteira de
+     *  status e duplicatas) roda lá dentro. A OPERA CAPITAL (QPROF) é a
+     *  primeira. Quando integracaoTipo != 'nenhuma', o motor em lib/opera
+     *  assume o ciclo e o Antecipaqui vira o tradutor pro cliente. */
+    /** 'nenhuma' (padrão) | 'opera' */
+    integracaoTipo: text("integracao_tipo").notNull().default("nenhuma"),
+    /** 'sandbox' | 'producao'. Sandbox nunca toca em dado real do fundo. */
+    integracaoAmbiente: text("integracao_ambiente").notNull().default("sandbox"),
+    /** URL base da API do fundo (sem barra no fim). */
+    integracaoApiUrl: text("integracao_api_url"),
+    /** Credenciais em jsonb — formato depende do fundo. Para a OPERA:
+     *  { tipo: 'api_key'|'bearer'|'oauth', apiKey?, token?, clientId?,
+     *    clientSecret?, tokenUrl?, header? } */
+    integracaoCredenciais: jsonb("integracao_credenciais"),
+    /** Segredo compartilhado pra conferir HMAC dos webhooks que o fundo
+     *  manda pra gente (cadastro, status e duplicatas). */
+    integracaoWebhookSecret: text("integracao_webhook_secret"),
+    /** Mapeamento de rotas e nomes de campo do fundo. Fica em jsonb de
+     *  propósito: quando a documentação da OPERA chegar, é só preencher
+     *  aqui — nenhum código muda. Ver DEFAULT_CONTRATO em lib/opera/contrato.ts. */
+    integracaoContrato: jsonb("integracao_contrato"),
+    /** Última vez que a conexão foi testada com sucesso (painel de saúde). */
+    integracaoUltimoOkEm: timestamp("integracao_ultimo_ok_em", {
+      withTimezone: true,
+    }),
+    integracaoUltimoErro: text("integracao_ultimo_erro"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -2506,3 +2540,259 @@ export const ciceroMensagens = pgTable(
 
 export type CiceroConversa = typeof ciceroConversas.$inferSelect;
 export type CiceroMensagem = typeof ciceroMensagens.$inferSelect;
+
+/* =========================================
+   INTEGRAÇÃO OPERA CAPITAL (QPROF)
+
+   Princípio das quatro tabelas: guardamos SEMPRE o dado cru que o fundo
+   mandou ao lado do dado traduzido que o cliente vê. Divergência vira
+   auditoria de segundos, e um estado desconhecido nunca derruba a operação.
+   ========================================= */
+
+/** Espelho do cadastro de um cliente nosso (imobiliária/cedente ou
+ *  construtora) dentro da base do fundo. Uma linha por par fundo × entidade. */
+export const operaClientes = pgTable(
+  "opera_clientes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    /** 'imobiliaria' | 'construtora' */
+    entidadeTipo: text("entidade_tipo").notNull(),
+    entidadeId: uuid("entidade_id").notNull(),
+    /** CNPJ consultado — é a chave da conversa com o fundo. */
+    cnpj: text("cnpj").notNull(),
+    /** ID do cliente na base do fundo (vem da consulta ou do cadastro). */
+    externoId: text("externo_id"),
+    /** Protocolo devolvido no envio do cadastro. */
+    protocolo: text("protocolo"),
+    /** 'nao_consultado' | 'nao_encontrado' | 'enviado' | 'em_analise'
+     *  | 'aprovado' | 'reprovado' | 'erro' */
+    situacao: text("situacao").notNull().default("nao_consultado"),
+    /** Motivo da reprovação — obrigatório pro cliente saber o que corrigir. */
+    motivo: text("motivo"),
+    consultadoEm: timestamp("consultado_em", { withTimezone: true }),
+    enviadoEm: timestamp("enviado_em", { withTimezone: true }),
+    respondidoEm: timestamp("respondido_em", { withTimezone: true }),
+    /** O que mandamos (sem os binários — só a ficha e a lista de arquivos). */
+    payloadEnviado: jsonb("payload_enviado"),
+    /** Última resposta crua do fundo. */
+    ultimaResposta: jsonb("ultima_resposta"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("opera_clientes_entidade_idx").on(
+      t.fundoId,
+      t.entidadeTipo,
+      t.entidadeId,
+    ),
+    index("opera_clientes_cnpj_idx").on(t.fundoId, t.cnpj),
+    index("opera_clientes_situacao_idx").on(t.situacao),
+  ],
+);
+
+export type OperaCliente = typeof operaClientes.$inferSelect;
+
+/** Espelho de uma operação nossa dentro do fundo. O fundo é dono do estado;
+ *  nós somos donos da conversa com o cliente. */
+export const operaOperacoes = pgTable(
+  "opera_operacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    operacaoId: uuid("operacao_id")
+      .notNull()
+      .references(() => operacoes.id, { onDelete: "cascade" }),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    /** Número/ID da operação no sistema do fundo, ao lado do nosso OP-2026-XXXX. */
+    externoId: text("externo_id"),
+    protocolo: text("protocolo"),
+    /** Status cru, exatamente como o fundo escreveu. Fonte da verdade do
+     *  sub-estado que o cliente vê. */
+    statusExterno: text("status_externo"),
+    /** Rótulo em português já traduzido pro cliente. */
+    statusLabel: text("status_label"),
+    /** Status interno pro qual traduzimos (espelha operacao_status). NULL
+     *  quando o status externo é desconhecido — aí não mexemos na esteira. */
+    statusInterno: text("status_interno"),
+    /** Se true, o status recebido não está no catálogo: admin é avisado e o
+     *  fluxo do cliente continua intacto. */
+    statusDesconhecido: boolean("status_desconhecido").notNull().default(false),
+    observacao: text("observacao"),
+    /** Link de assinatura do cedente — chega junto do status e vai direto
+     *  pra mão dele, sem intermediário. */
+    linkAssinatura: text("link_assinatura"),
+    linkAssinaturaEm: timestamp("link_assinatura_em", { withTimezone: true }),
+    enviadaEm: timestamp("enviada_em", { withTimezone: true }),
+    /** Data do evento mais recente JÁ APLICADO. Evento com data anterior a
+     *  esta é ignorado — é o que impede a esteira de andar pra trás quando
+     *  os webhooks chegam fora de ordem. */
+    ultimoEventoEm: timestamp("ultimo_evento_em", { withTimezone: true }),
+    payloadEnviado: jsonb("payload_enviado"),
+    ultimaResposta: jsonb("ultima_resposta"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("opera_operacoes_operacao_idx").on(t.operacaoId),
+    index("opera_operacoes_externo_idx").on(t.fundoId, t.externoId),
+    index("opera_operacoes_status_idx").on(t.statusExterno),
+  ],
+);
+
+export type OperaOperacao = typeof operaOperacoes.$inferSelect;
+
+/** Todo webhook recebido, gravado cru antes de qualquer interpretação.
+ *  É o que permite reprocessar um dia inteiro depois de corrigir uma regra —
+ *  sem pedir nada ao fundo. */
+export const operaEventos = pgTable(
+  "opera_eventos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    /** 'cadastro' | 'status' | 'duplicatas' */
+    tipo: text("tipo").notNull(),
+    /** ID do evento no fundo. É a chave de idempotência: o mesmo evento
+     *  entregue dez vezes produz exatamente um efeito. Quando o fundo não
+     *  manda ID, geramos um hash do corpo. */
+    externoEventoId: text("externo_evento_id").notNull(),
+    assinaturaValida: boolean("assinatura_valida").notNull().default(false),
+    payload: jsonb("payload").notNull(),
+    headers: jsonb("headers"),
+    operacaoId: uuid("operacao_id").references(() => operacoes.id, {
+      onDelete: "set null",
+    }),
+    operaClienteId: uuid("opera_cliente_id").references(() => operaClientes.id, {
+      onDelete: "set null",
+    }),
+    /** 'recebido' | 'processado' | 'ignorado' | 'erro' */
+    status: text("status").notNull().default("recebido"),
+    erro: text("erro"),
+    processadoEm: timestamp("processado_em", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("opera_eventos_idempotencia_idx").on(
+      t.fundoId,
+      t.tipo,
+      t.externoEventoId,
+    ),
+    index("opera_eventos_operacao_idx").on(t.operacaoId),
+    index("opera_eventos_status_idx").on(t.status, t.createdAt),
+  ],
+);
+
+export type OperaEvento = typeof operaEventos.$inferSelect;
+
+/** Duplicatas emitidas pelo fundo depois que a operação foi paga. Cada
+ *  título é amarrado à parcela correspondente e ganha uma cópia nossa —
+ *  se o link do fundo expirar, o cliente continua baixando. */
+export const operaDuplicatas = pgTable(
+  "opera_duplicatas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    operacaoId: uuid("operacao_id")
+      .notNull()
+      .references(() => operacoes.id, { onDelete: "cascade" }),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    /** Parcela correspondente. NULL quando não conseguimos casar sozinhos —
+     *  aí o admin resolve na aba OPERA da operação. */
+    parcelaId: uuid("parcela_id").references(() => parcelasComissao.id, {
+      onDelete: "set null",
+    }),
+    /** Número do título no fundo. */
+    numero: text("numero").notNull(),
+    valor: numeric("valor", { precision: 15, scale: 2 }).notNull(),
+    vencimento: date("vencimento").notNull(),
+    sacadoNome: text("sacado_nome"),
+    sacadoDocumento: text("sacado_documento"),
+    linhaDigitavel: text("linha_digitavel"),
+    codigoBarras: text("codigo_barras"),
+    /** Link do fundo — pode expirar. */
+    linkExterno: text("link_externo"),
+    /** Nossa cópia no Blob — não expira. */
+    arquivoUrl: text("arquivo_url"),
+    arquivoNome: text("arquivo_nome"),
+    /** 'aberta' | 'paga' | 'cancelada' */
+    situacao: text("situacao").notNull().default("aberta"),
+    pagoEm: date("pago_em"),
+    payload: jsonb("payload"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("opera_duplicatas_numero_idx").on(t.fundoId, t.numero),
+    index("opera_duplicatas_operacao_idx").on(t.operacaoId),
+    index("opera_duplicatas_vencimento_idx").on(t.vencimento),
+  ],
+);
+
+export type OperaDuplicata = typeof operaDuplicatas.$inferSelect;
+
+/** Fila de saída: tudo que NÓS mandamos pro fundo passa por aqui. Mesmo
+ *  motor de retentativa da fila de webhooks — se a API do fundo cair,
+ *  nada se perde. */
+export const operaJobs = pgTable(
+  "opera_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    /** 'consultar_cliente' | 'cadastrar_cliente' | 'enviar_operacao' */
+    tipo: text("tipo").notNull(),
+    /** A quem o job se refere: 'opera_cliente' | 'operacao' */
+    refTipo: text("ref_tipo").notNull(),
+    refId: uuid("ref_id").notNull(),
+    /** Operação de origem, quando houver — usada pra mostrar o job na aba
+     *  OPERA e pra avisar o dono certo quando falha. */
+    operacaoId: uuid("operacao_id").references(() => operacoes.id, {
+      onDelete: "cascade",
+    }),
+    payload: jsonb("payload"),
+    /** 'pendente' | 'processando' | 'concluido' | 'falhou' | 'desistido'
+     *  | 'bloqueado' (falta documento: espera o cliente, não o fundo) */
+    status: text("status").notNull().default("pendente"),
+    tentativas: integer("tentativas").notNull().default(0),
+    ultimoErro: text("ultimo_erro"),
+    proximaTentativaEm: timestamp("proxima_tentativa_em", {
+      withTimezone: true,
+    }),
+    resultado: jsonb("resultado"),
+    concluidoEm: timestamp("concluido_em", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("opera_jobs_fila_idx").on(t.status, t.proximaTentativaEm),
+    index("opera_jobs_ref_idx").on(t.refTipo, t.refId),
+    index("opera_jobs_operacao_idx").on(t.operacaoId),
+  ],
+);
+
+export type OperaJob = typeof operaJobs.$inferSelect;
