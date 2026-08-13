@@ -2,6 +2,7 @@ import { requireAdminArea } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { CustosPanel } from "@/components/custos-panel";
 import { PageHelp } from "@/components/page-help";
+import { contasDaAna } from "@/lib/custosAna";
 
 export const metadata = {
   title: "Admin · Custos & Desenvolvimento",
@@ -17,8 +18,27 @@ function mesCorrenteSP() {
   return fmt.format(new Date()).slice(0, 7);
 }
 
+/* Quais linhas do relatório são a conta COMPARTILHADA da casa (e por isso
+   recebem o valor rateado que a Ana leu na fatura). Todo o resto — servidor
+   principal, backup primário e secundário, as 4 proxies, o firewall hot blind,
+   a VPS de agentes e a do Cícero, o servidor de demonstração, a cloud de
+   arquivos — é infra dedicada do Antecipaqui, com preço próprio, e não pode
+   ser trocada pelo rateio de ninguém. */
+const COMPARTILHADAS: Record<string, string> = {
+  vercel: "vercel",     // hospedagem
+  banco: "banco",       // Neon
+  resend: "email",      // e-mail
+  whatsapp: "whatsapp",
+};
+
 export default async function AdminCustosPage() {
   const admin = await requireAdminArea("configuracoes");
+
+  // o preço de verdade da infraestrutura deste mês, lido pela Ana na fatura
+  const daAna = await contasDaAna("antecipaqui");
+  const precosDaAna = daAna
+    ? daAna.filter((c) => COMPARTILHADAS[c.id]).map((c) => ({ ...c, id: COMPARTILHADAS[c.id] }))
+    : null;
 
   return (
     <AdminShell active="/admin/custos" userName={admin.nome}>
@@ -39,7 +59,7 @@ export default async function AdminCustosPage() {
         </div>
       </div>
 
-      <CustosPanel mesCorrente={mesCorrenteSP()} />
+      <CustosPanel mesCorrente={mesCorrenteSP()} precosDaAna={precosDaAna} />
     </AdminShell>
   );
 }

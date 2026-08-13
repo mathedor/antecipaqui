@@ -18,6 +18,7 @@ import {
   type ContaFixa,
   type DevEntry,
 } from "@/lib/custos-data";
+import type { ContaAna } from "@/lib/custosAna";
 
 /* =============================================================
    Ícones (SVG desenhado — sem emoji)
@@ -387,7 +388,12 @@ function LinhaItem({
    Painel
    ============================================================= */
 
-export function CustosPanel({ mesCorrente }: { mesCorrente: string }) {
+/* `precosDaAna` chega do servidor com o que a infraestrutura custou de verdade
+   neste mês (a Ana lê a fatura da Vercel e o consumo do banco todo dia). Só as
+   contas compartilhadas da casa são trocadas — a infra dedicada do Antecipaqui
+   (servidor principal, backup duplo, as 4 proxies, firewall hot blind, a VPS do
+   Cícero) fica exatamente como está no relatório. */
+export function CustosPanel({ mesCorrente, precosDaAna }: { mesCorrente: string; precosDaAna: ContaAna[] | null }) {
   const [estado, setEstado] = useState<Estado>(ESTADO_VAZIO);
   const [pronto, setPronto] = useState(false);
   const [abertos, setAbertos] = useState<Record<string, boolean>>({
@@ -442,14 +448,18 @@ export function CustosPanel({ mesCorrente }: { mesCorrente: string }) {
 
   /** Itens de custo fixo de um mês (contas + extras vigentes). */
   const itensDoMes = (mes: string) => {
-    const base = contasDoMes(mes).map((c: ContaFixa) => ({
-      id: `${mes}#${c.id}`,
-      titulo: c.titulo,
-      obs: c.obs,
-      estimado: c.estimado,
-      valor: estado.overrides[`${mes}#${c.id}`] ?? c.valor,
-      extraId: null as string | null,
-    }));
+    const base = contasDoMes(mes).map((c: ContaFixa) => {
+      // mês corrente e conta compartilhada: vale o preço lido na fonte
+      const real = mes === mesCorrente ? precosDaAna?.find((p) => p.id === c.id) : undefined;
+      return {
+        id: `${mes}#${c.id}`,
+        titulo: c.titulo,
+        obs: real ? real.obs : c.obs,
+        estimado: real ? real.estimado : c.estimado,
+        valor: estado.overrides[`${mes}#${c.id}`] ?? real?.valor ?? c.valor,
+        extraId: null as string | null,
+      };
+    });
     const extras = estado.extras
       .filter((e) =>
         e.recorrenteDesde
