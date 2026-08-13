@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Antecipaqui · Manual do Comercial</title>
+<meta name="description" content="Entenda a Antecipaqui de ponta a ponta, saiba o que falar pra imobiliária e pra construtora, e entre pro time comercial." />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" type="image/svg+xml" href="/icon.svg" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --a:#3f8fe8; --a-soft:#8ec2f7; --a-deep:#0d4e9e; --a-vivid:#1c6dd0;
+  --ink:#081222; --panel:#0d1a30; --panel2:#122239;
+  --line:rgba(142,194,247,.10); --line2:rgba(142,194,247,.18);
+  --tx:#f2f6fb; --mut:#93a4bc; --mut2:#5c6d85;
+  --red:#fb7185; --amber:#fbbf24; --grn:#34d399; --org:#fb923c;
+  --sans:'Inter',system-ui,sans-serif; --disp:'Sora','Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--tx);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+svg{display:block}
+.ic{width:22px;height:22px;stroke:var(--a);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+#deck{height:100vh;overflow-y:scroll;scroll-snap-type:y mandatory;scroll-behavior:smooth}
+#deck::-webkit-scrollbar{width:0}
+.slide{min-height:100vh;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;justify-content:center;padding:60px 84px 68px;overflow:hidden}
+.slide::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(ellipse 90% 80% at 70% 30%,#000 20%,transparent 80%)}
+.glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.22;pointer-events:none}
+.glow.a{width:540px;height:540px;background:var(--a-vivid);top:-170px;right:-130px}
+.glow.b{width:420px;height:420px;background:#0f766e;bottom:-170px;left:-130px;opacity:.16}
+.z{position:relative;z-index:2;width:100%}
+
+.kicker{display:inline-flex;align-items:center;gap:10px;font-family:var(--disp);font-size:12.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--a);margin-bottom:16px}
+.kicker::before{content:"";width:26px;height:2px;background:var(--a)}
+h1.t{font-family:var(--disp);font-weight:700;font-size:clamp(29px,4.4vw,55px);line-height:1.05;letter-spacing:-.025em;max-width:960px}
+h1.t .l{color:var(--a-soft)}
+.kid{margin-top:18px;font-size:clamp(14.5px,1.45vw,18.5px);line-height:1.65;color:var(--mut);max-width:820px}
+.kid b{color:var(--tx);font-weight:600}
+.kid .em{color:var(--a-soft);font-weight:600}
+.pills{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+.pill{font-family:var(--disp);font-size:12.5px;font-weight:600;padding:7px 13px;border:1px solid var(--line2);border-radius:999px;color:var(--mut)}
+.pill.hot{border-color:rgba(63,143,232,.55);color:var(--a-soft);background:rgba(28,109,208,.08)}
+
+.note{margin-top:18px;font-size:12px;color:var(--mut2);max-width:900px;line-height:1.6}
+.note b{color:var(--mut)}
+
+/* fluxo horizontal */
+.flow{display:flex;align-items:stretch;margin-top:30px;flex-wrap:wrap}
+.fbox{flex:1;min-width:165px;background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:17px}
+.fbox .fh{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:14px;margin-bottom:7px}
+.fbox p{font-size:12.5px;color:var(--mut);line-height:1.55}
+.fbox .big{font-family:var(--disp);font-weight:700;font-size:21px;margin-top:9px}
+.fbox.hot{border-color:rgba(63,143,232,.55);box-shadow:0 0 34px rgba(28,109,208,.16)}
+.fbox.hot .big{color:var(--a-soft)}
+.farr{display:flex;align-items:center;padding:0 9px;color:var(--mut2)}
+.farr svg{width:20px;height:20px;stroke:var(--mut2);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* grid de cards */
+.vg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+.vg.c3{grid-template-columns:repeat(3,1fr)}
+.vg.c2{grid-template-columns:repeat(2,1fr)}
+.v{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:20px}
+.v.hot{border-color:rgba(63,143,232,.55);box-shadow:0 0 34px rgba(28,109,208,.14)}
+.v .vic{width:38px;height:38px;border-radius:11px;background:rgba(28,109,208,.13);border:1px solid rgba(63,143,232,.35);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.v h3{font-family:var(--disp);font-size:16px;font-weight:600;margin-bottom:7px}
+.v .who{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--a);font-family:var(--disp);font-weight:600;margin-bottom:6px}
+.v p{font-size:13px;color:var(--mut);line-height:1.55}
+.v p b{color:var(--tx);font-weight:600}
+.v .diz{margin-top:11px;padding-top:11px;border-top:1px solid var(--line);font-size:12.5px;color:var(--a-soft);font-style:italic;line-height:1.5}
+
+/* passos / cards-link */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px}
+.steps.c2{grid-template-columns:repeat(2,1fr)}
+.step{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:21px;display:flex;flex-direction:column}
+.step .no{font-family:var(--disp);font-weight:700;font-size:14px;color:#fff;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:13px}
+.step h3{font-family:var(--disp);font-size:17px;font-weight:600;margin-bottom:8px;line-height:1.25}
+.step p{font-size:13px;color:var(--mut);line-height:1.55}
+.step p b{color:var(--tx);font-weight:600}
+.step .grow{flex:1}
+a.step{text-decoration:none;color:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
+a.step:hover{border-color:rgba(63,143,232,.65);box-shadow:0 0 36px rgba(28,109,208,.2);transform:translateY(-2px)}
+.lnk{display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-family:var(--disp);font-weight:600;font-size:12px;color:var(--a-soft);border:1px solid rgba(63,143,232,.45);border-radius:999px;padding:6px 12px;max-width:100%;align-self:flex-start}
+.lnk svg{width:13px;height:13px;stroke:var(--a-soft);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.lnk span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lnk.solid{background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));border-color:transparent;color:#fff}
+.lnk.solid svg{stroke:#fff}
+
+/* simulação */
+.sim{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px}
+.simc{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:20px}
+.simc.hot{border-color:rgba(63,143,232,.55);box-shadow:0 0 40px rgba(28,109,208,.16)}
+.simc .h{font-family:var(--disp);font-weight:600;font-size:15px}
+.simc .sub{font-size:11.5px;color:var(--mut2);margin-top:3px}
+.simc .math{margin:13px 0;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--mut)}
+.simc .math i{font-style:normal;color:var(--tx);font-weight:600}
+.simc .res{border-top:1px solid var(--line);padding-top:12px}
+.simc .res .l{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut2);font-family:var(--disp);font-weight:600}
+.simc .res .n{font-family:var(--disp);font-weight:700;font-size:26px;color:var(--a-soft);margin-top:4px}
+.simc .res .s{font-size:11.5px;color:var(--mut2);margin-top:2px}
+
+/* mockup de app */
+.feat{display:grid;grid-template-columns:1.02fr 1fr;gap:48px;align-items:center;margin-top:26px}
+.browser{background:var(--panel);border:1px solid var(--line2);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.browser .top{display:flex;align-items:center;gap:7px;background:var(--panel2);border-bottom:1px solid var(--line);padding:9px 13px}
+.browser .top i{width:9px;height:9px;border-radius:50%;background:#26364f;display:block}
+.browser .top .url{margin-left:8px;flex:1;background:#08111f;border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:11px;color:var(--mut2);font-family:var(--disp)}
+.browser .top .url b{color:var(--a-soft)}
+.app{display:flex;min-height:290px}
+.side{width:150px;border-right:1px solid var(--line);padding:13px 10px;background:#0a1526;flex:none}
+.side .lg{display:flex;align-items:center;gap:7px;font-family:var(--disp);font-weight:700;font-size:12px;margin-bottom:13px}
+.side .lg .m{width:15px;height:15px;border-radius:5px;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));display:block}
+.side .nv{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--mut2);padding:6px 8px;border-radius:8px;margin-bottom:2px}
+.side .nv .icn{width:6px;height:6px;border-radius:2px;background:#22334c;display:block;flex:none}
+.side .nv.on{background:rgba(28,109,208,.16);color:var(--a-soft);font-weight:600}
+.side .nv.on .icn{background:var(--a)}
+.main{flex:1;padding:15px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 13px;margin-bottom:9px}
+.card .h{display:flex;align-items:center;justify-content:space-between;font-family:var(--disp);font-weight:600;font-size:12px;margin-bottom:7px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px 12px}
+.kpi.hi{border-color:rgba(63,143,232,.4)}
+.kpi .l{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut2);font-family:var(--disp);font-weight:600}
+.kpi .v{font-family:var(--disp);font-size:18px;font-weight:700;margin-top:4px}
+.kpi.hi .v{color:var(--a-soft)}
+.rows{display:flex;flex-direction:column;gap:7px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:12px}
+.row .nm{font-weight:600}
+.row .sub{font-size:10.5px;color:var(--mut2);margin-top:2px}
+.row .val{font-family:var(--disp);font-weight:700;color:var(--a-soft);white-space:nowrap}
+.tag{font-size:9.5px;font-family:var(--disp);font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--mut)}
+.tag.ok{border-color:rgba(52,211,153,.5);color:var(--grn)}
+.tag.wait{border-color:rgba(251,191,36,.5);color:var(--amber)}
+
+/* tabela de contas / conta demo */
+.cred{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:26px;max-width:900px}
+.credc{background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:17px}
+.credc .ch{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:14.5px;margin-bottom:9px}
+.credc .kv{font-size:12.5px;color:var(--mut);display:flex;flex-direction:column;gap:4px}
+.credc .kv b{color:var(--tx);font-family:var(--disp);font-weight:600;word-break:break-all}
+.credc .onde{margin-top:8px;font-size:11px;color:var(--mut2)}
+
+/* cover / end */
+#cover,#end{align-items:center;text-align:center;justify-content:center}
+.wordmark{font-family:var(--disp);font-weight:800;font-size:clamp(26px,3.2vw,42px);letter-spacing:-.03em;margin-bottom:28px;display:inline-flex;align-items:center}
+.wordmark .am{display:inline-flex;width:1.12em;height:1.12em;border-radius:.26em;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;align-items:center;justify-content:center;margin-right:12px;font-size:.85em}
+.wordmark b{color:var(--a-soft);font-weight:700}
+#cover h1{font-family:var(--disp);font-weight:700;font-size:clamp(38px,6.6vw,88px);line-height:1.02;letter-spacing:-.03em}
+#cover h1 .l{color:var(--a-soft)}
+#cover .sub{margin-top:22px;font-size:clamp(15px,1.7vw,20px);color:var(--mut);max-width:680px;margin-left:auto;margin-right:auto;line-height:1.6}
+#cover .sub b{color:var(--tx)}
+#cover .hint{position:absolute;bottom:24px;left:0;right:0;font-size:11.5px;color:var(--mut2);font-family:var(--disp);letter-spacing:.1em;text-transform:uppercase}
+#end h2{font-family:var(--disp);font-weight:700;font-size:clamp(34px,5.6vw,78px);line-height:1.04;letter-spacing:-.03em}
+#end h2 .l{color:var(--a-soft)}
+#end .cta{margin-top:32px;display:inline-flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--a-vivid),var(--a-deep));color:#fff;font-family:var(--disp);font-weight:700;font-size:18px;padding:16px 30px;border-radius:14px;box-shadow:0 0 44px rgba(28,109,208,.45);text-decoration:none}
+#end .cta svg{width:19px;height:19px;stroke:#fff;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#end .contact{margin-top:24px;color:var(--mut);font-size:15px;line-height:1.75}
+#end .contact b{color:var(--tx)}
+
+/* hud */
+#bar{position:fixed;top:0;left:0;height:3px;background:var(--a);width:0;z-index:50;transition:width .25s;box-shadow:0 0 16px var(--a)}
+#hud{position:fixed;right:26px;bottom:22px;z-index:50;font-family:var(--disp);font-size:12.5px;font-weight:600;color:var(--mut2);letter-spacing:.08em}
+#hud b{color:var(--a-soft)}
+
+@media(max-width:1180px){
+  .slide{padding:52px 30px 58px}
+  .feat{grid-template-columns:1fr;gap:26px}
+  .vg{grid-template-columns:repeat(2,1fr)}
+  .vg.c3,.steps,.sim{grid-template-columns:1fr}
+}
+@media print{
+  body,#deck{height:auto;overflow:visible}
+  .slide{page-break-after:always;min-height:96vh}
+  #hud,#bar,#cover .hint{display:none}
+  .glow{opacity:.12}
+}
+
+/* ===== mobile portrait fix (patch global) ===== */
+@media (max-width:980px){
+  #deck{scroll-snap-type:none;overflow-x:hidden}
+  .slide{min-height:100svh;height:auto;scroll-snap-align:none;justify-content:flex-start;padding:64px 17px 48px}
+  #cover,#end{justify-content:center;padding-top:54px}
+  .vg,.vg.c3,.vg.c2{grid-template-columns:1fr !important;gap:11px !important}
+  .steps,.steps.c2,.sim,.cred{grid-template-columns:1fr;gap:11px}
+  .grid3{grid-template-columns:1fr 1fr}
+  .kpi{padding:9px 10px}.kpi .v{font-size:16px}.kpi .l{font-size:9px}
+  h1.t{font-size:clamp(25px,7.2vw,37px)}
+  .kid{font-size:14.5px}
+  .flow{flex-direction:column}
+  .farr{transform:rotate(90deg);justify-content:center;padding:4px 0}
+  .side{width:118px}
+  .main{padding:11px}
+  #hud{right:14px;bottom:12px}
+}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="hud"><b id="cur">1</b> / <span id="tot">?</span></div>
+<main id="deck">
+
+<!-- 01 · COVER -->
+<section class="slide" id="cover">
+  <div class="glow a"></div><div class="glow b"></div>
+  <div class="z">
+    <div class="wordmark"><span class="am">A</span>antecipa<b>qui</b></div>
+    <h1>Manual do<br><span class="l">Comercial</span></h1>
+    <p class="sub">Em 15 telas você entende a plataforma inteira, sabe <b>exatamente o que falar</b> pra imobiliária e pra construtora — e sai daqui com o kit de apresentação na mão.</p>
+  </div>
+  <div class="hint">role para descer · as setas do teclado também funcionam</div>
+</section>
+
+<!-- 02 · O PROBLEMA -->
+<section class="slide">
+  <div class="glow b"></div>
+  <div class="z">
+    <div class="kicker">O problema que você vai resolver</div>
+    <h1 class="t">Vendeu o imóvel hoje.<br><span class="l">A comissão chega daqui a 5 meses.</span></h1>
+    <p class="kid">No mercado imobiliário quem vende quase nunca recebe à vista. A construtora paga a comissão <b>parcelada</b>, acompanhando o fluxo de entrada do comprador — normalmente em até <b>5 parcelas mensais (150 dias)</b>. O corretor fechou o negócio, bateu palma na sala de vendas… e vai esperar meio ano pra ver o dinheiro.</p>
+    <div class="vg c3">
+      <div class="v">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>O corretor trava</h3>
+        <p>Vive de comissão. Sem caixa, <b>não investe em anúncio, não roda o próximo negócio</b>. Vender mais fica caro.</p>
+      </div>
+      <div class="v">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6"/></svg></div>
+        <h3>A imobiliária perde time</h3>
+        <p>Corretor descapitalizado é corretor que sai. E adiantar do próprio caixa <b>não escala</b>.</p>
+      </div>
+      <div class="v">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/></svg></div>
+        <h3>A construtora não pode antecipar</h3>
+        <p>O prazo dela está casado com o fluxo do comprador. <b>Mexer nisso é mexer no caixa da obra.</b></p>
+      </div>
+    </div>
+    <p class="note">Guarde essa frase — ela abre qualquer conversa: <b>"pra que esperar 5, 6 meses? A comissão cai hoje."</b></p>
+  </div>
+</section>
+
+<!-- 03 · O QUE É A ANTECIPAQUI -->
+<section class="slide">
+  <div class="glow a"></div>
+  <div class="z">
+    <div class="kicker">O que é a Antecipaqui</div>
+    <h1 class="t">A gente compra a comissão futura<br><span class="l">e paga à vista, hoje.</span></h1>
+    <p class="kid">A Antecipaqui é uma <b>fintech de antecipação de comissão imobiliária</b>. O corretor ou a imobiliária cadastra a operação (contrato da venda + parcelas que a construtora vai pagar), a gente analisa, um fundo compra esse recebível <span class="em">com deságio</span> e o dinheiro cai na conta em até 1 dia útil. Quando cada parcela vence, <b>a construtora paga direto pro fundo</b> — e o ciclo fecha.</p>
+    <div class="pills">
+      <span class="pill hot">100% digital</span><span class="pill">Aprovação em até 24h</span><span class="pill">Contrato assinado online</span><span class="pill">Até 5 parcelas / 150 dias</span><span class="pill">Deságio visível antes de aceitar</span><span class="pill">Construtora acompanha tudo</span>
+    </div>
+    <p class="kid" style="margin-top:24px">Repara numa coisa importante: <b>ninguém precisa mudar o combinado</b>. A construtora paga do jeito que ia pagar, na data que ia pagar. Só muda <span class="em">quem recebe</span> — e o corretor não espera.</p>
+  </div>
+</section>
+
+<!-- 04 · QUEM É QUEM -->
+<section class="slide">
+  <div class="glow b"></div>
+  <div class="z">
+    <div class="kicker">O tabuleiro</div>
+    <h1 class="t">Quatro peças. <span class="l">Cada uma ganha uma coisa diferente.</span></h1>
+    <p class="kid">Você não vende "um sistema". Você vende uma engrenagem em que <b>todo mundo sai ganhando</b> — e a sua conversa muda conforme quem está do outro lado da mesa.</p>
+    <div class="vg">
+      <div class="v hot">
+        <div class="who">quem vende</div>
+        <h3>Imobiliária &amp; corretor</h3>
+        <p>Antecipa a comissão da venda que já fechou. Recebe hoje, com deságio conhecido.</p>
+        <div class="diz">"Recebi minha comissão hoje, não em setembro."</div>
+      </div>
+      <div class="v">
+        <div class="who">quem deve</div>
+        <h3>Construtora</h3>
+        <p>Continua pagando no mesmo prazo. Ganha corretor motivado, sem tocar no próprio caixa.</p>
+        <div class="diz">"Meu time de vendas recebe à vista e eu não pago nada a mais."</div>
+      </div>
+      <div class="v">
+        <div class="who">quem financia</div>
+        <h3>Fundo</h3>
+        <p>Compra os recebíveis, define regras e taxa, e recebe da construtora no vencimento.</p>
+        <div class="diz">"Lastro real, prazo curto e devedor conhecido."</div>
+      </div>
+      <div class="v">
+        <div class="who">quem orquestra</div>
+        <h3>Antecipaqui</h3>
+        <p>Esteira, análise, KYC, contrato digital, cobrança e conciliação. E fica com parte do spread.</p>
+        <div class="diz">"Sem a plataforma, essa operação não fecha em 24h."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 · COMO O DINHEIRO ANDA -->
+<section class="slide">
+  <div class="glow a"></div>
+  <div class="z">
+    <div class="kicker">Como o dinheiro anda</div>
+    <h1 class="t">Do "vendi" ao "caiu na conta" <span class="l">em até 24 horas</span></h1>
+    <p class="kid">Esse é o fluxo que você vai desenhar num guardanapo na frente do cliente. Decora ele.</p>
+    <div class="flow">
+      <div class="fbox">
+        <div class="fh"><svg class="ic" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6"/></svg>1 · Vendeu</div>
+        <p>Corretor fecha a venda. A construtora deve a comissão em até 5 parcelas.</p>
+      </div>
+      <div class="farr"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="fbox">
+        <div class="fh"><svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 15h6"/></svg>2 · Cadastrou</div>
+        <p>Sobe contrato e parcelas no painel. A IA lê o documento e preenche os campos.</p>
+      </div>
+      <div class="farr"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="fbox">
+        <div class="fh"><svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>3 · Aprovou</div>
+        <p>Mesa da Antecipaqui + fundo analisam. Construtora confirma a comissão. Contrato digital.</p>
+      </div>
+      <div class="farr"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="fbox hot">
+        <div class="fh"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>4 · Caiu</div>
+        <p>Fundo paga o valor presente na conta do cedente.</p>
+        <div class="big">em 1 dia útil</div>
+      </div>
+      <div class="farr"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="fbox">
+        <div class="fh"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>5 · Venceu</div>
+        <p>No vencimento a construtora paga o fundo. Cobrança e conciliação rodam sozinhas.</p>
+      </div>
+    </div>
+    <p class="note">O que a construtora precisa fazer? <b>Só confirmar que a comissão existe</b> e pagar no vencimento pra quem a gente indicar. Nada mais.</p>
+  </div>
+</section>
+
+<!-- 06 · A MATEMÁTICA -->
+<section class="slide">
+  <div class="glow b"></div>
+  <div class="z">
+    <div class="kicker">A conta, no papel</div>
+    <h1 class="t">Uma operação de verdade, <span class="l">número por número</span></h1>
+    <p class="kid">Venda de um apartamento de <b>R$ 600.000</b> com comissão de 5% = <b>R$ 30.000</b>, que a construtora paga em <b>5 parcelas mensais de R$ 6.000</b>. Veja o que acontece:</p>
+    <div class="sim">
+      <div class="simc">
+        <div class="h">Sem a Antecipaqui</div>
+        <div class="sub">o corretor espera</div>
+        <div class="math">
+          <span>R$ 6.000 em <i>30 dias</i></span>
+          <span>R$ 6.000 em <i>60, 90 e 120 dias</i></span>
+          <span>última parcela: <i>150 dias</i></span>
+        </div>
+        <div class="res"><div class="l">Recebe hoje</div><div class="n" style="color:var(--red)">R$ 0</div><div class="s">o valor cheio só daqui 5 meses</div></div>
+      </div>
+      <div class="simc hot">
+        <div class="h">Com a Antecipaqui</div>
+        <div class="sub">o corretor recebe à vista</div>
+        <div class="math">
+          <span>bruto da comissão <i>R$ 30.000</i></span>
+          <span>deságio pelo prazo (exemplo) <i>≈ R$ 2.250</i></span>
+          <span>tudo transparente <i>antes</i> de aceitar</span>
+        </div>
+        <div class="res"><div class="l">Cai na conta</div><div class="n">≈ R$ 27.750</div><div class="s">em até 1 dia útil</div></div>
+      </div>
+      <div class="simc">
+        <div class="h">E a construtora?</div>
+        <div class="sub">nada muda pra ela</div>
+        <div class="math">
+          <span>paga <i>as mesmas 5 parcelas</i></span>
+          <span>nas <i>mesmas datas</i></span>
+          <span>custo extra pra ela: <i>R$ 0</i></span>
+        </div>
+        <div class="res"><div class="l">Ganha</div><div class="n">time motivado</div><div class="s">sem tocar no caixa da obra</div></div>
+      </div>
+    </div>
+    <p class="note">Números ilustrativos — a taxa real é definida pelo fundo e aparece no simulador antes do aceite. <b>Nunca prometa taxa de cabeça: abra o simulador na frente do cliente.</b></p>
+  </div>
+</section>
+
+<!-- 07 · POR QUE CADA UM DIZ SIM -->
+<section class="slide">
+  <div class="glow a"></div>
+  <div class="z">
+    <div class="kicker">Objeções que você vai ouvir</div>
+    <h1 class="t">As três frases que travam a venda —<br><span class="l">e como você responde</span></h1>
+    <div class="vg c3">
+      <div class="v">
+        <div class="who">imobiliária</div>
+        <h3>"Isso é agiotagem?"</h3>
+        <p>Não. É <b>antecipação de recebível</b>, o mesmo instrumento que qualquer loja usa pra antecipar cartão. Tem contrato digital assinado, fundo regulado por trás e o deságio aparece na tela <b>antes</b> de você aceitar. Se não gostar do número, não assina.</p>
+      </div>
+      <div class="v">
+        <div class="who">construtora</div>
+        <h3>"Vou ter que pagar antes?"</h3>
+        <p>Nunca. Você paga <b>o mesmo valor, na mesma data</b> do contrato. Só muda a conta de destino, formalizada por cessão. E ainda ganha painel pra acompanhar tudo e um time de vendas que <b>não te cobra adiantamento</b>.</p>
+      </div>
+      <div class="v">
+        <div class="who">corretor</div>
+        <h3>"Vou perder dinheiro."</h3>
+        <p>Você troca um pedaço da comissão por <b>5 meses de caixa</b>. Com esse caixa vêm anúncio, deslocamento e a próxima venda. Pergunta que fecha: <span class="em">"quanto vale pra você ter esse dinheiro hoje?"</span></p>
+      </div>
+    </div>
+    <p class="note">Regra de ouro do time: <b>não invente resposta.</b> Não sabe? Anota, traz pra Antecipaqui e volta com a resposta certa no dia seguinte. Confiança vale mais que agilidade.</p>
+  </div>
+</section>
+
+<!-- 08 · O SEU PAPEL -->
+<section class="slide">
+  <div class="glow b"></div>
+  <div class="z">
+    <div class="kicker">Onde você entra</div>
+    <h1 class="t">Você abre a porta.<br><span class="l">A plataforma faz o resto.</span></h1>
+    <p class="kid">O comercial da Antecipaqui é quem leva a solução até quem precisa dela: <b>imobiliárias, corretores e construtoras</b>. Você não precisa analisar crédito, redigir contrato nem cobrar ninguém — nada disso é seu. Seu trabalho é <span class="em">relacionamento e cadastro</span>.</p>
+    <div class="vg">
+      <div class="v">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <h3>Prospecta</h3>
+        <p>Mapa geolocalizado mostra imobiliárias e construtoras da sua região. Pipeline kanban controla cada lead.</p>
+      </div>
+      <div class="v">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
+        <h3>Cadastra</h3>
+        <p>Cadastro express na frente do cliente ou link de convite rastreado. Quem entra por você <b>fica seu</b>.</p>
+      </div>
+      <div class="v hot">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
+        <h3>Lança a operação</h3>
+        <p>Não para na captação: você mesmo cadastra a primeira operação do parceiro e acompanha até virar comissão sua.</p>
+      </div>
+      <div class="v">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+        <h3>Acompanha</h3>
+        <p>Daily da carteira, relatórios de conversão e comissões em tempo real. Você vê o gargalo antes do gestor cobrar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 · SEU PAINEL -->
+<section class="slide">
+  <div class="glow a"></div>
+  <div class="z">
+    <div class="kicker">Seu painel</div>
+    <h1 class="t">Tudo o que você precisa <span class="l">numa tela só</span></h1>
+    <div class="feat">
+      <div class="browser">
+        <div class="top"><i></i><i></i><i></i><div class="url">antecipaqui.digital/painel/<b>daily</b></div></div>
+        <div class="app">
+          <div class="side">
+            <div class="lg"><span class="m"></span> antecipaqui</div>
+            <div class="nv"><span class="icn"></span>Operações</div>
+            <div class="nv"><span class="icn"></span>Prospects</div>
+            <div class="nv"><span class="icn"></span>Pipeline</div>
+            <div class="nv on"><span class="icn"></span>Daily</div>
+            <div class="nv"><span class="icn"></span>Comissões</div>
+            <div class="nv"><span class="icn"></span>Relatórios</div>
+          </div>
+          <div class="main">
+            <div class="card">
+              <div class="h">Hoje na sua carteira <span class="tag ok">3 novidades</span></div>
+              <div class="rows">
+                <div class="row"><div><div class="nm">Imob. Horizonte fez a 1ª operação</div><div class="sub">R$ 42.000 · aprovada hoje</div></div><span class="val">+R$ 178</span></div>
+                <div class="row"><div><div class="nm">Construtora Vale · proposta enviada</div><div class="sub">follow-up agendado pra 14h</div></div><span class="tag wait">pendente</span></div>
+                <div class="row"><div><div class="nm">4 parcelas pagas na carteira</div><div class="sub">conciliação automática</div></div><span class="val">+R$ 96</span></div>
+              </div>
+            </div>
+            <div class="grid3">
+              <div class="kpi"><div class="l">Meta do mês</div><div class="v">4/5</div></div>
+              <div class="kpi hi"><div class="l">Conversão</div><div class="v">38%</div></div>
+              <div class="kpi"><div class="l">Carteira</div><div class="v">R$ 480k</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="kid" style="margin-top:0">Seu login abre um painel feito só pro comercial — nada de tela genérica:</p>
+        <div class="pills" style="margin-top:18px">
+          <span class="pill hot">Mapa de prospects</span>
+          <span class="pill hot">Pipeline kanban</span>
+          <span class="pill">Cadastro express</span>
+          <span class="pill">Link de convite + QR</span>
+          <span class="pill">Nova operação</span>
+          <span class="pill">Daily da carteira</span>
+          <span class="pill">Comissões e holerite</span>
+          <span class="pill">Relatórios de conversão</span>
+          <span class="pill">Templates de WhatsApp</span>
+          <span class="pill">Chat com a Antecipaqui</span>
+          <span class="pill">Notificações no celular</span>
+          <span class="pill hot">Cícero, a IA que te responde</span>
+        </div>
+        <p class="note" style="margin-top:20px">Funciona no celular como app (PWA), com GPS pra captação na rua e push de verdade quando um lead se mexe.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · COMO VOCÊ GANHA -->
+<section class="slide">
+  <div class="glow b"></div>
+  <div class="z">
+    <div class="kicker">Como você ganha</div>
+    <h1 class="t">Comissão sobre o lucro —<br><span class="l">enquanto a carteira rodar.</span></h1>
+    <p class="kid">Você não ganha "por cadastro feito". Você ganha um <b>percentual do lucro líquido que a Antecipaqui tem em cada operação</b> da sua carteira. Cadastrou uma imobiliária? Toda operação que ela fizer — hoje, ano que vem — <span class="em">pinga pra você</span>.</p>
+    <div class="vg c3">
+      <div class="v">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg></div>
+        <h3>Carteira vitalícia</h3>
+        <p>O vínculo fica registrado no cadastro. Não é bônus de primeira venda — é <b>recorrência</b>.</p>
+      </div>
+      <div class="v hot">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></div>
+        <h3>Holerite mensal</h3>
+        <p>Fechamento automático, operação por operação, com PDF pra contabilidade. <b>Transparência de contracheque.</b></p>
+      </div>
+      <div class="v">
+        <div class="vic"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h5M9 14.5h5"/></svg></div>
+        <h3>Extrato em tempo real</h3>
+        <p>Cada parcela paga aparece no seu extrato com o cálculo aberto. <b>Nada de caixa-preta.</b></p>
+      </div>
+    </div>
+    <p class="note">O percentual do comercial é combinado no contrato e fica registrado no sistema — <b>ninguém muda depois sem você ver</b>. Custos de serviço da operação não entram na base: sua comissão é sobre margem financeira.</p>
+  </div>
+</section>
+
+<!-- 11 · SIMULAÇÃO DE CARTEIRA -->
+<section class="slide">
+  <div class="glow a"></div>
+  <div class="z">
+    <div class="kicker">Fazendo as contas</div>
+    <h1 class="t">Uma imobiliária ativa já paga o mês.<br><span class="l">Cinco mudam a sua vida.</span></h1>
+    <div class="sim">
+      <div class="simc">
+        <div class="h">Começando</div>
+        <div class="sub">1 imobiliária pequena</div>
+        <div class="math">
+          <span><i>2</i> operações por mês</span>
+          <span>comissão média antecipada <i>R$ 25 mil</i></span>
+          <span>carteira em formação</span>
+        </div>
+        <div class="res"><div class="l">Volume antecipado</div><div class="n">R$ 50 mil/mês</div><div class="s">sua comissão acompanha o lucro dessas ops</div></div>
+      </div>
+      <div class="simc hot">
+        <div class="h">Rodando</div>
+        <div class="sub">4 imobiliárias + 1 construtora parceira</div>
+        <div class="math">
+          <span><i>12</i> operações por mês</span>
+          <span>comissão média antecipada <i>R$ 28 mil</i></span>
+          <span>carteira madura e recorrente</span>
+        </div>
+        <div class="res"><div class="l">Volume antecipado</div><div class="n">R$ 336 mil/mês</div><div class="s">todo mês, sem recomeçar do zero</div></div>
+      </div>
+      <div class="simc">
+        <div class="h">Consolidado</div>
+        <div class="sub">carteira regional</div>
+        <div class="math">
+          <span><i>30</i> operações por mês</span>
+          <span>comissão média antecipada <i>R$ 30 mil</i></span>
+          <span>indicação puxando indicação</span>
+        </div>
+        <div class="res"><div class="l">Volume antecipado</div><div class="n">R$ 900 mil/mês</div><div class="s">e a carteira continua sua</div></div>
+      </div>
+    </div>
+    <p class="note">Cenários ilustrativos de <b>volume</b>, não de remuneração — sua comissão é calculada sobre o lucro líquido de cada operação, conforme o seu contrato. O ponto aqui é outro: <b>o esforço de captação é uma vez, o ganho é todo mês.</b></p>
+  </div>
+</section>
+
+<!-- 12 · KIT DE APRESENTAÇÃO ★ -->
+<section class="slide" id="kit">
+  <div class="glow b"></div>
+  <div class="z">
+    <div class="kicker">Seu kit de apresentação</div>
+    <h1 class="t">Vai apresentar pra quem?<br><span class="l">Toca no card e manda o link.</span></h1>
+    <p class="kid">Você não precisa decorar taxa, esteira nem jurídico. Cada público tem <b>a sua própria apresentação pronta</b>, escrita na linguagem dele. Abre no celular na frente do cliente — ou manda o link no WhatsApp depois da reunião.</p>
+    <div class="steps">
+      <a class="step" href="https://www.antecipaqui.digital/apresentacao/imobiliaria" target="_blank" rel="noopener">
+        <div class="no">1</div>
+        <h3>Vai apresentar pra uma imobiliária ou corretor?</h3>
+        <p class="grow">Apresentação feita pra <b>quem vende e quer receber hoje</b>: simulador de antecipação, cadastro da operação, projeção de recebíveis, equipe, acompanhamento e pagamento em 1 dia útil.</p>
+        <span class="lnk"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>antecipaqui.digital/apresentacao/imobiliaria</span></span>
+      </a>
+      <a class="step" href="https://www.antecipaqui.digital/apresentacao/construtora" target="_blank" rel="noopener">
+        <div class="no">2</div>
+        <h3>Vai apresentar pra uma construtora?</h3>
+        <p class="grow">Apresentação feita pra <b>quem deve a comissão</b>: confirmação de duplicatas, extrato do que vence, painel de risco e concentração, documentos, cashback e zero mudança no prazo de pagamento.</p>
+        <span class="lnk"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>antecipaqui.digital/apresentacao/construtora</span></span>
+      </a>
+      <a class="step" href="https://antecipaqui-apresentacao.vercel.app/publica" target="_blank" rel="noopener">
+        <div class="no">3</div>
+        <h3>Quer mostrar a plataforma inteira?</h3>
+        <p class="grow">O deck completo da Antecipaqui, nível por nível — <b>Cícero (IA), imobiliária, construtora, fundo e comercial</b>. Ideal pra reunião com sócio, investidor ou quem quer ver tudo antes de decidir.</p>
+        <span class="lnk"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>antecipaqui-apresentacao.vercel.app/publica</span></span>
+      </a>
+    </div>
+    <p class="note">Dica de campo: mande <b>um link só</b>, o do público certo. Enviar tudo de uma vez confunde e derruba a resposta.</p>
+  </div>
+</section>
+
+<!-- 13 · PROVA AO VIVO -->
+<section class="slide">
+  <div class="glow a"></div>
+  <div class="z">
+    <div class="kicker">Prova ao vivo</div>
+    <h1 class="t">O cliente duvidou?<br><span class="l">Mostra funcionando, na hora.</span></h1>
+    <p class="kid">Nada convence mais do que abrir o site no celular do decisor e <b>fazer a conta com o número da venda dele</b>. Essas três páginas são públicas — não precisa de login:</p>
+    <div class="steps">
+      <a class="step" href="https://www.antecipaqui.digital" target="_blank" rel="noopener">
+        <div class="no">1</div>
+        <h3>Simulador na página inicial</h3>
+        <p class="grow">Digita o valor da comissão e as parcelas e mostra <b>quanto cai hoje</b>. É o momento em que a conversa vira.</p>
+        <span class="lnk"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>www.antecipaqui.digital</span></span>
+      </a>
+      <a class="step" href="https://www.antecipaqui.digital/para-construtoras" target="_blank" rel="noopener">
+        <div class="no">2</div>
+        <h3>Página das construtoras</h3>
+        <p class="grow">Explica em linguagem de construtora por que aderir <b>não custa nada</b> e o que ela ganha em troca.</p>
+        <span class="lnk"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>antecipaqui.digital/para-construtoras</span></span>
+      </a>
+      <a class="step" href="https://www.antecipaqui.digital/perguntas" target="_blank" rel="noopener">
+        <div class="no">3</div>
+        <h3>Perguntas frequentes</h3>
+        <p class="grow">A resposta oficial pras dúvidas difíceis. Na dúvida, <b>mande o link em vez de improvisar</b>.</p>
+        <span class="lnk"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>antecipaqui.digital/perguntas</span></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- 14 · ROTINA -->
+<section class="slide">
+  <div class="glow b"></div>
+  <div class="z">
+    <div class="kicker">Método de campo</div>
+    <h1 class="t">A semana do comercial <span class="l">que bate meta</span></h1>
+    <div class="steps">
+      <div class="step">
+        <div class="no">1</div>
+        <h3>Segunda: enche o funil</h3>
+        <p class="grow">Abre o <b>mapa de prospects</b>, escolhe a região e monta a lista da semana. Meta simples: <b>10 conversas novas</b>. Cada uma vira card no pipeline com próximo passo marcado.</p>
+      </div>
+      <div class="step">
+        <div class="no">2</div>
+        <h3>Durante a semana: apresenta</h3>
+        <p class="grow">Reunião curta: <b>problema → fluxo do guardanapo → simulador com o número dele</b>. Sai da reunião mandando o link da apresentação do público certo. Follow-up em 48h, sempre.</p>
+      </div>
+      <div class="step">
+        <div class="no">3</div>
+        <h3>Fechou: cadastra na hora</h3>
+        <p class="grow">Cadastro express na frente do cliente ou seu link de convite. Depois <b>puxe a primeira operação junto com ele</b> — parceiro que opera na primeira semana não esfria.</p>
+      </div>
+    </div>
+    <p class="note">O erro nº 1 do comercial novo: apresentar bem e <b>não cadastrar na hora</b>. Empolgação tem prazo de validade — cadastre enquanto o cliente ainda está com você.</p>
+  </div>
+</section>
+
+<!-- 15 · ENTRAR PRO TIME ★ -->
+<section class="slide" id="entrar">
+  <div class="glow a"></div>
+  <div class="z">
+    <div class="kicker">Entrar pro time</div>
+    <h1 class="t">Ainda não tem seu acesso?<br><span class="l">Cadastre-se aqui em 3 minutos.</span></h1>
+    <p class="kid">O cadastro de comercial é <b>gratuito e sem exclusividade</b>. Você preenche seus dados (PF ou PJ), a Antecipaqui analisa e aprova — e aí seu login já abre <span class="em">o painel do comercial</span>, com mapa, pipeline, comissões e tudo o que você viu aqui.</p>
+    <div class="steps">
+      <a class="step" href="https://www.antecipaqui.digital/quero-ser-comercial" target="_blank" rel="noopener">
+        <div class="no">1</div>
+        <h3>Preenche a ficha</h3>
+        <p class="grow">Nome, CPF ou CNPJ, cidade, contato e um resumo da sua experiência de mercado. <b>Leva 3 minutos</b> e é tudo pelo celular.</p>
+        <span class="lnk solid"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>antecipaqui.digital/quero-ser-comercial</span></span>
+      </a>
+      <div class="step">
+        <div class="no">2</div>
+        <h3>A Antecipaqui aprova</h3>
+        <p class="grow">Sua ficha cai direto na mesa do administrador. Conferimos os dados e, aprovado, <b>seu acesso é criado na hora</b> — você recebe o convite por e-mail.</p>
+      </div>
+      <div class="step">
+        <div class="no">3</div>
+        <h3>Entra e começa</h3>
+        <p class="grow">Primeiro login, primeiro prospect. Seu link de convite já nasce ativo: <b>tudo que entrar por ele é da sua carteira</b>.</p>
+      </div>
+    </div>
+    <p class="note">Já é do time e só quer entrar? <b>www.antecipaqui.digital/entrar</b></p>
+  </div>
+</section>
+
+<!-- 16 · END -->
+<section class="slide" id="end">
+  <div class="glow a"></div><div class="glow b"></div>
+  <div class="z">
+    <div class="wordmark"><span class="am">A</span>antecipa<b>qui</b></div>
+    <h2>Tem corretor esperando<br><span class="l">comissão agora mesmo.</span></h2>
+    <a class="cta" href="https://www.antecipaqui.digital/quero-ser-comercial" target="_blank" rel="noopener">Quero ser comercial <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <p class="contact">Apresentações prontas em <b>/apresentacao/imobiliaria</b> e <b>/apresentacao/construtora</b>.<br><b>www.antecipaqui.digital</b></p>
+  </div>
+</section>
+
+</main>
+<script>
+'use strict';
+(function(){
+  var deck = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cur = document.getElementById('cur'), tot = document.getElementById('tot'), bar = document.getElementById('bar');
+  tot.textContent = slides.length;
+  var idx = 0;
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (e.isIntersecting && e.intersectionRatio > .5){
+        idx = slides.indexOf(e.target);
+        cur.textContent = idx + 1;
+        bar.style.width = ((idx + 1) / slides.length * 100) + '%';
+      }
+    });
+  }, {root: deck, threshold: .6});
+  slides.forEach(function(s){ io.observe(s); });
+  function go(i){
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    slides[i].scrollIntoView({behavior:'smooth'});
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown'){ e.preventDefault(); go(idx + 1); }
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); go(idx - 1); }
+    else if (e.key === 'Home'){ e.preventDefault(); go(0); }
+    else if (e.key === 'End'){ e.preventDefault(); go(slides.length - 1); }
+    else if (e.key === 'f' || e.key === 'F'){
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+  });
+})();
+</script>
+</body>
+</html>

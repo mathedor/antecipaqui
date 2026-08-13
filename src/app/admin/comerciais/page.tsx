@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { ComerciaisTable } from "@/components/comerciais-table";
+import { CandidaturasComercialFila } from "@/components/candidaturas-comercial-fila";
 import { listAllComerciais } from "@/lib/actions/comerciais";
 import { PageHelp } from "@/components/page-help";
 
@@ -9,7 +10,11 @@ export const metadata = { title: "Admin · Comerciais" };
 
 export default async function AdminComerciaisPage() {
   const admin = await requireAdmin();
-  const list = await listAllComerciais();
+  const todos = await listAllComerciais();
+  // Candidaturas do formulário público ficam na fila do topo; a tabela
+  // lista só quem já é (ou já foi) comercial de fato.
+  const pendentes = todos.filter((c) => c.aprovacao === "pendente");
+  const list = todos.filter((c) => c.aprovacao !== "pendente");
 
   return (
     <AdminShell active="/admin/comerciais" userName={admin.nome}>
@@ -20,7 +25,16 @@ export default async function AdminComerciaisPage() {
             Equipe <span className="text-gradient-blue">comercial</span>
           </h1>
           <p className="mt-2 text-fg-muted">
-            {list.length} comercial(is) cadastrado(s).
+            {list.length} comercial(is) cadastrado(s)
+            {pendentes.length > 0 && (
+              <>
+                {" · "}
+                <b className="text-warn">
+                  {pendentes.length} candidatura(s) aguardando decisão
+                </b>
+              </>
+            )}
+            .
           </p>
           <div className="mt-2">
             <PageHelp pageKey="admin-comerciais" />
@@ -41,6 +55,8 @@ export default async function AdminComerciaisPage() {
           </Link>
         </div>
       </div>
+
+      <CandidaturasComercialFila rows={pendentes} />
 
       <ComerciaisTable rows={list} />
     </AdminShell>

@@ -260,6 +260,19 @@ export const construtoras = pgTable(
 
 export const tipoPessoaEnum = pgEnum("tipo_pessoa", ["fisica", "juridica"]);
 
+/** De onde veio o cadastro do comercial. */
+export const comercialOrigemEnum = pgEnum("comercial_origem", [
+  "admin",
+  "candidatura",
+]);
+
+/** Situação da candidatura de comercial (auto-cadastro). */
+export const comercialAprovacaoEnum = pgEnum("comercial_aprovacao", [
+  "pendente",
+  "aprovada",
+  "recusada",
+]);
+
 export const comerciais = pgTable(
   "comerciais",
   {
@@ -287,6 +300,19 @@ export const comerciais = pgTable(
      *  (atende qualquer fundo). FK validada em runtime. Quando vinculado,
      *  o fundo vê o desempenho dele no painel próprio. */
     fundoId: uuid("fundo_id"),
+    /** Como o comercial entrou: 'admin' (cadastrado pelo back-office) ou
+     *  'candidatura' (auto-cadastro público em /quero-ser-comercial). */
+    origem: comercialOrigemEnum("origem").notNull().default("admin"),
+    /** Situação da candidatura. Cadastro feito pelo admin já nasce 'aprovada'.
+     *  Auto-cadastro nasce 'pendente' e só vira comercial de verdade
+     *  (user + role + isActive) quando o admin aprova. */
+    aprovacao: comercialAprovacaoEnum("aprovacao").notNull().default("aprovada"),
+    /** Texto livre que o candidato escreve sobre a experiência dele. */
+    experiencia: text("experiencia"),
+    /** Motivo registrado pelo admin quando recusa a candidatura. */
+    recusaMotivo: text("recusa_motivo"),
+    /** Quando o admin decidiu (aprovou ou recusou) a candidatura. */
+    decididoEm: timestamp("decidido_em", { withTimezone: true }),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -300,6 +326,7 @@ export const comerciais = pgTable(
     index("comerciais_owner_idx").on(t.ownerUserId),
     index("comerciais_email_idx").on(t.email),
     index("comerciais_fundo_idx").on(t.fundoId),
+    index("comerciais_aprovacao_idx").on(t.aprovacao),
   ],
 );
 

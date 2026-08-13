@@ -45,6 +45,7 @@ export function SiteFooter() {
               <li><Link href="/apresentacao/construtora" className="hover:text-fg transition-colors">Construtora</Link></li>
               <li><Link href="/apresentacao/fundo" className="hover:text-fg transition-colors">Fundo investidor</Link></li>
               <li><Link href="/apresentacao/comercial" className="hover:text-fg transition-colors">Comercial</Link></li>
+              <li><Link href="/quero-ser-comercial" className="hover:text-fg transition-colors">Quero ser comercial</Link></li>
             </ul>
           </div>
 
