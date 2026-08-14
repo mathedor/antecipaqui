@@ -2,8 +2,10 @@ import { requireAdminArea } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { CustosPanel } from "@/components/custos-panel";
 import { PageHelp } from "@/components/page-help";
-import { contasDaAna } from "@/lib/custosAna";
+import { contasDaAna, pagamentosDaAna } from "@/lib/custosAna";
 
+import PagamentosAna from "./PagamentosAna";
+import { marcarPagamentoNaAna } from "./acoes-ana";
 export const metadata = {
   title: "Admin · Custos & Desenvolvimento",
 };
@@ -32,6 +34,7 @@ const COMPARTILHADAS: Record<string, string> = {
 };
 
 export default async function AdminCustosPage() {
+  const pagamentosNaAna = await pagamentosDaAna("antecipaqui");
   const admin = await requireAdminArea("configuracoes");
 
   // o preço de verdade da infraestrutura deste mês, lido pela Ana na fatura
@@ -42,6 +45,7 @@ export default async function AdminCustosPage() {
 
   return (
     <AdminShell active="/admin/custos" userName={admin.nome}>
+    <PagamentosAna inicial={pagamentosNaAna} marcar={marcarPagamentoNaAna} />
       <div className="mb-8">
         <div className="eyebrow mb-2">custos &amp; desenvolvimento</div>
         <h1 className="text-display-md">
