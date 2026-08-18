@@ -78,6 +78,19 @@ export async function salvarIntegracaoFundoAction(
     }
   }
 
+  // Atalho de credencial usuário/senha (o formato da OPERA). Preenchido,
+  // ganha do JSON avançado — é o caminho comum pra cadastrar um fundo novo.
+  const credUsuario = String(formData.get("credUsuario") || "").trim();
+  const credSenha = String(formData.get("credSenha") || "").trim();
+  if (credUsuario && credSenha) {
+    credenciais = { tipo: "usuario_senha", usuario: credUsuario, senha: credSenha };
+  } else if (credUsuario || credSenha) {
+    return {
+      ok: false,
+      error: "Credencial usuário/senha: preencha os dois campos (ou nenhum)",
+    };
+  }
+
   let contrato: unknown = fundo.integracaoContrato;
   const contratoRaw = String(formData.get("integracaoContrato") || "").trim();
   if (contratoRaw) {
@@ -88,6 +101,28 @@ export async function salvarIntegracaoFundoAction(
     }
   } else if (!contratoRaw && !fundo.integracaoContrato) {
     contrato = null; // vale o padrão do código
+  }
+
+  // Identidade do parceiro + campos fixos do envio — por fundo, direto no
+  // formulário. Entram na seção `envio` do contrato salvo.
+  if (formData.has("envioParceiro")) {
+    const envio = {
+      parceiro: String(formData.get("envioParceiro") || "").trim(),
+      cnpjEmpresa: String(formData.get("envioCnpjEmpresa") || "").trim(),
+      operacaoPreCalculada: formData.get("envioOperacaoPreCalculada") === "on",
+      faseLiberacao: String(formData.get("envioFaseLiberacao") || "N"),
+      executaFiltro: String(formData.get("envioExecutaFiltro") || "S"),
+      tipoDocumento:
+        String(formData.get("envioTipoDocumento") || "").trim() || "D",
+      cadastrarSacado: formData.get("envioCadastrarSacado") === "on",
+    };
+    contrato = {
+      ...((contrato && typeof contrato === "object" ? contrato : {}) as Record<
+        string,
+        unknown
+      >),
+      envio,
+    };
   }
 
   // Segredo do webhook: gera na primeira vez, ou quando o admin pedir troca.

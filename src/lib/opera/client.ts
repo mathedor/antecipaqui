@@ -33,7 +33,7 @@ export type OperaResposta = {
 };
 
 type Credenciais = {
-  tipo?: "api_key" | "bearer" | "oauth" | "basic";
+  tipo?: "api_key" | "bearer" | "oauth" | "basic" | "usuario_senha";
   apiKey?: string;
   token?: string;
   header?: string;
@@ -45,8 +45,8 @@ type Credenciais = {
   escopo?: string;
 };
 
-/** Token OAuth em memória, por fundo. Some a cada cold start — é cache, não
- *  estado: se sumir, o próximo pedido renova. */
+/** Token (OAuth ou JWT) em memória, por fundo. Some a cada cold start — é
+ *  cache, não estado: se sumir, o próximo pedido renova. */
 const cacheToken = new Map<string, { token: string; expiraEm: number }>();
 
 function lerCredenciais(fundo: Fundo): Credenciais {
@@ -96,6 +96,68 @@ async function tokenOAuth(fundo: Fundo, cred: Credenciais): Promise<string> {
   return json.access_token;
 }
 
+/** Token JWT da OperAPI: POST usuário/senha na rota de autenticação do
+ *  contrato, resposta { access, expires_at }. A doc diz que o token muda a
+ *  cada 1 hora — o cache respeita o expires_at, mas nunca guarda por mais
+ *  de 50 minutos. */
+async function tokenUsuarioSenha(
+  fundo: Fundo,
+  cred: Credenciais,
+): Promise<string> {
+  const emCache = cacheToken.get(fundo.id);
+  if (emCache && emCache.expiraEm > Date.now() + 30_000) return emCache.token;
+
+  if (!cred.usuario || !cred.senha) {
+    throw new Error("Credencial 'usuario_senha' sem usuário ou senha");
+  }
+
+  const contrato = contratoDoFundo(fundo);
+  const rotaAuth = contrato.rotas.autenticar;
+  const url =
+    cred.tokenUrl ??
+    (fundo.integracaoApiUrl && rotaAuth
+      ? `${fundo.integracaoApiUrl.replace(/\/+$/, "")}${rotaAuth.caminho}`
+      : null);
+  if (!url) {
+    throw new Error(
+      "Sem rota de autenticação — configure a URL da API e o contrato do fundo",
+    );
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username: cred.usuario, password: cred.senha }),
+    signal: AbortSignal.timeout(TIMEOUT_PADRAO_MS),
+  });
+  if (!res.ok) {
+    throw new Error(
+      res.status === 400 || res.status === 401
+        ? "Usuário ou senha recusados pelo fundo"
+        : `Falha na autenticação do fundo: HTTP ${res.status}`,
+    );
+  }
+  const json = (await res.json().catch(() => ({}))) as {
+    access?: string;
+    expires_at?: string;
+  };
+  if (!json.access) throw new Error("Resposta da autenticação sem o token (access)");
+
+  const expiraInformado = json.expires_at ? Date.parse(json.expires_at) : NaN;
+  const tetoSeguro = Date.now() + 50 * 60_000;
+  const expiraEm = Number.isFinite(expiraInformado)
+    ? Math.min(expiraInformado, tetoSeguro)
+    : tetoSeguro;
+  cacheToken.set(fundo.id, { token: json.access, expiraEm });
+  return json.access;
+}
+
+/** Derruba o token em cache — usado quando o fundo responde 401 no meio da
+ *  validade (troca de senha, expiração antecipada). */
+export function invalidarToken(fundoId: string) {
+  cacheToken.delete(fundoId);
+}
+
 async function montarHeaders(fundo: Fundo): Promise<Record<string, string>> {
   const cred = lerCredenciais(fundo);
   const headers: Record<string, string> = {
@@ -105,6 +167,10 @@ async function montarHeaders(fundo: Fundo): Promise<Record<string, string>> {
   };
 
   switch (cred.tipo) {
+    case "usuario_senha": {
+      headers.authorization = `Bearer ${await tokenUsuarioSenha(fundo, cred)}`;
+      break;
+    }
     case "oauth": {
       headers.authorization = `Bearer ${await tokenOAuth(fundo, cred)}`;
       break;
@@ -149,6 +215,8 @@ export async function operaFetch(
   opts: {
     vars?: { cnpj?: string; id?: string };
     body?: unknown;
+    /** Arquivo opcional pra rotas multipart (ex.: ZIP de XMLs de lastro). */
+    binario?: { campo: string; nome: string; conteudo: Buffer };
     timeoutMs?: number;
   } = {},
 ): Promise<OperaResposta> {
@@ -165,33 +233,50 @@ export async function operaFetch(
     };
   }
 
-  let headers: Record<string, string>;
-  try {
-    headers = await montarHeaders(fundo);
-  } catch (e) {
-    return {
-      ok: false,
-      status: 0,
-      data: null,
-      cru: "",
-      erro: (e as Error).message,
-      duracaoMs: Date.now() - inicio,
-    };
-  }
-
   const base = fundo.integracaoApiUrl.replace(/\/+$/, "");
   const url = `${base}${montarCaminho(rota, opts.vars)}`;
 
-  try {
-    const res = await fetch(url, {
+  const chamar = async (): Promise<Response> => {
+    const headers = await montarHeaders(fundo);
+
+    let body: BodyInit | undefined;
+    if (rota.metodo !== "GET" && opts.body !== undefined) {
+      if (rota.corpo === "multipart") {
+        // Formato da OperAPI: o JSON inteiro vai como string no campo
+        // `payload`; arquivos binários entram em campos próprios.
+        const form = new FormData();
+        form.set("payload", JSON.stringify(opts.body));
+        if (opts.binario) {
+          form.set(
+            opts.binario.campo,
+            new Blob([new Uint8Array(opts.binario.conteudo)]),
+            opts.binario.nome,
+          );
+        }
+        delete headers["content-type"]; // o fetch define o boundary
+        body = form;
+      } else {
+        body = JSON.stringify(opts.body);
+      }
+    }
+
+    return fetch(url, {
       method: rota.metodo,
       headers,
-      body:
-        rota.metodo === "GET" || opts.body === undefined
-          ? undefined
-          : JSON.stringify(opts.body),
+      body,
       signal: AbortSignal.timeout(opts.timeoutMs ?? TIMEOUT_PADRAO_MS),
     });
+  };
+
+  try {
+    let res = await chamar();
+
+    // 401 no meio da validade do token: renova uma vez e repete. Cobre troca
+    // de senha e expiração antecipada do lado do fundo.
+    if (res.status === 401) {
+      invalidarToken(fundo.id);
+      res = await chamar();
+    }
 
     const cru = (await res.text().catch(() => "")).slice(0, 20_000);
     let data: unknown = null;
@@ -246,22 +331,23 @@ export async function registrarSaude(
 }
 
 /** Ping da conexão pro painel do admin. Usa a rota de saúde quando existe;
- *  senão, tenta a consulta de cliente com um CNPJ neutro — o que importa é
+ *  senão, faz a consulta de cliente com um CNPJ neutro — o que importa é
  *  saber se autenticamos e se a porta responde. */
 export async function testarConexao(fundo: Fundo): Promise<OperaResposta> {
   const contrato = contratoDoFundo(fundo);
-  const rota =
-    contrato.rotas.saude ??
-    ({
-      ...contrato.rotas.consultarCliente,
-      caminho: contrato.rotas.consultarCliente.caminho,
-    } as OperaRota);
+  const rota = contrato.rotas.saude ?? contrato.rotas.consultarCliente;
 
+  // CNPJ neutro válido (Banco do Brasil) — "não encontrado" é resposta
+  // saudável: prova que autenticou e que a rota responde.
+  const cnpjNeutro = "00000000000191";
   const r = await operaFetch(fundo, rota, {
-    vars: { cnpj: "00000000000000" },
+    vars: { cnpj: cnpjNeutro },
+    body:
+      rota.metodo === "GET"
+        ? undefined
+        : { parceiro: contrato.envio.parceiro, cnpj_cliente: cnpjNeutro },
     timeoutMs: 10_000,
   });
-  // 404 numa consulta de CNPJ inexistente é resposta saudável: autenticou.
   const saudavel = r.ok || r.status === 404;
   await registrarSaude(fundo.id, { ok: saudavel, erro: r.erro });
   return { ...r, ok: saudavel };

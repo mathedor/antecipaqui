@@ -18,10 +18,16 @@ export type OperaRota = {
   metodo: "GET" | "POST" | "PUT" | "PATCH";
   /** Caminho relativo à URL base. `{cnpj}` e `{id}` são substituídos. */
   caminho: string;
+  /** Como o corpo viaja: JSON puro (padrão) ou multipart/form-data com o
+   *  JSON inteiro dentro do campo `payload` — é o formato do envio de
+   *  operação da OPERA. */
+  corpo?: "json" | "multipart";
 };
 
 export type OperaContrato = {
   rotas: {
+    /** Troca usuário/senha por token JWT (credencial tipo 'usuario_senha'). */
+    autenticar?: OperaRota;
     /** Peça 01 — existe esse CNPJ na base? */
     consultarCliente: OperaRota;
     /** Peça 02 — cria o cliente com a ficha e os documentos. */
@@ -33,6 +39,22 @@ export type OperaContrato = {
     consultarOperacao?: OperaRota;
     /** Opcional: ping de saúde pro painel de conexão. */
     saude?: OperaRota;
+  };
+  /** Identidade e campos fixos que a OPERA exige em toda chamada. Cada fundo
+   *  tem os seus — é o que permite vários fundos OPERA no mesmo painel. */
+  envio: {
+    /** Nome do parceiro na base do fundo. Ex.: "ANTECIPAQUI". */
+    parceiro: string;
+    /** CNPJ da empresa DENTRO do fundo (campo cnpj_empresa do payload). */
+    cnpjEmpresa: string;
+    /** Campos fixos do envio de operação — combinados com o fundo. */
+    operacaoPreCalculada: boolean;
+    faseLiberacao: string;
+    executaFiltro: string;
+    tipoDocumento: string;
+    /** O sacado (construtora) também precisa de cadastro no fundo? Na OPERA
+     *  não: só o cedente é cadastrado, o sacado vai inline nos títulos. */
+    cadastrarSacado: boolean;
   };
   /** Onde ler cada informação na resposta do fundo. Cada campo aceita uma
    *  lista de caminhos candidatos — o primeiro que existir vence. Isso
@@ -70,10 +92,10 @@ export type OperaContrato = {
     duplicataSacadoDocumento: string[];
   };
   /** Como os arquivos vão no cadastro: 'url' manda link assinado nosso,
-   *  'base64' embute o conteúdo. Enquanto a doc não chega, 'url' é o padrão
-   *  porque não estoura limite de corpo de requisição. */
+   *  'base64' embute cada arquivo, 'zip_base64' compacta tudo num ZIP e
+   *  manda o base64 dele (formato da OPERA: documentos.doc_outros). */
   documentos: {
-    modo: "url" | "base64";
+    modo: "url" | "base64" | "zip_base64";
     /** Nome do campo que carrega a lista de documentos. */
     campo: string;
     /** Tipos que consideramos obrigatórios antes de enviar um cadastro.
@@ -90,16 +112,37 @@ export type OperaContrato = {
   };
 };
 
-/** Valores de partida. Estão marcados como PROVISÓRIOS onde dependem da
- *  documentação da OPERA — a estrutura já funciona, os nomes se confirmam. */
+/** Valores de partida — os caminhos reais da OperAPI (documentação recebida
+ *  em 18/08/2026). O que varia por fundo (parceiro, cnpj_empresa, credencial)
+ *  entra pelo painel em fundos.integracao_contrato / integracao_credenciais. */
 export const DEFAULT_CONTRATO: OperaContrato = {
   rotas: {
-    // PROVISÓRIO — confirmar caminhos com a OPERA.
-    consultarCliente: { metodo: "GET", caminho: "/clientes?cnpj={cnpj}" },
-    cadastrarCliente: { metodo: "POST", caminho: "/clientes" },
-    enviarOperacao: { metodo: "POST", caminho: "/operacoes" },
-    consultarOperacao: { metodo: "GET", caminho: "/operacoes/{id}" },
-    saude: { metodo: "GET", caminho: "/health" },
+    autenticar: { metodo: "POST", caminho: "/operapi/autenticacao/" },
+    consultarCliente: {
+      metodo: "POST",
+      caminho: "/operapi/consulta-cliente-parceiro/",
+    },
+    cadastrarCliente: { metodo: "POST", caminho: "/operapi/criar-cliente/" },
+    enviarOperacao: {
+      metodo: "POST",
+      caminho: "/operapi/enviar-operacao/",
+      corpo: "multipart",
+    },
+    consultarOperacao: {
+      metodo: "GET",
+      caminho: "/operapi/consulta-integracao-operacao/?operacao_id={id}",
+    },
+  },
+  envio: {
+    // parceiro e cnpjEmpresa são POR FUNDO — sem eles configurados no
+    // painel, os agentes ficam bloqueados com um motivo claro.
+    parceiro: "",
+    cnpjEmpresa: "",
+    operacaoPreCalculada: true,
+    faseLiberacao: "N",
+    executaFiltro: "S",
+    tipoDocumento: "D",
+    cadastrarSacado: false,
   },
   leitura: {
     clienteExisteFlag: ["existe", "encontrado", "found", "data.existe"],
@@ -123,6 +166,7 @@ export const DEFAULT_CONTRATO: OperaContrato = {
       "id",
     ],
     refOperacaoNossa: [
+      "numero_operacao_parceiro",
       "referenciaExterna",
       "referencia_externa",
       "referencia",
@@ -133,9 +177,17 @@ export const DEFAULT_CONTRATO: OperaContrato = {
     refClienteExterno: ["clienteId", "cliente_id", "idCliente", "id"],
     refClienteCnpj: ["cnpj", "documento", "cpfCnpj", "cnpjCliente"],
     situacaoCadastro: ["situacao", "status", "resultado", "data.situacao"],
-    motivo: ["motivo", "observacao", "motivoRecusa", "reason", "data.motivo"],
+    motivo: ["motivo", "observacao", "motivoRecusa", "reason", "message", "data.motivo"],
     statusOperacao: ["status", "situacao", "statusOperacao", "data.status"],
-    observacao: ["observacao", "obs", "mensagem", "data.observacao"],
+    observacao: [
+      "observacao",
+      "obs",
+      "mensagem",
+      "mensagem_erp",
+      "status_detalhe",
+      "message",
+      "data.observacao",
+    ],
     linkAssinatura: [
       "linkAssinatura",
       "urlAssinatura",
@@ -159,9 +211,10 @@ export const DEFAULT_CONTRATO: OperaContrato = {
     ],
   },
   documentos: {
-    modo: "url",
+    // A OPERA recebe os documentos como base64 de um ZIP dentro de
+    // documentos.doc_outros[0].outros_documentos.
+    modo: "zip_base64",
     campo: "documentos",
-    // PROVISÓRIO — a lista fechada é o item 3 das pendências com a OPERA.
     obrigatorios: ["contrato_social", "cartao_cnpj", "comprovante_endereco"],
   },
   assinatura: {
@@ -181,6 +234,7 @@ export function resolverContrato(
   const s = salvo as Partial<OperaContrato>;
   return {
     rotas: { ...DEFAULT_CONTRATO.rotas, ...(s.rotas ?? {}) },
+    envio: { ...DEFAULT_CONTRATO.envio, ...(s.envio ?? {}) },
     leitura: { ...DEFAULT_CONTRATO.leitura, ...(s.leitura ?? {}) },
     documentos: { ...DEFAULT_CONTRATO.documentos, ...(s.documentos ?? {}) },
     assinatura: { ...DEFAULT_CONTRATO.assinatura, ...(s.assinatura ?? {}) },
@@ -304,6 +358,12 @@ const APELIDOS: Record<string, string> = {
   aguardando_analise: "aguardando_aprovacao",
   em_analise: "aguardando_aprovacao",
   analise: "aguardando_aprovacao",
+  // Estados do pipeline de integração da OperAPI: pra quem antecipou, a
+  // operação segue "em análise no fundo" até a esteira deles decidir.
+  processando: "aguardando_aprovacao",
+  recebida: "aguardando_aprovacao",
+  concluida: "aguardando_aprovacao",
+  concluido: "aguardando_aprovacao",
   recusado: "reprovado",
   reprovada: "reprovado",
   negado: "reprovado",

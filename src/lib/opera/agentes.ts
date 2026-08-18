@@ -29,8 +29,9 @@ import {
   operaFetch,
   registrarSaude,
 } from "@/lib/opera/client";
-import { lerFlag, lerTexto } from "@/lib/opera/contrato";
+import { lerFlag, lerTexto, type OperaContrato } from "@/lib/opera/contrato";
 import { enfileirarJob } from "@/lib/opera/fila";
+import { montarZip } from "@/lib/opera/zip";
 
 export type ResultadoAgente =
   | { tipo: "ok"; resultado: Record<string, unknown> }
@@ -68,8 +69,23 @@ export async function consultarCliente(
   if (!fundo) return { tipo: "bloqueado", motivo: "Fundo não encontrado" };
 
   const contrato = contratoDoFundo(fundo);
-  const resp = await operaFetch(fundo, contrato.rotas.consultarCliente, {
-    vars: { cnpj: soDigitos(cliente.cnpj) },
+  if (!contrato.envio.parceiro) {
+    return {
+      tipo: "bloqueado",
+      motivo:
+        "Parceiro não configurado — preencha o campo 'parceiro' na integração do fundo",
+    };
+  }
+
+  const rota = contrato.rotas.consultarCliente;
+  const cnpj = soDigitos(cliente.cnpj);
+  const resp = await operaFetch(fundo, rota, {
+    vars: { cnpj },
+    // A OperAPI consulta por POST com o par parceiro + CNPJ.
+    body:
+      rota.metodo === "GET"
+        ? undefined
+        : { parceiro: contrato.envio.parceiro, cnpj_cliente: cnpj },
   });
   await registrarSaude(fundo.id, { ok: resp.ok || resp.status === 404, erro: resp.erro });
 
@@ -131,6 +147,14 @@ export async function cadastrarCliente(
   if (!fundo) return { tipo: "bloqueado", motivo: "Fundo não encontrado" };
 
   const contrato = contratoDoFundo(fundo);
+  if (!contrato.envio.parceiro) {
+    return {
+      tipo: "bloqueado",
+      motivo:
+        "Parceiro não configurado — preencha o campo 'parceiro' na integração do fundo",
+    };
+  }
+
   const ficha = await montarFichaCadastral(cliente);
   if (!ficha) return { tipo: "bloqueado", motivo: "Cliente não encontrado na nossa base" };
 
@@ -147,14 +171,50 @@ export async function cadastrarCliente(
     };
   }
 
-  const corpo = {
+  const corpo: Record<string, unknown> = {
+    parceiro: contrato.envio.parceiro,
     ...ficha.dados,
-    [contrato.documentos.campo]: ficha.documentos.map((d) => ({
+  };
+
+  if (contrato.documentos.modo === "zip_base64") {
+    // Formato da OperAPI: um ZIP com todos os documentos, em base64, dentro
+    // de documentos.doc_outros. Baixamos os arquivos na hora — link vencido
+    // ou fora do ar é motivo de retentativa, não de cadastro pela metade.
+    const arquivos: { nome: string; conteudo: Buffer }[] = [];
+    for (const d of ficha.documentos) {
+      try {
+        const res = await fetch(d.url, {
+          signal: AbortSignal.timeout(30_000),
+        });
+        if (!res.ok) {
+          return {
+            tipo: "retentar",
+            erro: `Falha ao baixar documento ${d.tipo} (HTTP ${res.status})`,
+          };
+        }
+        arquivos.push({
+          nome: `${d.tipo}-${d.nomeOriginal}`,
+          conteudo: Buffer.from(await res.arrayBuffer()),
+        });
+      } catch (err) {
+        return {
+          tipo: "retentar",
+          erro: `Falha ao baixar documento ${d.tipo}: ${(err as Error).message}`,
+        };
+      }
+    }
+    corpo[contrato.documentos.campo] = {
+      doc_outros: [
+        { outros_documentos: montarZip(arquivos).toString("base64") },
+      ],
+    };
+  } else {
+    corpo[contrato.documentos.campo] = ficha.documentos.map((d) => ({
       tipo: d.tipo,
       nome: d.nomeOriginal,
       url: d.url,
-    })),
-  };
+    }));
+  }
 
   const resp = await operaFetch(fundo, contrato.rotas.cadastrarCliente, {
     body: corpo,
@@ -192,7 +252,13 @@ export async function cadastrarCliente(
       externoId: externoId ?? cliente.externoId,
       enviadoEm: new Date(),
       // Guarda a ficha sem binário — a lista de arquivos basta pra auditoria.
-      payloadEnviado: corpo as never,
+      payloadEnviado: {
+        ...corpo,
+        [contrato.documentos.campo]: ficha.documentos.map((d) => ({
+          tipo: d.tipo,
+          nome: d.nomeOriginal,
+        })),
+      } as never,
       ultimaResposta: { status: resp.status, corpo: resp.data } as never,
       updatedAt: new Date(),
     })
@@ -202,7 +268,9 @@ export async function cadastrarCliente(
   return { tipo: "ok", resultado: { protocolo, externoId } };
 }
 
-/** Ficha + documentos de uma imobiliária ou construtora. */
+/** Ficha + documentos de uma imobiliária ou construtora, no formato do
+ *  CriarClienteRequest da OperAPI (cnpj, razaoSocial, endereço achatado,
+ *  region = UF, representantes com participacao "1" = Repr. Legal). */
 async function montarFichaCadastral(cliente: OperaCliente): Promise<{
   dados: Record<string, unknown>;
   documentos: { tipo: string; url: string; nomeOriginal: string }[];
@@ -230,30 +298,28 @@ async function montarFichaCadastral(cliente: OperaCliente): Promise<{
       ? await db.select().from(documentos).where(eq(documentos.userId, dono.id))
       : [];
 
+    const telefone = soDigitos(imob.telefone ?? dono?.telefone);
     return {
       dados: {
-        tipo: "cedente",
-        papel: "imobiliaria",
-        razaoSocial: imob.razaoSocial,
-        nomeFantasia: imob.nomeFantasia,
         cnpj: soDigitos(imob.cnpj),
-        creci: imob.creciResponsavel,
-        telefone: soDigitos(imob.telefone),
-        email: dono?.email ?? null,
-        responsavel: dono?.nome ?? null,
-        endereco: {
-          logradouro: imob.endereco,
-          cidade: imob.cidade,
-          uf: imob.uf,
-          cep: soDigitos(imob.cep),
-        },
-        dadosBancarios: {
-          banco: imob.bancoNome,
-          codigoBanco: imob.bancoCodigo,
-          agencia: imob.bancoAgencia,
-          conta: imob.bancoConta,
-        },
-        referenciaExterna: imob.id,
+        razaoSocial: imob.razaoSocial,
+        nomeFantasia: imob.nomeFantasia ?? null,
+        endereco: imob.endereco ?? null,
+        cidade: imob.cidade ?? null,
+        region: imob.uf ?? null,
+        cep: soDigitos(imob.cep) || null,
+        nome_responsavel_operacional: dono?.nome ?? null,
+        email_responsavel_operacional: dono?.email ?? null,
+        representantes: dono
+          ? [
+              {
+                participacao: "1",
+                nome: dono.nome,
+                email: dono.email,
+                celular: telefone || null,
+              },
+            ]
+          : null,
       },
       documentos: [...docs, ...docsDoDono].map((d) => ({
         tipo: d.tipo,
@@ -277,20 +343,14 @@ async function montarFichaCadastral(cliente: OperaCliente): Promise<{
 
   return {
     dados: {
-      tipo: "sacado",
-      papel: "construtora",
-      razaoSocial: con.razaoSocial,
-      nomeFantasia: con.nomeFantasia,
       cnpj: soDigitos(con.cnpj),
-      telefone: soDigitos(con.telefone),
-      email: con.email,
-      endereco: {
-        logradouro: con.endereco,
-        cidade: con.cidade,
-        uf: con.uf,
-        cep: soDigitos(con.cep),
-      },
-      referenciaExterna: con.id,
+      razaoSocial: con.razaoSocial,
+      nomeFantasia: con.nomeFantasia ?? null,
+      endereco: con.endereco ?? null,
+      cidade: con.cidade ?? null,
+      region: con.uf ?? null,
+      cep: soDigitos(con.cep) || null,
+      email_responsavel_operacional: con.email ?? null,
     },
     documentos: docs.map((d) => ({
       tipo: d.tipo,
@@ -319,9 +379,18 @@ export async function enviarOperacao(
   const fundo = await carregarFundo(op.fundoId);
   if (!fundo) return { tipo: "bloqueado", motivo: "Fundo não encontrado" };
 
-  // Portão: os dois cadastros precisam estar aprovados. É o que a peça 03
-  // libera — antes disso não sai nada.
-  const pendentes = await clientesPendentesDaOperacao(op);
+  const contrato = contratoDoFundo(fundo);
+  if (!contrato.envio.parceiro || !contrato.envio.cnpjEmpresa) {
+    return {
+      tipo: "bloqueado",
+      motivo:
+        "Parceiro ou CNPJ da empresa não configurados na integração do fundo",
+    };
+  }
+
+  // Portão: o cadastro do cedente (e do sacado, quando o fundo exige)
+  // precisa estar aprovado. É o que a peça 03 libera — antes disso não sai nada.
+  const pendentes = await clientesPendentesDaOperacao(op, contrato.envio.cadastrarSacado);
   if (pendentes.length > 0) {
     return {
       tipo: "bloqueado",
@@ -329,10 +398,11 @@ export async function enviarOperacao(
     };
   }
 
-  const contrato = contratoDoFundo(fundo);
-  const dossie = await montarDossieOperacao(op);
+  const dossie = await montarPayloadOperacao(op, contrato.envio);
+  if ("erro" in dossie) return { tipo: "bloqueado", motivo: dossie.erro };
+
   const resp = await operaFetch(fundo, contrato.rotas.enviarOperacao, {
-    body: dossie,
+    body: dossie.payload,
   });
   await registrarSaude(fundo.id, { ok: resp.ok, erro: resp.erro });
 
@@ -340,7 +410,7 @@ export async function enviarOperacao(
     if (resp.status >= 400 && resp.status < 500 && resp.status !== 429) {
       // Erro de validação: o campo exato vem no corpo e vira pendência.
       await registrarEspelhoOperacao(op.id, fundo.id, {
-        payloadEnviado: dossie,
+        payloadEnviado: dossie.payload,
         ultimaResposta: { status: resp.status, corpo: resp.cru },
       });
       return {
@@ -358,27 +428,31 @@ export async function enviarOperacao(
     externoId,
     protocolo,
     enviadaEm: new Date(),
-    payloadEnviado: dossie,
+    payloadEnviado: dossie.payload,
     ultimaResposta: { status: resp.status, corpo: resp.data },
   });
 
   return { tipo: "ok", resultado: { externoId, protocolo } };
 }
 
-/** Quais clientes da operação ainda não estão aprovados no fundo. */
+/** Quais clientes da operação ainda não estão aprovados no fundo. Na OPERA
+ *  só o cedente (imobiliária) precisa de cadastro — o sacado vai inline nos
+ *  títulos; `cadastrarSacado` liga a exigência pra fundos que pedirem. */
 async function clientesPendentesDaOperacao(
   op: typeof operacoes.$inferSelect,
+  cadastrarSacado: boolean,
 ): Promise<string[]> {
   if (!op.fundoId) return ["fundo não vinculado"];
-  const alvos: { tipo: string; id: string; rotulo: string }[] = [
-    { tipo: "construtora", id: op.construtoraId, rotulo: "construtora" },
-  ];
+  const alvos: { tipo: string; id: string; rotulo: string }[] = [];
+  if (cadastrarSacado)
+    alvos.push({ tipo: "construtora", id: op.construtoraId, rotulo: "construtora" });
   if (op.imobiliariaId)
     alvos.push({
       tipo: "imobiliaria",
       id: op.imobiliariaId,
       rotulo: "imobiliária",
     });
+  else return ["cedente (a operação não tem imobiliária vinculada)"];
 
   const linhas = await db
     .select()
@@ -403,15 +477,13 @@ async function clientesPendentesDaOperacao(
   return pendentes;
 }
 
-/** O dossiê completo: valores, prazo, parcelas, comprador, imóvel e todos
- *  os documentos vinculados à operação. */
-async function montarDossieOperacao(op: typeof operacoes.$inferSelect) {
-  const [construtora] = await db
-    .select()
-    .from(construtoras)
-    .where(eq(construtoras.id, op.construtoraId))
-    .limit(1);
-
+/** O payload do envio no formato da OperAPI: identidade do parceiro, cedente
+ *  por CPF/CNPJ, taxa de deságio em % ao mês e um título por parcela, com o
+ *  sacado (quem paga a comissão) inline em cada título. */
+async function montarPayloadOperacao(
+  op: typeof operacoes.$inferSelect,
+  envio: OperaContrato["envio"],
+): Promise<{ payload: Record<string, unknown> } | { erro: string }> {
   const [imob] = op.imobiliariaId
     ? await db
         .select()
@@ -419,11 +491,14 @@ async function montarDossieOperacao(op: typeof operacoes.$inferSelect) {
         .where(eq(imobiliarias.id, op.imobiliariaId))
         .limit(1)
     : [null];
+  if (!imob) {
+    return { erro: "Operação sem imobiliária — o fundo exige um cedente PJ" };
+  }
 
-  const [cedente] = await db
+  const [construtora] = await db
     .select()
-    .from(users)
-    .where(eq(users.id, op.corretorUserId))
+    .from(construtoras)
+    .where(eq(construtoras.id, op.construtoraId))
     .limit(1);
 
   const parcelas = await db
@@ -431,67 +506,90 @@ async function montarDossieOperacao(op: typeof operacoes.$inferSelect) {
     .from(parcelasComissao)
     .where(eq(parcelasComissao.operacaoId, op.id))
     .orderBy(parcelasComissao.numero);
+  if (parcelas.length === 0) {
+    return { erro: "Operação sem parcelas — não há títulos a enviar" };
+  }
 
-  const compradores = await db
-    .select()
-    .from(operacaoCompradores)
-    .where(eq(operacaoCompradores.operacaoId, op.id));
+  // Sacado dos títulos: quem paga a comissão. Construtora (padrão) ou o
+  // comprador principal, quando a operação foi montada nesse modelo.
+  let sacado: {
+    documento: string;
+    nome: string;
+    endereco?: Record<string, unknown>;
+    telefone?: Record<string, unknown>;
+  } | null = null;
 
-  const docs = await db
-    .select()
-    .from(documentos)
-    .where(eq(documentos.operacaoId, op.id));
+  if (op.pagadorTipo === "compradores") {
+    const compradores = await db
+      .select()
+      .from(operacaoCompradores)
+      .where(eq(operacaoCompradores.operacaoId, op.id));
+    const principal = compradores[0];
+    if (principal) {
+      sacado = {
+        documento: soDigitos(principal.documento),
+        nome: principal.nome,
+      };
+    }
+  } else if (construtora) {
+    sacado = {
+      documento: soDigitos(construtora.cnpj),
+      nome: construtora.razaoSocial,
+    };
+    if (construtora.endereco && construtora.cidade && construtora.uf) {
+      sacado.endereco = {
+        endereco: construtora.endereco,
+        numero: "S/N",
+        bairro: "",
+        cidade: construtora.cidade,
+        uf: construtora.uf,
+        cep: Number(soDigitos(construtora.cep)) || 0,
+        ...(construtora.email ? { email: construtora.email } : {}),
+      };
+    }
+    const tel = soDigitos(construtora.telefone);
+    if (tel.length >= 10) {
+      sacado.telefone = {
+        ddd: Number(tel.slice(0, 2)),
+        numero: Number(tel.slice(2)),
+      };
+    }
+  }
 
-  return {
-    referenciaExterna: op.id,
-    numero: op.numero,
-    dataVenda: op.dataVenda,
-    valores: {
-      valorVenda: Number(op.valorVenda),
-      valorComissao: Number(op.valorComissao),
-      valorEntrada: op.valorEntrada ? Number(op.valorEntrada) : null,
-      valorPresente: Number(op.valorPresente),
-      desagio: Number(op.desagio),
-      taxaMensal: Number(op.taxaMensal),
-      numeroParcelas: op.numeroParcelas,
-    },
-    cedente: {
-      nome: cedente?.nome ?? null,
-      email: cedente?.email ?? null,
-      telefone: soDigitos(cedente?.telefone),
-      imobiliaria: imob
-        ? {
-            razaoSocial: imob.razaoSocial,
-            cnpj: soDigitos(imob.cnpj),
-            referenciaExterna: imob.id,
-          }
-        : null,
-    },
-    sacado: {
-      tipo: op.pagadorTipo,
-      construtora: construtora
-        ? {
-            razaoSocial: construtora.razaoSocial,
-            cnpj: soDigitos(construtora.cnpj),
-            referenciaExterna: construtora.id,
-          }
-        : null,
-      compradores: compradores.map((c) => ({
-        nome: c.nome,
-        documento: soDigitos(c.documento),
-      })),
-    },
-    parcelas: parcelas.map((p) => ({
-      numero: p.numero,
-      valor: Number(p.valor),
-      vencimento: p.vencimento,
-    })),
-    documentos: docs.map((d) => ({
-      tipo: d.tipo,
-      nome: d.nomeOriginal,
-      url: d.url,
+  if (!sacado?.documento || !sacado.nome) {
+    return { erro: "Sacado sem nome ou documento — confira o pagador da operação" };
+  }
+  const s = sacado;
+
+  // Taxa em % a.m. — internamente guardamos fração (0.0309 = 3,09%).
+  const taxaFracao = Number(op.taxaFundoSnapshot ?? op.taxaMensal);
+  const taxaDesagio = Math.round(taxaFracao * 100 * 100) / 100;
+
+  const payload: Record<string, unknown> = {
+    parceiro: envio.parceiro,
+    cnpj_empresa: envio.cnpjEmpresa,
+    operacao_pre_calculada: envio.operacaoPreCalculada,
+    fase_liberacao: envio.faseLiberacao,
+    executa_filtro: envio.executaFiltro,
+    numero_operacao_parceiro: op.numero,
+    cpf_cnpj_cedente: soDigitos(imob.cnpj),
+    taxa_desagio: taxaDesagio,
+    tipo_documento: envio.tipoDocumento,
+    observacao: `Antecipaqui ${op.numero} — antecipação de comissão imobiliária. Cedente: ${imob.razaoSocial}.`,
+    titulos: parcelas.map((p) => ({
+      cpf_cnpj_sacado: s.documento,
+      nome_sacado: s.nome,
+      ...(s.endereco ? { endereco_sacado: s.endereco } : {}),
+      ...(s.telefone ? { telefone_sacado: s.telefone } : {}),
+      numero_titulo: `${op.numero}/${String(p.numero).padStart(3, "0")}`,
+      data_emissao: op.dataVenda,
+      data_vencimento: p.vencimento,
+      valor_nominal: Number(p.valor),
+      valor_desconto: 0,
     })),
   };
+
+  return { payload };
 }
 
 /** Cria ou atualiza o espelho da operação no fundo. */
@@ -547,25 +645,37 @@ export async function iniciarIntegracaoDaOperacao(operacaoId: string): Promise<{
   if (fundo.integracaoTipo === "nenhuma")
     return { ok: false, motivo: "Fundo sem integração ativa", jobs: 0 };
 
-  const [construtora] = await db
-    .select({ id: construtoras.id, cnpj: construtoras.cnpj })
-    .from(construtoras)
-    .where(eq(construtoras.id, op.construtoraId))
-    .limit(1);
+  const contrato = contratoDoFundo(fundo);
+
+  if (!op.imobiliariaId) {
+    return {
+      ok: false,
+      motivo:
+        "Operação sem imobiliária — a integração exige um cedente PJ cadastrado no fundo",
+      jobs: 0,
+    };
+  }
 
   const alvos: { tipo: "imobiliaria" | "construtora"; id: string; cnpj: string }[] =
     [];
-  if (construtora)
-    alvos.push({ tipo: "construtora", id: construtora.id, cnpj: construtora.cnpj });
 
-  if (op.imobiliariaId) {
-    const [imob] = await db
-      .select({ id: imobiliarias.id, cnpj: imobiliarias.cnpj })
-      .from(imobiliarias)
-      .where(eq(imobiliarias.id, op.imobiliariaId))
+  // Na OPERA só o cedente é cadastrado; o sacado vai inline nos títulos.
+  if (contrato.envio.cadastrarSacado) {
+    const [construtora] = await db
+      .select({ id: construtoras.id, cnpj: construtoras.cnpj })
+      .from(construtoras)
+      .where(eq(construtoras.id, op.construtoraId))
       .limit(1);
-    if (imob) alvos.push({ tipo: "imobiliaria", id: imob.id, cnpj: imob.cnpj });
+    if (construtora)
+      alvos.push({ tipo: "construtora", id: construtora.id, cnpj: construtora.cnpj });
   }
+
+  const [imob] = await db
+    .select({ id: imobiliarias.id, cnpj: imobiliarias.cnpj })
+    .from(imobiliarias)
+    .where(eq(imobiliarias.id, op.imobiliariaId))
+    .limit(1);
+  if (imob) alvos.push({ tipo: "imobiliaria", id: imob.id, cnpj: imob.cnpj });
 
   let jobs = 0;
   let todosAprovados = alvos.length > 0;
@@ -638,6 +748,10 @@ export async function destravarOperacoesQueEsperam(cliente: OperaCliente) {
       ? eq(operacoes.construtoraId, cliente.entidadeId)
       : eq(operacoes.imobiliariaId, cliente.entidadeId);
 
+  const fundo = await carregarFundo(cliente.fundoId);
+  if (!fundo) return 0;
+  const cadastrarSacado = contratoDoFundo(fundo).envio.cadastrarSacado;
+
   const candidatas = await db
     .select()
     .from(operacoes)
@@ -655,7 +769,7 @@ export async function destravarOperacoesQueEsperam(cliente: OperaCliente) {
 
   let liberadas = 0;
   for (const op of candidatas) {
-    const pendentes = await clientesPendentesDaOperacao(op);
+    const pendentes = await clientesPendentesDaOperacao(op, cadastrarSacado);
     if (pendentes.length > 0) continue;
 
     // Já enviada? Não manda de novo.

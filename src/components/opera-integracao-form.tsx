@@ -50,6 +50,17 @@ export function OperaIntegracaoForm({
   const [testando, setTestando] = useState(false);
 
   const ligada = tipo !== "nenhuma";
+  const credencialSalva = Boolean(atual.credenciais);
+  const envioAtual = ((atual.contrato as { envio?: unknown } | null)?.envio ??
+    {}) as Partial<{
+    parceiro: string;
+    cnpjEmpresa: string;
+    operacaoPreCalculada: boolean;
+    faseLiberacao: string;
+    executaFiltro: string;
+    tipoDocumento: string;
+    cadastrarSacado: boolean;
+  }>;
 
   const urls = [
     { nome: "Cadastro do cliente", peca: "03", caminho: `/api/opera/webhook/cadastro/${fundoId}` },
@@ -144,27 +155,154 @@ export function OperaIntegracaoForm({
           />
         </div>
 
-        <div>
-          <label className={rotulo}>Credenciais (JSON)</label>
-          <textarea
-            name="integracaoCredenciais"
-            rows={5}
-            defaultValue={
-              atual.credenciais
-                ? JSON.stringify(atual.credenciais, null, 2)
-                : ""
-            }
-            placeholder={'{\n  "tipo": "api_key",\n  "apiKey": "...",\n  "header": "x-api-key"\n}'}
-            className={area}
-            disabled={!ligada}
-          />
-          <p className="mt-2 text-xs text-fg-muted">
-            Aceita <code>api_key</code>, <code>bearer</code>,{" "}
-            <code>basic</code> e <code>oauth</code> (com{" "}
-            <code>tokenUrl</code>, <code>clientId</code> e{" "}
-            <code>clientSecret</code>). Deixe em branco para manter o que já
-            está salvo.
-          </p>
+        {/* Credencial usuário/senha — o formato da OperAPI. Cada fundo tem a
+            sua; preencher aqui grava direto, sem mexer em JSON. */}
+        <div className="rounded-2xl border border-border bg-bg-elev p-5 space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold">Acesso à API do fundo</h3>
+            <p className="text-xs text-fg-muted mt-1">
+              Usuário e senha fornecidos pelo fundo. Trocamos por um token JWT
+              automaticamente a cada chamada (validade de 1 hora).
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-5">
+            <div>
+              <label className={rotulo}>Usuário</label>
+              <input
+                name="credUsuario"
+                placeholder={credencialSalva ? "•••••• (salvo)" : "antecipaqui"}
+                className={campo}
+                disabled={!ligada}
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className={rotulo}>Senha</label>
+              <input
+                name="credSenha"
+                type="password"
+                placeholder={credencialSalva ? "•••••• (salva)" : ""}
+                className={campo}
+                disabled={!ligada}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+          <details>
+            <summary className="text-xs text-fg-muted cursor-pointer">
+              Avançado — credenciais em JSON (outros formatos)
+            </summary>
+            <textarea
+              name="integracaoCredenciais"
+              rows={5}
+              defaultValue=""
+              placeholder={'{\n  "tipo": "usuario_senha",\n  "usuario": "...",\n  "senha": "..."\n}'}
+              className={`${area} mt-3`}
+              disabled={!ligada}
+            />
+            <p className="mt-2 text-xs text-fg-muted">
+              Aceita <code>usuario_senha</code>, <code>api_key</code>,{" "}
+              <code>bearer</code>, <code>basic</code> e <code>oauth</code>.
+              Em branco mantém o que já está salvo; usuário/senha acima têm
+              prioridade.
+            </p>
+          </details>
+        </div>
+
+        {/* Identidade do parceiro dentro do fundo + campos fixos do payload.
+            É o que muda de fundo pra fundo na mesma OperAPI. */}
+        <div className="rounded-2xl border border-border bg-bg-elev p-5 space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold">
+              Identidade do parceiro e envio de operação
+            </h3>
+            <p className="text-xs text-fg-muted mt-1">
+              Valores combinados com o fundo — vão em toda consulta, cadastro
+              e envio. Cada fundo tem os seus.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-5">
+            <div>
+              <label className={rotulo}>Parceiro</label>
+              <input
+                name="envioParceiro"
+                defaultValue={envioAtual.parceiro ?? ""}
+                placeholder="ANTECIPAQUI"
+                className={campo}
+                disabled={!ligada}
+              />
+            </div>
+            <div>
+              <label className={rotulo}>CNPJ da empresa (no fundo)</label>
+              <input
+                name="envioCnpjEmpresa"
+                defaultValue={envioAtual.cnpjEmpresa ?? ""}
+                placeholder="42.081.459/0001-07"
+                className={campo}
+                disabled={!ligada}
+              />
+            </div>
+            <div>
+              <label className={rotulo}>Fase de liberação</label>
+              <select
+                name="envioFaseLiberacao"
+                defaultValue={envioAtual.faseLiberacao ?? "N"}
+                className={campo}
+                disabled={!ligada}
+              >
+                <option value="N">N — não libera direto</option>
+                <option value="S">S — libera direto</option>
+              </select>
+            </div>
+            <div>
+              <label className={rotulo}>Executa filtro</label>
+              <select
+                name="envioExecutaFiltro"
+                defaultValue={envioAtual.executaFiltro ?? "S"}
+                className={campo}
+                disabled={!ligada}
+              >
+                <option value="S">S — o fundo roda os filtros</option>
+                <option value="N">N — sem filtros</option>
+              </select>
+            </div>
+            <div>
+              <label className={rotulo}>Tipo de documento</label>
+              <input
+                name="envioTipoDocumento"
+                defaultValue={envioAtual.tipoDocumento ?? "D"}
+                placeholder="D"
+                className={campo}
+                disabled={!ligada}
+              />
+            </div>
+          </div>
+          <label className="flex items-start gap-3 text-sm text-fg-muted">
+            <input
+              type="checkbox"
+              name="envioOperacaoPreCalculada"
+              defaultChecked={envioAtual.operacaoPreCalculada ?? true}
+              className="mt-1"
+              disabled={!ligada}
+            />
+            <span>
+              Operação pré-calculada — mandamos os valores fechados e o fundo
+              não recalcula.
+            </span>
+          </label>
+          <label className="flex items-start gap-3 text-sm text-fg-muted">
+            <input
+              type="checkbox"
+              name="envioCadastrarSacado"
+              defaultChecked={envioAtual.cadastrarSacado ?? false}
+              className="mt-1"
+              disabled={!ligada}
+            />
+            <span>
+              Cadastrar também o sacado (construtora) no fundo. Na OPERA fica
+              desligado: só o cedente é cadastrado, o sacado vai nos títulos.
+            </span>
+          </label>
         </div>
 
         <div>
