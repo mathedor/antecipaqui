@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth-user";
 
 /**
  * Endpoint de diagnóstico do Vercel Blob.
@@ -15,17 +15,16 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const { userId, sessionClaims } = await auth();
-  if (!userId) {
-    return NextResponse.json({ ok: false, step: "auth", error: "not signed in" }, { status: 401 });
-  }
-  if ((sessionClaims as { metadata?: { role?: string } } | null)?.metadata?.role !== "admin") {
-    // não bloqueia, só sinaliza
+  // Gate real de admin (a checagem antiga por sessionClaims era no-op — nosso
+  // papel de admin vive no banco, não no metadata do Clerk).
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ ok: false, step: "auth", error: "admin only" }, { status: 403 });
   }
 
   const tokenSet = !!process.env.BLOB_READ_WRITE_TOKEN;
   const tokenLen = process.env.BLOB_READ_WRITE_TOKEN?.length ?? 0;
-  const tokenPrefix = process.env.BLOB_READ_WRITE_TOKEN?.slice(0, 25) ?? null;
 
   if (!tokenSet) {
     return NextResponse.json({
@@ -48,7 +47,6 @@ export async function GET() {
       ok: true,
       step: "put",
       tokenLen,
-      tokenPrefix,
       uploadedUrl: blob.url,
       uploadedPath: blob.pathname,
       message: "Server-side upload funcionou — store OK.",
@@ -60,7 +58,6 @@ export async function GET() {
         ok: false,
         step: "put",
         tokenLen,
-        tokenPrefix,
         errorName: err.name ?? null,
         errorMessage: err.message ?? null,
         errorCode: err.code ?? null,

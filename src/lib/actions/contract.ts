@@ -460,10 +460,13 @@ export async function dispatchOperacaoToFundo(
   }
 
   try {
+    // Timeout obrigatório: a URL é controlável pelo próprio fundo; sem teto,
+    // um endpoint lento pendura a server action e consome slots de concorrência.
     const res = await fetch(fundo.contratoGeracaoUrl, {
       method: "POST",
       headers,
       body,
+      signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) {
       console.error(

@@ -390,7 +390,9 @@ const zapsignConfig: Check = {
         detalhe: "ZAPSIGN_API_TOKEN ausente — contratos não vão pra assinatura pela AQ.",
         recomendacao: "Configure o token do ZapSign (só necessário quando a Antecipaqui coleta a assinatura).",
       };
-    return OK("ZapSign configurado.");
+    // O webhook do ZapSign valida contra a API deles (reconsulta autoritativa),
+    // que depende do mesmo token. Sem token, o webhook recusa por segurança.
+    return OK("ZapSign configurado — webhook valida contra a API deles.");
   },
 };
 
@@ -531,6 +533,27 @@ const operacoesOrfas: Check = {
   },
 };
 
+const blobProxyDono: Check = {
+  id: "blob-proxy-dono",
+  area: "Armazenamento & Uploads",
+  titulo: "Download de documentos por dono (KYC)",
+  visibilidade: "admin",
+  peso: 2,
+  async run() {
+    // Follow-up conhecido: /api/blob/[...pathname] hoje libera qualquer
+    // usuário logado a baixar qualquer arquivo pelo pathname. Fechar exige
+    // decidir o modelo de autorização por tipo de documento (contrato, RG,
+    // comprovante). Enquanto não fecha, o painel deixa isso à vista.
+    return {
+      status: "atencao",
+      detalhe:
+        "O proxy de arquivos autoriza qualquer usuário logado — falta checagem de dono por documento.",
+      recomendacao:
+        "Mapear pathname→dono no banco antes do download e ligar addRandomSuffix nos uploads. Follow-up de segurança em aberto.",
+    };
+  },
+};
+
 /* ═══════════════════════════════════════════════════════════════
    REGISTRO
    ═══════════════════════════════════════════════════════════════ */
@@ -549,6 +572,7 @@ export const CHECKS: Check[] = [
   resendConfig,
   zapsignConfig,
   blobToken,
+  blobProxyDono,
   segredosVazados,
   envObrigatorias,
   webhooksFila,

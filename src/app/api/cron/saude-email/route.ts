@@ -13,6 +13,7 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
+import { requireCronAuth } from "@/lib/seguranca/cron-auth";
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { notificacoes, users } from "@/db/schema";
@@ -27,14 +28,8 @@ const TIPO_NOTIF = "saude_email";
 const JANELA_DEDUPE_HORAS = 20;
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  if (expected) {
-    const auth = req.headers.get("authorization");
-    const custom = req.headers.get("x-cron-secret");
-    if (auth !== `Bearer ${expected}` && custom !== expected) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-  }
+  const naoAutorizado = requireCronAuth(req);
+  if (naoAutorizado) return naoAutorizado;
 
   const saude = await checarSaudeEmail();
   await registrarCheck(saude).catch((e) =>

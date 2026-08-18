@@ -12,10 +12,19 @@ import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { fundos, users } from "../src/db/schema";
 
-const USER_ID = "user_3DfYTjwDlT2acydV3CsuuxqEYg9";
-const EMAIL = "emiliano@criteriacapital.com.br";
-const PASSWORD = "***REDACTED***";
-const FUNDO_ID = "7d0f4ebc-62ba-4886-9cd5-a5524ee4aa1c"; // Critéria FIDC
+// Nada de credencial no código versionado — tudo vem do ambiente.
+//   USER_ID=... EMAIL=... FUNDO_ID=... OWNER_PASSWORD=... \
+//     npx tsx --env-file=.env.local scripts/setup-fundo-criteria.ts
+const USER_ID = requireEnv("USER_ID");
+const EMAIL = requireEnv("EMAIL");
+const PASSWORD = requireEnv("OWNER_PASSWORD");
+const FUNDO_ID = requireEnv("FUNDO_ID");
+
+function requireEnv(nome: string): string {
+  const v = (process.env[nome] ?? "").trim();
+  if (!v) throw new Error(`Defina ${nome} no ambiente antes de rodar este script`);
+  return v;
+}
 
 async function main() {
   const clerk = createClerkClient({

@@ -14,6 +14,7 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
+import { requireCronAuth } from "@/lib/seguranca/cron-auth";
 import {
   calcularRecap,
   listAdmins,
@@ -74,14 +75,8 @@ function siteUrl(): string {
 }
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  if (expected) {
-    const auth = req.headers.get("authorization");
-    const custom = req.headers.get("x-cron-secret");
-    if (auth !== `Bearer ${expected}` && custom !== expected) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-  }
+  const naoAutorizado = requireCronAuth(req);
+  if (naoAutorizado) return naoAutorizado;
 
   const hoje = new Date();
   const ontem = new Date(hoje);

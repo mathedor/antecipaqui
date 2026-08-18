@@ -18,6 +18,7 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
+import { requireCronAuth } from "@/lib/seguranca/cron-auth";
 import { and, desc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -38,14 +39,8 @@ const MIN_INTERVAL_DAYS = Number(
 const MAX_PER_RUN = Number(process.env.AUTO_NUDGE_MAX_PER_RUN ?? "200");
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  if (expected) {
-    const auth = req.headers.get("authorization");
-    const custom = req.headers.get("x-cron-secret");
-    if (auth !== `Bearer ${expected}` && custom !== expected) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-  }
+  const naoAutorizado = requireCronAuth(req);
+  if (naoAutorizado) return naoAutorizado;
 
   const now = new Date();
   const idleThreshold = new Date(now.getTime() - IDLE_DAYS * 24 * 3600 * 1000);

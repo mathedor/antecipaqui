@@ -13,6 +13,12 @@ import { auth } from "@clerk/nextjs/server";
 import { del, get } from "@vercel/blob";
 import { NextResponse, type NextRequest } from "next/server";
 import { extrairCamposContrato } from "@/lib/ocr-extrair-campos";
+import { consumir } from "@/lib/seguranca/rate-limit";
+
+// OCR chama modelo pago por request. Teto por usuário pra conter dreno de
+// custo (loop de uploads) sem atrapalhar o uso normal de cadastro.
+const OCR_LIMITE = 8;
+const OCR_JANELA_MS = 60_000;
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,6 +36,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!userId) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
+
+  const limite = consumir(`ocr:${userId}`, OCR_LIMITE, OCR_JANELA_MS);
+  if (!limite.ok) {
+    return NextResponse.json(
+      { error: "Muitas extrações seguidas. Aguarde um instante e tente de novo." },
+      { status: 429, headers: { "retry-after": String(limite.retryEmSeg) } },
+    );
+  }
+
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json(
       { error: "Storage não configurado — avise o admin." },
@@ -55,10 +70,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // Trava anti-IDOR: só operamos em arquivos de scratch de OCR (ocr-temp/…),
+  // que é onde o cliente sobe o arquivo transitório. Sem isso, um pathname
+  // arbitrário (ex.: fundos/<id>/contrato/…) seria LIDO e DELETADO daqui —
+  // exfiltração e destruição de documento definitivo de outro tenant.
+  const caminhoBlob = (() => {
+    try {
+      return ref.startsWith("http") ? new URL(ref).pathname.replace(/^\/+/, "") : ref;
+    } catch {
+      return ref;
+    }
+  })();
+  if (!caminhoBlob.startsWith("ocr-temp/") || caminhoBlob.includes("..")) {
+    return NextResponse.json(
+      { error: "Referência de arquivo não permitida." },
+      { status: 403 },
+    );
+  }
+
   // Lê o arquivo de volta do Blob (private, origem direta).
   let result;
   try {
-    result = await get(ref, { access: "private", useCache: false });
+    result = await get(caminhoBlob, { access: "private", useCache: false });
   } catch (e) {
     console.error("[extrair-contrato] falha ao ler blob", {
       ref,
@@ -79,11 +112,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const mimeType = result.blob.contentType || "application/octet-stream";
   const size = result.blob.size ?? 0;
   if (size > MAX_SIZE) {
-    await del(ref).catch(() => {});
+    await del(caminhoBlob).catch(() => {});
     return NextResponse.json({ error: "Arquivo > 15MB" }, { status: 413 });
   }
   if (!ACEITOS.has(mimeType)) {
-    await del(ref).catch(() => {});
+    await del(caminhoBlob).catch(() => {});
     return NextResponse.json(
       { error: `Tipo ${mimeType} não suportado` },
       { status: 415 },
@@ -96,7 +129,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const r = await extrairCamposContrato({ buffer, mimeType });
 
   // Scratch — apaga sempre depois de extrair (sucesso ou não).
-  await del(ref).catch(() => {});
+  await del(caminhoBlob).catch(() => {});
 
   if (!r.ok) {
     return NextResponse.json({ error: r.error }, { status: 500 });

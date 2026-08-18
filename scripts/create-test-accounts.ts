@@ -26,7 +26,11 @@ if (!process.env.CLERK_SECRET_KEY)
   throw new Error("CLERK_SECRET_KEY não setada no env");
 
 const CLERK_API = "https://api.clerk.com/v1";
-const PASSWORD = "***REDACTED***";
+// Senha das contas de teste vem do ambiente — nunca versionada.
+//   TEST_ACCOUNTS_PASSWORD=... npx tsx --env-file=.env.local scripts/create-test-accounts.ts
+const PASSWORD = (process.env.TEST_ACCOUNTS_PASSWORD ?? "").trim();
+if (!PASSWORD)
+  throw new Error("Defina TEST_ACCOUNTS_PASSWORD no ambiente antes de rodar");
 
 type Role = "corretor" | "imobiliaria" | "construtora" | "fundo" | "comercial";
 

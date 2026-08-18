@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { contratos, operacoes, users, construtoras } from "@/db/schema";
 import type { ContratoSigner } from "@/db/schema";
 import { notify } from "@/lib/notify";
+import { getZapsignDocument, type ZapsignDocResponse } from "@/lib/zapsign";
 
 /**
  * Webhook ZapSign — configurar no painel apontando pra
@@ -59,12 +60,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
-  // Atualiza signers locais com signed_at vindo do payload
+  // ANTIFORJA: o corpo do webhook não é assinado pelo ZapSign, e o token do
+  // documento vaza pro navegador do dono da operação. Confiar no payload
+  // permitiria forjar "assinado"/"recusado". Então reconsultamos o documento
+  // na API do ZapSign (autenticada com nosso token) e usamos SÓ o que ela diz
+  // — o payload vira apenas gatilho. Se a consulta falhar, não mexemos em nada
+  // e pedimos retry (502).
+  let doc: ZapsignDocResponse;
+  try {
+    doc = await getZapsignDocument(payload.token);
+  } catch (e) {
+    console.error("[zapsign/webhook] falha ao reconsultar documento — ignorado", {
+      token: payload.token,
+      error: (e as Error).message,
+    });
+    return NextResponse.json(
+      { error: "não foi possível verificar o documento no ZapSign" },
+      { status: 502 },
+    );
+  }
+
+  // Atualiza signers locais com signed_at AUTORITATIVO (da API, não do payload).
   const updatedSigners: ContratoSigner[] = (contrato.signers ?? []).map(
     (local) => {
-      const remote = payload.signers?.find(
-        (s) => s.token === local.zapsignToken,
-      );
+      const remote = doc.signers?.find((s) => s.token === local.zapsignToken);
       if (!remote) return local;
       return {
         ...local,
@@ -79,8 +98,10 @@ export async function POST(req: NextRequest) {
     (s) => s.role === "construtora",
   );
 
-  const allSigned = updatedSigners.every((s) => !!s.signedAt);
-  const anyRefused = payload.event_type === "doc_refused";
+  // Status também vem da API: recusa e conclusão são decididas pelo ZapSign.
+  const allSigned =
+    doc.status === "signed" || updatedSigners.every((s) => !!s.signedAt);
+  const anyRefused = doc.status === "refused";
 
   let newStatus = contrato.status;
   let completedAt = contrato.completedAt;

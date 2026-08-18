@@ -16,6 +16,7 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
+import { requireCronAuth } from "@/lib/seguranca/cron-auth";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { tickets, ticketMessages, parcelasComissao } from "@/db/schema";
@@ -35,18 +36,9 @@ function fmtDate(d: string) {
 
 export async function GET(req: NextRequest) {
   // Auth: Vercel Cron adiciona Authorization: Bearer $CRON_SECRET
-  // automaticamente. Aceitamos header customizado também pra manual.
-  const expected = process.env.CRON_SECRET;
-  if (expected) {
-    const auth = req.headers.get("authorization");
-    const custom = req.headers.get("x-cron-secret");
-    if (auth !== `Bearer ${expected}` && custom !== expected) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 },
-      );
-    }
-  }
+  // automaticamente. Fail-closed — sem CRON_SECRET, recusa.
+  const naoAutorizado = requireCronAuth(req);
+  if (naoAutorizado) return naoAutorizado;
 
   let preVencCriados = 0;
   let atrasoCriados = 0;

@@ -5,6 +5,7 @@
  *    { "path": "/api/cron/backup-diario", "schedule": "0 3 * * *" }
  */
 import { NextResponse, type NextRequest } from "next/server";
+import { requireCronAuth } from "@/lib/seguranca/cron-auth";
 import { put } from "@vercel/blob";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
@@ -25,14 +26,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  if (expected) {
-    const auth = req.headers.get("authorization");
-    const custom = req.headers.get("x-cron-secret");
-    if (auth !== `Bearer ${expected}` && custom !== expected) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-  }
+  const naoAutorizado = requireCronAuth(req);
+  if (naoAutorizado) return naoAutorizado;
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json(
