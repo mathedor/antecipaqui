@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { consumir, ipDaRequisicao } from "@/lib/seguranca/rate-limit";
+import { consumirDistribuido, ipDaRequisicao } from "@/lib/seguranca/rate-limit";
 
 // Rate limit global por IP nas rotas de API — teto generoso, só corta abuso
 // (martelar endpoint caro). Cron e webhooks têm auth própria e são batidos
@@ -66,7 +66,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   // Rate limit global por IP nas APIs (antes de tudo — barra abuso cedo).
   if (!isentoDeRateLimit(pathname)) {
-    const r = consumir(`api:${ipDaRequisicao(req)}`, LIMITE_API, JANELA_API_MS);
+    const r = await consumirDistribuido(`api:${ipDaRequisicao(req)}`, LIMITE_API, JANELA_API_MS);
     if (!r.ok) {
       return NextResponse.json(
         { error: "Muitas requisições. Aguarde um instante." },

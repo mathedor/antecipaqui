@@ -52,6 +52,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
         return {
           access: "private",
+          // Pathname não-adivinhável (defesa em profundidade sobre o step-up).
+          addRandomSuffix: true,
           allowedContentTypes: ALLOWED_CONTENT_TYPES,
           maximumSizeInBytes: MAX_SIZE_BYTES,
           tokenPayload: JSON.stringify({ userId, pathname, scope: "chat" }),

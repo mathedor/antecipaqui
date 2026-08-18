@@ -11,7 +11,7 @@ import {
 import { getBorderosBatch } from "@/lib/borderos-batch";
 import { BorderoBatchPdf } from "@/lib/bordero-batch-pdf";
 import { requireAdmin } from "@/lib/auth-user";
-import { consumir } from "@/lib/seguranca/rate-limit";
+import { consumirDistribuido } from "@/lib/seguranca/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Acesso restrito" }, { status: 403 });
   }
-  const lim = consumir(`pdfbatch:${admin.id}`, 6, 60_000);
+  const lim = await consumirDistribuido(`pdfbatch:${admin.id}`, 6, 60_000);
   if (!lim.ok) {
     return NextResponse.json(
       { error: "Muitas gerações seguidas. Aguarde um instante." },

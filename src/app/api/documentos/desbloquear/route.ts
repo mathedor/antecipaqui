@@ -4,7 +4,7 @@ import {
   conferirSenhaClerk,
   emitirCookie,
 } from "@/lib/seguranca/doc-unlock";
-import { consumir } from "@/lib/seguranca/rate-limit";
+import { consumirDistribuido } from "@/lib/seguranca/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Anti força-bruta: poucas tentativas por usuário por minuto.
-  const lim = consumir(`docunlock:${userId}`, 5, 60_000);
+  const lim = await consumirDistribuido(`docunlock:${userId}`, 5, 60_000);
   if (!lim.ok) {
     return NextResponse.json(
       { ok: false, error: "muitas tentativas, aguarde um instante" },

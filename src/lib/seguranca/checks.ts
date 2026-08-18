@@ -509,6 +509,24 @@ const webhooksFila: Check = {
   },
 };
 
+const rateLimitModo: Check = {
+  id: "rate-limit-modo",
+  area: "Robustez dos dados",
+  titulo: "Rate limiting ativo",
+  visibilidade: "admin",
+  async run() {
+    const distribuido =
+      Boolean(env("UPSTASH_REDIS_REST_URL")) && Boolean(env("UPSTASH_REDIS_REST_TOKEN"));
+    if (distribuido)
+      return OK("Teto global por IP/rota via Upstash (vale entre todas as instâncias).");
+    return {
+      status: "atencao",
+      detalhe: "Rate limiting ativo, mas por instância (em memória) — não é um teto global.",
+      recomendacao: "Configure UPSTASH_REDIS_REST_URL e UPSTASH_REDIS_REST_TOKEN pra um limite distribuído.",
+    };
+  },
+};
+
 const operacoesOrfas: Check = {
   id: "operacoes-orfas",
   area: "Robustez dos dados",
@@ -577,6 +595,7 @@ export const CHECKS: Check[] = [
   segredosVazados,
   envObrigatorias,
   webhooksFila,
+  rateLimitModo,
   operacoesOrfas,
 ];
 

@@ -13,7 +13,7 @@ import { auth } from "@clerk/nextjs/server";
 import { del, get } from "@vercel/blob";
 import { NextResponse, type NextRequest } from "next/server";
 import { extrairCamposContrato } from "@/lib/ocr-extrair-campos";
-import { consumir } from "@/lib/seguranca/rate-limit";
+import { consumirDistribuido } from "@/lib/seguranca/rate-limit";
 
 // OCR chama modelo pago por request. Teto por usuário pra conter dreno de
 // custo (loop de uploads) sem atrapalhar o uso normal de cadastro.
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
 
-  const limite = consumir(`ocr:${userId}`, OCR_LIMITE, OCR_JANELA_MS);
+  const limite = await consumirDistribuido(`ocr:${userId}`, OCR_LIMITE, OCR_JANELA_MS);
   if (!limite.ok) {
     return NextResponse.json(
       { error: "Muitas extrações seguidas. Aguarde um instante e tente de novo." },
