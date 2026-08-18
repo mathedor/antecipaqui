@@ -26,8 +26,17 @@ import {
   aplicarStatus,
   type ResultadoAplicacao,
 } from "@/lib/opera/aplicar";
+import { consumirDistribuido } from "@/lib/seguranca/rate-limit";
 
 export type TipoWebhook = "cadastro" | "status" | "duplicatas";
+
+/** Corpo de webhook do fundo é pequeno (JSON de status/duplicatas). Um corpo
+ *  gigante só serviria pra encher `opera_eventos` — cortamos antes de gravar. */
+const MAX_CORPO_BYTES = 512 * 1024;
+/** Teto por fundo: generoso pra não barrar rajada legítima de status, mas
+ *  impede flood de eventos por quem descobriu o fundoId (UUID não enumerável). */
+const HOOK_LIMITE = 120;
+const HOOK_JANELA_MS = 10_000;
 
 export type RespostaWebhook = {
   http: number;
@@ -40,6 +49,24 @@ export async function receberWebhook(input: {
   corpoCru: string;
   headers: Record<string, string>;
 }): Promise<RespostaWebhook> {
+  // Corpo absurdo nem chega a virar linha no banco.
+  if (input.corpoCru.length > MAX_CORPO_BYTES) {
+    return { http: 413, corpo: { erro: "Corpo do webhook grande demais" } };
+  }
+
+  // Teto por fundo — contém flood de eventos sem barrar rajada legítima.
+  const lim = await consumirDistribuido(
+    `operahook:${input.fundoId}`,
+    HOOK_LIMITE,
+    HOOK_JANELA_MS,
+  );
+  if (!lim.ok) {
+    return {
+      http: 429,
+      corpo: { erro: "Muitos eventos em sequência", retryEmSeg: lim.retryEmSeg },
+    };
+  }
+
   const [fundo] = await db
     .select()
     .from(fundos)

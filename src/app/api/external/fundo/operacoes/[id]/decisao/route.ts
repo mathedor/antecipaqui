@@ -29,6 +29,12 @@ export async function POST(
   if (scopeErr) return scopeErr;
 
   const { id } = await params;
+  // Sem isto, um id fora do formato UUID estoura o cast no Postgres → 500.
+  const UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(id)) {
+    return badRequestResponse("id de operação inválido");
+  }
 
   let body: { decisao?: string; motivo?: string };
   try {
