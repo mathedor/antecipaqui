@@ -10,6 +10,7 @@ import {
   webhooksEventos,
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { getFundoDoUsuario } from "@/lib/fundo-acesso";
 import {
   EVENTOS_DISPONIVEIS,
   type WebhookEventoTipo,
@@ -34,11 +35,7 @@ export async function listMeusWebhooks() {
   }
 
   if (user.role === "fundo") {
-    const [f] = await db
-      .select({ id: fundos.id })
-      .from(fundos)
-      .where(eq(fundos.ownerUserId, user.id))
-      .limit(1);
+    const f = await getFundoDoUsuario(user.id);
     if (!f) return [];
     return db
       .select()
@@ -82,11 +79,7 @@ export async function createWebhookAction(
 
   let fundoId: string | null = null;
   if (user.role === "fundo") {
-    const [f] = await db
-      .select({ id: fundos.id })
-      .from(fundos)
-      .where(eq(fundos.ownerUserId, user.id))
-      .limit(1);
+    const f = await getFundoDoUsuario(user.id);
     if (!f) return { ok: false, error: "Fundo não vinculado" };
     fundoId = f.id;
   }

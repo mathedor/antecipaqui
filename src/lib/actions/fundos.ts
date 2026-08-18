@@ -13,6 +13,7 @@ import {
   imobiliarias,
 } from "@/db/schema";
 import { requireAdmin, getCurrentDbUser } from "@/lib/auth-user";
+import { getFundoDoUsuario } from "@/lib/fundo-acesso";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { audit } from "@/lib/audit";
 
@@ -409,11 +410,7 @@ export async function editFundoSelfAction(
   if (user.role !== "fundo")
     return { ok: false, error: "Apenas dono do fundo pode editar" };
 
-  const [meuFundo] = await db
-    .select()
-    .from(fundos)
-    .where(eq(fundos.ownerUserId, user.id))
-    .limit(1);
+  const meuFundo = await getFundoDoUsuario(user.id);
   if (!meuFundo) return { ok: false, error: "Fundo não encontrado" };
 
   await db
@@ -610,12 +607,7 @@ export async function getFundoDetail(fundoId: string) {
 export async function getCurrentFundo() {
   const user = await getCurrentDbUser();
   if (!user || user.role !== "fundo") return null;
-  const [f] = await db
-    .select()
-    .from(fundos)
-    .where(eq(fundos.ownerUserId, user.id))
-    .limit(1);
-  return f ?? null;
+  return getFundoDoUsuario(user.id);
 }
 
 export async function getFundoDashboard() {

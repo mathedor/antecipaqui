@@ -33,6 +33,7 @@ import {
   type User,
 } from "@/db/schema";
 import { formatBRL, valorPresente } from "@/lib/format";
+import { getFundoDoUsuario } from "@/lib/fundo-acesso";
 import { calcularValorAtualizado } from "@/lib/cobranca-calculo";
 import { sendEmail } from "@/lib/email";
 
@@ -171,12 +172,7 @@ export async function buildCiceroCtx(user: User): Promise<CiceroCtx> {
   };
 
   if (user.role === "fundo") {
-    const [f] = await db
-      .select()
-      .from(fundos)
-      .where(eq(fundos.ownerUserId, user.id))
-      .limit(1);
-    ctx.fundo = f ?? null;
+    ctx.fundo = await getFundoDoUsuario(user.id);
   } else if (user.role === "construtora") {
     const own = await db
       .select({ id: construtoras.id })

@@ -13,6 +13,7 @@ import {
   documentos,
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { getFundoDoUsuario } from "@/lib/fundo-acesso";
 import { isValidCNPJ, unmaskCNPJ } from "@/lib/cnpj";
 import { sendEmail } from "@/lib/email";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
@@ -689,14 +690,7 @@ export async function getOperacaoDetail(operacaoId: string, userId: string) {
       .limit(1)
   )[0];
 
-  const { fundos } = await import("@/db/schema");
-  const fundoOwned = (
-    await db
-      .select({ id: fundos.id })
-      .from(fundos)
-      .where(eq(fundos.ownerUserId, userId))
-      .limit(1)
-  )[0];
+  const fundoOwned = await getFundoDoUsuario(userId);
 
   const { fundos: fundosTable } = await import("@/db/schema");
   const conditions = [eq(operacoes.id, operacaoId)];

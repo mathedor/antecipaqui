@@ -13,6 +13,7 @@ import {
   users,
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { getFundoDoUsuario } from "@/lib/fundo-acesso";
 import { notify } from "@/lib/notify";
 import {
   generateContractForOperacao,
@@ -60,11 +61,7 @@ async function authorizeStatusChange(operacaoId: string) {
   if (!user.isActive) throw new Error("Conta bloqueada");
   if (user.role === "admin") return user;
   if (user.role === "fundo") {
-    const [f] = await db
-      .select({ id: fundos.id })
-      .from(fundos)
-      .where(eq(fundos.ownerUserId, user.id))
-      .limit(1);
+    const f = await getFundoDoUsuario(user.id);
     if (!f) throw new Error("Fundo não vinculado");
     const [op] = await db
       .select({ fundoId: operacoes.fundoId })

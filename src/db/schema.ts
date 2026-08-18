@@ -528,6 +528,34 @@ export const fundos = pgTable(
 
 export type Fundo = typeof fundos.$inferSelect;
 
+/** Usuários adicionais de um fundo, no MESMO nível do dono (ownerUserId).
+ *  O fundo tem um dono canônico em fundos.ownerUserId; membros aqui têm o
+ *  mesmo acesso ao painel do fundo. Resolvido por getFundoDoUsuario(). */
+export const fundoMembros = pgTable(
+  "fundo_membros",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fundoId: uuid("fundo_id")
+      .notNull()
+      .references(() => fundos.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    convidadoPorUserId: text("convidado_por_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("fundo_membros_fundo_user_idx").on(t.fundoId, t.userId),
+    index("fundo_membros_user_idx").on(t.userId),
+  ],
+);
+
+export type FundoMembro = typeof fundoMembros.$inferSelect;
+
 /** Templates de operação cadastrados pelo corretor pra agilizar o cadastro.
  *  Salva configuração padrão (nº parcelas, % comissão padrão, tipo pagador)
  *  por construtora — quando ele seleciona a mesma construtora de novo,

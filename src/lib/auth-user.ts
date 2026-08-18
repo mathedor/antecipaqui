@@ -137,6 +137,9 @@ export async function getRealCurrentDbUser(): Promise<User | null> {
     meta && typeof meta.convidadoPor === "string" ? meta.convidadoPor : null;
   const roleFromInvite =
     meta && typeof meta.role === "string" ? meta.role : null;
+  // Convite de fundo marcado como membro entra no MESMO nível do dono, sem
+  // roubar a titularidade (fundos.ownerUserId).
+  const fundoMembroFromInvite = meta?.fundoMembro === true;
 
   const role = isAdmin
     ? "admin"
@@ -165,14 +168,27 @@ export async function getRealCurrentDbUser(): Promise<User | null> {
     .onConflictDoNothing()
     .returning();
 
-  // Se for primeiro login de fundo via convite, vincula o user ao fundo
+  // Primeiro login de fundo via convite: vincula o user ao fundo. Membro
+  // entra na tabela fundo_membros (mesmo nível); dono assume ownerUserId.
   if (inserted[0] && role === "fundo" && fundoIdFromInvite) {
-    const { fundos } = await import("@/db/schema");
-    await db
-      .update(fundos)
-      .set({ ownerUserId: userId, updatedAt: new Date() })
-      .where(eq(fundos.id, fundoIdFromInvite))
-      .catch((e) => console.error("[auth] erro vinculando fundo", e));
+    const { fundos, fundoMembros } = await import("@/db/schema");
+    if (fundoMembroFromInvite) {
+      await db
+        .insert(fundoMembros)
+        .values({
+          fundoId: fundoIdFromInvite,
+          userId,
+          convidadoPorUserId,
+        })
+        .onConflictDoNothing()
+        .catch((e) => console.error("[auth] erro vinculando membro de fundo", e));
+    } else {
+      await db
+        .update(fundos)
+        .set({ ownerUserId: userId, updatedAt: new Date() })
+        .where(eq(fundos.id, fundoIdFromInvite))
+        .catch((e) => console.error("[auth] erro vinculando fundo", e));
+    }
   }
 
   // Se for membro convidado de construtora, registra em construtora_membros

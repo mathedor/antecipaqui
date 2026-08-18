@@ -12,6 +12,7 @@ import {
   users,
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { getFundoDoUsuario } from "@/lib/fundo-acesso";
 
 /** Lista antecipações pendentes que o user pode decidir.
  *  Admin: todas. Fundo: só das ops vinculadas ao seu fundo. */
@@ -41,11 +42,7 @@ export async function listAntecipacoesPendentes() {
   }
 
   if (user.role === "fundo") {
-    const [f] = await db
-      .select({ id: fundos.id })
-      .from(fundos)
-      .where(eq(fundos.ownerUserId, user.id))
-      .limit(1);
+    const f = await getFundoDoUsuario(user.id);
     if (!f) return [];
     return db
       .select({
@@ -102,11 +99,7 @@ export async function listRenegociacoesPendentes() {
   }
 
   if (user.role === "fundo") {
-    const [f] = await db
-      .select({ id: fundos.id })
-      .from(fundos)
-      .where(eq(fundos.ownerUserId, user.id))
-      .limit(1);
+    const f = await getFundoDoUsuario(user.id);
     if (!f) return [];
     return db
       .select({

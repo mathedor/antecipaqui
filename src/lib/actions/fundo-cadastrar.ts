@@ -13,6 +13,7 @@ import {
   users,
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { getFundoDoUsuario } from "@/lib/fundo-acesso";
 import { parseBRLNumber, valorPresente } from "@/lib/format";
 import { audit } from "@/lib/audit";
 import { extractValidacao } from "@/lib/validacao-form";
@@ -74,11 +75,7 @@ export async function fundoCadastrarOperacaoAction(
   if (!user || user.role !== "fundo")
     return { ok: false, error: "Apenas fundo pode cadastrar por aqui" };
 
-  const [fundo] = await db
-    .select()
-    .from(fundos)
-    .where(eq(fundos.ownerUserId, user.id))
-    .limit(1);
+  const fundo = await getFundoDoUsuario(user.id);
   if (!fundo) return { ok: false, error: "Fundo não vinculado" };
 
   const corretorUserId = String(formData.get("corretorUserId") || "").trim();
