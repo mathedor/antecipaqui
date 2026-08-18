@@ -1,6 +1,7 @@
 import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
 import Link from "next/link";
 import { SairButton } from "@/components/sair-button";
+import { DocumentosGate } from "@/components/documentos-gate";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notification-bell";
 import { VersionFooter } from "@/components/version-footer";
@@ -258,6 +259,7 @@ export async function AdminShell({
       </header>
 
       <main className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-12">
+        <DocumentosGate />
         {children}
       </main>
       <VersionFooter />

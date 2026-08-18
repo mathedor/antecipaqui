@@ -533,24 +533,25 @@ const operacoesOrfas: Check = {
   },
 };
 
-const blobProxyDono: Check = {
-  id: "blob-proxy-dono",
+const blobProxyStepUp: Check = {
+  id: "blob-proxy-stepup",
   area: "Armazenamento & Uploads",
-  titulo: "Download de documentos por dono (KYC)",
+  titulo: "Documentos protegidos por senha (step-up)",
   visibilidade: "admin",
   peso: 2,
   async run() {
-    // Follow-up conhecido: /api/blob/[...pathname] hoje libera qualquer
-    // usuário logado a baixar qualquer arquivo pelo pathname. Fechar exige
-    // decidir o modelo de autorização por tipo de documento (contrato, RG,
-    // comprovante). Enquanto não fecha, o painel deixa isso à vista.
-    return {
-      status: "atencao",
-      detalhe:
-        "O proxy de arquivos autoriza qualquer usuário logado — falta checagem de dono por documento.",
-      recomendacao:
-        "Mapear pathname→dono no banco antes do download e ligar addRandomSuffix nos uploads. Follow-up de segurança em aberto.",
-    };
+    // O proxy /api/blob agora exige desbloqueio por senha do próprio usuário
+    // (cookie assinado de 8h atrelado ao userId). Depende do Clerk pra
+    // verificar a senha — sem a chave, o desbloqueio não funciona.
+    if (!env("CLERK_SECRET_KEY"))
+      return {
+        status: "falha",
+        detalhe: "Sem CLERK_SECRET_KEY, o desbloqueio de documentos por senha não funciona.",
+        recomendacao: "Configure a chave do Clerk.",
+      };
+    return OK(
+      "Download de documentos exige confirmação de senha (cookie de 8h atrelado ao usuário).",
+    );
   },
 };
 
@@ -572,7 +573,7 @@ export const CHECKS: Check[] = [
   resendConfig,
   zapsignConfig,
   blobToken,
-  blobProxyDono,
+  blobProxyStepUp,
   segredosVazados,
   envObrigatorias,
   webhooksFila,
