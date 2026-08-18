@@ -25,6 +25,15 @@ function talvezLimpar(agora: number, janelaMs: number) {
   }
 }
 
+/** IP do cliente a partir dos headers de proxy (Vercel põe x-forwarded-for). */
+export function ipDaRequisicao(req: {
+  headers: { get(name: string): string | null };
+}): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "desconhecido";
+}
+
 export type ResultadoLimite = {
   ok: boolean;
   /** Quantas chamadas ainda cabem na janela. */

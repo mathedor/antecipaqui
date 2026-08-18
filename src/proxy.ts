@@ -1,5 +1,23 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { consumir, ipDaRequisicao } from "@/lib/seguranca/rate-limit";
+
+// Rate limit global por IP nas rotas de API — teto generoso, só corta abuso
+// (martelar endpoint caro). Cron e webhooks têm auth própria e são batidos
+// pela infra/parceiros, então ficam de fora pra não bloquear tráfego legítimo.
+const LIMITE_API = 120;
+const JANELA_API_MS = 10_000;
+function isentoDeRateLimit(pathname: string): boolean {
+  return (
+    pathname.startsWith("/api/cron") ||
+    pathname.includes("/webhook") ||
+    pathname.startsWith("/api/ana") ||
+    // Blob é leve e carrega em rajada (galeria de imagens do chat) — fora do
+    // teto global pra não gerar falso 429; sua proteção é tratada à parte.
+    pathname.startsWith("/api/blob") ||
+    !pathname.startsWith("/api/")
+  );
+}
 
 const isProtectedRoute = createRouteMatcher([
   "/painel(.*)",
@@ -44,9 +62,21 @@ function passaLivre(pathname: string): boolean {
 }
 
 export default clerkMiddleware(async (auth, req) => {
+  const { pathname } = req.nextUrl;
+
+  // Rate limit global por IP nas APIs (antes de tudo — barra abuso cedo).
+  if (!isentoDeRateLimit(pathname)) {
+    const r = consumir(`api:${ipDaRequisicao(req)}`, LIMITE_API, JANELA_API_MS);
+    if (!r.ok) {
+      return NextResponse.json(
+        { error: "Muitas requisições. Aguarde um instante." },
+        { status: 429, headers: { "retry-after": String(r.retryEmSeg) } },
+      );
+    }
+  }
+
   // Check de manutenção ANTES de qualquer lógica de auth.
   // Demo (NEXT_PUBLIC_DEMO=1) nunca entra em manutenção.
-  const { pathname } = req.nextUrl;
   if (process.env.NEXT_PUBLIC_DEMO !== "1" && !passaLivre(pathname) && (await emManutencao())) {
     return NextResponse.rewrite(new URL("/manutencao", req.url));
   }

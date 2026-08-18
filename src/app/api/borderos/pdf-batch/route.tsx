@@ -10,11 +10,28 @@ import {
 } from "@/db/schema";
 import { getBorderosBatch } from "@/lib/borderos-batch";
 import { BorderoBatchPdf } from "@/lib/bordero-batch-pdf";
+import { requireAdmin } from "@/lib/auth-user";
+import { consumir } from "@/lib/seguranca/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  // Era público — dado financeiro de borderô + renderização cara de PDF.
+  let admin;
+  try {
+    admin = await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Acesso restrito" }, { status: 403 });
+  }
+  const lim = consumir(`pdfbatch:${admin.id}`, 6, 60_000);
+  if (!lim.ok) {
+    return NextResponse.json(
+      { error: "Muitas gerações seguidas. Aguarde um instante." },
+      { status: 429, headers: { "retry-after": String(lim.retryEmSeg) } },
+    );
+  }
+
   const sp = req.nextUrl.searchParams;
 
   const filters = {

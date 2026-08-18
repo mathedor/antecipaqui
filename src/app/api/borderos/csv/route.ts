@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getBorderosBatch } from "@/lib/borderos-batch";
+import { requireAdmin } from "@/lib/auth-user";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,13 @@ function fmtNum(n: number) {
 }
 
 export async function GET(req: NextRequest) {
+  // Era público — mesmo dado financeiro do borderô. Só admin.
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Acesso restrito" }, { status: 403 });
+  }
+
   const sp = req.nextUrl.searchParams;
 
   try {
