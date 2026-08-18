@@ -527,6 +527,12 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       desc: "Apresentação nova só para o time comercial (antecipaqui-comercial.vercel.app): 16 telas explicando a plataforma de ponta a ponta — o problema dos 150 dias, como o dinheiro anda, a conta de uma operação real, as objeções que aparecem na rua e o método de trabalho da semana. Duas telas são o coração: o kit de apresentação, onde o comercial escolhe se vai apresentar para uma imobiliária ou para uma construtora e já abre a apresentação certa, e a tela de entrada no time. Junto veio o cadastro público de comercial (antecipaqui.digital/quero-ser-comercial): o candidato preenche a ficha, o administrador recebe aviso na hora e aprova ou recusa numa fila nova dentro do painel — aprovou, o acesso dele já nasce liberado no perfil de comercial.",
       tier: "G",
     },
+    {
+      data: "18/08",
+      titulo: "Baixa de custos em mão dupla com o controle da casa",
+      desc: "O descritivo de custos marcava pago só no navegador de quem clicava — o controle da Diretório Web (Ana) não ficava sabendo e seguia cobrando. Agora mês pago lá entra marcado aqui, mês fechado ou reaberto aqui dá baixa lá na hora (com aviso visível quando a ponte falha) e as marcações antigas deste navegador migram sozinhas uma única vez.",
+      tier: "P",
+    },
   ],
 };
 
