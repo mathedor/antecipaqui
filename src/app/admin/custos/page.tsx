@@ -45,7 +45,7 @@ export default async function AdminCustosPage() {
 
   return (
     <AdminShell active="/admin/custos" userName={admin.nome}>
-    <PagamentosAna inicial={pagamentosNaAna} marcar={marcarPagamentoNaAna} />
+      {/* 1 · título e descrição no topo */}
       <div className="mb-8">
         <div className="eyebrow mb-2">custos &amp; desenvolvimento</div>
         <h1 className="text-display-md">
@@ -63,7 +63,10 @@ export default async function AdminCustosPage() {
         </div>
       </div>
 
-      <CustosPanel mesCorrente={mesCorrenteSP()} precosDaAna={precosDaAna} />
+      {/* 2 · card do caixa · 3 · custos e descritivos · 4 · pagamentos (no fim) */}
+      <PagamentosAna inicial={pagamentosNaAna} marcar={marcarPagamentoNaAna}>
+        <CustosPanel mesCorrente={mesCorrenteSP()} precosDaAna={precosDaAna} />
+      </PagamentosAna>
     </AdminShell>
   );
 }
