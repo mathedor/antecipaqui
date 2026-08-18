@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
+import { criarConviteResiliente } from "@/lib/clerk-convite";
 import { db } from "@/db";
 import { fundos } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
@@ -39,7 +40,7 @@ export async function gerarConviteFundoAction(
     "https://www.antecipaqui.digital";
   try {
     const clerk = await clerkClient();
-    await clerk.invitations.createInvitation({
+    await criarConviteResiliente(clerk, {
       emailAddress: email,
       publicMetadata: { fundoId, role: "fundo" },
       redirectUrl: `${siteUrl}/painel`,

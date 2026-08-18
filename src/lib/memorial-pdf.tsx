@@ -403,37 +403,37 @@ const CONTAS: Conta[] = [
   {
     nivel: "Fundo Critéria",
     email: "emiliano@criteriacapital.com.br",
-    senha: "***REDACTED***",
+    senha: "(credencial própria)",
     nome: "Emiliano (Critéria FIDC)",
   },
   {
     nivel: "Corretor (teste)",
     email: "mathe+corretor-teste@diretoriow.com.br",
-    senha: "***REDACTED***",
+    senha: "Antecipaqui2026!",
     nome: "Carlos Andrade",
   },
   {
     nivel: "Imobiliária (teste)",
     email: "mathe+imob-teste@diretoriow.com.br",
-    senha: "***REDACTED***",
+    senha: "Antecipaqui2026!",
     nome: "Maria Silva",
   },
   {
     nivel: "Construtora (teste)",
     email: "mathe+construtora-teste@diretoriow.com.br",
-    senha: "***REDACTED***",
+    senha: "Antecipaqui2026!",
     nome: "Roberto Pereira",
   },
   {
     nivel: "Fundo (teste)",
     email: "mathe+fundo-teste@diretoriow.com.br",
-    senha: "***REDACTED***",
+    senha: "Antecipaqui2026!",
     nome: "Patrícia Lima",
   },
   {
     nivel: "Comercial (teste)",
     email: "mathe+comercial-teste@diretoriow.com.br",
-    senha: "***REDACTED***",
+    senha: "Antecipaqui2026!",
     nome: "Lucas Oliveira",
   },
 ];
@@ -613,7 +613,7 @@ export function MemorialPdf({
         <Text style={styles.h1}>Contas de acesso por nível</Text>
         <Text style={styles.p}>
           Contas de teste compartilham a senha padrão{" "}
-          <Mono>***REDACTED***</Mono>. Admin e Fundo Critéria têm
+          <Mono>Antecipaqui2026!</Mono>. Admin e Fundo Critéria têm
           credenciais próprias.
         </Text>
 

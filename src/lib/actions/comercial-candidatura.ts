@@ -20,6 +20,7 @@
 import { revalidatePath } from "next/cache";
 import { eq, desc, and, or } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
+import { criarConviteResiliente } from "@/lib/clerk-convite";
 import { db } from "@/db";
 import { comerciais, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
@@ -256,7 +257,7 @@ export async function aprovarCandidaturaComercialAction(
     let inviteId: string;
     try {
       const clerk = await clerkClient();
-      const inv = await clerk.invitations.createInvitation({
+      const inv = await criarConviteResiliente(clerk, {
         emailAddress: email,
         publicMetadata: { role: "comercial" },
         redirectUrl: `${siteUrl()}/painel`,

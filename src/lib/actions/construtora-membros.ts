@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { desc, eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
+import { criarConviteResiliente } from "@/lib/clerk-convite";
 import { db } from "@/db";
 import { construtoraMembros, construtoras, users } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
@@ -103,7 +104,7 @@ export async function convidarMembroAction(
 
   try {
     const clerk = await clerkClient();
-    await clerk.invitations.createInvitation({
+    await criarConviteResiliente(clerk, {
       emailAddress: email,
       publicMetadata: {
         role: "construtora",
