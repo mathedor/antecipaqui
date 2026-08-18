@@ -55,8 +55,8 @@ export default async function AdminCustosPage() {
         <p className="mt-2 text-fg-muted max-w-2xl">
           O investimento inicial, as contas fixas de cada mês e tudo que foi
           entregue depois do lançamento — entrega por entrega, com data e
-          valor. Marque o que já foi pago; a marcação fica salva neste
-          navegador.
+          valor. Marque o que já foi pago: mês fechado dá baixa direto no
+          controle da Diretório Web, e baixa dada lá aparece aqui.
         </p>
         <div className="mt-2">
           <PageHelp pageKey="admin-custos" />
@@ -65,7 +65,12 @@ export default async function AdminCustosPage() {
 
       {/* 2 · card do caixa · 3 · custos e descritivos · 4 · pagamentos (no fim) */}
       <PagamentosAna inicial={pagamentosNaAna} marcar={marcarPagamentoNaAna}>
-        <CustosPanel mesCorrente={mesCorrenteSP()} precosDaAna={precosDaAna} />
+        <CustosPanel
+          mesCorrente={mesCorrenteSP()}
+          precosDaAna={precosDaAna}
+          pagosAna={pagamentosNaAna}
+          avisarAna={marcarPagamentoNaAna}
+        />
       </PagamentosAna>
     </AdminShell>
   );

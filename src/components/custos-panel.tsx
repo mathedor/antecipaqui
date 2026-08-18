@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatBRL } from "@/lib/format";
 import {
   APIS_SERVICOS,
@@ -18,7 +18,7 @@ import {
   type ContaFixa,
   type DevEntry,
 } from "@/lib/custos-data";
-import type { ContaAna } from "@/lib/custosAna";
+import type { ContaAna, PagamentosAna } from "@/lib/custosAna";
 
 /* =============================================================
    Ícones (SVG desenhado — sem emoji)
@@ -393,9 +393,18 @@ function LinhaItem({
    contas compartilhadas da casa são trocadas — a infra dedicada do Antecipaqui
    (servidor principal, backup duplo, as 4 proxies, firewall hot blind, a VPS do
    Cícero) fica exatamente como está no relatório. */
-export function CustosPanel({ mesCorrente, precosDaAna }: { mesCorrente: string; precosDaAna: ContaAna[] | null }) {
+/* `pagosAna` é o estado de pago mês a mês no controle da Diretório Web: mês
+   pago lá entra marcado aqui, e fechar/reabrir um mês aqui avisa lá — o ✓
+   deixou de valer só neste navegador. */
+export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
+  mesCorrente: string;
+  precosDaAna: ContaAna[] | null;
+  pagosAna: PagamentosAna;
+  avisarAna: (tipo: "custos" | "dev", mes: string, pago: boolean) => Promise<PagamentosAna | null>;
+}) {
   const [estado, setEstado] = useState<Estado>(ESTADO_VAZIO);
   const [pronto, setPronto] = useState(false);
+  const [sinc, setSinc] = useState<"quieto" | "indo" | "ok" | "erro">("quieto");
   const [abertos, setAbertos] = useState<Record<string, boolean>>({
     [`mes:${mesCorrente}`]: true,
     setup: true,
@@ -406,8 +415,26 @@ export function CustosPanel({ mesCorrente, precosDaAna }: { mesCorrente: string;
   const [formAberto, setFormAberto] = useState(false);
 
   useEffect(() => {
-    setEstado(carregar());
+    const carregado = carregar();
+    /* mês pago na Ana entra marcado, aconteça o que acontecer com o
+       localStorage — é o mesmo número pra todo mundo que abre a página */
+    for (const [m, e] of Object.entries(pagosAna.custos)) {
+      if (!e?.pago) continue;
+      for (const c of contasDoMes(m)) carregado.pagos[`${m}#${c.id}`] = true;
+      for (const x of carregado.extras.filter((x) =>
+        x.recorrenteDesde ? m >= x.recorrenteDesde : x.data.slice(0, 7) === m,
+      ))
+        carregado.pagos[`${m}#x:${x.id}`] = true;
+    }
+    for (const [m, e] of Object.entries(pagosAna.dev)) {
+      if (!e?.pago) continue;
+      (DESENVOLVIMENTO[m] ?? []).forEach((_, i) => {
+        carregado.pagos[`dev:${m}#${i}`] = true;
+      });
+    }
+    setEstado(carregado);
     setPronto(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -484,6 +511,31 @@ export function CustosPanel({ mesCorrente, precosDaAna }: { mesCorrente: string;
   const devValor = (mes: string, i: number, e: DevEntry) =>
     estado.overrides[devId(mes, i)] ?? valorEntrega(e);
 
+  /* mês que fechou (ou reabriu) — por qualquer caminho: item a item ou botão
+     do mês — vira baixa no controle da Diretório Web. A primeira passada só
+     mede a régua; daí em diante toda virada avisa a Ana. */
+  const completoRef = useRef<Record<string, boolean> | null>(null);
+  useEffect(() => {
+    if (!pronto) return;
+    const atual: Record<string, boolean> = {};
+    for (const m of meses) {
+      const itens = itensDoMes(m);
+      if (itens.length) atual[`custos:${m}`] = itens.every((i) => !!estado.pagos[i.id]);
+      const dev = devDoMes(m);
+      if (dev.length) atual[`dev:${m}`] = dev.every((_, i) => !!estado.pagos[devId(m, i)]);
+    }
+    const antes = completoRef.current;
+    completoRef.current = atual;
+    if (!antes) return;
+    for (const [k, v] of Object.entries(atual)) {
+      if (antes[k] === undefined || antes[k] === v) continue;
+      const [tipo, mes] = k.split(":") as ["custos" | "dev", string];
+      setSinc("indo");
+      void avisarAna(tipo, mes, v).then((r) => setSinc(r ? "ok" : "erro"));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado.pagos, pronto]);
+
   /* ---------- totais ---------- */
 
   const totalMensalPorMes = useMemo(
@@ -556,6 +608,13 @@ export function CustosPanel({ mesCorrente, precosDaAna }: { mesCorrente: string;
           detalhe={`desenvolvimento de ${labelMes(mesCorrente)} · ${Math.round(pctDevMesCorrente)}% pago`}
         />
       </div>
+
+      {/* ============ sincronia com o controle da casa ============ */}
+      <p className={`text-xs ${sinc === "erro" ? "text-danger" : "text-fg-dim"}`}>
+        {sinc === "erro"
+          ? "⚠ Não consegui avisar o controle da Diretório Web — a última marcação valeu só neste navegador. Tente de novo em instantes."
+          : `Mês fechado (ou reaberto) aqui dá baixa direto no controle da Diretório Web${sinc === "indo" ? " — avisando…" : sinc === "ok" ? " — ✓ avisado" : ""}. Marcações parciais e ajustes de valor ficam neste navegador.`}
+      </p>
 
       {/* ============ Registrar custo ============ */}
       <div>
