@@ -414,26 +414,40 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
   });
   const [formAberto, setFormAberto] = useState(false);
 
+  /* já migramos as marcações antigas deste navegador pra Ana? Antes da
+     migração, marcação local vale mais (foi feita com a ponte quebrada);
+     depois, a Ana é a autoridade nos DOIS sentidos. */
+  const migrado = useRef(false);
+
   useEffect(() => {
+    migrado.current = window.localStorage.getItem(`${STORAGE_KEY}:ana`) === "1";
     const carregado = carregar();
     /* mês pago na Ana entra marcado, aconteça o que acontecer com o
        localStorage — é o mesmo número pra todo mundo que abre a página */
-    for (const [m, e] of Object.entries(pagosAna.custos)) {
-      if (!e?.pago) continue;
-      for (const c of contasDoMes(m)) carregado.pagos[`${m}#${c.id}`] = true;
-      for (const x of carregado.extras.filter((x) =>
-        x.recorrenteDesde ? m >= x.recorrenteDesde : x.data.slice(0, 7) === m,
-      ))
-        carregado.pagos[`${m}#x:${x.id}`] = true;
-    }
-    for (const [m, e] of Object.entries(pagosAna.dev)) {
-      if (!e?.pago) continue;
-      (DESENVOLVIMENTO[m] ?? []).forEach((_, i) => {
-        carregado.pagos[`dev:${m}#${i}`] = true;
-      });
+    const chavesDoMes = (tipo: "custos" | "dev", m: string): string[] =>
+      tipo === "custos"
+        ? [
+            ...contasDoMes(m).map((c) => `${m}#${c.id}`),
+            ...carregado.extras
+              .filter((x) => (x.recorrenteDesde ? m >= x.recorrenteDesde : x.data.slice(0, 7) === m))
+              .map((x) => `${m}#x:${x.id}`),
+          ]
+        : (DESENVOLVIMENTO[m] ?? []).map((_, i) => `dev:${m}#${i}`);
+    for (const tipo of ["custos", "dev"] as const) {
+      for (const [m, e] of Object.entries(pagosAna[tipo])) {
+        if (!e) continue;
+        const ks = chavesDoMes(tipo, m);
+        if (!ks.length) continue;
+        if (e.pago) for (const k of ks) carregado.pagos[k] = true;
+        /* mês reaberto na Ana desmarca aqui — mas só depois da migração, pra
+           não apagar marcação feita enquanto a ponte não existia */
+        else if (migrado.current && ks.every((k) => carregado.pagos[k]))
+          for (const k of ks) delete carregado.pagos[k];
+      }
     }
     setEstado(carregado);
     setPronto(true);
+    try { window.localStorage.setItem(`${STORAGE_KEY}:ana`, "1"); } catch { /* quota */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -526,7 +540,22 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
     }
     const antes = completoRef.current;
     completoRef.current = atual;
-    if (!antes) return;
+    if (!antes) {
+      /* primeira visita depois da ponte nascer: mês fechado neste navegador
+         mas em aberto na Ana é empurrado pra lá (a marcação foi feita com a
+         ponte quebrada). Depois de migrado, a Ana é quem manda. */
+      if (!migrado.current) {
+        for (const [k, v] of Object.entries(atual)) {
+          const [tipo, mes] = k.split(":") as ["custos" | "dev", string];
+          const la = pagosAna[tipo][mes];
+          if (v && la && !la.pago) {
+            setSinc("indo");
+            void avisarAna(tipo, mes, true).then((r) => setSinc(r ? "ok" : "erro"));
+          }
+        }
+      }
+      return;
+    }
     for (const [k, v] of Object.entries(atual)) {
       if (antes[k] === undefined || antes[k] === v) continue;
       const [tipo, mes] = k.split(":") as ["custos" | "dev", string];
