@@ -58,12 +58,23 @@ function bodyToHtml(body: string) {
     .map((p) => `<p style="margin:0 0 16px 0;line-height:1.5">${p.replace(/\n/g, "<br/>")}</p>`)
     .join("");
   return `<!doctype html>
-<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#111;background:#f7f7f8;margin:0;padding:24px">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:14px;padding:32px 28px;border:1px solid #e5e7eb">
-    <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#1f4ed8;margin-bottom:16px">Antecipaqui</div>
-    ${paragraphs}
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0 14px 0"/>
-    <div style="font-size:11px;color:#9ca3af">Você recebeu este email porque tem uma operação na Antecipaqui.</div>
+<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#0c1a2c;background:#eef2f7;margin:0;padding:32px 16px">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 8px 30px rgba(12,26,44,.06)">
+    <div style="background:linear-gradient(135deg,#1c6dd0,#0d4e9e);padding:26px 28px;text-align:center">
+      <img src="https://www.antecipaqui.digital/brand/logo.png" alt="Antecipaqui" height="34" style="height:34px;width:auto;display:inline-block" />
+    </div>
+    <div style="padding:32px 28px">
+      ${paragraphs}
+    </div>
+    <div style="padding:18px 28px;border-top:1px solid #eef2f7;background:#fbfcfe">
+      <div style="font-size:12px;color:#5a6571;line-height:1.5">
+        <strong style="color:#1c6dd0">Antecipaqui</strong> — antecipação de comissões imobiliárias.<br/>
+        Você recebeu este e-mail por ter um cadastro ou operação na plataforma.
+      </div>
+    </div>
+  </div>
+  <div style="max-width:560px;margin:12px auto 0;text-align:center;font-size:11px;color:#9ca3af">
+    Antecipaqui · www.antecipaqui.digital
   </div>
 </body></html>`;
 }

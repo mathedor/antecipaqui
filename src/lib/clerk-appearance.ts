@@ -35,6 +35,8 @@ export const clerkAppearance = {
     badge: "!bg-[#1c6dd0]/10 !text-[#1c6dd0]",
   },
   layout: {
+    logoImageUrl: "https://www.antecipaqui.digital/brand/logo.png",
+    logoPlacement: "inside" as const,
     socialButtonsPlacement: "top" as const,
     socialButtonsVariant: "blockButton" as const,
   },
