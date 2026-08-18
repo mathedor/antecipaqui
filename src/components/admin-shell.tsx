@@ -36,6 +36,7 @@ const navFull: AdminNavItem[] = [
       "/admin/faturas",
       "/admin/credito",
       "/admin/integracao",
+      "/admin/seguranca",
     ],
     items: [
       { href: "/admin/tickets", label: "Tickets" },
@@ -45,6 +46,7 @@ const navFull: AdminNavItem[] = [
       { href: "/admin/faturas", label: "Faturas dos fundos" },
       { href: "/admin/credito", label: "Análise de crédito" },
       { href: "/admin/integracao", label: "Integração com fundos" },
+      { href: "/admin/seguranca", label: "Central de Segurança" },
       { href: "/admin/webhooks", label: "Webhooks" },
       { href: "/admin/backups", label: "Backups & exports" },
       { href: "/admin/configuracoes", label: "Configurações" },

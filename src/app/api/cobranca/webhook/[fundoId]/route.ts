@@ -17,7 +17,7 @@
  *  o webhook do banco neste formato OU este endpoint deve ser substituído
  *  por um específico do banco.
  */
-import crypto from "node:crypto";
+import { verificarAssinaturaHmac } from "@/lib/seguranca/webhook-hmac";
 import { NextResponse, type NextRequest } from "next/server";
 import { and, eq, or } from "drizzle-orm";
 import { db } from "@/db";
@@ -50,25 +50,20 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const rawBody = await req.text();
 
-  // Valida assinatura HMAC se segredo configurado
-  if (fundo.cobrancaWebhookSecret) {
-    const signature = req.headers.get("x-webhook-signature");
-    if (!signature) {
-      return NextResponse.json(
-        { error: "Assinatura ausente" },
-        { status: 401 },
-      );
-    }
-    const expected = crypto
-      .createHmac("sha256", fundo.cobrancaWebhookSecret)
-      .update(rawBody)
-      .digest("hex");
-    if (signature !== expected && signature !== `sha256=${expected}`) {
-      return NextResponse.json(
-        { error: "Assinatura inválida" },
-        { status: 401 },
-      );
-    }
+  // Assinatura HMAC obrigatória — fail-closed. Um webhook de cobrança pode
+  // marcar parcela como paga; aceitar sem segredo abriria fraude.
+  if (!fundo.cobrancaWebhookSecret) {
+    return NextResponse.json(
+      { error: "Webhook de cobrança não configurado para este fundo" },
+      { status: 403 },
+    );
+  }
+  const signature = req.headers.get("x-webhook-signature");
+  if (!signature) {
+    return NextResponse.json({ error: "Assinatura ausente" }, { status: 401 });
+  }
+  if (!verificarAssinaturaHmac(fundo.cobrancaWebhookSecret, rawBody, signature)) {
+    return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 });
   }
 
   let payload: WebhookPayload;

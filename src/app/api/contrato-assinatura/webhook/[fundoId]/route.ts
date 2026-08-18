@@ -17,7 +17,7 @@
  *  link, avança a operação pra 'enviada_para_pagamento' e notifica cedente
  *  (corretor), construtora, imobiliária e comercial.
  */
-import crypto from "node:crypto";
+import { verificarAssinaturaHmac } from "@/lib/seguranca/webhook-hmac";
 import { NextResponse, type NextRequest } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -75,11 +75,13 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!signature) {
     return NextResponse.json({ error: "Assinatura ausente" }, { status: 401 });
   }
-  const expected = crypto
-    .createHmac("sha256", fundo.contratoAssinaturaWebhookSecret)
-    .update(rawBody)
-    .digest("hex");
-  if (signature !== expected && signature !== `sha256=${expected}`) {
+  if (
+    !verificarAssinaturaHmac(
+      fundo.contratoAssinaturaWebhookSecret,
+      rawBody,
+      signature,
+    )
+  ) {
     return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 });
   }
 

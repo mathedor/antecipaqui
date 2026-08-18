@@ -129,6 +129,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
         { href: "/painel/regras", label: "Regras" },
         { href: "/painel/api", label: "API" },
         { href: "/painel/webhooks", label: "Webhooks" },
+        { href: "/painel/diagnostico", label: "Diagnóstico" },
       ],
     },
     { href: "/painel/suporte", label: "Chats" },
