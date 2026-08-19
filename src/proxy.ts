@@ -83,7 +83,22 @@ export default clerkMiddleware(async (auth, req) => {
 
   if (isProtectedRoute(req)) {
     const { userId, redirectToSignIn } = await auth();
-    if (!userId) return redirectToSignIn({ returnBackUrl: req.url });
+    if (!userId) {
+      // Convite do Clerk caindo em rota protegida: rebater pro /entrar
+      // enterra o ticket dentro do redirect_url e a tela fica em branco.
+      // Mandamos direto pro cadastro com o ticket intacto — o <SignUp>
+      // consome o ticket e conclui o convite. Isso também resgata links
+      // antigos criados com redirectUrl /painel.
+      const ticket = req.nextUrl.searchParams.get("__clerk_ticket");
+      if (ticket) {
+        const destino = new URL("/cadastre-se", req.url);
+        destino.searchParams.set("__clerk_ticket", ticket);
+        const status = req.nextUrl.searchParams.get("__clerk_status");
+        if (status) destino.searchParams.set("__clerk_status", status);
+        return NextResponse.redirect(destino);
+      }
+      return redirectToSignIn({ returnBackUrl: req.url });
+    }
   }
 });
 

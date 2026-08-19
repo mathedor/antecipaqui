@@ -112,7 +112,8 @@ export async function convidarMembroAction(
         construtoraMembroRole: roleInterna,
         convidadoPor: user.id,
       },
-      redirectUrl: `${siteUrl}/painel`,
+      // Rota pública: o <SignUp> consome o __clerk_ticket do convite.
+      redirectUrl: `${siteUrl}/cadastre-se`,
     });
   } catch (e) {
     return {

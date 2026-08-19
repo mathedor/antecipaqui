@@ -123,7 +123,8 @@ export async function cadastrarComercialAction(
       const inv = await criarConviteResiliente(clerk, {
         emailAddress: email,
         publicMetadata: { role: "comercial" },
-        redirectUrl: `${siteUrl}/painel`,
+        // Rota pública: o <SignUp> consome o __clerk_ticket do convite.
+        redirectUrl: `${siteUrl}/cadastre-se`,
       });
       inviteId = inv.id;
     } catch (e) {

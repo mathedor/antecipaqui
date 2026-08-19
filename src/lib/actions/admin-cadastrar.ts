@@ -129,7 +129,9 @@ export async function cadastrarImobiliariaAction(
       const inv = await criarConviteResiliente(clerk, {
         emailAddress: responsavelEmail,
         publicMetadata: { role },
-        redirectUrl: `${siteUrl}/painel`,
+        // Rota PÚBLICA: o <SignUp> consome o __clerk_ticket. Apontar pra rota
+        // protegida faz o middleware rebater pro /entrar e o ticket se perder.
+        redirectUrl: `${siteUrl}/cadastre-se`,
       });
       inviteId = inv.id;
     } catch (e) {

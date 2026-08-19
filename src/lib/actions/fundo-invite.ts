@@ -43,7 +43,8 @@ export async function gerarConviteFundoAction(
     await criarConviteResiliente(clerk, {
       emailAddress: email,
       publicMetadata: { fundoId, role: "fundo" },
-      redirectUrl: `${siteUrl}/painel`,
+      // Rota pública: o <SignUp> consome o __clerk_ticket do convite.
+      redirectUrl: `${siteUrl}/cadastre-se`,
     });
   } catch (e) {
     throw new Error(
