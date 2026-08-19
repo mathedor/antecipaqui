@@ -533,6 +533,12 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       desc: "O descritivo de custos marcava pago só no navegador de quem clicava — o controle da Diretório Web (Ana) não ficava sabendo e seguia cobrando. Agora mês pago lá entra marcado aqui, mês fechado ou reaberto aqui dá baixa lá na hora (com aviso visível quando a ponte falha) e as marcações antigas deste navegador migram sozinhas uma única vez.",
       tier: "P",
     },
+    {
+      data: "19/08",
+      titulo: "Cadastro por convite destravado",
+      desc: "Quem clicava no link de convite caía numa tela em branco e não conseguia criar a conta: o convite apontava pra uma página que exige login, e o corretivo de segurança engolia o passe de cadastro no caminho. Agora o link leva direto à tela de criar conta com o passe intacto — e os convites já enviados voltaram a funcionar sem precisar reenviar nada.",
+      tier: "P",
+    },
   ],
 };
 
