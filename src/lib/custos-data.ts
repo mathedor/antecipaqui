@@ -535,9 +535,9 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
     },
     {
       data: "19/08",
-      titulo: "Cadastro por convite destravado",
-      desc: "Quem clicava no link de convite caía numa tela em branco e não conseguia criar a conta: o convite apontava pra uma página que exige login, e o corretivo de segurança engolia o passe de cadastro no caminho. Agora o link leva direto à tela de criar conta com o passe intacto — e os convites já enviados voltaram a funcionar sem precisar reenviar nada.",
-      tier: "P",
+      titulo: "Login do site restaurado + cadastro por convite blindado",
+      desc: "O sistema de login tinha sido apontado pra uma instância nova sem endereço configurado e sem os usuários — botões de entrar e cadastrar pararam no site inteiro e quem clicava em convite via tela em branco. Diagnóstico completo e reversão: login de volta pra todos os usuários. De quebra, o fluxo de convite ficou blindado: link leva direto à tela de criar conta, convite reenviado redireciona sozinho pro mais novo (o link antigo do e-mail continua valendo) e convite vencido mostra explicação em vez de tela vazia. O endereço da instância nova ficou pronto no DNS pra migração futura.",
+      tier: "M",
     },
   ],
 };
