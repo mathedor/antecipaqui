@@ -21,7 +21,12 @@ import { neon } from "@neondatabase/serverless";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type ResultadoQuery = { rows: Record<string, unknown>[] };
+// conforme a versão do driver, query() devolve o array de linhas direto ou { rows }
+function linhasDe(res: unknown): Record<string, unknown>[] {
+  if (Array.isArray(res)) return res as Record<string, unknown>[];
+  const rows = (res as { rows?: unknown })?.rows;
+  return Array.isArray(rows) ? (rows as Record<string, unknown>[]) : [];
+}
 
 function checarAuth(req: NextRequest): NextResponse | null {
   const esperado = process.env.ANA_PULSO_TOKEN;
@@ -79,20 +84,24 @@ export async function GET(req: NextRequest) {
     const client = neon(process.env.DATABASE_URL!);
 
     if (esquema === "1") {
-      const res = (await client.query(
-        `select table_name from information_schema.tables where table_schema = 'public' order by table_name`,
-      )) as unknown as ResultadoQuery;
-      return NextResponse.json({ ok: true, linhas: res.rows.length, dados: res.rows });
+      const dados = linhasDe(
+        await client.query(
+          `select table_name from information_schema.tables where table_schema = 'public' order by table_name`,
+        ),
+      );
+      return NextResponse.json({ ok: true, linhas: dados.length, dados });
     }
 
-    const res = (await client.query(
-      `select column_name, data_type, is_nullable
-         from information_schema.columns
-        where table_schema = 'public' and table_name = $1
-        order by ordinal_position`,
-      [esquema],
-    )) as unknown as ResultadoQuery;
-    return NextResponse.json({ ok: true, linhas: res.rows.length, dados: res.rows });
+    const dados = linhasDe(
+      await client.query(
+        `select column_name, data_type, is_nullable
+           from information_schema.columns
+          where table_schema = 'public' and table_name = $1
+          order by ordinal_position`,
+        [esquema],
+      ),
+    );
+    return NextResponse.json({ ok: true, linhas: dados.length, dados });
   } catch (e) {
     return erro(e instanceof Error ? e.message : "erro ao consultar o esquema");
   }
@@ -138,11 +147,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const client = neon(process.env.DATABASE_URL!);
-    const res = (await comTimeout(
-      client.query(blindada) as unknown as Promise<ResultadoQuery>,
-      10_000,
-    )) as ResultadoQuery;
-    const dados = res.rows.map(mascarar);
+    const dados = linhasDe(await comTimeout(client.query(blindada), 10_000)).map(mascarar);
     return NextResponse.json({ ok: true, linhas: dados.length, dados });
   } catch (e) {
     return erro(e instanceof Error ? e.message : "erro ao rodar a consulta");
