@@ -539,6 +539,12 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       desc: "O sistema de login tinha sido apontado pra uma instância nova sem endereço configurado e sem os usuários — botões de entrar e cadastrar pararam no site inteiro e quem clicava em convite via tela em branco. Diagnóstico completo e reversão: login de volta pra todos os usuários. De quebra, o fluxo de convite ficou blindado: link leva direto à tela de criar conta, convite reenviado redireciona sozinho pro mais novo (o link antigo do e-mail continua valendo) e convite vencido mostra explicação em vez de tela vazia. O endereço da instância nova ficou pronto no DNS pra migração futura.",
       tier: "M",
     },
+    {
+      data: "19/08",
+      titulo: "Login migrado pra infraestrutura definitiva de produção",
+      desc: "O sistema de autenticação saiu do ambiente de testes e passou a rodar na infraestrutura definitiva, no domínio próprio da plataforma (clerk.antecipaqui.digital) — com endereços de e-mail autenticados (DKIM) pra os códigos de login chegarem com confiança. Migração completa sem perder ninguém: todas as contas foram recriadas no ambiente novo e o banco foi reescrito pra apontar pros novos registros, numa única operação reversível. Quem usava Google/Apple continua entrando pelo código de e-mail até as credenciais próprias serem configuradas.",
+      tier: "M",
+    },
   ],
 };
 
