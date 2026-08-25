@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { SairButton } from "@/components/sair-button";
-import { DocumentosGate } from "@/components/documentos-gate";
 import { NotificationBell } from "@/components/notification-bell";
 import { VersionFooter } from "@/components/version-footer";
 import { UserButtonWithPerfil } from "@/components/user-button-with-perfil";
@@ -606,7 +605,6 @@ export async function PainelShell({
       </header>
 
       <main className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-12">
-        <DocumentosGate />
         {children}
       </main>
       <VersionFooter />

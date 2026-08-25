@@ -48,9 +48,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
         return {
           access: "private",
-          // Sufixo aleatório: torna o pathname não-adivinhável (defesa em
-          // profundidade sobre o step-up de senha). O cliente usa o pathname
-          // RETORNADO, então nada quebra.
+          // Sufixo aleatório: torna o pathname não-adivinhável (impede
+          // enumeração de arquivos). O cliente usa o pathname RETORNADO,
+          // então nada quebra.
           addRandomSuffix: true,
           allowedContentTypes: [
             "application/pdf",

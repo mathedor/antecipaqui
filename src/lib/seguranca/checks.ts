@@ -551,24 +551,23 @@ const operacoesOrfas: Check = {
   },
 };
 
-const blobProxyStepUp: Check = {
-  id: "blob-proxy-stepup",
+const blobProxyAuth: Check = {
+  id: "blob-proxy-auth",
   area: "Armazenamento & Uploads",
-  titulo: "Documentos protegidos por senha (step-up)",
+  titulo: "Documentos atrás de login",
   visibilidade: "admin",
   peso: 2,
   async run() {
-    // O proxy /api/blob agora exige desbloqueio por senha do próprio usuário
-    // (cookie assinado de 8h atrelado ao userId). Depende do Clerk pra
-    // verificar a senha — sem a chave, o desbloqueio não funciona.
+    // O proxy /api/blob só serve arquivo pra sessão logada (Clerk), e os
+    // pathnames têm sufixo aleatório no upload — sem enumeração possível.
     if (!env("CLERK_SECRET_KEY"))
       return {
         status: "falha",
-        detalhe: "Sem CLERK_SECRET_KEY, o desbloqueio de documentos por senha não funciona.",
+        detalhe: "Sem CLERK_SECRET_KEY, o proxy de documentos não consegue validar a sessão.",
         recomendacao: "Configure a chave do Clerk.",
       };
     return OK(
-      "Download de documentos exige confirmação de senha (cookie de 8h atrelado ao usuário).",
+      "Download de documentos exige sessão logada; pathnames não-adivinháveis.",
     );
   },
 };
@@ -591,7 +590,7 @@ export const CHECKS: Check[] = [
   resendConfig,
   zapsignConfig,
   blobToken,
-  blobProxyStepUp,
+  blobProxyAuth,
   segredosVazados,
   envObrigatorias,
   webhooksFila,

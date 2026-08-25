@@ -1,16 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { get } from "@vercel/blob";
-import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
-import { DOC_UNLOCK_COOKIE, cookieValido } from "@/lib/seguranca/doc-unlock";
 
 /**
  * Proxy autenticado pra Vercel Blob (store private).
  *
- * Além de estar logado, exige DESBLOQUEIO por senha (step-up): a pessoa
- * confirma a senha de login e ganha um cookie de 8h atrelado a ela. Sem esse
- * cookie válido, respondemos 401 com código `doc_locked` — o cliente abre o
- * modal de senha. Isso impede que uma sessão roubada baixe documentos.
+ * Exige sessão logada (Clerk). Os pathnames são não-adivinháveis
+ * (addRandomSuffix no upload), o que impede enumeração de arquivos.
  */
 export const dynamic = "force-dynamic";
 
@@ -20,14 +16,6 @@ export async function GET(req: NextRequest, { params }: Params) {
   const { userId } = await auth();
   if (!userId) {
     return new NextResponse("Não autorizado", { status: 401 });
-  }
-
-  const unlock = (await cookies()).get(DOC_UNLOCK_COOKIE)?.value;
-  if (!cookieValido(unlock, userId)) {
-    return NextResponse.json(
-      { error: "Documentos bloqueados — confirme sua senha", code: "doc_locked" },
-      { status: 401 },
-    );
   }
 
   const { pathname: parts } = await params;

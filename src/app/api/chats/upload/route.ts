@@ -52,7 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
         return {
           access: "private",
-          // Pathname não-adivinhável (defesa em profundidade sobre o step-up).
+          // Pathname não-adivinhável (impede enumeração de arquivos).
           addRandomSuffix: true,
           allowedContentTypes: ALLOWED_CONTENT_TYPES,
           maximumSizeInBytes: MAX_SIZE_BYTES,
