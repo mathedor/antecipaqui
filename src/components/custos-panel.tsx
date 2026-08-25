@@ -13,8 +13,8 @@ import {
   labelEntrega,
   labelMes,
   listarMeses,
+  precoEntrega,
   tokensEntrega,
-  valorEntrega,
   type ContaFixa,
   type DevEntry,
 } from "@/lib/custos-data";
@@ -522,8 +522,10 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
 
   const devDoMes = (mes: string): DevEntry[] => DESENVOLVIMENTO[mes] ?? [];
   const devId = (mes: string, i: number) => `dev:${mes}#${i}`;
+  /* preço da entrega na competência — a margem da casa (set/2026+) entra
+     aqui; ajuste manual do dono continua valendo por cima */
   const devValor = (mes: string, i: number, e: DevEntry) =>
-    estado.overrides[devId(mes, i)] ?? valorEntrega(e);
+    estado.overrides[devId(mes, i)] ?? precoEntrega(mes, e);
 
   /* mês que fechou (ou reabriu) — por qualquer caminho: item a item ou botão
      do mês — vira baixa no controle da Diretório Web. A primeira passada só

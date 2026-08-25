@@ -187,6 +187,25 @@ export function valorEntrega(e: DevEntry): number {
   return e.tier ? TIERS[e.tier].valor : (e.valor ?? 0);
 }
 
+/* Margem da casa (regra do dono, 25/08/2026): remuneração de desenvolvimento
+   ganha 20% a partir da competência de SETEMBRO/2026 — mês fechado fica como
+   estava. A tabela de tiers segue na régua base: a Ana lê ela crua e aplica
+   a mesma margem do lado dela — a margem aqui é só de exibição/cálculo. */
+export const MARGEM_DEV = 1.2;
+export const MARGEM_DESDE = "2026-09";
+
+/** Preço de um tier na competência: régua base até ago/2026, ×1,2 dali em diante. */
+export function precoTier(mes: string, tier: Tier): number {
+  const c = TIERS[tier].valor;
+  return mes >= MARGEM_DESDE ? Math.round(c * MARGEM_DEV * 100) / 100 : c;
+}
+
+/** Preço de uma entrega na competência (tier ou valor fechado, com a margem). */
+export function precoEntrega(mes: string, e: DevEntry): number {
+  const c = valorEntrega(e);
+  return mes >= MARGEM_DESDE ? Math.round(c * MARGEM_DEV * 100) / 100 : c;
+}
+
 /** Tokens de uma entrega — do tier ou dos tokens informados. */
 export function tokensEntrega(e: DevEntry): number {
   return e.tier ? TIERS[e.tier].tokens : (e.tokens ?? 0);
