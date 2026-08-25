@@ -2,23 +2,15 @@ import { requireAdminArea } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { CustosPanel } from "@/components/custos-panel";
 import { PageHelp } from "@/components/page-help";
-import { contasDaAna, pagamentosDaAna } from "@/lib/custosAna";
+import { contasDaAna, pagamentosDaAna, type ContaAna } from "@/lib/custosAna";
+import { estimativaIaMes, mesCorrenteSP } from "@/lib/ia-uso";
+import { formatTokens } from "@/lib/custos-data";
 
 import PagamentosAna from "./PagamentosAna";
 import { marcarPagamentoNaAna } from "./acoes-ana";
 export const metadata = {
   title: "Admin · Custos & Desenvolvimento",
 };
-
-/** Mês corrente (YYYY-MM) no fuso de São Paulo. */
-function mesCorrenteSP() {
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-  });
-  return fmt.format(new Date()).slice(0, 7);
-}
 
 /* Quais linhas do relatório são a conta COMPARTILHADA da casa (e por isso
    recebem o valor rateado que a Ana leu na fatura). Todo o resto — servidor
@@ -36,12 +28,33 @@ const COMPARTILHADAS: Record<string, string> = {
 export default async function AdminCustosPage() {
   const pagamentosNaAna = await pagamentosDaAna("antecipaqui");
   const admin = await requireAdminArea("configuracoes");
+  const mesCorrente = mesCorrenteSP();
 
   // o preço de verdade da infraestrutura deste mês, lido pela Ana na fatura
   const daAna = await contasDaAna("antecipaqui");
   const precosDaAna = daAna
     ? daAna.filter((c) => COMPARTILHADAS[c.id]).map((c) => ({ ...c, id: COMPARTILHADAS[c.id] }))
     : null;
+
+  /* A linha de I.A. não é rateio: é o consumo real DESTE sistema na fatura da
+     Anthropic. O número certo vem da Ana (conta id "ia"); se ela não
+     responder, estimamos aqui mesmo com o que o banco já mediu — tokens do
+     mês (Cícero + ia_usos) × R$ 30 o milhão — em vez do valor chumbado. */
+  let ia: ContaAna | null = daAna?.find((c) => c.id === "ia") ?? null;
+  if (!ia) {
+    const est = await estimativaIaMes(mesCorrente);
+    if (est) {
+      ia = {
+        id: "ia",
+        nome: "I.A. em produção (Cícero)",
+        valor: est.valor,
+        obs: `estimativa: ${formatTokens(est.tokens)} de tokens × R$ 30/milhão`,
+        fonte: "derivado",
+        estimado: true,
+      };
+    }
+  }
+  const precos = ia ? [...(precosDaAna ?? []), ia] : precosDaAna;
 
   return (
     <AdminShell active="/admin/custos" userName={admin.nome}>
@@ -66,8 +79,8 @@ export default async function AdminCustosPage() {
       {/* 2 · card do caixa · 3 · custos e descritivos · 4 · pagamentos (no fim) */}
       <PagamentosAna inicial={pagamentosNaAna} marcar={marcarPagamentoNaAna}>
         <CustosPanel
-          mesCorrente={mesCorrenteSP()}
-          precosDaAna={precosDaAna}
+          mesCorrente={mesCorrente}
+          precosDaAna={precos}
           pagosAna={pagamentosNaAna}
           avisarAna={marcarPagamentoNaAna}
         />

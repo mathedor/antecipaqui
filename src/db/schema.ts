@@ -13,6 +13,7 @@ import {
   uuid,
   numeric,
   integer,
+  bigint,
   date,
   timestamp,
   pgEnum,
@@ -2595,6 +2596,35 @@ export const ciceroMensagens = pgTable(
 
 export type CiceroConversa = typeof ciceroConversas.$inferSelect;
 export type CiceroMensagem = typeof ciceroMensagens.$inferSelect;
+
+/** Medidor genérico de consumo de IA fora do Cícero (leitura de documento,
+ *  robô, lote noturno...). Uma linha por chamada; a Ana lê o agregado do mês
+ *  em /api/ana/ia-uso junto com o que o Cícero já grava em cicero_mensagens. */
+export const iaUsos = pgTable(
+  "ia_usos",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    /** Quem gastou: 'ocr', 'recap', 'score'... (o Cícero NÃO grava aqui). */
+    origem: text("origem").notNull(),
+    modelo: text("modelo"),
+    tokensIn: bigint("tokens_in", { mode: "number" }).notNull().default(0),
+    tokensOut: bigint("tokens_out", { mode: "number" }).notNull().default(0),
+    tokensCacheLeitura: bigint("tokens_cache_leitura", { mode: "number" })
+      .notNull()
+      .default(0),
+    tokensCacheCriacao: bigint("tokens_cache_criacao", { mode: "number" })
+      .notNull()
+      .default(0),
+    /** true = processado em lote (batch, custa metade na fatura). */
+    lote: boolean("lote").notNull().default(false),
+    criadoEm: timestamp("criado_em", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("ia_usos_criado_idx").on(t.criadoEm)],
+);
+
+export type IaUso = typeof iaUsos.$inferSelect;
 
 /* =========================================
    INTEGRAÇÃO OPERA CAPITAL (QPROF)

@@ -545,6 +545,13 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       desc: "O sistema de autenticação saiu do ambiente de testes e passou a rodar na infraestrutura definitiva, no domínio próprio da plataforma (clerk.antecipaqui.digital) — com endereços de e-mail autenticados (DKIM) pra os códigos de login chegarem com confiança. Migração completa sem perder ninguém: todas as contas foram recriadas no ambiente novo e o banco foi reescrito pra apontar pros novos registros, numa única operação reversível. Quem usava Google/Apple continua entrando pelo código de e-mail até as credenciais próprias serem configuradas.",
       tier: "M",
     },
+    {
+      data: "25/08",
+      titulo: "Consumo do Cícero exposto pra Ana + linha de IA real no relatório",
+      desc: "O quanto o Cícero gasta de inteligência artificial já ficava registrado conversa a conversa; agora esse consumo é publicado pra central de custos da Diretório Web (Ana) e a linha mensal de I.A. deste relatório deixou de ser um valor escrito à mão: passa a mostrar o gasto real do mês — e, se a central estiver fora do ar, uma estimativa calculada na hora sobre o consumo medido. Junto veio o medidor genérico pra qualquer uso futuro de IA fora do Cícero.",
+      valor: 60.0,
+      tokens: 1_600_000,
+    },
   ],
 };
 
