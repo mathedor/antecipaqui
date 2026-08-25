@@ -1,9 +1,10 @@
 /**
  * Resolvedor CANÔNICO do fundo de um usuário.
  *
- * Um fundo tem um dono (fundos.ownerUserId) e pode ter membros no MESMO nível
- * (tabela fundo_membros). Todo acesso ao painel do fundo resolve o fundo por
- * aqui, pra que dono e membros enxerguem exatamente o mesmo fundo.
+ * Um fundo tem um dono (fundos.ownerUserId) e pode ter membros na tabela
+ * fundo_membros (nivel admin = mesmos poderes do dono; membro = opera o
+ * painel sem gestão de equipe). Todo acesso ao painel do fundo resolve o
+ * fundo por aqui, pra que dono e membros enxerguem exatamente o mesmo fundo.
  *
  * Helper puro (sem "use server") de propósito: é importado por várias server
  * actions e evita import circular entre elas.

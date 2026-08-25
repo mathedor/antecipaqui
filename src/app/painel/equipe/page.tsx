@@ -60,7 +60,7 @@ export default async function EquipePage() {
     );
   }
 
-  // Fundo — dono convida membros no mesmo nível de acesso
+  // Fundo — dono/admins convidam membros escolhendo o nível de acesso
   if (user.role === "fundo") {
     let dataFundo: Awaited<ReturnType<typeof listMembrosDoFundo>> | null = null;
     try {
@@ -77,8 +77,10 @@ export default async function EquipePage() {
             Seu <span className="text-gradient-blue">time</span>
           </h1>
           <p className="mt-2 text-fg-muted max-w-2xl">
-            Convide colegas do fundo pra acessarem o painel. Cada pessoa entra
-            com o próprio login, no mesmo nível de acesso que o seu.
+            Convide colegas do fundo pra acessarem o painel, cada um com o
+            próprio login. Administradores têm os mesmos poderes que o dono da
+            conta, inclusive gerenciar a equipe; membros operam o painel sem
+            mexer na equipe.
           </p>
           <div className="mt-2">
             <PageHelp pageKey="painel-equipe-fundo" />
@@ -88,6 +90,7 @@ export default async function EquipePage() {
           owner={dataFundo.owner}
           membros={dataFundo.membros}
           canManage={dataFundo.canManage}
+          currentUserId={user.id}
         />
       </PainelShell>
     );

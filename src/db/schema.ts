@@ -529,9 +529,9 @@ export const fundos = pgTable(
 
 export type Fundo = typeof fundos.$inferSelect;
 
-/** Usuários adicionais de um fundo, no MESMO nível do dono (ownerUserId).
- *  O fundo tem um dono canônico em fundos.ownerUserId; membros aqui têm o
- *  mesmo acesso ao painel do fundo. Resolvido por getFundoDoUsuario(). */
+/** Usuários adicionais de um fundo. O fundo tem um dono canônico em
+ *  fundos.ownerUserId; membros aqui acessam o mesmo painel, e o `nivel`
+ *  decide se também gerenciam a equipe. Resolvido por getFundoDoUsuario(). */
 export const fundoMembros = pgTable(
   "fundo_membros",
   {
@@ -542,6 +542,9 @@ export const fundoMembros = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // admin = mesmos poderes do dono (inclui convidar/remover equipe);
+    // membro = opera o painel do fundo, sem gestão de equipe.
+    nivel: text("nivel").notNull().default("membro"),
     convidadoPorUserId: text("convidado_por_user_id").references(() => users.id, {
       onDelete: "set null",
     }),

@@ -137,9 +137,11 @@ export async function getRealCurrentDbUser(): Promise<User | null> {
     meta && typeof meta.convidadoPor === "string" ? meta.convidadoPor : null;
   const roleFromInvite =
     meta && typeof meta.role === "string" ? meta.role : null;
-  // Convite de fundo marcado como membro entra no MESMO nível do dono, sem
-  // roubar a titularidade (fundos.ownerUserId).
+  // Convite de fundo marcado como membro entra via fundo_membros, sem roubar
+  // a titularidade (fundos.ownerUserId). O nível vem do convite: admin tem os
+  // mesmos poderes do dono (inclui gestão de equipe); membro só opera o painel.
   const fundoMembroFromInvite = meta?.fundoMembro === true;
+  const fundoMembroNivel = meta?.fundoMembroNivel === "admin" ? "admin" : "membro";
 
   const role = isAdmin
     ? "admin"
@@ -178,6 +180,7 @@ export async function getRealCurrentDbUser(): Promise<User | null> {
         .values({
           fundoId: fundoIdFromInvite,
           userId,
+          nivel: fundoMembroNivel,
           convidadoPorUserId,
         })
         .onConflictDoNothing()
