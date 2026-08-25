@@ -9,6 +9,8 @@ import {
   getConstrutoraAllowedNav,
 } from "@/lib/construtora-permissions";
 import { EquipeImobManager } from "@/components/dashboards/equipe-imob-manager";
+import { EquipeFundoManager } from "@/components/equipe-fundo-manager";
+import { listMembrosDoFundo } from "@/lib/actions/fundo-membros";
 import {
   getCurrentImobMembership,
   listMembrosDaImob,
@@ -53,6 +55,39 @@ export default async function EquipePage() {
             id: u.id,
             label: unidadeLabel(u),
           }))}
+        />
+      </PainelShell>
+    );
+  }
+
+  // Fundo — dono convida membros no mesmo nível de acesso
+  if (user.role === "fundo") {
+    let dataFundo: Awaited<ReturnType<typeof listMembrosDoFundo>> | null = null;
+    try {
+      dataFundo = await listMembrosDoFundo();
+    } catch {
+      redirect("/painel");
+    }
+    if (!dataFundo) redirect("/painel");
+    return (
+      <PainelShell role="fundo" userName={user.nome} active="/painel/equipe">
+        <div className="mb-6">
+          <div className="eyebrow mb-2">equipe · {dataFundo.fundoNome}</div>
+          <h1 className="text-display-md">
+            Seu <span className="text-gradient-blue">time</span>
+          </h1>
+          <p className="mt-2 text-fg-muted max-w-2xl">
+            Convide colegas do fundo pra acessarem o painel. Cada pessoa entra
+            com o próprio login, no mesmo nível de acesso que o seu.
+          </p>
+          <div className="mt-2">
+            <PageHelp pageKey="painel-equipe-fundo" />
+          </div>
+        </div>
+        <EquipeFundoManager
+          owner={dataFundo.owner}
+          membros={dataFundo.membros}
+          canManage={dataFundo.canManage}
         />
       </PainelShell>
     );

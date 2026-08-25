@@ -121,6 +121,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
         { href: "/painel/risco", label: "Risco" },
         { href: "/painel/parceiros", label: "Parceiros" },
         { href: "/painel/comerciais", label: "Comerciais vinculados" },
+        { href: "/painel/equipe", label: "Equipe" },
       ],
     },
     {
@@ -368,6 +369,7 @@ const MOBILE_FULLMENU: Record<
         { href: "/painel/risco", label: "Risco", icon: "report" },
         { href: "/painel/parceiros", label: "Parceiros", icon: "list" },
         { href: "/painel/comerciais", label: "Comerciais vinculados", icon: "list" },
+        { href: "/painel/equipe", label: "Equipe", icon: "list" },
       ],
     },
     {

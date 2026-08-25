@@ -123,6 +123,7 @@ export type PageHelpKey =
   | "painel-risco-fundo"
   | "painel-parceiros"
   | "painel-comerciais-fundo"
+  | "painel-equipe-fundo"
   | "painel-regras"
   | "painel-api"
   | "painel-webhooks"
@@ -721,6 +722,21 @@ export const PAGE_HELPS: Record<PageHelpKey, PageHelpEntry> = {
     dicas: [
       "Fundo NÃO paga pela plataforma — combina diretamente com admin AQ",
       "Use o histórico pra prever fatura do próximo mês",
+    ],
+    tourId: "fundo",
+  },
+  "painel-equipe-fundo": {
+    titulo: "Equipe do fundo",
+    resumo:
+      "Convide colegas pra acessarem o painel do fundo. Cada pessoa entra com login próprio, no mesmo nível de acesso do dono da conta.",
+    oQueFaz: [
+      "Lista o dono da conta e os membros ativos",
+      "Convite por email (a pessoa cria o próprio login)",
+      "Dono pode remover o acesso de um membro a qualquer momento",
+    ],
+    dicas: [
+      "O convidado aparece na lista depois de aceitar o convite e logar",
+      "Convite não chegou? Peça pra olhar spam ou reenvie com o mesmo email",
     ],
     tourId: "fundo",
   },
