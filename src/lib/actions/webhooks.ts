@@ -10,6 +10,7 @@ import {
   webhooksEventos,
 } from "@/db/schema";
 import { getCurrentDbUser } from "@/lib/auth-user";
+import { audit } from "@/lib/audit";
 import { getFundoDoUsuario } from "@/lib/fundo-acesso";
 import {
   EVENTOS_DISPONIVEIS,
@@ -139,6 +140,32 @@ export async function deleteWebhookAction(id: string) {
     .where(eq(webhooksSubscriptions.id, id));
   revalidatePath("/admin/webhooks");
   revalidatePath("/painel/webhooks");
+}
+
+/** Mostra de novo o segredo de assinatura de um webhook. O segredo é
+ *  compartilhado: quem recebe precisa dele pra conferir a assinatura. Perder
+ *  e ter que recriar o webhook inteiro é pior que poder consultar — e a
+ *  consulta fica registrada no audit log. */
+export async function revelarSegredoWebhookAction(id: string): Promise<string> {
+  const user = await getCurrentDbUser();
+  if (!user) throw new Error("Não autenticado");
+  const [sub] = await db
+    .select()
+    .from(webhooksSubscriptions)
+    .where(eq(webhooksSubscriptions.id, id))
+    .limit(1);
+  if (!sub) throw new Error("Webhook não encontrado");
+  if (user.role !== "admin" && sub.ownerUserId !== user.id)
+    throw new Error("Sem permissão");
+
+  await audit({
+    action: "revelar_segredo_webhook",
+    targetType: "webhook",
+    targetId: sub.id,
+    targetLabel: sub.nome,
+  });
+
+  return sub.secret;
 }
 
 /** Enfileira um evento pra todos os webhooks subscritos. Idempotente —

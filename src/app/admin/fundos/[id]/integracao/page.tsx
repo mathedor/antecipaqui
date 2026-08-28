@@ -6,6 +6,8 @@ import { fundos } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { OperaIntegracaoForm } from "@/components/opera-integracao-form";
+import { FichaConexaoFundo } from "@/components/ficha-conexao-fundo";
+import { baseUrlPublica, montarFichaConexao } from "@/lib/fundo-conexao";
 import { contratoPadraoJson } from "@/lib/actions/opera";
 
 export const metadata = { title: "Admin · Integração do fundo" };
@@ -24,8 +26,7 @@ export default async function FundoIntegracaoPage({ params }: Params) {
   if (!fundo) notFound();
 
   const contratoPadrao = await contratoPadraoJson();
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://www.antecipaqui.digital";
+  const ficha = montarFichaConexao(fundo, baseUrlPublica());
 
   return (
     <AdminShell active="/admin/fundos" userName={admin.nome}>
@@ -48,10 +49,17 @@ export default async function FundoIntegracaoPage({ params }: Params) {
         mapeamento de campos e os endereços que o fundo precisa chamar.
       </p>
 
+      <div className="mb-8">
+        <FichaConexaoFundo
+          ficha={ficha}
+          podeTrocarChave
+          titulo={`Ficha de conexão — ${ficha.fundoNome}`}
+          subtitulo="É isto que vai pro time técnico do fundo. Copie a ficha inteira e mande — ID, endereços, cabeçalho da assinatura e chaves, tudo junto."
+        />
+      </div>
+
       <OperaIntegracaoForm
         fundoId={fundo.id}
-        fundoNome={fundo.nomeFantasia ?? fundo.razaoSocial}
-        baseUrl={baseUrl}
         contratoPadrao={contratoPadrao}
         atual={{
           tipo: fundo.integracaoTipo,

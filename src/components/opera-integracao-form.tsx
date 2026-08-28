@@ -9,8 +9,6 @@ import {
 
 type Props = {
   fundoId: string;
-  fundoNome: string;
-  baseUrl: string;
   atual: {
     tipo: string;
     ambiente: string;
@@ -33,8 +31,6 @@ const area =
 
 export function OperaIntegracaoForm({
   fundoId,
-  fundoNome,
-  baseUrl,
   atual,
   contratoPadrao,
 }: Props) {
@@ -61,12 +57,6 @@ export function OperaIntegracaoForm({
     tipoDocumento: string;
     cadastrarSacado: boolean;
   }>;
-
-  const urls = [
-    { nome: "Cadastro do cliente", peca: "03", caminho: `/api/opera/webhook/cadastro/${fundoId}` },
-    { nome: "Status da operação", peca: "05", caminho: `/api/opera/webhook/status/${fundoId}` },
-    { nome: "Duplicatas", peca: "06", caminho: `/api/opera/webhook/duplicatas/${fundoId}` },
-  ];
 
   async function testar() {
     setTestando(true);
@@ -370,35 +360,6 @@ export function OperaIntegracaoForm({
           )}
         </div>
       </form>
-
-      {/* Endereços que o fundo precisa cadastrar do lado deles */}
-      <div className="rounded-2xl border border-border bg-bg-elev p-6">
-        <h2 className="text-lg font-semibold mb-1">
-          Endereços para a {fundoNome} cadastrar
-        </h2>
-        <p className="text-sm text-fg-muted mb-5">
-          São os três webhooks que o fundo chama. Todos exigem a assinatura
-          HMAC-SHA256 do corpo, no cabeçalho definido no contrato de
-          integração (padrão <code>x-opera-signature</code>).
-        </p>
-        <div className="space-y-3">
-          {urls.map((u) => (
-            <div
-              key={u.caminho}
-              className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-bg p-3"
-            >
-              <span className="chip chip-accent font-mono text-[11px]">
-                peça {u.peca}
-              </span>
-              <span className="text-sm font-medium">{u.nome}</span>
-              <code className="text-xs text-fg-muted font-mono break-all ml-auto">
-                POST {baseUrl}
-                {u.caminho}
-              </code>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* Saúde */}
       <div className="rounded-2xl border border-border bg-bg-elev p-6">

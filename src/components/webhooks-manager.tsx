@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   createWebhookAction,
   deleteWebhookAction,
+  revelarSegredoWebhookAction,
   testarWebhookAction,
   toggleWebhookAction,
   type CreateWebhookState,
@@ -60,6 +61,7 @@ export function WebhooksManager({
   );
   const [secretRevelado, setSecretRevelado] = useState<string | null>(null);
   const [testando, setTestando] = useState<string | null>(null);
+  const [segredos, setSegredos] = useState<Record<string, string>>({});
   const [resultadoTeste, setResultadoTeste] = useState<
     | {
         webhookId: string;
@@ -116,6 +118,21 @@ export function WebhooksManager({
       setResultadoTeste({ webhookId: id, ok: false, msg: (e as Error).message });
     } finally {
       setTestando(null);
+    }
+  }
+
+  async function verSegredo(id: string) {
+    if (segredos[id]) {
+      setSegredos((prev) =>
+        Object.fromEntries(Object.entries(prev).filter(([k]) => k !== id)),
+      );
+      return;
+    }
+    try {
+      const secret = await revelarSegredoWebhookAction(id);
+      setSegredos((prev) => ({ ...prev, [id]: secret }));
+    } catch (e) {
+      await alertError((e as Error).message);
     }
   }
 
@@ -261,6 +278,13 @@ export function WebhooksManager({
                     >
                       {testando === w.id ? "testando…" : "🧪 testar"}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => verSegredo(w.id)}
+                      className="text-xs text-fg-muted hover:underline"
+                    >
+                      {segredos[w.id] ? "ocultar segredo" : "ver segredo"}
+                    </button>
                     <Link
                       href={`/painel/webhooks/${w.id}/logs`}
                       className="text-xs text-fg-muted hover:underline"
@@ -293,6 +317,23 @@ export function WebhooksManager({
                   >
                     {resultadoTeste.ok ? "✓ " : "✗ "}
                     {resultadoTeste.msg}
+                  </div>
+                )}
+                {segredos[w.id] && (
+                  <div className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-bg px-3 py-2">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-fg-dim shrink-0">
+                      segredo
+                    </span>
+                    <code className="font-mono text-[11px] flex-1 break-all">
+                      {segredos[w.id]}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copiar(segredos[w.id])}
+                      className="h-7 px-2.5 rounded-lg border border-border text-[11px] hover:border-accent shrink-0"
+                    >
+                      copiar
+                    </button>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-1 mb-2">
