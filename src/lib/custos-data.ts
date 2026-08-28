@@ -571,6 +571,12 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       valor: 60.0,
       tokens: 1_600_000,
     },
+    {
+      data: "28/08",
+      titulo: "Ficha de conexão do fundo — tudo que o time técnico precisa, num bloco só",
+      desc: "Quando um fundo liga o sistema dele na plataforma, alguém precisa passar pro time técnico deles o número que identifica o fundo, os endereços que eles vão chamar e a chave que protege cada mensagem. Isso estava espalhado — e o número do fundo não aparecia em lugar nenhum no painel deles. Agora tem uma ficha única, no painel do fundo e na tela de integração do administrador: número do fundo em destaque, os cinco endereços de entrada com o cabeçalho de segurança de cada um, as chaves com o aviso de quais já estão prontas e um botão que copia a ficha inteira em texto pra mandar por e-mail. A chave também pode ser vista de novo (antes só aparecia uma vez, e quem perdesse tinha que refazer tudo) e gerada quando falta — cada consulta fica registrada no histórico de auditoria.",
+      tier: "P",
+    },
   ],
 };
 
