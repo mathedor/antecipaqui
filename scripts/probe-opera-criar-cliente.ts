@@ -19,7 +19,7 @@ process.env.DATABASE_URL = process.env.DATABASE_URL.replace(
 );
 
 const CNPJ_TESTE = "45989123000135";
-const FATURAMENTO_FIXTURE = "600000.00";
+const FATURAMENTO_FIXTURE = 600000; // numérico, em reais (spec OPERA 01/09)
 
 async function main() {
   const { get } = await import("@vercel/blob");
@@ -73,13 +73,18 @@ async function main() {
   const semRepresentantes = process.argv.includes("--sem-representantes");
   const semOpcionais = process.argv.includes("--sem-opcionais");
 
-  // Ficha idêntica à do agente (montarFichaCadastral) — faturamento fixture.
+  // Ficha idêntica à do agente (montarFichaCadastral), no formato da spec
+  // que a OPERA passou em 01/09: CNPJ com máscara, numero string em campo
+  // próprio, faturamento numérico, função do responsável e telefone do
+  // representante obrigatórios.
   const payload: Record<string, unknown> = {
+    cnpj: "45.989.123/0001-35",
     parceiro: envio.parceiro,
-    cnpj: CNPJ_TESTE,
     razaoSocial: imob.razaoSocial,
     nomeFantasia: imob.nomeFantasia,
-    endereco: "Rua da Homologacao, 100",
+    endereco: "Rua da Homologacao",
+    complemento: "",
+    numero: "100",
     bairro: "Centro",
     cidade: imob.cidade,
     region: imob.uf,
@@ -89,11 +94,13 @@ async function main() {
       "Imobiliária parceira da Antecipaqui (antecipação de comissões " +
       "imobiliárias). CADASTRO DE TESTE da homologação da integração — " +
       "conferir recebimento e desconsiderar para análise.",
+    funcao_responsavel_operacional: "Diretor",
     nome_responsavel_operacional: dono?.nome ?? null,
     email_responsavel_operacional: dono?.email ?? null,
     representantes: [
       {
         participacao: "1",
+        telefone: "47999990000",
         nome: dono?.nome,
         email: dono?.email,
         celular: "47999990000",
@@ -154,6 +161,27 @@ async function main() {
     "variante:",
     JSON.stringify({ semDocs, semRepresentantes, semOpcionais }),
   );
+
+  if (process.argv.includes("--dry-run")) {
+    // Imprime o payload sem enviar — o ZIP base64 vira um resumo legível.
+    const docs2 = payload.documentos as
+      | { doc_outros: { outros_documentos: string }[] }
+      | undefined;
+    const impressao = {
+      ...payload,
+      ...(docs2
+        ? {
+            documentos: {
+              doc_outros: docs2.doc_outros.map((o) => ({
+                outros_documentos: `<ZIP base64, ${o.outros_documentos.length} chars — ${arquivos.map((a) => a.nome).join(", ")}>`,
+              })),
+            },
+          }
+        : {}),
+    };
+    console.log(JSON.stringify(impressao, null, 2));
+    return;
+  }
 
   const base = fundo.integracaoApiUrl.replace(/\/+$/, "");
   const auth = await fetch(`${base}/operapi/autenticacao/`, {

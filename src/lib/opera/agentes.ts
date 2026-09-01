@@ -18,6 +18,7 @@ import {
   operacaoCompradores,
   operacoes,
   operaClientes,
+  operaJobs,
   operaOperacoes,
   parcelasComissao,
   users,
@@ -30,7 +31,12 @@ import {
   operaFetch,
   registrarSaude,
 } from "@/lib/opera/client";
-import { lerFlag, lerTexto, type OperaContrato } from "@/lib/opera/contrato";
+import {
+  lerFlag,
+  lerTexto,
+  normalizarStatus,
+  type OperaContrato,
+} from "@/lib/opera/contrato";
 import { buscarCep } from "@/lib/cep";
 import { enfileirarJob } from "@/lib/opera/fila";
 import { montarZip } from "@/lib/opera/zip";
@@ -48,6 +54,27 @@ function soDigitos(v: string | null | undefined): string {
 function formatarCep(v: string | null | undefined): string | null {
   const d = soDigitos(v);
   return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : null;
+}
+
+/** No criar-cliente o CNPJ vai COM máscara ("45.989.123/0001-35") — spec
+ *  passada pela OPERA em 01/09. A consulta continua com dígitos puros. */
+function formatarCnpj(v: string | null | undefined): string | null {
+  const d = soDigitos(v);
+  if (d.length !== 14) return d || null;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+/** A OperAPI quer o número do imóvel em campo próprio (string, obrigatório).
+ *  Extrai o número do fim do logradouro ("Rua X, 100" → "100"); endereço sem
+ *  número declarado vai como "S/N". */
+function separarNumero(logradouro: string | null): {
+  rua: string | null;
+  numero: string;
+} {
+  const t = (logradouro ?? "").trim();
+  const m = t.match(/^(.*?),?\s*(?:n[ºo°.]?\s*)?(\d+[a-zA-Z]?)$/);
+  if (m?.[1]) return { rua: m[1].replace(/,\s*$/, "").trim(), numero: m[2] };
+  return { rua: t || null, numero: "S/N" };
 }
 
 /** Nosso endereço é linha única ("Rua X, 100 - Centro"); a OperAPI exige o
@@ -152,16 +179,50 @@ export async function consultarCliente(
     return { tipo: "retentar", erro: resp.erro ?? `HTTP ${resp.status}` };
   }
 
-  const externoId = lerTexto(resp.data, contrato.leitura.clienteId);
+  const externoIdBruto = lerTexto(resp.data, contrato.leitura.clienteId);
+  // A OperAPI devolve id 0 enquanto o cadastro ainda está "RECEBIDO" na
+  // esteira interna deles — 0 é "ainda sem id", não um id.
+  const externoId =
+    externoIdBruto && externoIdBruto !== "0" ? externoIdBruto : null;
   const flag = lerFlag(resp.data, contrato.leitura.clienteExisteFlag);
-  // Regra: existe se o fundo disse que existe OU se devolveu um ID de cliente.
+  // Regra: existe (pronto pra operar) se o fundo disse que existe OU se
+  // devolveu um ID de cliente.
   const existe = resp.status === 404 ? false : (flag ?? Boolean(externoId));
+
+  // A consulta também devolve o estado da ESTEIRA INTERNA do fundo
+  // (observado na homologação de 01/09): "RECEBIDO" e "INTEGRADO_*" são
+  // cadastro em trânsito (id ainda 0), "ERRO" é cadastro que o fundo
+  // registrou mas não conseguiu processar. Nos três casos o CNPJ JÁ está
+  // na base deles — mandar cadastro de novo só rende "already taken".
+  const statusFundo = normalizarStatus(
+    lerTexto(resp.data, contrato.leitura.situacaoCadastro) ?? "",
+  );
+  const registroComErro = statusFundo === "erro";
+  const registroEmTransito =
+    statusFundo === "recebido" || statusFundo.includes("integrado");
+  const registroExiste = existe || registroComErro || registroEmTransito;
+
+  const situacao = existe
+    ? "aprovado"
+    : registroComErro
+      ? "erro"
+      : registroEmTransito
+        ? "em_analise"
+        : "nao_encontrado";
 
   await db
     .update(operaClientes)
     .set({
-      situacao: existe ? "aprovado" : "nao_encontrado",
+      situacao,
       externoId: externoId ?? cliente.externoId,
+      // Cliente encontrado (ou em trânsito lá) apaga recusas antigas.
+      ...(existe || registroEmTransito ? { motivo: null } : {}),
+      ...(registroComErro
+        ? {
+            motivo:
+              "O fundo recebeu o cadastro mas registrou erro no processamento (status ERRO na consulta) — confirmar o motivo com o fundo.",
+          }
+        : {}),
       consultadoEm: new Date(),
       respondidoEm: existe ? new Date() : null,
       ultimaResposta: { status: resp.status, corpo: resp.data } as never,
@@ -169,7 +230,28 @@ export async function consultarCliente(
     })
     .where(eq(operaClientes.id, cliente.id));
 
-  if (!existe) {
+  // O CNPJ já está na base do fundo → qualquer job de cadastro esperando
+  // (bloqueado por recusa antiga, ou pendente) perdeu o motivo de existir.
+  if (registroExiste) {
+    await db
+      .update(operaJobs)
+      .set({
+        status: "concluido",
+        resultado: { resolvidoPor: "consulta", externoId, statusFundo } as never,
+        ultimoErro: null,
+        concluidoEm: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(operaJobs.tipo, "cadastrar_cliente"),
+          eq(operaJobs.refId, cliente.id),
+          inArray(operaJobs.status, ["pendente", "bloqueado"]),
+        ),
+      );
+  }
+
+  if (!registroExiste) {
     // Não existe → peça 02 assume.
     await enfileirarJob({
       fundoId: fundo.id,
@@ -179,6 +261,12 @@ export async function consultarCliente(
       operacaoId: null,
     });
     return { tipo: "ok", resultado: { existe: false, proximaPeca: "cadastro" } };
+  }
+
+  if (!existe) {
+    // Em trânsito ou com erro: quem resolve é o fundo (webhook ou nova
+    // consulta) — não há o que retentar daqui.
+    return { tipo: "ok", resultado: { existe: true, situacao, statusFundo } };
   }
 
   // Já cadastrado → atalho: se todos os clientes da operação estão prontos,
@@ -363,27 +451,28 @@ async function montarFichaCadastral(cliente: OperaCliente): Promise<{
 
     const telefone = soDigitos(imob.telefone ?? dono?.telefone);
     const { logradouro, bairro } = await resolverBairro(imob.endereco, imob.cep);
+    const { rua, numero } = separarNumero(logradouro);
     return {
       dados: {
-        cnpj: soDigitos(imob.cnpj),
+        cnpj: formatarCnpj(imob.cnpj),
         razaoSocial: imob.razaoSocial,
         nomeFantasia: imob.nomeFantasia ?? null,
-        endereco: logradouro,
+        endereco: rua,
+        numero,
+        complemento: "",
         bairro,
         cidade: imob.cidade ?? null,
         region: imob.uf ?? null,
         cep: formatarCep(imob.cep),
         dadosFinanceiros: {
-          // A OperAPI valida como texto (mínimo 3 caracteres) — vai o valor
-          // em reais com duas casas: "35000.00"; sem histórico, "0.00".
-          faturamentoEstimado: (
-            await faturamentoEstimadoImobiliaria(imob.id)
-          ).toFixed(2),
+          // Numérico, em reais (spec OPERA 01/09; mínimo aceito é 3).
+          faturamentoEstimado: await faturamentoEstimadoImobiliaria(imob.id),
         },
         relato_consultoria:
           `Imobiliária parceira da Antecipaqui (antecipação de comissões ` +
           `imobiliárias). Ficha e documentos enviados automaticamente pela ` +
           `integração; histórico operacional disponível sob consulta.`,
+        funcao_responsavel_operacional: "Diretor",
         nome_responsavel_operacional: dono?.nome ?? null,
         email_responsavel_operacional: dono?.email ?? null,
         representantes: dono
@@ -393,6 +482,8 @@ async function montarFichaCadastral(cliente: OperaCliente): Promise<{
                 nome: dono.nome,
                 email: dono.email,
                 celular: telefone || null,
+                // Obrigatório; sem linha fixa cadastrada, repete o celular.
+                telefone: telefone || null,
               },
             ]
           : null,
@@ -418,12 +509,15 @@ async function montarFichaCadastral(cliente: OperaCliente): Promise<{
     .where(eq(documentos.construtoraId, con.id));
 
   const enderecoCon = await resolverBairro(con.endereco, con.cep);
+  const numeroCon = separarNumero(enderecoCon.logradouro);
   return {
     dados: {
-      cnpj: soDigitos(con.cnpj),
+      cnpj: formatarCnpj(con.cnpj),
       razaoSocial: con.razaoSocial,
       nomeFantasia: con.nomeFantasia ?? null,
-      endereco: enderecoCon.logradouro,
+      endereco: numeroCon.rua,
+      numero: numeroCon.numero,
+      complemento: "",
       bairro: enderecoCon.bairro,
       cidade: con.cidade ?? null,
       region: con.uf ?? null,
