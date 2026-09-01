@@ -8,7 +8,7 @@
  * Cada agente é executado pela fila (lib/opera/motor.ts) e devolve um
  * resultado; quem decide retentar, bloquear ou desistir é a fila.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   construtoras,
@@ -24,12 +24,14 @@ import {
   type Fundo,
   type OperaCliente,
 } from "@/db/schema";
+import { get as blobGet } from "@vercel/blob";
 import {
   contratoDoFundo,
   operaFetch,
   registrarSaude,
 } from "@/lib/opera/client";
 import { lerFlag, lerTexto, type OperaContrato } from "@/lib/opera/contrato";
+import { buscarCep } from "@/lib/cep";
 import { enfileirarJob } from "@/lib/opera/fila";
 import { montarZip } from "@/lib/opera/zip";
 
@@ -40,6 +42,62 @@ export type ResultadoAgente =
 
 function soDigitos(v: string | null | undefined): string {
   return String(v ?? "").replace(/\D/g, "");
+}
+
+/** A OperAPI valida o CEP no formato com traço: "88330-000". */
+function formatarCep(v: string | null | undefined): string | null {
+  const d = soDigitos(v);
+  return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : null;
+}
+
+/** Nosso endereço é linha única ("Rua X, 100 - Centro"); a OperAPI exige o
+ *  bairro em campo próprio. O trecho depois do último " - " é tratado como
+ *  bairro — a menos que contenha número (aí é complemento, não bairro). */
+function separarEndereco(linha: string | null | undefined): {
+  logradouro: string | null;
+  bairro: string | null;
+} {
+  const t = (linha ?? "").trim();
+  if (!t) return { logradouro: null, bairro: null };
+  const i = t.lastIndexOf(" - ");
+  if (i === -1) return { logradouro: t, bairro: null };
+  const cauda = t.slice(i + 3).trim();
+  if (!cauda || /\d/.test(cauda)) return { logradouro: t, bairro: null };
+  return { logradouro: t.slice(0, i).trim(), bairro: cauda };
+}
+
+/** Bairro que não veio no endereço sai do ViaCEP — falha vira null e a
+ *  validação do fundo decide (o 422 volta por extenso pro admin). */
+async function resolverBairro(
+  endereco: string | null | undefined,
+  cep: string | null | undefined,
+): Promise<{ logradouro: string | null; bairro: string | null }> {
+  const partes = separarEndereco(endereco);
+  if (partes.bairro) return partes;
+  const viaCep = await buscarCep(cep ?? "").catch(() => null);
+  return { logradouro: partes.logradouro, bairro: viaCep?.bairro || null };
+}
+
+/** Faturamento estimado que a OperAPI exige no cadastro do cedente: soma das
+ *  comissões das operações da imobiliária nos últimos 12 meses — o que dá
+ *  pra estimar com honestidade a partir dos nossos dados. */
+async function faturamentoEstimadoImobiliaria(
+  imobiliariaId: string,
+): Promise<number> {
+  const umAnoAtras = new Date();
+  umAnoAtras.setFullYear(umAnoAtras.getFullYear() - 1);
+  const [r] = await db
+    .select({
+      total: sql<string>`coalesce(sum(${operacoes.valorComissao}), 0)`,
+    })
+    .from(operacoes)
+    .where(
+      and(
+        eq(operacoes.imobiliariaId, imobiliariaId),
+        gte(operacoes.createdAt, umAnoAtras),
+      ),
+    );
+  return Math.round(Number(r?.total ?? 0));
 }
 
 async function carregarFundo(fundoId: string): Promise<Fundo | null> {
@@ -183,18 +241,9 @@ export async function cadastrarCliente(
     const arquivos: { nome: string; conteudo: Buffer }[] = [];
     for (const d of ficha.documentos) {
       try {
-        const res = await fetch(d.url, {
-          signal: AbortSignal.timeout(30_000),
-        });
-        if (!res.ok) {
-          return {
-            tipo: "retentar",
-            erro: `Falha ao baixar documento ${d.tipo} (HTTP ${res.status})`,
-          };
-        }
         arquivos.push({
           nome: `${d.tipo}-${d.nomeOriginal}`,
-          conteudo: Buffer.from(await res.arrayBuffer()),
+          conteudo: await baixarDocumento(d.url),
         });
       } catch (err) {
         return {
@@ -268,6 +317,20 @@ export async function cadastrarCliente(
   return { tipo: "ok", resultado: { protocolo, externoId } };
 }
 
+/** Os documentos vivem no Vercel Blob PRIVADO — fetch puro na URL devolve
+ *  403. URL do nosso store desce pelo SDK autenticado; qualquer outra origem
+ *  (legado, link externo) segue no fetch comum. */
+async function baixarDocumento(url: string): Promise<Buffer> {
+  if (url.includes(".private.blob.vercel-storage.com/")) {
+    const r = await blobGet(url, { access: "private" });
+    if (!r?.stream) throw new Error("Arquivo não encontrado no storage");
+    return Buffer.from(await new Response(r.stream as ReadableStream).arrayBuffer());
+  }
+  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 /** Ficha + documentos de uma imobiliária ou construtora, no formato do
  *  CriarClienteRequest da OperAPI (cnpj, razaoSocial, endereço achatado,
  *  region = UF, representantes com participacao "1" = Repr. Legal). */
@@ -299,15 +362,28 @@ async function montarFichaCadastral(cliente: OperaCliente): Promise<{
       : [];
 
     const telefone = soDigitos(imob.telefone ?? dono?.telefone);
+    const { logradouro, bairro } = await resolverBairro(imob.endereco, imob.cep);
     return {
       dados: {
         cnpj: soDigitos(imob.cnpj),
         razaoSocial: imob.razaoSocial,
         nomeFantasia: imob.nomeFantasia ?? null,
-        endereco: imob.endereco ?? null,
+        endereco: logradouro,
+        bairro,
         cidade: imob.cidade ?? null,
         region: imob.uf ?? null,
-        cep: soDigitos(imob.cep) || null,
+        cep: formatarCep(imob.cep),
+        dadosFinanceiros: {
+          // A OperAPI valida como texto (mínimo 3 caracteres) — vai o valor
+          // em reais com duas casas: "35000.00"; sem histórico, "0.00".
+          faturamentoEstimado: (
+            await faturamentoEstimadoImobiliaria(imob.id)
+          ).toFixed(2),
+        },
+        relato_consultoria:
+          `Imobiliária parceira da Antecipaqui (antecipação de comissões ` +
+          `imobiliárias). Ficha e documentos enviados automaticamente pela ` +
+          `integração; histórico operacional disponível sob consulta.`,
         nome_responsavel_operacional: dono?.nome ?? null,
         email_responsavel_operacional: dono?.email ?? null,
         representantes: dono
@@ -341,15 +417,17 @@ async function montarFichaCadastral(cliente: OperaCliente): Promise<{
     .from(documentos)
     .where(eq(documentos.construtoraId, con.id));
 
+  const enderecoCon = await resolverBairro(con.endereco, con.cep);
   return {
     dados: {
       cnpj: soDigitos(con.cnpj),
       razaoSocial: con.razaoSocial,
       nomeFantasia: con.nomeFantasia ?? null,
-      endereco: con.endereco ?? null,
+      endereco: enderecoCon.logradouro,
+      bairro: enderecoCon.bairro,
       cidade: con.cidade ?? null,
       region: con.uf ?? null,
-      cep: soDigitos(con.cep) || null,
+      cep: formatarCep(con.cep),
       email_responsavel_operacional: con.email ?? null,
     },
     documentos: docs.map((d) => ({
