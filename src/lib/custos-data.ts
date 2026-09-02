@@ -529,6 +529,24 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       tier: "M",
     },
     {
+      data: "05/08",
+      titulo: "Cícero proativo por toda parte",
+      desc: "O Cícero ganhou rosto próprio e parou de esperar pergunta: cada nível de acesso passou a ver conselhos do Cícero na própria tela, quem está com cadastro pela metade recebe a oferta de completar ali mesmo, e o painel abre com o 'Cícero sugere' no topo, apontando o que merece atenção hoje.",
+      tier: "G",
+    },
+    {
+      data: "05/08",
+      titulo: "Regras de operação afinadas",
+      desc: "Só parcela a vencer entra em operação, parcela longa demais vira prospect pra trabalhar depois, e atraso só conta contra o cliente se a parcela realmente foi operada. Os e-mails da plataforma ganharam um vigia diário que confere se estão saindo e chegando direito.",
+      tier: "M",
+    },
+    {
+      data: "05/08",
+      titulo: "Grupo econômico: matriz e filiais",
+      desc: "Construtoras que são um grupo passaram a ser cadastradas como matriz e filiais, com visão consolidada do grupo inteiro — números e operações de todas as casas somados num lugar só.",
+      tier: "M",
+    },
+    {
       data: "11/08",
       titulo: "Prazo de antecipação: de 120 para 150 dias",
       desc: "O prazo máximo de uma operação subiu de 120 para 150 dias — dá pra parcelar em até 5 meses em vez de 4. Ajustado em todo o sistema: formulários de cadastro, as travas que conferem o prazo no servidor, o Cícero, a calculadora do site, a página de captação e os vídeos de apresentação da imobiliária e do comercial, que foram regravados com o novo prazo.",
@@ -547,10 +565,40 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       tier: "G",
     },
     {
+      data: "13/08",
+      titulo: "Ponte OPERA: fundos com sistema próprio",
+      desc: "A estrutura pra um fundo que opera no sistema próprio dele — como a OPERA — conversar com a plataforma: o que acontece aqui é avisado lá, a resposta de lá volta pra cá, e ninguém precisa digitar a mesma coisa duas vezes.",
+      tier: "G",
+    },
+    {
       data: "18/08",
       titulo: "Baixa de custos em mão dupla com o controle da casa",
       desc: "O descritivo de custos marcava pago só no navegador de quem clicava — o controle da Diretório Web (Ana) não ficava sabendo e seguia cobrando. Agora mês pago lá entra marcado aqui, mês fechado ou reaberto aqui dá baixa lá na hora (com aviso visível quando a ponte falha) e as marcações antigas deste navegador migram sozinhas uma única vez.",
       tier: "P",
+    },
+    {
+      data: "18/08",
+      titulo: "Integração real com a OperAPI",
+      desc: "A ponte com a OPERA saiu do desenho e passou a falar a língua oficial do sistema deles: autenticação oficial, os formatos de dados que a OperAPI exige e a configuração de cada fundo feita direto no painel, sem mexer em código.",
+      tier: "G",
+    },
+    {
+      data: "18/08",
+      titulo: "Pacote de segurança",
+      desc: "Auditoria completa de quem fez o quê na plataforma, rotação de senha, limite de tentativas de login e proteção extra nas exportações financeiras.",
+      tier: "G",
+    },
+    {
+      data: "18/08",
+      titulo: "Central de Diagnóstico",
+      desc: "Robôs de verificação de 1 clique, no admin e no painel do fundo: apertou o botão, o sistema confere sozinho se está tudo em ordem e aponta o que precisa de atenção.",
+      tier: "M",
+    },
+    {
+      data: "18/08",
+      titulo: "Fundo com vários usuários + saldo em caixa",
+      desc: "O fundo deixou de ser uma conta só: pode ter vários usuários trabalhando ao mesmo tempo, e o painel passou a mostrar o saldo em caixa do fundo.",
+      tier: "M",
     },
     {
       data: "19/08",
@@ -565,6 +613,12 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       tier: "M",
     },
     {
+      data: "19/08",
+      titulo: "Consulta da assistente direto no banco",
+      desc: "A Ana, assistente da Diretório Web, passou a responder perguntas sobre a plataforma com dados ao vivo, direto da fonte — quantas operações, quem está devendo, o que venceu — sem ninguém precisar abrir tela pra conferir número.",
+      tier: "M",
+    },
+    {
       data: "25/08",
       titulo: "Consumo do Cícero exposto pra Ana + linha de IA real no relatório",
       desc: "O quanto o Cícero gasta de inteligência artificial já ficava registrado conversa a conversa; agora esse consumo é publicado pra central de custos da Diretório Web (Ana) e a linha mensal de I.A. deste relatório deixou de ser um valor escrito à mão: passa a mostrar o gasto real do mês — e, se a central estiver fora do ar, uma estimativa calculada na hora sobre o consumo medido. Junto veio o medidor genérico pra qualquer uso futuro de IA fora do Cícero.",
@@ -572,10 +626,24 @@ export const DESENVOLVIMENTO: Record<string, DevEntry[]> = {
       tokens: 1_600_000,
     },
     {
+      data: "25/08",
+      titulo: "Equipe do fundo: convites e níveis de acesso",
+      desc: "O dono do fundo passou a convidar os membros da equipe por conta própria, cada um com o seu nível de acesso — quem só consulta, quem opera e quem manda.",
+      tier: "M",
+    },
+    {
       data: "28/08",
       titulo: "Ficha de conexão do fundo — tudo que o time técnico precisa, num bloco só",
       desc: "Quando um fundo liga o sistema dele na plataforma, alguém precisa passar pro time técnico deles o número que identifica o fundo, os endereços que eles vão chamar e a chave que protege cada mensagem. Isso estava espalhado — e o número do fundo não aparecia em lugar nenhum no painel deles. Agora tem uma ficha única, no painel do fundo e na tela de integração do administrador: número do fundo em destaque, os cinco endereços de entrada com o cabeçalho de segurança de cada um, as chaves com o aviso de quais já estão prontas e um botão que copia a ficha inteira em texto pra mandar por e-mail. A chave também pode ser vista de novo (antes só aparecia uma vez, e quem perdesse tinha que refazer tudo) e gerada quando falta — cada consulta fica registrada no histórico de auditoria.",
       tier: "P",
+    },
+  ],
+  "2026-09": [
+    {
+      data: "01/09",
+      titulo: "Integração OPERA homologada",
+      desc: "O cadastro de cliente e o de cedente foram validados contra a API real da OPERA, e a esteira do fundo foi mapeada de ponta a ponta — a ponte deixou de ser promessa e passou no teste com o sistema de verdade.",
+      tier: "G",
     },
   ],
 };
