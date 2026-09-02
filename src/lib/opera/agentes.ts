@@ -317,6 +317,20 @@ export async function cadastrarCliente(
     };
   }
 
+  // Faturamento zerado (imobiliária sem operações nos 12 meses) reprova na
+  // validação do fundo — 422 visto em 01/09: "must be at least 3 characters".
+  // Dado que falta é NOSSO: o job espera, não adianta retentar igual.
+  const fat = (
+    ficha.dados as { dadosFinanceiros?: { faturamentoEstimado?: number } }
+  ).dadosFinanceiros?.faturamentoEstimado;
+  if (fat !== undefined && fat < 3) {
+    return {
+      tipo: "bloqueado",
+      motivo:
+        "Imobiliária sem faturamento estimável (nenhuma operação nos últimos 12 meses) — o fundo exige o valor no cadastro. Pendência aberta com a OPERA sobre a semântica do campo.",
+    };
+  }
+
   const corpo: Record<string, unknown> = {
     parceiro: contrato.envio.parceiro,
     ...ficha.dados,
@@ -359,6 +373,29 @@ export async function cadastrarCliente(
   await registrarSaude(fundo.id, { ok: resp.ok, erro: resp.erro });
 
   if (!resp.ok) {
+    // "CNPJ already taken": o cliente JÁ está na base do fundo (envio
+    // anterior, corrida com outro processo). Não é recusa nem motivo de
+    // retentativa — o certo é consultar e sincronizar a situação de lá.
+    // (Visto na homologação de 01/09: reenvio dava 422 com essa mensagem.)
+    if (/already (been )?taken/i.test(resp.cru)) {
+      await db
+        .update(operaClientes)
+        .set({
+          situacao: "em_analise",
+          motivo: null,
+          ultimaResposta: { status: resp.status, corpo: resp.cru } as never,
+          updatedAt: new Date(),
+        })
+        .where(eq(operaClientes.id, cliente.id));
+      await enfileirarJob({
+        fundoId: fundo.id,
+        tipo: "consultar_cliente",
+        refTipo: "opera_cliente",
+        refId: cliente.id,
+        operacaoId: null,
+      });
+      return { tipo: "ok", resultado: { jaCadastradoNoFundo: true } };
+    }
     // 4xx que não seja 429 é erro de conteúdo: retentar igual não adianta.
     if (resp.status >= 400 && resp.status < 500 && resp.status !== 429) {
       await db

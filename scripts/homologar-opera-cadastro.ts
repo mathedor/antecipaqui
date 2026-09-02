@@ -84,7 +84,7 @@ function pdfTeste(titulo: string): Buffer {
 
 async function main() {
   const { put } = await import("@vercel/blob");
-  const { and, eq, inArray } = await import("drizzle-orm");
+  const { and, eq, inArray, isNull, lte, or } = await import("drizzle-orm");
   const { db } = await import("../src/db");
   const { users, imobiliarias, documentos, operaClientes, operaJobs } =
     await import("../src/db/schema");
@@ -211,6 +211,9 @@ async function main() {
   });
 
   for (let rodada = 1; rodada <= 4; rodada++) {
+    // Mesmo filtro do motor de produção: job que falhou espera o backoff
+    // (proximaTentativaEm). Sem isso o loop metralha a API do fundo com o
+    // mesmo envio em segundos — foi o que a OPERA viu em 01/09.
     const pendentes = await db
       .select()
       .from(operaJobs)
@@ -218,6 +221,10 @@ async function main() {
         and(
           eq(operaJobs.refId, cliente.id),
           inArray(operaJobs.status, ["pendente"]),
+          or(
+            isNull(operaJobs.proximaTentativaEm),
+            lte(operaJobs.proximaTentativaEm, new Date()),
+          ),
         ),
       );
     if (pendentes.length === 0) break;
