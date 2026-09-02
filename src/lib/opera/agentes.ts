@@ -200,15 +200,31 @@ export async function consultarCliente(
   const registroComErro = statusFundo === "erro";
   const registroEmTransito =
     statusFundo === "recebido" || statusFundo.includes("integrado");
-  const registroExiste = existe || registroComErro || registroEmTransito;
+
+  // O fundo ecoou a identidade do cliente (razão social / CNPJ) → o CNPJ ESTÁ
+  // na base deles, seja qual for o rótulo da esteira interna. É o que vale:
+  // eles inventam status novos (02/09 apareceu "RETORNADO_PARCEIRO", fora do
+  // catálogo) e tratar rótulo desconhecido como "não existe" reenviaria o
+  // cadastro — exatamente a duplicata que o fundo reclamou.
+  const identidadeEcoada = Boolean(
+    lerTexto(resp.data, ["razao_social", "razaoSocial", "cnpj_cliente"]),
+  );
+  const registroExiste =
+    existe || registroComErro || registroEmTransito || identidadeEcoada;
+
+  // Aprovado com id real não é rebaixado por uma resposta transitória (a
+  // consulta devolve id 0 enquanto a esteira deles anda).
+  const jaAprovado = cliente.situacao === "aprovado" && Boolean(cliente.externoId);
 
   const situacao = existe
     ? "aprovado"
     : registroComErro
       ? "erro"
-      : registroEmTransito
-        ? "em_analise"
-        : "nao_encontrado";
+      : jaAprovado
+        ? "aprovado"
+        : registroEmTransito || identidadeEcoada
+          ? "em_analise"
+          : "nao_encontrado";
 
   await db
     .update(operaClientes)
@@ -216,7 +232,9 @@ export async function consultarCliente(
       situacao,
       externoId: externoId ?? cliente.externoId,
       // Cliente encontrado (ou em trânsito lá) apaga recusas antigas.
-      ...(existe || registroEmTransito ? { motivo: null } : {}),
+      ...(existe || registroEmTransito || identidadeEcoada
+        ? { motivo: null }
+        : {}),
       ...(registroComErro
         ? {
             motivo:

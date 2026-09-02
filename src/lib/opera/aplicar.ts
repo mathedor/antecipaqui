@@ -70,6 +70,15 @@ export async function aplicarCadastro(
     };
   }
 
+  // O webhook de cadastro da OPERA manda o CNPJ mascarado no campo do ID
+  // (visto em 02/09) — gravar isso como externoId apagaria o id real que a
+  // consulta trouxe. CNPJ serve pra ACHAR o cliente, nunca pra identificá-lo
+  // na base do fundo.
+  const externoIdUtil =
+    externoId && externoId.replace(/\D/g, "") !== cliente.cnpj
+      ? externoId
+      : null;
+
   const situacaoCrua = lerTexto(payload, contrato.leitura.situacaoCadastro) ?? "";
   const motivo = lerTexto(payload, contrato.leitura.motivo);
   const chave = normalizarStatus(situacaoCrua);
@@ -115,7 +124,7 @@ export async function aplicarCadastro(
     .set({
       situacao: aprovado ? "aprovado" : "reprovado",
       motivo: reprovado ? (motivo ?? "Motivo não informado pelo fundo") : null,
-      externoId: externoId ?? cliente.externoId,
+      externoId: externoIdUtil ?? cliente.externoId,
       protocolo: protocolo ?? cliente.protocolo,
       respondidoEm: new Date(),
       ultimaResposta: payload as never,
