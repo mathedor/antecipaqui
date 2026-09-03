@@ -25,6 +25,7 @@ import { contratoDoFundo } from "@/lib/opera/client";
 import {
   ler,
   lerData,
+  lerIdExterno,
   lerNumero,
   lerTexto,
   lerTimestamp,
@@ -56,7 +57,7 @@ export async function aplicarCadastro(
   const contrato = contratoDoFundo(fundo);
 
   const protocolo = lerTexto(payload, contrato.leitura.refClienteProtocolo);
-  const externoId = lerTexto(payload, contrato.leitura.refClienteExterno);
+  const externoId = lerIdExterno(payload, contrato.leitura.refClienteExterno);
   const cnpj = lerTexto(payload, contrato.leitura.refClienteCnpj)?.replace(
     /\D/g,
     "",
@@ -280,7 +281,7 @@ export async function aplicarStatus(
 ): Promise<ResultadoAplicacao> {
   const contrato = contratoDoFundo(fundo);
 
-  const externoId = lerTexto(payload, contrato.leitura.refOperacaoExterna);
+  const externoId = lerIdExterno(payload, contrato.leitura.refOperacaoExterna);
   const nossaRef = lerTexto(payload, contrato.leitura.refOperacaoNossa);
   const espelho = await acharEspelho(fundo.id, { externoId, nossaRef });
   if (!espelho) {
@@ -514,7 +515,7 @@ export async function aplicarDuplicatas(
 ): Promise<ResultadoAplicacao> {
   const contrato = contratoDoFundo(fundo);
 
-  const externoId = lerTexto(payload, contrato.leitura.refOperacaoExterna);
+  const externoId = lerIdExterno(payload, contrato.leitura.refOperacaoExterna);
   const nossaRef = lerTexto(payload, contrato.leitura.refOperacaoNossa);
   const espelho = await acharEspelho(fundo.id, { externoId, nossaRef });
   if (!espelho) {

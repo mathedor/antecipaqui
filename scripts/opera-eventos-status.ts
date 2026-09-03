@@ -1,7 +1,9 @@
 /**
- * Eventos de webhook que a OPERA mandou pra nós (PROD), do mais novo pro
- * mais velho. Só leitura — serve pra conferir se a ponta deles já está
- * chamando os nossos endpoints.
+ * O que a OPERA nos contou (PROD) e o que isso virou aqui dentro. Só leitura.
+ * Mostra, nesta ordem: os webhooks que chegaram, o espelho de cada operação,
+ * a timeline que o cliente enxerga e os avisos disparados — é a conferência
+ * inteira num comando, porque status agora é canal único (webhook-only) e a
+ * pergunta que importa é "N entregas do mesmo fato viraram QUANTOS avisos?".
  *
  *   npx tsx scripts/opera-eventos-status.ts
  */
@@ -28,6 +30,30 @@ async function main() {
     FROM opera_eventos ORDER BY created_at DESC LIMIT 6`;
   console.log("\n═══ últimos 6 eventos (com payload) ═══");
   console.log(JSON.stringify(eventos, null, 2));
+
+  const espelhos = await sql`
+    SELECT o.numero, o.status AS status_interno_operacao,
+      e.externo_id, e.status_externo, e.status_label, e.status_desconhecido,
+      e.observacao, e.link_assinatura IS NOT NULL AS tem_link,
+      e.ultimo_evento_em, e.updated_at
+    FROM opera_operacoes e JOIN operacoes o ON o.id = e.operacao_id
+    ORDER BY e.updated_at DESC LIMIT 10`;
+  console.log("\n═══ espelho das operações (o que o fundo já disse) ═══");
+  console.log(JSON.stringify(espelhos, null, 2));
+
+  const timeline = await sql`
+    SELECT o.numero, ev.type, ev.created_at, ev.payload
+    FROM operacao_events ev JOIN operacoes o ON o.id = ev.operacao_id
+    WHERE ev.type LIKE 'opera%' ORDER BY ev.created_at DESC LIMIT 10`;
+  console.log("\n═══ timeline do cliente (eventos opera_*) ═══");
+  console.log(JSON.stringify(timeline, null, 2));
+
+  const avisos = await sql`
+    SELECT n.created_at, u.email, n.type, n.title, n.email_sent, n.sms_sent
+    FROM notificacoes n LEFT JOIN users u ON u.id = n.user_id
+    WHERE n.type LIKE 'opera%' ORDER BY n.created_at DESC LIMIT 10`;
+  console.log("\n═══ avisos disparados ═══");
+  console.log(JSON.stringify(avisos, null, 2));
 
   const [saude] = await sql`
     SELECT razao_social, integracao_ultimo_ok_em, integracao_ultimo_erro

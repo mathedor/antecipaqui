@@ -34,6 +34,7 @@ import {
 import {
   ler,
   lerFlag,
+  lerIdExterno,
   lerTexto,
   normalizarStatus,
   type OperaContrato,
@@ -180,11 +181,10 @@ export async function consultarCliente(
     return { tipo: "retentar", erro: resp.erro ?? `HTTP ${resp.status}` };
   }
 
-  const externoIdBruto = lerTexto(resp.data, contrato.leitura.clienteId);
   // A OperAPI devolve id 0 enquanto o cadastro ainda está "RECEBIDO" na
-  // esteira interna deles — 0 é "ainda sem id", não um id.
-  const externoId =
-    externoIdBruto && externoIdBruto !== "0" ? externoIdBruto : null;
+  // esteira interna deles — 0 é "ainda sem id", não um id (mesma regra do
+  // webhook: `idExternoUtil`).
+  const externoId = lerIdExterno(resp.data, contrato.leitura.clienteId);
   const flag = lerFlag(resp.data, contrato.leitura.clienteExisteFlag);
   // Regra: existe (pronto pra operar) se o fundo disse que existe OU se
   // devolveu um ID de cliente.

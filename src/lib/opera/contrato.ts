@@ -457,6 +457,30 @@ export function lerTexto(obj: unknown, caminhos: string[]): string | null {
   return null;
 }
 
+/** Id do outro lado que ainda NÃO existe. A esteira da OperAPI devolve `0`
+ *  enquanto o registro transita — e o primeiro webhook de status real
+ *  (03/09) chegou com `operacaoId: "0"`. Placeholder gravado como identidade
+ *  faz dois estragos: apaga o id real que o envio trouxe e, pior, vira chave
+ *  de busca que casa com QUALQUER outro registro em trânsito — status de uma
+ *  operação cairia na operação errada. Só é id o que tem algo além de zero e
+ *  pontuação. */
+export function idExternoUtil(raw: string | null | undefined): string | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  // "0", "000", "0000-0000-…" (uuid zerado) — nada além de zero e separador.
+  if (/^[0\s.\-_/]+$/.test(s)) return null;
+  if (["null", "undefined", "none", "n/a", "na"].includes(s.toLowerCase()))
+    return null;
+  return s;
+}
+
+/** `lerTexto` + descarte de placeholder. Use sempre que o valor lido for
+ *  servir de IDENTIDADE do registro na base do fundo. */
+export function lerIdExterno(obj: unknown, caminhos: string[]): string | null {
+  return idExternoUtil(lerTexto(obj, caminhos));
+}
+
 export function lerNumero(obj: unknown, caminhos: string[]): number | null {
   const v = ler(obj, caminhos);
   if (typeof v === "number" && Number.isFinite(v)) return v;
