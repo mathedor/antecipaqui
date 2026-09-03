@@ -32,6 +32,7 @@ import {
   registrarSaude,
 } from "@/lib/opera/client";
 import {
+  ler,
   lerFlag,
   lerTexto,
   normalizarStatus,
@@ -625,8 +626,14 @@ export async function enviarOperacao(
     };
   }
 
-  const dossie = await montarPayloadOperacao(op, contrato.envio);
-  if ("erro" in dossie) return { tipo: "bloqueado", motivo: dossie.erro };
+  const dossie = await montarPayloadOperacao(op, fundo, contrato);
+  if ("erro" in dossie) {
+    // Consulta de favorecidos fora do ar é problema de comunicação, não de
+    // conteúdo: a fila tenta de novo em vez de parar a operação.
+    return dossie.retentar
+      ? { tipo: "retentar", erro: dossie.erro }
+      : { tipo: "bloqueado", motivo: dossie.erro };
+  }
 
   const resp = await operaFetch(fundo, contrato.rotas.enviarOperacao, {
     body: dossie.payload,
@@ -709,8 +716,13 @@ async function clientesPendentesDaOperacao(
  *  sacado (quem paga a comissão) inline em cada título. */
 async function montarPayloadOperacao(
   op: typeof operacoes.$inferSelect,
-  envio: OperaContrato["envio"],
-): Promise<{ payload: Record<string, unknown> } | { erro: string }> {
+  fundo: Fundo,
+  contrato: OperaContrato,
+): Promise<
+  | { payload: Record<string, unknown> }
+  | { erro: string; retentar?: boolean }
+> {
+  const envio = contrato.envio;
   const [imob] = op.imobiliariaId
     ? await db
         .select()
@@ -792,6 +804,19 @@ async function montarPayloadOperacao(
   const taxaFracao = Number(op.taxaFundoSnapshot ?? op.taxaMensal);
   const taxaDesagio = Math.round(taxaFracao * 100 * 100) / 100;
 
+  // Onde o dinheiro cai. O ERP do fundo exige o código da conta na base
+  // DELE, então a conta é consultada a cada envio — e o valor do favorecido
+  // é a soma dos títulos que estão indo.
+  const totalTitulos =
+    Math.round(parcelas.reduce((s, p) => s + Number(p.valor), 0) * 100) / 100;
+  const favorecidos = await resolverFavorecidos(
+    fundo,
+    contrato,
+    imob,
+    totalTitulos,
+  );
+  if ("erro" in favorecidos) return favorecidos;
+
   const payload: Record<string, unknown> = {
     parceiro: envio.parceiro,
     cnpj_empresa: envio.cnpjEmpresa,
@@ -803,6 +828,7 @@ async function montarPayloadOperacao(
     taxa_desagio: taxaDesagio,
     tipo_documento: envio.tipoDocumento,
     observacao: `Antecipaqui ${op.numero} — antecipação de comissão imobiliária. Cedente: ${imob.razaoSocial}.`,
+    favorecidos: favorecidos.lista,
     titulos: parcelas.map((p) => ({
       cpf_cnpj_sacado: s.documento,
       nome_sacado: s.nome,
@@ -817,6 +843,114 @@ async function montarPayloadOperacao(
   };
 
   return { payload };
+}
+
+/** Contas de recebimento do cedente na base do fundo. O ERP da OPERA exige o
+ *  campo `favorecidos` no envio, com o CÓDIGO da conta lá (03/09) — e quem
+ *  cadastra as contas é a esteira cadastral do fundo, não nós. Por isso a
+ *  consulta acontece a cada envio, e não achar conta é motivo de espera, não
+ *  de erro: o cadastro pode estar a caminho. */
+async function resolverFavorecidos(
+  fundo: Fundo,
+  contrato: OperaContrato,
+  imob: typeof imobiliarias.$inferSelect,
+  valorTotal: number,
+): Promise<
+  { lista: Record<string, unknown>[] } | { erro: string; retentar?: boolean }
+> {
+  const rota = contrato.rotas.consultarFavorecidos;
+  if (!rota) {
+    return {
+      erro: "Rota de consulta de favorecidos não configurada na integração do fundo",
+    };
+  }
+
+  const resp = await operaFetch(fundo, rota, {
+    vars: { cnpj: soDigitos(imob.cnpj) },
+  });
+  await registrarSaude(fundo.id, { ok: resp.ok, erro: resp.erro });
+
+  if (!resp.ok) {
+    // 5xx/timeout é comunicação; 4xx é conteúdo e não melhora sozinho.
+    const comunicacao = resp.status === 0 || resp.status === 429 || resp.status >= 500;
+    return {
+      erro: comunicacao
+        ? `Falha ao consultar as contas de recebimento no fundo (HTTP ${resp.status})`
+        : `O fundo recusou a consulta das contas de recebimento (HTTP ${resp.status}): ${resp.cru.slice(0, 200)}`,
+      retentar: comunicacao,
+    };
+  }
+
+  const bruto = Array.isArray(resp.data)
+    ? resp.data
+    : ler(resp.data, contrato.leitura.favorecidosLista);
+  const contas = Array.isArray(bruto) ? bruto : bruto ? [bruto] : [];
+
+  if (contas.length === 0) {
+    return {
+      erro:
+        `O fundo ainda não tem conta de recebimento cadastrada para ${imob.razaoSocial} ` +
+        `(CNPJ ${imob.cnpj}). O cadastro da conta acontece na esteira cadastral do fundo — ` +
+        `assim que ela existir, o envio segue sozinho.`,
+    };
+  }
+
+  const escolhida = escolherConta(contas, imob, contrato);
+  if (!escolhida) {
+    const resumo = contas
+      .map((c) => {
+        const banco = lerTexto(c, contrato.leitura.favorecidoBanco) ?? "?";
+        const ag = lerTexto(c, contrato.leitura.favorecidoAgencia) ?? "?";
+        const cc = lerTexto(c, contrato.leitura.favorecidoConta) ?? "?";
+        const cod = lerTexto(c, contrato.leitura.favorecidoCodigo) ?? "?";
+        return `código ${cod} (banco ${banco}, ag. ${ag}, conta ${cc})`;
+      })
+      .join("; ");
+    return {
+      erro:
+        `O fundo tem ${contas.length} contas de recebimento para este cedente e nenhuma bate ` +
+        `com a conta do cadastro dele aqui — escolher a certa é decisão humana: ${resumo}.`,
+    };
+  }
+
+  const codigo = lerTexto(escolhida, contrato.leitura.favorecidoCodigo);
+  const indicador = lerTexto(escolhida, contrato.leitura.favorecidoIndicador);
+  if (!codigo) {
+    return { erro: "A conta de recebimento veio do fundo sem código — não dá pra indicar onde o dinheiro cai." };
+  }
+
+  return {
+    lista: [
+      {
+        indicador: indicador ?? "P",
+        codigo: Number(codigo),
+        forma_pagamento: contrato.envio.formaPagamento,
+        valor: valorTotal,
+        observacao: "",
+      },
+    ],
+  };
+}
+
+/** Uma conta só resolve. Havendo várias, a que bate com os dados bancários
+ *  do cadastro do cedente vence — dinheiro na conta errada é o pior defeito
+ *  possível, então empate sem prova não é resolvido por chute. */
+function escolherConta(
+  contas: unknown[],
+  imob: typeof imobiliarias.$inferSelect,
+  contrato: OperaContrato,
+): unknown | null {
+  if (contas.length === 1) return contas[0];
+
+  const contaCadastro = soDigitos(imob.bancoConta);
+  if (contaCadastro) {
+    const casadas = contas.filter(
+      (c) =>
+        soDigitos(lerTexto(c, contrato.leitura.favorecidoConta)) === contaCadastro,
+    );
+    if (casadas.length === 1) return casadas[0];
+  }
+  return null;
 }
 
 /** Cria ou atualiza o espelho da operação no fundo. */

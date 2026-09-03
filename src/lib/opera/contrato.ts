@@ -34,6 +34,12 @@ export type OperaContrato = {
     cadastrarCliente: OperaRota;
     /** Peça 04 — envia a operação inteira. */
     enviarOperacao: OperaRota;
+    /** Peça 04a — contas de recebimento (favorecidos) que o fundo tem
+     *  cadastradas pro cedente. O ERP deles EXIGE o campo `favorecidos` no
+     *  envio, com o código da conta na base deles — por isso a consulta vem
+     *  antes de todo envio. Quem cadastra as contas é a esteira cadastral do
+     *  fundo, não nós. */
+    consultarFavorecidos?: OperaRota;
     /** Opcional: consulta de status sob demanda. NÃO liberada pela OPERA —
      *  a credencial toma 403 ("Você não tem permissão de acesso a esta API")
      *  e eles confirmaram em 03/09 que o status da operação vem SEMPRE por
@@ -58,6 +64,9 @@ export type OperaContrato = {
     /** O sacado (construtora) também precisa de cadastro no fundo? Na OPERA
      *  não: só o cedente é cadastrado, o sacado vai inline nos títulos. */
     cadastrarSacado: boolean;
+    /** Forma de pagamento do favorecido no envio da operação. A OPERA
+     *  definiu SEMPRE 1 (03/09); fica configurável por fundo. */
+    formaPagamento: number;
   };
   /** Onde ler cada informação na resposta do fundo. Cada campo aceita uma
    *  lista de caminhos candidatos — o primeiro que existir vence. Isso
@@ -93,6 +102,14 @@ export type OperaContrato = {
     duplicataCodigoBarras: string[];
     duplicataSacadoNome: string[];
     duplicataSacadoDocumento: string[];
+    /** Favorecidos — a lista e os campos de cada conta cadastrada. */
+    favorecidosLista: string[];
+    favorecidoIndicador: string[];
+    favorecidoCodigo: string[];
+    favorecidoNome: string[];
+    favorecidoBanco: string[];
+    favorecidoAgencia: string[];
+    favorecidoConta: string[];
   };
   /** Como os arquivos vão no cadastro: 'url' manda link assinado nosso,
    *  'base64' embute cada arquivo, 'zip_base64' compacta tudo num ZIP e
@@ -131,6 +148,10 @@ export const DEFAULT_CONTRATO: OperaContrato = {
       caminho: "/operapi/enviar-operacao/",
       corpo: "multipart",
     },
+    consultarFavorecidos: {
+      metodo: "GET",
+      caminho: "/operapi/consulta-favorecidos/{cnpj}/",
+    },
     // 403 pra credencial ANTECIPAQUI — status é webhook-only (ver acima).
     consultarOperacao: {
       metodo: "GET",
@@ -147,6 +168,7 @@ export const DEFAULT_CONTRATO: OperaContrato = {
     executaFiltro: "S",
     tipoDocumento: "D",
     cadastrarSacado: false,
+    formaPagamento: 1,
   },
   leitura: {
     clienteExisteFlag: ["existe", "encontrado", "found", "data.existe"],
@@ -213,6 +235,15 @@ export const DEFAULT_CONTRATO: OperaContrato = {
       "pagadorDocumento",
       "documento",
     ],
+    // A consulta devolve um array puro; os candidatos abaixo cobrem o dia em
+    // que ela vier embrulhada. Campos vêm capitalizados na OperAPI.
+    favorecidosLista: ["favorecidos", "data", "resultado", "results"],
+    favorecidoIndicador: ["Indicador", "indicador"],
+    favorecidoCodigo: ["Codigo", "codigo", "id"],
+    favorecidoNome: ["Nome", "nome", "razaoSocial"],
+    favorecidoBanco: ["Banco", "banco"],
+    favorecidoAgencia: ["Agencia", "agencia"],
+    favorecidoConta: ["Conta", "conta"],
   },
   documentos: {
     // A OPERA recebe os documentos como base64 de um ZIP dentro de

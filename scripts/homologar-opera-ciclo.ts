@@ -23,6 +23,7 @@
  *
  *   npx tsx scripts/homologar-opera-ciclo.ts --seq 2
  *   npx tsx scripts/homologar-opera-ciclo.ts --seq 2 --sincronizar
+ *   npx tsx scripts/homologar-opera-ciclo.ts --seq 2 --nova-operacao
  *   npx tsx scripts/homologar-opera-ciclo.ts --seq 2 --status   (só lê)
  *   npx tsx scripts/homologar-opera-ciclo.ts --seq 2 --reset    (zera o espelho)
  */
@@ -53,11 +54,14 @@ const RESET = process.argv.includes("--reset");
 /** Reconsulta o cadastro no fundo e reprocessa a esteira deste cliente —
  *  é como acompanhar a fila interna da OPERA sem esperar o cron. */
 const SINCRONIZAR = process.argv.includes("--sincronizar");
+/** Cria mais uma operação pro MESMO cedente (já aprovado no fundo) e manda.
+ *  É o jeito de testar o envio de novo sem duplicar operação lá dentro. */
+const NOVA_OPERACAO = process.argv.includes("--nova-operacao");
 
 const S = String(SEQ).padStart(2, "0");
 const USER_ID = `user_homolog_opera_${S}`;
 const EMAIL = `homologacao${S}@antecipaqui.digital`;
-const NUMERO_OP = `OP-HOMOLOG-${String(SEQ).padStart(4, "0")}`;
+const NUMERO_BASE = `OP-HOMOLOG-${String(SEQ).padStart(4, "0")}`;
 
 /** CNPJ fictício com dígitos verificadores corretos (mod-11 oficial). */
 function cnpjFicticio(base12: string): string {
@@ -114,7 +118,7 @@ function emDias(dias: number): string {
 
 async function main() {
   const { put } = await import("@vercel/blob");
-  const { and, eq, inArray, isNull, lte, or } = await import("drizzle-orm");
+  const { and, eq, inArray, isNull, like, lte, or } = await import("drizzle-orm");
   const { db } = await import("../src/db");
   const {
     users,
@@ -137,7 +141,7 @@ async function main() {
   console.log(`═══ HOMOLOGAÇÃO OPERA · cliente de teste #${S} ═══`);
   console.log(`CNPJ imobiliária (cedente): ${CNPJ_IMOB}`);
   console.log(`CNPJ construtora (sacado):  ${CNPJ_CONSTRUTORA}`);
-  console.log(`Operação:                   ${NUMERO_OP}\n`);
+  console.log(`Operação:                   ${NUMERO_BASE}${NOVA_OPERACAO ? " (+ sufixo novo)" : ""}\n`);
 
   /* ── modo leitura / reset ─────────────────────────────────────── */
   if (SO_STATUS || RESET) {
@@ -297,10 +301,29 @@ async function main() {
     .limit(1);
   if (!fundo) throw new Error("Fundo Opera não encontrado em produção");
 
+  // Operação nova pro mesmo cedente ganha sufixo (B, C, …): número novo é
+  // operação nova pro fundo, não reenvio da mesma.
+  let numeroOp = NUMERO_BASE;
+  if (NOVA_OPERACAO) {
+    const usadas = new Set(
+      (
+        await db
+          .select({ numero: operacoes.numero })
+          .from(operacoes)
+          .where(like(operacoes.numero, `${NUMERO_BASE}%`))
+      ).map((r) => r.numero),
+    );
+    const letra = "BCDEFGHIJKLMNOPQRSTUVWXYZ"
+      .split("")
+      .find((l) => !usadas.has(`${NUMERO_BASE}${l}`));
+    if (!letra) throw new Error("acabaram os sufixos de operação de teste");
+    numeroOp = `${NUMERO_BASE}${letra}`;
+  }
+
   let [op] = await db
     .select()
     .from(operacoes)
-    .where(eq(operacoes.numero, NUMERO_OP))
+    .where(eq(operacoes.numero, numeroOp))
     .limit(1);
   if (!op) {
     const VALOR_VENDA = 600000;
@@ -315,7 +338,7 @@ async function main() {
     [op] = await db
       .insert(operacoes)
       .values({
-        numero: NUMERO_OP,
+        numero: numeroOp,
         corretorUserId: USER_ID,
         imobiliariaId: imob.id,
         construtoraId: construtora.id,
@@ -464,7 +487,7 @@ async function main() {
               enviadaEm: espelhoOp.enviadaEm,
               ultimaResposta: espelhoOp.ultimaResposta,
             }
-          : `ainda não enviada (${NUMERO_OP} espera o cadastro do cedente ser aprovado)`,
+          : `ainda não enviada (${op.numero} espera o cadastro do cedente ser aprovado)`,
       },
       null,
       2,
