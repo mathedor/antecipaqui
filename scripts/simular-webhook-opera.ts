@@ -16,6 +16,7 @@
  *   npx tsx scripts/simular-webhook-opera.ts --status aguardando_pagamento
  *   npx tsx scripts/simular-webhook-opera.ts --status pago --repetir 3
  *   npx tsx scripts/simular-webhook-opera.ts --duplicatas
+ *   npx tsx scripts/simular-webhook-opera.ts --op OP-X --limpar
  *   ... --op OP-HOMOLOG-0002 --base https://www.antecipaqui.digital
  */
 import { config } from "dotenv";
@@ -79,6 +80,28 @@ async function main() {
         .limit(1);
   const op = alvo[0];
   if (!op) throw new Error("operação alvo não encontrada / nunca enviada");
+
+  // Depois de simular, apaga a MARCA do teste no espelho: se o fundo mandar
+  // o primeiro status real com a data do fato (anterior ao nosso simulado),
+  // a trava de "evento mais antigo não retrocede" o descartaria calado.
+  if (process.argv.includes("--limpar")) {
+    await db
+      .update(operaOperacoes)
+      .set({
+        statusExterno: null,
+        statusLabel: null,
+        statusInterno: null,
+        statusDesconhecido: false,
+        observacao: null,
+        ultimoEventoEm: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(operaOperacoes.operacaoId, op.id));
+    console.log(
+      `espelho de ${op.numero} limpo — pronto pro primeiro status real do fundo`,
+    );
+    return;
+  }
 
   const duplicatas = process.argv.includes("--duplicatas");
   const tipo = duplicatas ? "duplicatas" : "status";
