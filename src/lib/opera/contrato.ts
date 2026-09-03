@@ -34,8 +34,11 @@ export type OperaContrato = {
     cadastrarCliente: OperaRota;
     /** Peça 04 — envia a operação inteira. */
     enviarOperacao: OperaRota;
-    /** Opcional: consulta de status sob demanda (rede de segurança caso um
-     *  webhook se perca). */
+    /** Opcional: consulta de status sob demanda. NÃO liberada pela OPERA —
+     *  a credencial toma 403 ("Você não tem permissão de acesso a esta API")
+     *  e eles confirmaram em 03/09 que o status da operação vem SEMPRE por
+     *  webhook, conforme eles andam a esteira do lado de lá. Fica declarada
+     *  porque outro fundo pode liberar; não é rede de segurança nenhuma. */
     consultarOperacao?: OperaRota;
     /** Opcional: ping de saúde pro painel de conexão. */
     saude?: OperaRota;
@@ -128,6 +131,7 @@ export const DEFAULT_CONTRATO: OperaContrato = {
       caminho: "/operapi/enviar-operacao/",
       corpo: "multipart",
     },
+    // 403 pra credencial ANTECIPAQUI — status é webhook-only (ver acima).
     consultarOperacao: {
       metodo: "GET",
       caminho: "/operapi/consulta-integracao-operacao/?operacao_id={id}",

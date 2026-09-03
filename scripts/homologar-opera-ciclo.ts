@@ -197,14 +197,16 @@ async function main() {
     return;
   }
 
-  /* 1 · Dono (user sintético; a ficha do cedente sai dele) */
+  /* 1 · Dono (user sintético; a ficha do cedente sai dele).
+   *     SEM telefone de propósito: número inventado é número de alguém, e
+   *     um status urgente do fundo dispara SMS/WhatsApp pro cadastro. O
+   *     telefone da ficha que vai pra OPERA sai da imobiliária. */
   await db
     .insert(users)
     .values({
       id: USER_ID,
       email: EMAIL,
       nome: `Homologacao Antecipaqui ${S}`,
-      telefone: "47999990000",
     })
     .onConflictDoNothing();
 

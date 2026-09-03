@@ -349,6 +349,46 @@ const operaJobsTravados: Check = {
   },
 };
 
+/** O status da operação no fundo só chega por webhook — a consulta sob
+ *  demanda da OperAPI não é liberada pra nossa credencial (403, confirmado
+ *  pela OPERA em 03/09). Logo, silêncio longo é indistinguível de webhook
+ *  perdido: quem vigia é este robô. */
+const operaStatusSilencioso: Check = {
+  id: "opera-status-silencioso",
+  area: "Integração OPERA",
+  titulo: "Operações enviadas sem notícia do fundo",
+  visibilidade: "ambos",
+  async run(ctx) {
+    const escopoFundo =
+      ctx.escopo === "fundo" && ctx.fundoId
+        ? sql`AND oo.fundo_id = ${ctx.fundoId}`
+        : sql``;
+    const [r] = linhas<{ n: number; pior: number }>(
+      await db.execute(sql`
+        SELECT count(*)::int AS n,
+          coalesce(max(extract(day from now()
+            - coalesce(oo.ultimo_evento_em, oo.enviada_em))), 0)::int AS pior
+        FROM opera_operacoes oo
+        JOIN operacoes o ON o.id = oo.operacao_id
+        WHERE oo.enviada_em IS NOT NULL
+          AND o.status NOT IN ('realizada', 'cancelada', 'recusada')
+          AND coalesce(oo.ultimo_evento_em, oo.enviada_em) < now() - interval '3 days'
+          ${escopoFundo}
+      `),
+    );
+    const n = Number(r?.n ?? 0);
+    if (n === 0)
+      return OK("Toda operação enviada teve notícia do fundo nos últimos 3 dias.");
+    return {
+      status: "atencao",
+      detalhe: `${n} operação(ões) enviada(s) sem nenhum status do fundo há ${Number(r?.pior ?? 0)} dia(s).`,
+      recomendacao:
+        "O status só chega por webhook (a consulta sob demanda não é liberada). Confirme com o fundo se os avisos estão saindo e reprocesse os eventos na central de integração.",
+      metrica: `${n}`,
+    };
+  },
+};
+
 /* ═══════════════════════════════════════════════════════════════
    ÁREA · Comunicação (E-mail, WhatsApp, Assinatura)
    ═══════════════════════════════════════════════════════════════ */
@@ -587,6 +627,7 @@ export const CHECKS: Check[] = [
   webhooksSegredo,
   operaConexao,
   operaJobsTravados,
+  operaStatusSilencioso,
   resendConfig,
   zapsignConfig,
   blobToken,

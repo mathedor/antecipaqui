@@ -83,6 +83,14 @@ export async function aplicarCadastro(
   const motivo = lerTexto(payload, contrato.leitura.motivo);
   const chave = normalizarStatus(situacaoCrua);
 
+  // Mesma história do status: o fundo repete o aviso do mesmo fato com
+  // eventoId novo. Comparar com a última situação que ele mandou evita
+  // alerta e e-mail em série pelo que já foi dito.
+  const situacaoAnterior = normalizarStatus(
+    lerTexto(cliente.ultimaResposta, contrato.leitura.situacaoCadastro) ?? "",
+  );
+  const situacaoRepetida = chave !== "" && chave === situacaoAnterior;
+
   const aprovado = [
     "aprovado",
     "aprovada",
@@ -110,6 +118,13 @@ export async function aplicarCadastro(
         updatedAt: new Date(),
       })
       .where(eq(operaClientes.id, cliente.id));
+    if (situacaoRepetida) {
+      return {
+        ok: true,
+        detalhe: `Situação "${situacaoCrua}" repetida — registrada sem novo alerta`,
+        operaClienteId: cliente.id,
+      };
+    }
     await avisarAdmins({
       type: "opera_cadastro_situacao_desconhecida",
       titulo: "Situação cadastral desconhecida",
@@ -144,7 +159,15 @@ export async function aplicarCadastro(
     };
   }
 
-  // Reprovado: uma reprovação nunca fica muda.
+  // Reprovado: uma reprovação nunca fica muda — mas é dita UMA vez. O
+  // cliente não recebe o mesmo "seu cadastro foi negado" nove vezes.
+  if (situacaoRepetida && cliente.situacao === "reprovado") {
+    return {
+      ok: true,
+      detalhe: "Reprovação repetida — registrada sem novo aviso",
+      operaClienteId: cliente.id,
+    };
+  }
   await avisarReprovacaoCadastral(fundo, cliente.id, motivo);
   return {
     ok: true,
@@ -287,6 +310,14 @@ export async function aplicarStatus(
 
   const traduzido = traduzirStatus(statusCru);
 
+  // A OPERA manda VÁRIOS eventos pro mesmo fato, cada um com eventoId novo
+  // (02/09: nove avisos da mesma aprovação cadastral) — a idempotência por
+  // eventoId não pega isso. O espelho sempre acompanha, mas notícia repetida
+  // não vira aviso: nove e-mails do mesmo status seriam erro nosso, não deles.
+  const statusRepetido =
+    normalizarStatus(statusCru) ===
+    normalizarStatus(espelho.statusExterno ?? "");
+
   await db
     .update(operaOperacoes)
     .set({
@@ -306,7 +337,16 @@ export async function aplicarStatus(
 
   if (!traduzido) {
     // Estado desconhecido: registra, avisa o admin, cliente não vê nada
-    // quebrado. Entra no catálogo na primeira atualização.
+    // quebrado. Entra no catálogo na primeira atualização. Como o fundo vai
+    // narrando a esteira dele, estado fora do catálogo é ESPERADO — só não
+    // pode virar enxurrada de alerta igual.
+    if (statusRepetido) {
+      return {
+        ok: true,
+        detalhe: `Status "${statusCru}" repetido (fora do catálogo) — espelho atualizado, sem novo alerta`,
+        operacaoId: op.id,
+      };
+    }
     await db.insert(operacaoEvents).values({
       operacaoId: op.id,
       type: "opera_status_desconhecido",
@@ -325,6 +365,9 @@ export async function aplicarStatus(
   // Anda a esteira interna. Contrato, assinatura e pagamento são do fundo
   // nesse modelo, então aqui só refletimos o estado — sem regerar nada.
   const mudouStatus = op.status !== traduzido.interno;
+  // Notícia nova = rótulo diferente do que o fundo já tinha dito, ou esteira
+  // que andou. Reentrega do mesmo passo atualiza o espelho e para por aí.
+  const novidade = !statusRepetido || mudouStatus;
   if (mudouStatus) {
     const updates: Partial<typeof operacoes.$inferInsert> = {
       status: traduzido.interno,
@@ -338,6 +381,14 @@ export async function aplicarStatus(
       updates.liquidadoEm = quando;
     }
     await db.update(operacoes).set(updates).where(eq(operacoes.id, op.id));
+  }
+
+  if (!novidade) {
+    return {
+      ok: true,
+      detalhe: `Status "${traduzido.label}" repetido — espelho atualizado, sem novo aviso`,
+      operacaoId: op.id,
+    };
   }
 
   await db.insert(operacaoEvents).values({
