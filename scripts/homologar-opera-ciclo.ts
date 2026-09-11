@@ -77,6 +77,16 @@ function cnpjFicticio(base12: string): string {
 const CNPJ_IMOB = cnpjFicticio(`${45989200 + SEQ}0001`);
 const CNPJ_CONSTRUTORA = cnpjFicticio(`${45989300 + SEQ}0001`);
 
+/** Conta de recebimento do cedente — a MESMA que o fundo tem cadastrada
+ *  (consulta-favorecidos, código 1), que é para onde a operação anterior
+ *  deste cedente já foi paga. É ela que casa com o favorecido no envio. */
+const CONTA_CEDENTE = {
+  bancoNome: "CAIXA ECONOMICA FEDERAL",
+  bancoCodigo: "104",
+  bancoAgencia: "1880",
+  bancoConta: "123456",
+};
+
 /** PDF mínimo válido, uma página, avisando em letras garrafais que é teste. */
 function pdfTeste(titulo: string): Buffer {
   const linhas = [
@@ -134,7 +144,7 @@ async function main() {
   } = await import("../src/db/schema");
   const { consultarCliente, cadastrarCliente, enviarOperacao, iniciarIntegracaoDaOperacao } =
     await import("../src/lib/opera/agentes");
-  const { concluirJob, falharJob, bloquearJob } = await import(
+  const { concluirJob, falharJob, bloquearJob, destravarJob } = await import(
     "../src/lib/opera/fila"
   );
 
@@ -233,7 +243,18 @@ async function main() {
         endereco: `Rua da Homologacao, ${SEQ * 100} - Centro`,
         cidade: "Balneario Camboriu",
         uf: "SC",
+        ...CONTA_CEDENTE,
       })
+      .returning();
+  }
+  // Onde o dinheiro cai. O fundo já cadastrou mais de uma conta pra este
+  // cedente de teste; sem os dados bancários aqui o envio para de propósito,
+  // porque escolher a conta no chute é o pior defeito possível.
+  if (!imob.bancoConta) {
+    [imob] = await db
+      .update(imobiliarias)
+      .set({ ...CONTA_CEDENTE, updatedAt: new Date() })
+      .where(eq(imobiliarias.id, imob.id))
       .returning();
   }
   console.log(`Imobiliária: ${imob.razaoSocial} (${imob.id})`);
@@ -313,11 +334,28 @@ async function main() {
           .where(like(operacoes.numero, `${NUMERO_BASE}%`))
       ).map((r) => r.numero),
     );
-    const letra = "BCDEFGHIJKLMNOPQRSTUVWXYZ"
-      .split("")
-      .find((l) => !usadas.has(`${NUMERO_BASE}${l}`));
-    if (!letra) throw new Error("acabaram os sufixos de operação de teste");
-    numeroOp = `${NUMERO_BASE}${letra}`;
+    // Operação de teste que ficou pelo caminho (nunca chegou ao fundo) é
+    // retomada, não trocada por outra: número novo aqui sem envio lá vira
+    // fila de fantasma no nosso banco.
+    const naoEnviadas = await db
+      .select({ numero: operacoes.numero })
+      .from(operacoes)
+      .leftJoin(operaOperacoes, eq(operaOperacoes.operacaoId, operacoes.id))
+      .where(
+        and(
+          like(operacoes.numero, `${NUMERO_BASE}_`),
+          isNull(operaOperacoes.externoId),
+        ),
+      );
+    if (naoEnviadas.length) {
+      numeroOp = naoEnviadas.map((r) => r.numero).sort()[0];
+    } else {
+      const letra = "BCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .split("")
+        .find((l) => !usadas.has(`${NUMERO_BASE}${l}`));
+      if (!letra) throw new Error("acabaram os sufixos de operação de teste");
+      numeroOp = `${NUMERO_BASE}${letra}`;
+    }
   }
 
   let [op] = await db
@@ -405,6 +443,15 @@ async function main() {
       ),
     );
   const refs = [...espelhos.map((e) => e.id), op.id];
+
+  // O que parou por falta de dado nosso volta pra fila agora que a fixture
+  // preencheu — é o mesmo destravar que o admin faz na aba OPERA.
+  for (const travado of await db
+    .select({ id: operaJobs.id })
+    .from(operaJobs)
+    .where(and(inArray(operaJobs.refId, refs), eq(operaJobs.status, "bloqueado")))) {
+    await destravarJob(travado.id);
+  }
 
   for (let rodada = 1; rodada <= 5; rodada++) {
     const pendentes = await db
