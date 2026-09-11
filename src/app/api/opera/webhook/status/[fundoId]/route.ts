@@ -8,7 +8,7 @@
  *     {
  *       "eventoId": "evt_456",
  *       "operacaoId": "OPERA-1234",              // ou referenciaExterna (id nosso)
- *       "status": "enviado para assinatura",
+ *       "status": "enviado_para_assinatura",      // um dos 7 do catálogo
  *       "observacao": "aguardando o cedente",
  *       "linkAssinatura": "https://...",         // quando houver
  *       "dataEvento": "2026-08-13T14:02:00Z"
