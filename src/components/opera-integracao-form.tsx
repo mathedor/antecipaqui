@@ -271,7 +271,7 @@ export function OperaIntegracaoForm({
             <input
               type="checkbox"
               name="envioOperacaoPreCalculada"
-              defaultChecked={envioAtual.operacaoPreCalculada ?? true}
+              defaultChecked={envioAtual.operacaoPreCalculada ?? false}
               className="mt-1"
               disabled={!ligada}
             />

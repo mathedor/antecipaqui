@@ -163,7 +163,9 @@ export const DEFAULT_CONTRATO: OperaContrato = {
     // painel, os agentes ficam bloqueados com um motivo claro.
     parceiro: "",
     cnpjEmpresa: "",
-    operacaoPreCalculada: true,
+    // A OPERA recalcula a operação do lado dela (09/26) — mandar pré-calculado
+    // fazia o ERP recusar os valores.
+    operacaoPreCalculada: false,
     faseLiberacao: "N",
     executaFiltro: "S",
     tipoDocumento: "D",

@@ -19,7 +19,7 @@ const API_URL =
 const ENVIO = {
   parceiro: "ANTECIPAQUI",
   cnpjEmpresa: "42.081.459/0001-07",
-  operacaoPreCalculada: true,
+  operacaoPreCalculada: false,
   faseLiberacao: "N",
   executaFiltro: "S",
   tipoDocumento: "D",

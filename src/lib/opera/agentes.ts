@@ -834,7 +834,7 @@ async function montarPayloadOperacao(
       nome_sacado: s.nome,
       ...(s.endereco ? { endereco_sacado: s.endereco } : {}),
       ...(s.telefone ? { telefone_sacado: s.telefone } : {}),
-      numero_titulo: `${op.numero}/${String(p.numero).padStart(3, "0")}`,
+      numero_titulo: numeroTitulo(op.numero, p.numero),
       data_emissao: op.dataVenda,
       data_vencimento: p.vencimento,
       valor_nominal: Number(p.valor),
@@ -843,6 +843,16 @@ async function montarPayloadOperacao(
   };
 
   return { payload };
+}
+
+/** Número do título como o ERP do fundo aceita: NO MÁXIMO 10 caracteres.
+ *  "OP-2026-0012" + parcela dava 16+ e o envio era recusado. Guardamos a
+ *  CAUDA do número (é ela que carrega o sequencial e o sufixo da operação),
+ *  sem separadores, com a parcela colada no fim — continua único por parcela. */
+function numeroTitulo(numeroOperacao: string, numeroParcela: number): string {
+  const parcela = String(numeroParcela).padStart(2, "0");
+  const base = numeroOperacao.replace(/[^0-9A-Za-z]/g, "").replace(/^OP/i, "");
+  return `${base.slice(-(10 - parcela.length))}${parcela}`.toUpperCase();
 }
 
 /** Contas de recebimento do cedente na base do fundo. O ERP da OPERA exige o
