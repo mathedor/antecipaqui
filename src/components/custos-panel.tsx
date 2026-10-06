@@ -5,7 +5,6 @@ import { formatBRL } from "@/lib/format";
 import {
   APIS_SERVICOS,
   CAMBIO,
-  DESENVOLVIMENTO,
   SETUP,
   STORAGE_KEY,
   contasDoMes,
@@ -16,9 +15,13 @@ import {
   precoEntrega,
   tokensEntrega,
   type ContaFixa,
-  type DevEntry,
 } from "@/lib/custos-data";
-import type { ContaAna, PagamentosAna } from "@/lib/custosAna";
+import type { ContaAna, EntregaDaAna, PagamentosAna } from "@/lib/custosAna";
+import {
+  devDoMesComAna,
+  pedidosDaAnaPorMes,
+  type LinhaDev,
+} from "@/lib/custos-entregas";
 
 /* =============================================================
    Ícones (SVG desenhado — sem emoji)
@@ -191,6 +194,34 @@ function ChipEstimado() {
   return (
     <span className="inline-flex items-center rounded-full border border-warn/50 bg-warn/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-warn">
       estimado
+    </span>
+  );
+}
+
+/** Selo das linhas que a Ana entregou (tarefa do Terminal com commit publicado). */
+function ChipAna() {
+  return (
+    <span
+      className="inline-flex items-center rounded-full border border-accent/40 bg-accent-soft px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-accent"
+      title="Entregue pela Ana — entra no desenvolvimento do mês e paga junto com ele"
+    >
+      Ana
+    </span>
+  );
+}
+
+/** Estado da fatura de um pedido — só leitura: a baixa vem da fatura. */
+function ChipFatura({ pago }: { pago: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+        pago
+          ? "border-success/50 bg-success-soft text-success"
+          : "border-warn/50 bg-warn/10 text-warn"
+      }`}
+      title="A baixa vem sozinha quando a fatura do pedido é paga"
+    >
+      {pago ? "fatura paga" : "fatura aberta"}
     </span>
   );
 }
@@ -396,11 +427,15 @@ function LinhaItem({
 /* `pagosAna` é o estado de pago mês a mês no controle da Diretório Web: mês
    pago lá entra marcado aqui, e fechar/reabrir um mês aqui avisa lá — o ✓
    deixou de valer só neste navegador. */
-export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
+/* `entregasAna` é o que a própria Ana entregou neste sistema (lista vinda do
+   servidor — o token nunca chega aqui). Tarefa entra no desenvolvimento do
+   mês; pedido vai pro bloco "Pedidos pela Ana", fora do mês. */
+export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, entregasAna }: {
   mesCorrente: string;
   precosDaAna: ContaAna[] | null;
   pagosAna: PagamentosAna;
   avisarAna: (tipo: "custos" | "dev", mes: string, pago: boolean) => Promise<PagamentosAna | null>;
+  entregasAna: EntregaDaAna[];
 }) {
   const [estado, setEstado] = useState<Estado>(ESTADO_VAZIO);
   const [pronto, setPronto] = useState(false);
@@ -411,6 +446,8 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
     dev: true,
     [`dev:${mesCorrente}`]: true,
     apis: false,
+    pedidos: true,
+    [`ped:${mesCorrente}`]: true,
   });
   const [formAberto, setFormAberto] = useState(false);
 
@@ -432,7 +469,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
               .filter((x) => (x.recorrenteDesde ? m >= x.recorrenteDesde : x.data.slice(0, 7) === m))
               .map((x) => `${m}#x:${x.id}`),
           ]
-        : (DESENVOLVIMENTO[m] ?? []).map((_, i) => `dev:${m}#${i}`);
+        : devDoMesComAna(m, entregasAna).map((e) => e.id);
     for (const tipo of ["custos", "dev"] as const) {
       for (const [m, e] of Object.entries(pagosAna[tipo])) {
         if (!e) continue;
@@ -520,12 +557,23 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
     return [...base, ...extras];
   };
 
-  const devDoMes = (mes: string): DevEntry[] => DESENVOLVIMENTO[mes] ?? [];
-  const devId = (mes: string, i: number) => `dev:${mes}#${i}`;
+  /* desenvolvimento do mês = arquivo + tarefas da Ana (custos-entregas.ts) */
+  const devPorMes = useMemo(
+    () => Object.fromEntries(meses.map((m) => [m, devDoMesComAna(m, entregasAna)])) as Record<string, LinhaDev[]>,
+    [meses, entregasAna],
+  );
+  const devDoMes = (mes: string): LinhaDev[] => devPorMes[mes] ?? [];
   /* preço da entrega na competência — a margem da casa (set/2026+) entra
      aqui; ajuste manual do dono continua valendo por cima */
-  const devValor = (mes: string, i: number, e: DevEntry) =>
-    estado.overrides[devId(mes, i)] ?? precoEntrega(mes, e);
+  const devValor = (mes: string, e: LinhaDev) =>
+    estado.overrides[e.id] ?? precoEntrega(mes, e);
+
+  /* pedidos da Ana: fatura própria, fora do mês — só leitura aqui */
+  const pedidosPorMes = useMemo(() => pedidosDaAnaPorMes(entregasAna), [entregasAna]);
+  const mesesPedidos = Object.keys(pedidosPorMes).sort().reverse();
+  const todosPedidos = mesesPedidos.flatMap((m) => pedidosPorMes[m]);
+  const totalPedidos = todosPedidos.reduce((a, p) => a + p.valor, 0);
+  const abertoPedidos = todosPedidos.reduce((a, p) => a + (p.pago ? 0 : p.valor), 0);
 
   /* mês que fechou (ou reabriu) — por qualquer caminho: item a item ou botão
      do mês — vira baixa no controle da Diretório Web. A primeira passada só
@@ -538,7 +586,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
       const itens = itensDoMes(m);
       if (itens.length) atual[`custos:${m}`] = itens.every((i) => !!estado.pagos[i.id]);
       const dev = devDoMes(m);
-      if (dev.length) atual[`dev:${m}`] = dev.every((_, i) => !!estado.pagos[devId(m, i)]);
+      if (dev.length) atual[`dev:${m}`] = dev.every((e) => !!estado.pagos[e.id]);
     }
     const antes = completoRef.current;
     completoRef.current = atual;
@@ -586,11 +634,11 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
       Object.fromEntries(
         meses.map((m) => [
           m,
-          devDoMes(m).reduce((acc, e, i) => acc + devValor(m, i, e), 0),
+          devDoMes(m).reduce((acc, e) => acc + devValor(m, e), 0),
         ]),
       ) as Record<string, number>,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [meses, estado],
+    [meses, estado, devPorMes],
   );
 
   const totalDev = meses.reduce((a, m) => a + (totalDevPorMes[m] ?? 0), 0);
@@ -609,8 +657,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
   const devMesCorrente = devDoMes(mesCorrente);
   const totalDevMesCorrente = totalDevPorMes[mesCorrente] ?? 0;
   const pagoDevMesCorrente = devMesCorrente.reduce(
-    (a, e, i) =>
-      a + (estado.pagos[devId(mesCorrente, i)] ? devValor(mesCorrente, i, e) : 0),
+    (a, e) => a + (estado.pagos[e.id] ? devValor(mesCorrente, e) : 0),
     0,
   );
   const pctDevMesCorrente =
@@ -644,7 +691,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
       <p className={`text-xs ${sinc === "erro" ? "text-danger" : "text-fg-dim"}`}>
         {sinc === "erro"
           ? "⚠ Não consegui avisar o controle da Diretório Web — a última marcação valeu só neste navegador. Tente de novo em instantes."
-          : `Mês fechado (ou reaberto) aqui dá baixa direto no controle da Diretório Web${sinc === "indo" ? " — avisando…" : sinc === "ok" ? " — ✓ avisado" : ""}. Marcações parciais e ajustes de valor ficam neste navegador.`}
+          : `Mês fechado (ou reaberto) aqui dá baixa direto no controle da Diretório Web${sinc === "indo" ? " — avisando…" : sinc === "ok" ? " — ✓ avisado" : ""}. Marcações parciais e ajustes de valor ficam neste navegador. O que a Ana entrega entra sozinho: tarefa dela vai no desenvolvimento do mês (selo Ana) e pedido externo aparece em Pedidos pela Ana, com a fatura de quem pediu.`}
       </p>
 
       {/* ============ Registrar custo ============ */}
@@ -813,12 +860,10 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
                 .filter((m) => devDoMes(m).length > 0)
                 .map((mes) => {
                   const entradas = devDoMes(mes);
-                  const ids = entradas.map((_, i) => devId(mes, i));
+                  const ids = entradas.map((e) => e.id);
                   const total = totalDevPorMes[mes] ?? 0;
                   const pago = entradas.reduce(
-                    (a, e, i) =>
-                      a +
-                      (estado.pagos[devId(mes, i)] ? devValor(mes, i, e) : 0),
+                    (a, e) => a + (estado.pagos[e.id] ? devValor(mes, e) : 0),
                     0,
                   );
                   const pct = total > 0 ? (pago / total) * 100 : 100;
@@ -865,8 +910,8 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
                         </button>
                       }
                     >
-                      {entradas.map((e, i) => {
-                        const id = devId(mes, i);
+                      {entradas.map((e) => {
+                        const id = e.id;
                         return (
                           <LinhaItem
                             key={id}
@@ -882,14 +927,17 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
                             }
                             obs={e.desc}
                             chip={
-                              <span
-                                className="inline-flex items-center rounded-full border border-border bg-bg px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-fg-muted"
-                                title={labelEntrega(e)}
-                              >
-                                {formatTokens(tokensEntrega(e))}
-                              </span>
+                              <>
+                                {e.ana ? <ChipAna /> : null}
+                                <span
+                                  className="inline-flex items-center rounded-full border border-border bg-bg px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-fg-muted"
+                                  title={labelEntrega(e)}
+                                >
+                                  {formatTokens(tokensEntrega(e))}
+                                </span>
+                              </>
                             }
-                            valor={devValor(mes, i, e)}
+                            valor={devValor(mes, e)}
                             onEditarValor={(v) => setOverride(id, v)}
                           />
                         );
@@ -899,6 +947,91 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna }: {
                 })}
             </div>
           </Acordeao>
+
+          {/* -------- Pedidos pela Ana --------
+              Pedido externo que a Ana executou aqui já sai com fatura
+              própria, cobrada de quem pediu: não entra no mês nem na baixa
+              do mês. O estado é o da fatura — só leitura. */}
+          {mesesPedidos.length > 0 ? (
+            <Acordeao
+              aberto={!!abertos.pedidos}
+              onToggle={() => toggle("pedidos")}
+              titulo="Pedidos pela Ana"
+              sub={`${todosPedidos.length} ${todosPedidos.length === 1 ? "pedido" : "pedidos"} · faturados a quem pediu · fora do custo mensal e do desenvolvimento${abertoPedidos > 0 ? ` · ${formatBRL(abertoPedidos)} em aberto` : ""}`}
+              direita={
+                <span className="font-mono tabular text-sm font-bold">
+                  {formatBRL(totalPedidos)}
+                </span>
+              }
+            >
+              <div className="p-3 md:p-4 space-y-3 bg-bg">
+                {mesesPedidos.map((mes) => {
+                  const lista = pedidosPorMes[mes];
+                  const total = lista.reduce((a, p) => a + p.valor, 0);
+                  const pago = lista.reduce((a, p) => a + (p.pago ? p.valor : 0), 0);
+                  const pct = total > 0 ? (pago / total) * 100 : 100;
+                  return (
+                    <Acordeao
+                      key={mes}
+                      aberto={!!abertos[`ped:${mes}`]}
+                      onToggle={() => toggle(`ped:${mes}`)}
+                      titulo={
+                        <span>
+                          Pedidos pela Ana —{" "}
+                          <span className="capitalize">{labelMes(mes)}</span>
+                        </span>
+                      }
+                      sub={
+                        <span className="block">
+                          <span className="block mb-1.5">
+                            {lista.length} {lista.length === 1 ? "pedido" : "pedidos"} ·{" "}
+                            {Math.round(pct)}% das faturas pagas
+                          </span>
+                          <span className="block max-w-[16rem]">
+                            <BarraPago pct={pct} />
+                          </span>
+                        </span>
+                      }
+                      direita={
+                        <span className="font-mono tabular text-sm font-bold">
+                          {formatBRL(total)}
+                        </span>
+                      }
+                    >
+                      {lista.map((p) => (
+                        <LinhaItem
+                          key={p.id}
+                          pago={p.pago}
+                          titulo={
+                            <>
+                              <span className="font-mono text-[11px] text-fg-dim mr-2">
+                                {p.data}
+                              </span>
+                              {p.titulo}
+                            </>
+                          }
+                          obs={[p.desc, `pedido #${p.numero}${p.quem ? ` de ${p.quem}` : ""}`]
+                            .filter(Boolean)
+                            .join(" · ")}
+                          chip={
+                            <>
+                              <ChipFatura pago={p.pago} />
+                              {p.tokens > 0 ? (
+                                <span className="inline-flex items-center rounded-full border border-border bg-bg px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-fg-muted">
+                                  {formatTokens(p.tokens)}
+                                </span>
+                              ) : null}
+                            </>
+                          }
+                          valor={p.valor}
+                        />
+                      ))}
+                    </Acordeao>
+                  );
+                })}
+              </div>
+            </Acordeao>
+          ) : null}
 
           {/* -------- APIs & serviços -------- */}
           <Acordeao

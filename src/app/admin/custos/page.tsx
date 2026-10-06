@@ -2,7 +2,7 @@ import { requireAdminArea } from "@/lib/auth-user";
 import { AdminShell } from "@/components/admin-shell";
 import { CustosPanel } from "@/components/custos-panel";
 import { PageHelp } from "@/components/page-help";
-import { contasDaAna, pagamentosDaAna, type ContaAna } from "@/lib/custosAna";
+import { contasDaAna, entregasDaAna, pagamentosDaAna, type ContaAna } from "@/lib/custosAna";
 import { estimativaIaMes, mesCorrenteSP } from "@/lib/ia-uso";
 import { formatTokens } from "@/lib/custos-data";
 
@@ -29,6 +29,9 @@ export default async function AdminCustosPage() {
   const pagamentosNaAna = await pagamentosDaAna("antecipaqui");
   const admin = await requireAdminArea("configuracoes");
   const mesCorrente = mesCorrenteSP();
+  /* o que a Ana entregou aqui (tarefas e pedidos) — buscado no servidor, o
+     token não sai daqui; corre junto com as outras consultas à Ana */
+  const entregasP = entregasDaAna("antecipaqui");
 
   // o preço de verdade da infraestrutura deste mês, lido pela Ana na fatura
   const daAna = await contasDaAna("antecipaqui");
@@ -55,6 +58,7 @@ export default async function AdminCustosPage() {
     }
   }
   const precos = ia ? [...(precosDaAna ?? []), ia] : precosDaAna;
+  const entregasAna = await entregasP;
 
   return (
     <AdminShell active="/admin/custos" userName={admin.nome}>
@@ -83,6 +87,7 @@ export default async function AdminCustosPage() {
           precosDaAna={precos}
           pagosAna={pagamentosNaAna}
           avisarAna={marcarPagamentoNaAna}
+          entregasAna={entregasAna}
         />
       </PagamentosAna>
     </AdminShell>

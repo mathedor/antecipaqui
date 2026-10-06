@@ -146,3 +146,53 @@ export async function marcarNaAna(
     return null;
   }
 }
+
+/* ══ O QUE A ANA ENTREGOU NESTE SISTEMA ══
+   A Ana também mexe no código daqui: tarefa do Terminal que virou commit
+   publicado e pedido externo de cliente/sócio que ela executou. O arquivo de
+   dados é escrito à mão e nunca soube delas — mas a Ana JÁ soma as tarefas no
+   desenvolvimento do mês dela. Então a página pergunta pra Ana ao abrir, pra
+   os dois lados mostrarem o mesmo número.
+   · tarefa — entra no desenvolvimento do mês, pelo tier, paga junto com o mês;
+   · pedido — tem fatura própria, cobrada de quem pediu: fica à parte. */
+
+export type EntregaDaAna = {
+  /** "tarefa:735" | "pedido:253" — chave estável */
+  ref: string;
+  tipo: "tarefa" | "pedido";
+  /** AAAA-MM-DD no fuso de São Paulo — o mês é dia.slice(0, 7) */
+  dia: string;
+  titulo: string;
+  descricao: string;
+  /** quem pediu (só pedido) */
+  quem: string | null;
+  tier: "P" | "M" | "G" | "X";
+  tokens_milhoes: number;
+  /** pedido: valor da fatura, já com a margem · tarefa: null (a página precifica pelo tier) */
+  valor_centavos: number | null;
+  /** pedido: a fatura está paga? · tarefa: sempre false (paga com o mês) */
+  pago: boolean;
+  pago_em: string | null;
+  commit: string | null;
+};
+
+/** Lista do que a Ana entregou aqui. Qualquer falha devolve [] — Ana fora do
+ *  ar não pode derrubar o relatório. */
+export async function entregasDaAna(projeto: string): Promise<EntregaDaAna[]> {
+  const token = process.env.ANA_CUSTOS_TOKEN;
+  if (!token) return [];
+  try {
+    const r = await fetch(`${ANA}/api/custos-entregas?projeto=${encodeURIComponent(projeto)}&t=${token}`, {
+      next: { revalidate: 300 },   // 5 min: tarefa nova aparece logo, sem bater na Ana a cada clique
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) return [];
+    const d = await r.json();
+    if (!d?.ok || !Array.isArray(d.entregas)) return [];
+    return (d.entregas as EntregaDaAna[]).filter(
+      (e) => e && (e.tipo === "tarefa" || e.tipo === "pedido") && /^\d{4}-\d{2}-\d{2}/.test(String(e.dia)),
+    );
+  } catch {
+    return [];
+  }
+}
