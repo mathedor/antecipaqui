@@ -648,9 +648,11 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
     const atual: Record<string, boolean> = {};
     for (const m of meses) {
       const itens = itensDoMes(m);
-      if (itens.length) atual[`custos:${m}`] = itens.every((i) => !!estado.pagos[i.id]);
+      /* conta de R$ 0,00 (ex.: Vercel zerada) não segura o mês — mesmo
+         critério da GYT, do I'm Here e da CONTBOX */
+      if (itens.length) atual[`custos:${m}`] = itens.every((i) => !!estado.pagos[i.id] || i.valor === 0);
       const dev = devDoMes(m);
-      if (dev.length) atual[`dev:${m}`] = dev.every((e) => !!estado.pagos[e.id]);
+      if (dev.length) atual[`dev:${m}`] = dev.every((e) => !!estado.pagos[e.id] || devValor(m, e) === 0);
     }
     const antes = completoRef.current;
     completoRef.current = atual;
@@ -807,7 +809,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
               0,
             ) + somaSaldo(saldosMes, true);
             const pct = total > 0 ? (pago / total) * 100 : 100;
-            const tudoPago = itens.every((i) => estado.pagos[i.id]);
+            const tudoPago = itens.every((i) => estado.pagos[i.id] || i.valor === 0);
             return (
               <Acordeao
                 key={mes}
@@ -938,7 +940,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
                   const soSaldo = entradas.length === 0;
                   const saldoPago = saldosMes.every((x) => x.pago);
                   const pct = soSaldo ? (saldoPago ? 100 : 0) : total > 0 ? (pago / total) * 100 : 100;
-                  const tudoPago = soSaldo ? saldoPago : ids.every((id) => estado.pagos[id]);
+                  const tudoPago = soSaldo ? saldoPago : entradas.every((e) => estado.pagos[e.id] || devValor(mes, e) === 0);
                   const tokensMes = entradas.reduce(
                     (a, e) => a + tokensEntrega(e),
                     0,
