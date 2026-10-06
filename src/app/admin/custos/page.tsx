@@ -81,7 +81,7 @@ export default async function AdminCustosPage() {
       </div>
 
       {/* 2 · card do caixa · 3 · custos e descritivos · 4 · pagamentos (no fim) */}
-      <PagamentosAna inicial={pagamentosNaAna} marcar={marcarPagamentoNaAna}>
+      <PagamentosAna inicial={pagamentosNaAna} marcar={marcarPagamentoNaAna} mesCorrente={mesCorrente}>
         <CustosPanel
           mesCorrente={mesCorrente}
           precosDaAna={precos}

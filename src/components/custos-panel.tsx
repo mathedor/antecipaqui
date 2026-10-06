@@ -932,8 +932,13 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
                     (a, e) => a + (estado.pagos[e.id] ? devValor(mes, e) : 0),
                     0,
                   ) + somaSaldo(saldosMes, true);
-                  const pct = total > 0 ? (pago / total) * 100 : 100;
-                  const tudoPago = ids.every((id) => estado.pagos[id]);
+                  /* mês só com saldo (nenhuma entrega nele): o estado do mês é o do
+                     próprio saldo — senão pareceria quitado vazio — e o botão dá a
+                     baixa direto na Ana (ela aceita o mês pelo saldo, ana 2d60223) */
+                  const soSaldo = entradas.length === 0;
+                  const saldoPago = saldosMes.every((x) => x.pago);
+                  const pct = soSaldo ? (saldoPago ? 100 : 0) : total > 0 ? (pago / total) * 100 : 100;
+                  const tudoPago = soSaldo ? saldoPago : ids.every((id) => estado.pagos[id]);
                   const tokensMes = entradas.reduce(
                     (a, e) => a + tokensEntrega(e),
                     0,
@@ -961,10 +966,11 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
                       }
                       direita={<TotalComNotas total={total} notas={notasDaOrigem(saldos, "dev", mes)} />}
                       rodape={
-                        ids.length === 0 ? undefined : <button
+                        <button
                           type="button"
-                          onClick={() => marcarVarios(ids, !tudoPago)}
-                          className="inline-flex items-center gap-2 text-xs font-medium text-fg-muted hover:text-accent transition-colors"
+                          onClick={() => (soSaldo ? avisar("dev", mes, !tudoPago) : marcarVarios(ids, !tudoPago))}
+                          disabled={soSaldo && sinc === "indo"}
+                          className="inline-flex items-center gap-2 text-xs font-medium text-fg-muted hover:text-accent transition-colors disabled:opacity-50"
                         >
                           <IconCheck />
                           {tudoPago

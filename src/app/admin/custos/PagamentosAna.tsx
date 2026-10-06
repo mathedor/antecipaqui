@@ -29,10 +29,13 @@ const dia = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 export default function PagamentosAna({
   inicial,
   marcar,
+  mesCorrente,
   children,
 }: {
   inicial: Estado;
   marcar: Marcar;
+  /** AAAA-MM (fuso de SP): mês só com saldo ganha botão quando já começou */
+  mesCorrente: string;
   children?: ReactNode;
 }) {
   const [estado, setEstado] = useState<Estado>(inicial);
@@ -93,8 +96,32 @@ export default function PagamentosAna({
 
   const celula = (tipo: "custos" | "dev", mes: string) => {
     const e = estado[tipo][mes];
-    if (!e) return <><span style={{ opacity: 0.4 }}>—</span>{notaSaldo(tipo, mes)}</>;
     const ocupado = mexendo === `${tipo}:${mes}`;
+    if (!e) {
+      /* mês só com saldo (sem conta do mês na Ana): a baixa vale pros saldos */
+      const so = saldos.filter((x) => x.tipo === tipo && x.destino === mes && x.centavos !== 0);
+      if (!so.length || mes > mesCorrente) return <><span style={{ opacity: 0.4 }}>—</span>{notaSaldo(tipo, mes)}</>;
+      const pagoSo = so.every((x) => x.pago);
+      return (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <b style={{ fontVariantNumeric: "tabular-nums" }}>{real(so.reduce((a, x) => a + x.centavos, 0))}</b>
+          <button
+            type="button"
+            onClick={() => clicar(tipo, mes, pagoSo)}
+            disabled={ocupado}
+            title={pagoSo ? "marcado como pago — clique para desfazer" : "só o saldo cai neste mês — clique quando pagar"}
+            style={{
+              cursor: "pointer", borderRadius: 999, padding: "2px 10px", fontSize: ".72rem",
+              border: "1px solid currentColor", background: "transparent",
+              opacity: ocupado ? 0.5 : 1, color: pagoSo ? "#3ecf8e" : "inherit",
+            }}
+          >
+            {ocupado ? "…" : pagoSo ? "✓ pago" : "em aberto · só saldo"}
+          </button>
+          {notaSaldo(tipo, mes)}
+        </span>
+      );
+    }
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <b style={{ fontVariantNumeric: "tabular-nums" }}>{real(e.centavos)}</b>
