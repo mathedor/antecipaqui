@@ -13,8 +13,8 @@
      (nem total, nem baixa): só aparece no bloco "Pedidos pela Ana".
    ───────────────────────────────────────────────────────────────────────────── */
 
-import { DESENVOLVIMENTO, TIERS, type DevEntry, type Tier } from "./custos-data";
-import type { EntregaDaAna } from "./custosAna";
+import { DESENVOLVIMENTO, TIERS, labelMes, type DevEntry, type Tier } from "./custos-data";
+import type { EntregaDaAna, PagamentosAna, SaldoAna } from "./custosAna";
 
 /** Uma linha do desenvolvimento do mês, com a chave do ✓/ajuste de valor. */
 export type LinhaDev = DevEntry & {
@@ -81,4 +81,52 @@ export function pedidosDaAnaPorMes(entregas: EntregaDaAna[]): Record<string, Ped
   }
   for (const lista of Object.values(out)) lista.sort((a, b) => diaDe(b.data) - diaDe(a.data));
   return out;
+}
+
+/* ── saldos (06/10/2026) ──
+   Mês pago que mudou depois vira saldo no próximo mês em aberto (a Ana
+   calcula). Aqui ele aparece duas vezes: como linha no mês de DESTINO (soma
+   no total, no % pago e no KPI do mês) e como nota no mês de ORIGEM — cujo
+   total continua o do relatório. O pago é o da Ana, só leitura: ela dá baixa
+   no saldo junto com o mês de destino. */
+
+/** Evento da página quando a Ana devolve o estado novo (baixa dada no painel ou
+ *  no quadro de pagamentos) — os dois redesenham com o mesmo número. */
+export const EVENTO_PAGAMENTOS = "antecipaqui:pagamentos-ana";
+
+export function avisarPagamentos(estado: PagamentosAna) {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENTO_PAGAMENTOS, { detail: estado }));
+}
+
+export type LinhaSaldo = { id: string; titulo: string; desc: string; valor: number; pago: boolean };
+
+const reais = (centavos: number) =>
+  (Math.abs(centavos) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+/** Linhas de saldo que caem neste mês (destino), do tipo pedido. */
+export function saldosNoMes(saldos: SaldoAna[], tipo: "dev" | "custos", mes: string): LinhaSaldo[] {
+  return saldos
+    .filter((s) => s.tipo === tipo && s.destino === mes && s.centavos !== 0)
+    .map((s) => ({
+      id: `saldo:${s.ref}`,
+      titulo: `Saldo de ${labelMes(s.origem)}`,
+      desc: s.centavos < 0
+        ? `crédito: ${labelMes(s.origem)} pago acima do valor real`
+        : tipo === "dev"
+          ? `entregas de ${labelMes(s.origem)} registradas depois do pagamento`
+          : `${labelMes(s.origem)} pago abaixo do custo real`,
+      valor: s.centavos / 100,
+      pago: s.pago,
+    }));
+}
+
+/** Notas do mês de origem: pra onde foi a diferença. */
+export function notasDaOrigem(saldos: SaldoAna[], tipo: "dev" | "custos", mes: string): string[] {
+  return saldos
+    .filter((s) => s.tipo === tipo && s.origem === mes && s.centavos !== 0)
+    .map((s) => s.centavos < 0
+      ? `pago ${reais(s.centavos)} acima do real → crédito em ${labelMes(s.destino)}`
+      : tipo === "dev"
+        ? `${reais(s.centavos)} entrou depois do pagamento → saldo em ${labelMes(s.destino)}`
+        : `pago ${reais(s.centavos)} abaixo do real → saldo em ${labelMes(s.destino)}`);
 }

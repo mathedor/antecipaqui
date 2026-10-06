@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import type { PagamentosAna as Estado } from "@/lib/custosAna";
+import { EVENTO_PAGAMENTOS, avisarPagamentos } from "@/lib/custos-entregas";
 
 /* ══ CAIXA + O QUE JÁ FOI PAGO ══
    O card de caixa mostra o dinheiro que sobra. A tabela mostra, mês a mês, o
@@ -38,13 +39,28 @@ export default function PagamentosAna({
   const [mexendo, setMexendo] = useState<string | null>(null);
   const [, comecar] = useTransition();
 
-  const meses = Array.from(new Set([...Object.keys(estado.custos), ...Object.keys(estado.dev)])).sort().reverse();
+  /* baixa dada no painel de custos redesenha aqui também (mesmo número) */
+  useEffect(() => {
+    const ouvir = (ev: Event) => {
+      const d = (ev as CustomEvent<Estado>).detail;
+      if (d?.custos && d?.dev) setEstado({ ...d, saldos: d.saldos ?? [] });
+    };
+    window.addEventListener(EVENTO_PAGAMENTOS, ouvir);
+    return () => window.removeEventListener(EVENTO_PAGAMENTOS, ouvir);
+  }, []);
+
+  const saldos = estado.saldos ?? [];
+  const meses = Array.from(new Set([
+    ...Object.keys(estado.custos), ...Object.keys(estado.dev), ...saldos.map((x) => x.destino),
+  ])).sort().reverse();
   const temDados = meses.length > 0;
 
   // Caixa: capital aportado menos tudo que já foi pago (infra + desenv.).
   // Atualiza na hora que você marca/desmarca um pagamento abaixo.
   const somaPaga = (tipo: "custos" | "dev") =>
-    Object.values(estado[tipo]).reduce((a, e) => a + (e?.pago ? e.centavos : 0), 0);
+    Object.values(estado[tipo]).reduce((a, e) => a + (e?.pago ? e.centavos : 0), 0)
+    // saldo pago (mês que mudou depois de pago) também saiu do caixa — com sinal
+    + saldos.reduce((a, x) => a + (x.tipo === tipo && x.pago ? x.centavos : 0), 0);
   const pagoInfra = somaPaga("custos");
   const pagoDev = somaPaga("dev");
   const totalPago = pagoInfra + pagoDev;
@@ -58,14 +74,26 @@ export default function PagamentosAna({
     setMexendo(`${tipo}:${mes}`);
     comecar(async () => {
       const novo = await marcar(tipo, mes, !pago);
-      if (novo) setEstado(novo);
+      if (novo) {
+        setEstado(novo);
+        avisarPagamentos(novo);   // o painel de custos redesenha os saldos
+      }
       setMexendo(null);
     });
   };
 
+  /* saldo que cai neste mês: a Ana dá baixa nele junto com o mês */
+  const notaSaldo = (tipo: "custos" | "dev", mes: string) => saldos
+    .filter((x) => x.tipo === tipo && x.destino === mes && x.centavos !== 0)
+    .map((x) => (
+      <span key={x.ref} style={{ display: "block", fontSize: ".72rem", opacity: 0.75, marginTop: 3, color: x.centavos < 0 ? "#3ecf8e" : "inherit" }}>
+        {x.centavos < 0 ? "crédito" : "+ saldo"} de {mesBonito(x.origem)}: {real(x.centavos)}{x.pago ? " · pago" : ""}
+      </span>
+    ));
+
   const celula = (tipo: "custos" | "dev", mes: string) => {
     const e = estado[tipo][mes];
-    if (!e) return <span style={{ opacity: 0.4 }}>—</span>;
+    if (!e) return <><span style={{ opacity: 0.4 }}>—</span>{notaSaldo(tipo, mes)}</>;
     const ocupado = mexendo === `${tipo}:${mes}`;
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -83,6 +111,7 @@ export default function PagamentosAna({
         >
           {ocupado ? "…" : e.pago ? "✓ pago" : `em aberto · vence ${dia(e.vencimento)}`}
         </button>
+        {notaSaldo(tipo, mes)}
       </span>
     );
   };

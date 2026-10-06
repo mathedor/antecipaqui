@@ -105,9 +105,33 @@ export function comValorDaAna<T extends ContaLocal>(locais: T[], daAna: ContaAna
    o ✓ aqui. Um número só, nos dois lados. */
 
 export type EstadoMes = { pago: boolean; pago_em: string | null; centavos: number; vencimento: string };
-export type PagamentosAna = { custos: Record<string, EstadoMes>; dev: Record<string, EstadoMes> };
+/* ══ SALDO: MÊS PAGO QUE MUDOU DEPOIS ══ (06/10/2026)
+   A Ana congela o mês depois de pago. Se ele muda depois (entrega escrita no
+   relatório depois da baixa, infra que fecha noutro preço), a diferença vira
+   saldo no próximo mês em aberto — com sinal: positivo = a pagar a mais,
+   negativo = crédito. A Ana dá baixa no saldo junto com o mês de destino. */
+export type SaldoAna = {
+  ref: string;
+  tipo: "dev" | "custos";
+  /** mês que mudou depois de pago (AAAA-MM) */
+  origem: string;
+  /** mês em que o saldo é cobrado/abatido (AAAA-MM) */
+  destino: string;
+  centavos: number;
+  pago: boolean;
+};
 
-const SEM_ANA: PagamentosAna = { custos: {}, dev: {} };
+export type PagamentosAna = { custos: Record<string, EstadoMes>; dev: Record<string, EstadoMes>; saldos: SaldoAna[] };
+
+const SEM_ANA: PagamentosAna = { custos: {}, dev: {}, saldos: [] };
+
+/** a resposta da Ana (GET e POST) no formato da página — saldo que não veio = nenhum */
+function lerPagamentos(d: { custos?: PagamentosAna["custos"]; dev?: PagamentosAna["dev"]; saldos?: unknown }): PagamentosAna {
+  const saldos = Array.isArray(d.saldos)
+    ? (d.saldos as SaldoAna[]).filter((x) => x && (x.tipo === "dev" || x.tipo === "custos") && /^\d{4}-\d{2}$/.test(String(x.destino)))
+    : [];
+  return { custos: d.custos ?? {}, dev: d.dev ?? {}, saldos };
+}
 
 export async function pagamentosDaAna(projeto: string): Promise<PagamentosAna> {
   const token = process.env.ANA_CUSTOS_TOKEN;
@@ -119,7 +143,7 @@ export async function pagamentosDaAna(projeto: string): Promise<PagamentosAna> {
     });
     if (!r.ok) return SEM_ANA;
     const d = await r.json();
-    return d?.ok ? { custos: d.custos ?? {}, dev: d.dev ?? {} } : SEM_ANA;
+    return d?.ok ? lerPagamentos(d) : SEM_ANA;
   } catch {
     return SEM_ANA;   // Ana fora do ar não pode derrubar o relatório
   }
@@ -141,7 +165,7 @@ export async function marcarNaAna(
     });
     if (!r.ok) return null;
     const d = await r.json();
-    return d?.ok ? { custos: d.custos ?? {}, dev: d.dev ?? {} } : null;
+    return d?.ok ? lerPagamentos(d) : null;
   } catch {
     return null;
   }

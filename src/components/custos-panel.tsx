@@ -16,11 +16,16 @@ import {
   tokensEntrega,
   type ContaFixa,
 } from "@/lib/custos-data";
-import type { ContaAna, EntregaDaAna, PagamentosAna } from "@/lib/custosAna";
+import type { ContaAna, EntregaDaAna, PagamentosAna, SaldoAna } from "@/lib/custosAna";
 import {
+  EVENTO_PAGAMENTOS,
+  avisarPagamentos,
   devDoMesComAna,
+  notasDaOrigem,
   pedidosDaAnaPorMes,
+  saldosNoMes,
   type LinhaDev,
+  type LinhaSaldo,
 } from "@/lib/custos-entregas";
 
 /* =============================================================
@@ -226,6 +231,44 @@ function ChipFatura({ pago }: { pago: boolean }) {
   );
 }
 
+/** Linha de saldo no mês de destino — o pago é o da Ana, só leitura. */
+function LinhaDeSaldo({ s }: { s: LinhaSaldo }) {
+  return (
+    <LinhaItem
+      pago={s.pago}
+      titulo={s.titulo}
+      obs={s.desc}
+      chip={
+        <span
+          className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+            s.valor < 0 ? "border-success/50 bg-success-soft text-success" : "border-border bg-bg text-fg-muted"
+          }`}
+          title="A baixa vem junto com a do mês, no controle da Diretório Web"
+        >
+          {s.valor < 0 ? "crédito" : "saldo"}
+          {s.pago ? " · pago" : ""}
+        </span>
+      }
+      valor={s.valor}
+      tom={s.valor < 0 ? "sucesso" : undefined}
+    />
+  );
+}
+
+/** Embaixo do total do mês: o total + a nota de pra onde foi a diferença. */
+function TotalComNotas({ total, notas }: { total: number; notas: string[] }) {
+  return (
+    <span className="block">
+      <span className="block font-mono tabular text-sm font-bold">{formatBRL(total)}</span>
+      {notas.map((n) => (
+        <span key={n} className="block mt-1 max-w-[13rem] text-[11px] leading-snug text-fg-muted">
+          {n}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function BotaoPago({
   pago,
   onClick,
@@ -316,6 +359,7 @@ function LinhaItem({
   onEditarValor,
   onRemover,
   extraEsq,
+  tom,
 }: {
   pago: boolean;
   onTogglePago?: () => void;
@@ -326,6 +370,8 @@ function LinhaItem({
   onEditarValor?: (novo: number) => void;
   onRemover?: () => void;
   extraEsq?: React.ReactNode;
+  /** "sucesso" pinta o valor de verde (crédito) */
+  tom?: "sucesso";
 }) {
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(String(valor));
@@ -395,7 +441,7 @@ function LinhaItem({
             title={onEditarValor ? "Clique para ajustar o valor" : undefined}
             className={`font-mono tabular text-sm font-semibold ${
               onEditarValor ? "hover:text-accent cursor-pointer" : "cursor-default"
-            } ${pago ? "text-success" : "text-fg"}`}
+            } ${pago || tom === "sucesso" ? "text-success" : "text-fg"}`}
           >
             {formatBRL(valor)}
           </button>
@@ -450,6 +496,24 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
     [`ped:${mesCorrente}`]: true,
   });
   const [formAberto, setFormAberto] = useState(false);
+  /* saldos da Ana (mês pago que mudou depois): redesenha com a resposta de
+     cada baixa — daqui ou do quadro de pagamentos */
+  const [saldos, setSaldos] = useState<SaldoAna[]>(pagosAna.saldos ?? []);
+  useEffect(() => {
+    const ouvir = (ev: Event) => {
+      const d = (ev as CustomEvent<PagamentosAna>).detail;
+      if (d && Array.isArray(d.saldos)) setSaldos(d.saldos);
+    };
+    window.addEventListener(EVENTO_PAGAMENTOS, ouvir);
+    return () => window.removeEventListener(EVENTO_PAGAMENTOS, ouvir);
+  }, []);
+  const avisar = (tipo: "custos" | "dev", mes: string, pago: boolean) => {
+    setSinc("indo");
+    void avisarAna(tipo, mes, pago).then((r) => {
+      setSinc(r ? "ok" : "erro");
+      if (r) avisarPagamentos(r);
+    });
+  };
 
   /* já migramos as marcações antigas deste navegador pra Ana? Antes da
      migração, marcação local vale mais (foi feita com a ponte quebrada);
@@ -598,10 +662,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
         for (const [k, v] of Object.entries(atual)) {
           const [tipo, mes] = k.split(":") as ["custos" | "dev", string];
           const la = pagosAna[tipo][mes];
-          if (v && la && !la.pago) {
-            setSinc("indo");
-            void avisarAna(tipo, mes, true).then((r) => setSinc(r ? "ok" : "erro"));
-          }
+          if (v && la && !la.pago) avisar(tipo, mes, true);
         }
       }
       return;
@@ -609,8 +670,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
     for (const [k, v] of Object.entries(atual)) {
       if (antes[k] === undefined || antes[k] === v) continue;
       const [tipo, mes] = k.split(":") as ["custos" | "dev", string];
-      setSinc("indo");
-      void avisarAna(tipo, mes, v).then((r) => setSinc(r ? "ok" : "erro"));
+      avisar(tipo, mes, v);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estado.pagos, pronto]);
@@ -641,6 +701,13 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
     [meses, estado, devPorMes],
   );
 
+  /* saldo do mês (destino): entra no total, no % pago e nos KPIs do mês — mas
+     não no investido/acumulado, que somam o relatório (a diferença já está no
+     mês de origem) */
+  const saldoDe = (tipo: "custos" | "dev", m: string) => saldosNoMes(saldos, tipo, m);
+  const somaSaldo = (l: LinhaSaldo[], soPago = false) =>
+    l.reduce((a, x) => a + (soPago && !x.pago ? 0 : x.valor), 0);
+
   const totalDev = meses.reduce((a, m) => a + (totalDevPorMes[m] ?? 0), 0);
   const totalTokens = meses.reduce(
     (a, m) => a + devDoMes(m).reduce((x, e) => x + tokensEntrega(e), 0),
@@ -648,18 +715,18 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
   );
   const qtdDev = meses.reduce((a, m) => a + devDoMes(m).length, 0);
   const totalInvestido = SETUP.valor + totalDev;
-  const custoMensalAtual = totalMensalPorMes[mesCorrente] ?? 0;
+  const custoMensalAtual = (totalMensalPorMes[mesCorrente] ?? 0) + somaSaldo(saldoDe("custos", mesCorrente));
   const totalMensalAcumulado = meses.reduce(
     (a, m) => a + (totalMensalPorMes[m] ?? 0),
     0,
   );
 
   const devMesCorrente = devDoMes(mesCorrente);
-  const totalDevMesCorrente = totalDevPorMes[mesCorrente] ?? 0;
+  const totalDevMesCorrente = (totalDevPorMes[mesCorrente] ?? 0) + somaSaldo(saldoDe("dev", mesCorrente));
   const pagoDevMesCorrente = devMesCorrente.reduce(
     (a, e) => a + (estado.pagos[e.id] ? devValor(mesCorrente, e) : 0),
     0,
-  );
+  ) + somaSaldo(saldoDe("dev", mesCorrente), true);
   const pctDevMesCorrente =
     totalDevMesCorrente > 0
       ? (pagoDevMesCorrente / totalDevMesCorrente) * 100
@@ -733,11 +800,12 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
 
           {meses.map((mes) => {
             const itens = itensDoMes(mes);
-            const total = itens.reduce((a, i) => a + i.valor, 0);
+            const saldosMes = saldoDe("custos", mes);
+            const total = itens.reduce((a, i) => a + i.valor, 0) + somaSaldo(saldosMes);
             const pago = itens.reduce(
               (a, i) => a + (estado.pagos[i.id] ? i.valor : 0),
               0,
-            );
+            ) + somaSaldo(saldosMes, true);
             const pct = total > 0 ? (pago / total) * 100 : 100;
             const tudoPago = itens.every((i) => estado.pagos[i.id]);
             return (
@@ -758,11 +826,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
                     </span>
                   </span>
                 }
-                direita={
-                  <span className="font-mono tabular text-sm font-bold">
-                    {formatBRL(total)}
-                  </span>
-                }
+                direita={<TotalComNotas total={total} notas={notasDaOrigem(saldos, "custos", mes)} />}
                 rodape={
                   <button
                     type="button"
@@ -804,6 +868,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
                     }
                   />
                 ))}
+                {saldosMes.map((x) => <LinhaDeSaldo key={x.id} s={x} />)}
               </Acordeao>
             );
           })}
@@ -857,15 +922,16 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
           >
             <div className="p-3 md:p-4 space-y-3 bg-bg">
               {meses
-                .filter((m) => devDoMes(m).length > 0)
+                .filter((m) => devDoMes(m).length > 0 || saldoDe("dev", m).length > 0)
                 .map((mes) => {
                   const entradas = devDoMes(mes);
+                  const saldosMes = saldoDe("dev", mes);
                   const ids = entradas.map((e) => e.id);
-                  const total = totalDevPorMes[mes] ?? 0;
+                  const total = (totalDevPorMes[mes] ?? 0) + somaSaldo(saldosMes);
                   const pago = entradas.reduce(
                     (a, e) => a + (estado.pagos[e.id] ? devValor(mes, e) : 0),
                     0,
-                  );
+                  ) + somaSaldo(saldosMes, true);
                   const pct = total > 0 ? (pago / total) * 100 : 100;
                   const tudoPago = ids.every((id) => estado.pagos[id]);
                   const tokensMes = entradas.reduce(
@@ -885,6 +951,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
                           <span className="block mb-1.5">
                             {entradas.length}{" "}
                             {entradas.length === 1 ? "entrega" : "entregas"} ·{" "}
+                            {saldosMes.length ? `${saldosMes.length === 1 ? "1 saldo" : `${saldosMes.length} saldos`} · ` : ""}
                             {formatTokens(tokensMes)} · {Math.round(pct)}% pago
                           </span>
                           <span className="block max-w-[16rem]">
@@ -892,13 +959,9 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
                           </span>
                         </span>
                       }
-                      direita={
-                        <span className="font-mono tabular text-sm font-bold">
-                          {formatBRL(total)}
-                        </span>
-                      }
+                      direita={<TotalComNotas total={total} notas={notasDaOrigem(saldos, "dev", mes)} />}
                       rodape={
-                        <button
+                        ids.length === 0 ? undefined : <button
                           type="button"
                           onClick={() => marcarVarios(ids, !tudoPago)}
                           className="inline-flex items-center gap-2 text-xs font-medium text-fg-muted hover:text-accent transition-colors"
@@ -942,6 +1005,7 @@ export function CustosPanel({ mesCorrente, precosDaAna, pagosAna, avisarAna, ent
                           />
                         );
                       })}
+                      {saldosMes.map((x) => <LinhaDeSaldo key={x.id} s={x} />)}
                     </Acordeao>
                   );
                 })}
